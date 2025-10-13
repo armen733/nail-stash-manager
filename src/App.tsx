@@ -13,6 +13,7 @@ import Products from "./pages/Products";
 import Salons from "./pages/Salons";
 import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
+import logo from "@/assets/nera-logo.png";
 
 const queryClient = new QueryClient();
 
@@ -21,8 +22,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen flex w-full">
       <AppSidebar />
       <main className="flex-1 flex flex-col">
-        <header className="h-14 border-b bg-card flex items-center px-4">
-          <SidebarTrigger />
+        <header className="h-16 border-b bg-card flex items-center justify-center px-4 relative">
+          <SidebarTrigger className="absolute left-4" />
+          <img src={logo} alt="NÉRA Beauty" className="h-10 object-contain" />
         </header>
         <div className="flex-1 p-6">{children}</div>
       </main>
