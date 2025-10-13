@@ -211,7 +211,22 @@ const Orders = () => {
 
       if (itemsError) throw itemsError;
 
-      toast({ title: "Success", description: "Order created successfully" });
+      // Update stock for each product
+      for (const item of orderItems) {
+        const product = products.find(p => p.id === item.product_id);
+        if (product && product.stock_on_hand !== null) {
+          const newStock = product.stock_on_hand - item.quantity;
+          
+          const { error: stockError } = await supabase
+            .from("products")
+            .update({ stock_on_hand: newStock })
+            .eq("id", item.product_id);
+
+          if (stockError) throw stockError;
+        }
+      }
+
+      toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", notes: "" });
       setOrderItems([]);
