@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -45,6 +45,10 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -57,7 +61,6 @@ const Products = () => {
     price_usd: "",
     salon_price_usd: "",
     wholesale_price_usd: "",
-    image_url: "",
     stock_on_hand: "0",
     stock_reserved: "0",
     reorder_level: "10",
@@ -88,8 +91,59 @@ const Products = () => {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    setUploading(true);
+    try {
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Error uploading image",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let imageUrl = editingProduct?.image_url || null;
+    
+    if (imageFile) {
+      const uploadedUrl = await uploadImage();
+      if (uploadedUrl) imageUrl = uploadedUrl;
+    }
 
     const productData = {
       name: formData.name,
@@ -101,7 +155,7 @@ const Products = () => {
       price_usd: parseFloat(formData.price_usd),
       salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
       wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
-      image_url: formData.image_url || null,
+      image_url: imageUrl,
       stock_on_hand: parseInt(formData.stock_on_hand) || 0,
       stock_reserved: parseInt(formData.stock_reserved) || 0,
       reorder_level: parseInt(formData.reorder_level) || 10,
@@ -148,12 +202,12 @@ const Products = () => {
       price_usd: product.price_usd.toString(),
       salon_price_usd: product.salon_price_usd?.toString() || "",
       wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-      image_url: product.image_url || "",
       stock_on_hand: product.stock_on_hand?.toString() || "0",
       stock_reserved: product.stock_reserved?.toString() || "0",
       reorder_level: product.reorder_level?.toString() || "10",
       supplier: product.supplier || "",
     });
+    setImagePreview(product.image_url);
     setIsDialogOpen(true);
   };
 
@@ -186,13 +240,14 @@ const Products = () => {
       price_usd: "",
       salon_price_usd: "",
       wholesale_price_usd: "",
-      image_url: "",
       stock_on_hand: "0",
       stock_reserved: "0",
       reorder_level: "10",
       supplier: "",
     });
     setEditingProduct(null);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const filteredProducts = products.filter((product) =>
@@ -222,6 +277,44 @@ const Products = () => {
               <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Product Image</Label>
+                <div className="flex flex-col gap-4">
+                  {imagePreview && (
+                    <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview(null);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    {imagePreview ? "Change Image" : "Upload Image"}
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Product Name *</Label>
@@ -358,22 +451,12 @@ const Products = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingProduct ? "Update Product" : "Add Product"}
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? "Uploading..." : editingProduct ? "Update Product" : "Add Product"}
                 </Button>
               </div>
             </form>
