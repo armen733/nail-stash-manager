@@ -33,7 +33,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <img 
               src={logo} 
               alt="NÉRA Beauty" 
-              className="w-[160px] sm:w-[220px] h-auto object-contain py-3" 
+              className="w-[160px] sm:w-[220px] h-auto object-contain py-5" 
               style={{ background: 'transparent' }}
             />
           </header>
