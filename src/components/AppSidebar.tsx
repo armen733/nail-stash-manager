@@ -40,10 +40,10 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-14" : "w-72"} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-semibold px-4 py-3">
+          <SidebarGroupLabel className="text-xl font-semibold px-4 py-4">
             {!collapsed && "Salon Supply"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -56,12 +56,12 @@ export function AppSidebar() {
                       end={item.url === "/"}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                          : "hover:bg-sidebar-accent/50"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[3rem] px-4"
+                          : "hover:bg-sidebar-accent/50 min-h-[3rem] px-4"
                       }
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-6 w-6 md:h-5 md:w-5" />
+                      {!collapsed && <span className="text-lg md:text-base">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -70,18 +70,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 space-y-2">
-        <div className="flex items-center gap-2">
+      <SidebarFooter className="p-4 space-y-3">
+        <div className="flex items-center gap-3 min-h-[3rem]">
           <ThemeToggle />
-          {!collapsed && <span className="text-sm text-muted-foreground">Theme</span>}
+          {!collapsed && <span className="text-base md:text-sm text-muted-foreground">Theme</span>}
         </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
-          className="w-full justify-start"
+          className="w-full justify-start min-h-[3rem] px-4"
         >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Logout</span>}
+          <LogOut className="h-6 w-6 md:h-5 md:w-5" />
+          {!collapsed && <span className="text-lg md:text-base">Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
