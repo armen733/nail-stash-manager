@@ -22,9 +22,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="min-h-screen flex w-full">
       <AppSidebar />
       <main className="flex-1 flex flex-col">
-        <header className="h-16 border-b bg-card flex items-center justify-center px-4 relative">
-          <SidebarTrigger className="absolute left-4" />
-          <img src={logo} alt="NÉRA Beauty" className="h-10 object-contain" />
+        <header className="h-20 border-b border-[#e5ddd3] flex items-center justify-center px-4 relative" style={{ backgroundColor: '#f5efe9' }}>
+          <SidebarTrigger className="absolute left-4 text-[#111111]" />
+          <img src={logo} alt="NÉRA Beauty" className="h-12 w-auto max-w-[220px] md:max-w-[250px] object-contain" />
         </header>
         <div className="flex-1 p-6">{children}</div>
       </main>
