@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Order {
   id: string;
@@ -56,6 +57,7 @@ interface Product {
   name: string;
   price_usd: number;
   sku: string;
+  stock_on_hand: number | null;
 }
 
 interface OrderItem {
@@ -89,7 +91,7 @@ const Orders = () => {
       const [ordersRes, salonsRes, productsRes] = await Promise.all([
         supabase.from("orders").select("*, salons(name)").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name").order("name"),
-        supabase.from("products").select("id, name, price_usd, sku").order("name"),
+        supabase.from("products").select("id, name, price_usd, sku, stock_on_hand").order("name"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -136,6 +138,18 @@ const Orders = () => {
     return orderItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
   };
 
+  const getStockWarnings = () => {
+    return orderItems
+      .map((item, index) => {
+        const product = products.find(p => p.id === item.product_id);
+        if (product && product.stock_on_hand !== null && item.quantity > product.stock_on_hand) {
+          return { index, product, requested: item.quantity, available: product.stock_on_hand };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  };
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -146,6 +160,17 @@ const Orders = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    const stockWarnings = getStockWarnings();
+    if (stockWarnings.length > 0) {
+      const warningMessages = stockWarnings.map((w: any) => 
+        `${w.product.name}: Requested ${w.requested}, Available ${w.available}`
+      ).join('\n');
+      
+      if (!confirm(`⚠️ STOCK WARNING:\n\n${warningMessages}\n\nDo you want to proceed anyway?`)) {
+        return;
+      }
     }
 
     try {
@@ -286,49 +311,66 @@ const Orders = () => {
                   </Button>
                 </div>
 
-                {orderItems.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <Select
-                        value={item.product_id}
-                        onValueChange={(value) => updateOrderItem(index, "product_id", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} - ${product.price_usd}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                {orderItems.map((item, index) => {
+                  const product = products.find(p => p.id === item.product_id);
+                  const hasStockWarning = product && product.stock_on_hand !== null && item.quantity > product.stock_on_hand;
+                  
+                  return (
+                    <div key={index} className="space-y-2">
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <Select
+                            value={item.product_id}
+                            onValueChange={(value) => updateOrderItem(index, "product_id", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name} - ${product.price_usd} 
+                                  {product.stock_on_hand !== null && ` (Stock: ${product.stock_on_hand})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateOrderItem(index, "quantity", parseInt(e.target.value))}
+                            placeholder="Qty"
+                            className={hasStockWarning ? "border-destructive" : ""}
+                          />
+                        </div>
+                        <div className="w-28 flex items-center justify-center">
+                          <span className="font-semibold">
+                            ${(item.quantity * item.unit_price).toFixed(2)}
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeOrderItem(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      {hasStockWarning && (
+                        <Alert variant="destructive" className="py-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            Only {product.stock_on_hand} in stock! You're ordering {item.quantity}.
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
-                    <div className="w-24">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateOrderItem(index, "quantity", parseInt(e.target.value))}
-                        placeholder="Qty"
-                      />
-                    </div>
-                    <div className="w-28 flex items-center justify-center">
-                      <span className="font-semibold">
-                        ${(item.quantity * item.unit_price).toFixed(2)}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removeOrderItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {orderItems.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
