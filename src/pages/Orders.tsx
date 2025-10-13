@@ -45,6 +45,16 @@ interface Order {
   salons: {
     name: string;
   };
+  order_items?: OrderItemWithProduct[];
+}
+
+interface OrderItemWithProduct {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  products: {
+    name: string;
+  };
 }
 
 interface Salon {
@@ -89,7 +99,7 @@ const Orders = () => {
   const fetchData = async () => {
     try {
       const [ordersRes, salonsRes, productsRes] = await Promise.all([
-        supabase.from("orders").select("*, salons(name)").order("order_date", { ascending: false }),
+        supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, products(name))").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name").order("name"),
         supabase.from("products").select("id, name, price_usd, sku, stock_on_hand").order("name"),
       ]);
@@ -475,9 +485,9 @@ const Orders = () => {
                     <TableRow>
                       <TableHead>Order Date</TableHead>
                       <TableHead>Salon</TableHead>
+                      <TableHead>Products</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -486,9 +496,21 @@ const Orders = () => {
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
                         <TableCell className="font-medium">{order.salons?.name}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {order.order_items && order.order_items.length > 0 ? (
+                              order.order_items.map((item, idx) => (
+                                <div key={idx} className="text-muted-foreground">
+                                  {item.products?.name} × {item.quantity}
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">No items</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell>${order.total.toFixed(2)}</TableCell>
-                        <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
                         <TableCell>
                           <Button
                             size="sm"
@@ -519,9 +541,9 @@ const Orders = () => {
                     <TableRow>
                       <TableHead>Order Date</TableHead>
                       <TableHead>Salon</TableHead>
+                      <TableHead>Products</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Created</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -529,9 +551,21 @@ const Orders = () => {
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
                         <TableCell className="font-medium">{order.salons?.name}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {order.order_items && order.order_items.length > 0 ? (
+                              order.order_items.map((item, idx) => (
+                                <div key={idx} className="text-muted-foreground">
+                                  {item.products?.name} × {item.quantity}
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">No items</span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell>${order.total.toFixed(2)}</TableCell>
-                        <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
