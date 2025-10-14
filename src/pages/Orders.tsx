@@ -354,8 +354,12 @@ const Orders = () => {
                             <SelectContent>
                               {products.map((product) => (
                                 <SelectItem key={product.id} value={product.id}>
-                                  {product.name} - ${product.price_usd} 
-                                  {product.stock_on_hand !== null && ` (Stock: ${product.stock_on_hand})`}
+                                  <span className="flex items-center gap-2">
+                                    <span className="font-mono text-xs text-muted-foreground">[{product.sku}]</span>
+                                    <span>{product.name}</span>
+                                    <span className="text-muted-foreground">- ${product.price_usd}</span>
+                                    {product.stock_on_hand !== null && <span className="text-muted-foreground">(Stock: {product.stock_on_hand})</span>}
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>

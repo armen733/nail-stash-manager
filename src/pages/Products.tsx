@@ -498,8 +498,12 @@ const Products = () => {
                     )}
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">SKU: {product.sku}</p>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-lg">{product.name}</h3>
+                      <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
+                        {product.sku}
+                      </span>
+                    </div>
                     <div className="space-y-1 text-sm">
                       <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
                       {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
