@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -39,7 +41,13 @@ interface Product {
   supplier: string | null;
 }
 
+interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
 const Products = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +56,7 @@ const Products = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -254,6 +263,50 @@ const Products = () => {
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existingItem = prev.find(item => item.product.id === product.id);
+      if (existingItem) {
+        return prev.map(item =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+    toast({ title: "Added to cart", description: `${product.name} added to cart` });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => {
+      const existingItem = prev.find(item => item.product.id === productId);
+      if (existingItem && existingItem.quantity > 1) {
+        return prev.map(item =>
+          item.product.id === productId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        );
+      }
+      return prev.filter(item => item.product.id !== productId);
+    });
+  };
+
+  const getCartQuantity = (productId: string) => {
+    return cart.find(item => item.product.id === productId)?.quantity || 0;
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handlePlaceOrder = () => {
+    if (cart.length === 0) {
+      toast({ title: "Cart is empty", description: "Add some products to cart first", variant: "destructive" });
+      return;
+    }
+    navigate('/orders', { state: { cartItems: cart } });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -513,7 +566,40 @@ const Products = () => {
                         <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
                       )}
                     </div>
-                    <div className="flex gap-2 mt-4">
+                    
+                    {getCartQuantity(product.id) > 0 ? (
+                      <div className="flex items-center gap-2 mt-4">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => removeFromCart(product.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Badge variant="secondary" className="flex-1 justify-center py-1">
+                          {getCartQuantity(product.id)} in cart
+                        </Badge>
+                        <Button 
+                          size="sm" 
+                          onClick={() => addToCart(product)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        className="w-full mt-4"
+                        onClick={() => addToCart(product)}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                    )}
+                    
+                    <div className="flex gap-2 mt-2">
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(product)}>
                         <Pencil className="h-4 w-4 mr-1" />
                         Edit
@@ -529,6 +615,49 @@ const Products = () => {
           )}
         </CardContent>
       </Card>
+
+      {cart.length > 0 && (
+        <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-50">
+          <Card className="shadow-lg border-2">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  <h3 className="font-semibold">Cart ({cartItemCount} items)</h3>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setCart([])}
+                >
+                  Clear
+                </Button>
+              </div>
+              <div className="max-h-48 overflow-y-auto mb-3 space-y-2">
+                {cart.map(item => (
+                  <div key={item.product.id} className="flex items-center justify-between text-sm">
+                    <span className="flex-1 truncate">{item.product.name}</span>
+                    <span className="text-muted-foreground mx-2">×{item.quantity}</span>
+                    <span className="font-semibold">${(item.product.price_usd * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t pt-3 mb-3">
+                <div className="flex items-center justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>${cartTotal.toFixed(2)}</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={handlePlaceOrder}
+              >
+                Place Order
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

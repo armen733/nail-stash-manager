@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ interface OrderItem {
 }
 
 const Orders = () => {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -95,6 +97,26 @@ const Orders = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Handle cart items from Products page
+    if (location.state?.cartItems) {
+      const cartItems = location.state.cartItems;
+      const items: OrderItem[] = cartItems.map((item: any) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unit_price: item.product.price_usd,
+      }));
+      setOrderItems(items);
+      setIsDialogOpen(true);
+      toast({ 
+        title: "Cart loaded", 
+        description: `${items.length} products added to new order` 
+      });
+      // Clear the navigation state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, toast]);
 
   const fetchData = async () => {
     try {
