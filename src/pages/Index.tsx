@@ -25,6 +25,13 @@ interface TopProduct {
   revenue: number;
 }
 
+interface StockValue {
+  product_name: string;
+  stock: number;
+  price: number;
+  value: number;
+}
+
 const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
@@ -36,6 +43,8 @@ const Index = () => {
   });
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [stockValues, setStockValues] = useState<StockValue[]>([]);
+  const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -49,17 +58,19 @@ const Index = () => {
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
       // Fetch all stats in parallel
-      const [ordersRes, salonsRes, productsRes, orderItemsRes] = await Promise.all([
+      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes] = await Promise.all([
         supabase.from("orders").select("id, total, created_at, salon_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("product_id, quantity, line_total, products(name)"),
+        supabase.from("products").select("name, stock_on_hand, price_usd"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
       if (salonsRes.error) throw salonsRes.error;
       if (productsRes.error) throw productsRes.error;
       if (orderItemsRes.error) throw orderItemsRes.error;
+      if (stockRes.error) throw stockRes.error;
 
       const orders = ordersRes.data || [];
       const monthlyOrders = orders.filter(o => new Date(o.created_at) >= new Date(firstDayOfMonth));
@@ -118,6 +129,20 @@ const Index = () => {
           revenue: p.revenue,
         }));
       setTopProducts(topProductsData);
+
+      // Calculate stock values
+      const stockData = (stockRes.data || [])
+        .filter(p => p.stock_on_hand > 0)
+        .map(p => ({
+          product_name: p.name,
+          stock: p.stock_on_hand,
+          price: p.price_usd,
+          value: p.stock_on_hand * p.price_usd,
+        }))
+        .sort((a, b) => b.value - a.value);
+      
+      setStockValues(stockData);
+      setTotalStockValue(stockData.reduce((sum, item) => sum + item.value, 0));
 
     } catch (error: any) {
       toast({
@@ -244,6 +269,44 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Stock Inventory Value</CardTitle>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Total Expected Profit</p>
+            <p className="text-2xl font-bold text-primary">
+              ${loading ? "..." : totalStockValue.toFixed(2)}
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : stockValues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                No stock available. Add products to see inventory value.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {stockValues.map((item, index) => (
+                <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div className="flex-1">
+                    <p className="font-medium">{item.product_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.stock} pieces × ${item.price.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-primary">${item.value.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
