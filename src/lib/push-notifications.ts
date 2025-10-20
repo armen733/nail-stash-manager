@@ -52,7 +52,7 @@ export const subscribeToPushNotifications = async () => {
 
     const subscriptionJSON = subscription.toJSON();
 
-    // Save to database
+    // Save to database - use user_id and endpoint as the unique key for upsert
     const { error } = await supabase
       .from('push_subscriptions')
       .upsert({
@@ -60,6 +60,8 @@ export const subscribeToPushNotifications = async () => {
         endpoint: subscriptionJSON.endpoint!,
         p256dh: subscriptionJSON.keys!.p256dh!,
         auth: subscriptionJSON.keys!.auth!
+      }, {
+        onConflict: 'user_id,endpoint'
       });
 
     if (error) throw error;
