@@ -368,7 +368,7 @@ const Orders = () => {
 
   const normalizedSearch = searchTerm.toLowerCase();
   const filterBySalonName = (order: Order) => {
-    const name = order.salons?.name || 'Online Store';
+    const name = order.salons?.name || order.customer_name || '';
     return name.toLowerCase().includes(normalizedSearch);
   };
 
@@ -572,7 +572,7 @@ const Orders = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Salon</Label>
-                  <div>{viewOrder.salons?.name || "Online Store"}</div>
+                  <div>{viewOrder.salons?.name || viewOrder.customer_name || "—"}</div>
                 </div>
               </div>
 
@@ -668,7 +668,7 @@ const Orders = () => {
                     {filteredActiveOrders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name || "Online Store"}</TableCell>
+                        <TableCell className="font-medium">{order.salons?.name || order.customer_name || "—"}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
@@ -732,7 +732,7 @@ const Orders = () => {
                     {filteredCompletedOrders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name || "Online Store"}</TableCell>
+                        <TableCell className="font-medium">{order.salons?.name || order.customer_name || "—"}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
