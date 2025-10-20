@@ -35,7 +35,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Order {
   id: string;
-  salon_id: string;
+  salon_id: string | null;
   order_date: string;
   status: string;
   subtotal: number;
@@ -43,9 +43,13 @@ interface Order {
   total: number;
   notes: string | null;
   created_at: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  customer_address?: string | null;
   salons: {
     name: string;
-  };
+  } | null;
   order_items?: OrderItemWithProduct[];
 }
 
@@ -86,6 +90,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [viewOrder, setViewOrder] = useState<Order | null>(null);
 
   const [formData, setFormData] = useState({
     salon_id: "",
@@ -496,6 +501,73 @@ const Orders = () => {
         </Dialog>
       </div>
 
+      <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+          </DialogHeader>
+          {viewOrder && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Order ID</Label>
+                  <div className="font-mono text-sm">{viewOrder.id}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Date</Label>
+                  <div>{new Date(viewOrder.order_date).toLocaleDateString()}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div>{getStatusBadge(viewOrder.status)}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Salon</Label>
+                  <div>{viewOrder.salons?.name || "Online Store"}</div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Customer</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="text-muted-foreground">Name: </span>{viewOrder.customer_name || "—"}</div>
+                  <div><span className="text-muted-foreground">Email: </span>{viewOrder.customer_email || "—"}</div>
+                  <div><span className="text-muted-foreground">Phone: </span>{viewOrder.customer_phone || "—"}</div>
+                  <div><span className="text-muted-foreground">Address: </span>{viewOrder.customer_address || "—"}</div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Items</h3>
+                <div className="space-y-1 text-sm">
+                  {(viewOrder.order_items || []).map((it) => (
+                    <div key={it.id} className="flex justify-between">
+                      <span>{it.products?.name} × {it.quantity}</span>
+                      <span>${(it.quantity * it.unit_price).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>${viewOrder.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Tax</span>
+                  <span>${viewOrder.tax.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>${viewOrder.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <div className="flex items-center gap-4">
@@ -564,13 +636,22 @@ const Orders = () => {
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            onClick={() => handleMarkAsDone(order.id)}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Mark Done
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setViewOrder(order)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleMarkAsDone(order.id)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Mark Done
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
