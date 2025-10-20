@@ -70,7 +70,7 @@ export type Database = {
           id: string
           notes: string | null
           order_date: string
-          salon_id: string
+          salon_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
@@ -87,7 +87,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_date?: string
-          salon_id: string
+          salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
@@ -104,7 +104,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_date?: string
-          salon_id?: string
+          salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
