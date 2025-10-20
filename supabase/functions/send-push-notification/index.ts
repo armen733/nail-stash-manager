@@ -1,3 +1,4 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -5,14 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface PushSubscription {
-  user_id: string;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-}
-
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,55 +17,82 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { title, body, url } = await req.json();
+    const { customerName } = await req.json();
 
-    // Get all subscriptions
-    const { data: subscriptions, error } = await supabaseClient
+    console.log('Sending push notification for new order');
+
+    // Get all push subscriptions
+    const { data: subscriptions, error: subError } = await supabaseClient
       .from('push_subscriptions')
       .select('*');
 
-    if (error) throw error;
-
-    const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib37J8-fAgTkxJSNfQtHSfJhHIj41SVh5Hk4_Xh5aK9HYyTkBdtRBl1L9kc';
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-
-    if (!vapidPrivateKey) {
-      throw new Error('VAPID_PRIVATE_KEY not set');
+    if (subError) {
+      console.error('Error fetching subscriptions:', subError);
+      throw subError;
     }
 
-    const payload = JSON.stringify({ title, body, url });
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('No subscriptions found');
+      return new Response(
+        JSON.stringify({ message: 'No subscriptions' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Send to all subscriptions
-    const promises = (subscriptions as PushSubscription[]).map(async (sub) => {
-      try {
-        const response = await fetch(sub.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'TTL': '86400',
-          },
-          body: payload,
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to send to ${sub.endpoint}:`, await response.text());
-        }
-      } catch (err) {
-        console.error('Error sending push:', err);
-      }
+    // Send basic notification to all subscriptions (no encryption for now)
+    const notificationPayload = JSON.stringify({
+      title: '🔔 New Order Received!',
+      body: customerName ? `Order from ${customerName}` : 'A new customer order has been placed',
+      url: '/orders'
     });
 
-    await Promise.all(promises);
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        try {
+          const response = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'TTL': '86400',
+            },
+            body: notificationPayload
+          });
+
+          if (!response.ok) {
+            console.error(`Failed to send to ${sub.endpoint}:`, response.status);
+            if (response.status === 410) {
+              await supabaseClient
+                .from('push_subscriptions')
+                .delete()
+                .eq('id', sub.id);
+            }
+          }
+          return response;
+        } catch (error) {
+          console.error('Error sending notification:', error);
+          throw error;
+        }
+      })
+    );
+
+    console.log('Notification results:', results);
 
     return new Response(
-      JSON.stringify({ success: true, sent: subscriptions?.length || 0 }),
+      JSON.stringify({ 
+        message: 'Notifications sent',
+        results: results.length 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('Error in send-push-notification:', error);
     return new Response(
       JSON.stringify({ error: error?.message || 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });

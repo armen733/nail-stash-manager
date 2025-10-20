@@ -3,9 +3,10 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle } from "lucide-react";
+import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { subscribeToPushNotifications } from "@/lib/push-notifications";
 import { useNotifications } from "@/hooks/useNotifications";
 import {
   Dialog,
@@ -92,6 +93,7 @@ const Orders = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { permission, requestPermission } = useNotifications();
 
   const [formData, setFormData] = useState({
@@ -130,11 +132,10 @@ const Orders = () => {
           
           // Send push notification
           try {
+            const newOrder = payload.new as any;
             await supabase.functions.invoke('send-push-notification', {
               body: {
-                title: 'New Order!',
-                body: 'A new customer order has been placed',
-                url: '/orders'
+                customerName: newOrder.customer_name
               }
             });
           } catch (err) {
@@ -345,6 +346,23 @@ const Orders = () => {
     }
   };
 
+  const handleEnableNotifications = async () => {
+    try {
+      await subscribeToPushNotifications();
+      setNotificationsEnabled(true);
+      toast({
+        title: "Notifications Enabled",
+        description: "You'll now receive push notifications for new orders",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const activeOrders = orders.filter((order) => order.status === "Draft" || order.status === "Confirmed");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
 
@@ -375,13 +393,20 @@ const Orders = () => {
           <h1 className="text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground mt-1">Track and manage orders</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Order
+        <div className="flex gap-2">
+          {!notificationsEnabled && (
+            <Button variant="outline" onClick={handleEnableNotifications}>
+              <Bell className="mr-2 h-4 w-4" />
+              Enable Notifications
             </Button>
-          </DialogTrigger>
+          )}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Order
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
@@ -522,6 +547,7 @@ const Orders = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
