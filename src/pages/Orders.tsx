@@ -320,13 +320,14 @@ const Orders = () => {
   const activeOrders = orders.filter((order) => order.status === "Draft" || order.status === "Confirmed");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
 
-  const filteredActiveOrders = activeOrders.filter((order) =>
-    order.salons?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const normalizedSearch = searchTerm.toLowerCase();
+  const filterBySalonName = (order: Order) => {
+    const name = order.salons?.name || 'Online Store';
+    return name.toLowerCase().includes(normalizedSearch);
+  };
 
-  const filteredCompletedOrders = completedOrders.filter((order) =>
-    order.salons?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredActiveOrders = activeOrders.filter(filterBySalonName);
+  const filteredCompletedOrders = completedOrders.filter(filterBySalonName);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -546,7 +547,7 @@ const Orders = () => {
                     {filteredActiveOrders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name}</TableCell>
+                        <TableCell className="font-medium">{order.salons?.name || "Online Store"}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
@@ -601,7 +602,7 @@ const Orders = () => {
                     {filteredCompletedOrders.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name}</TableCell>
+                        <TableCell className="font-medium">{order.salons?.name || "Online Store"}</TableCell>
                         <TableCell>
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
