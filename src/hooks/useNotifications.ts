@@ -65,7 +65,7 @@ export const useNotifications = () => {
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          'BEl62iUYgUivxIkv69yViEuiBIa-Ib37J8-fAgTkxJSNfQtHSfJhHIj41SVh5Hk4_Xh5aK9HYyTkBdtRBl1L9kc'
+          'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
         ),
       });
 
@@ -77,12 +77,15 @@ export const useNotifications = () => {
 
       const subscriptionJSON = sub.toJSON();
 
-      await supabase.from('push_subscriptions').upsert({
-        user_id: user.id,
-        endpoint: subscriptionJSON.endpoint!,
-        p256dh: subscriptionJSON.keys!.p256dh,
-        auth: subscriptionJSON.keys!.auth,
-      });
+      await supabase.from('push_subscriptions').upsert(
+        {
+          user_id: user.id,
+          endpoint: subscriptionJSON.endpoint!,
+          p256dh: subscriptionJSON.keys!.p256dh!,
+          auth: subscriptionJSON.keys!.auth!,
+        },
+        { onConflict: 'user_id,endpoint' }
+      );
 
       toast({
         title: 'Notifications enabled',
