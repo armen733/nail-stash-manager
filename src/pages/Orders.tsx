@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   Dialog,
   DialogContent,
@@ -91,6 +92,7 @@ const Orders = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const { permission, requestPermission } = useNotifications();
 
   const [formData, setFormData] = useState({
     salon_id: "",
@@ -102,6 +104,11 @@ const Orders = () => {
   useEffect(() => {
     fetchData();
 
+    // Request notification permission if not already granted
+    if (permission === 'default') {
+      requestPermission();
+    }
+
     // Real-time subscription for new orders
     const channel = supabase
       .channel('orders-changes')
@@ -112,12 +119,28 @@ const Orders = () => {
           schema: 'public',
           table: 'orders'
         },
-        (payload) => {
+        async (payload) => {
           console.log('New order received:', payload);
+          
+          // Show toast notification
           toast({
             title: "🔔 New Order Received!",
             description: "A new customer order has been placed.",
           });
+          
+          // Send push notification
+          try {
+            await supabase.functions.invoke('send-push-notification', {
+              body: {
+                title: 'New Order!',
+                body: 'A new customer order has been placed',
+                url: '/orders'
+              }
+            });
+          } catch (err) {
+            console.error('Failed to send push notification:', err);
+          }
+          
           fetchData(); // Refresh orders list
         }
       )
@@ -126,7 +149,7 @@ const Orders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, permission, requestPermission]);
 
   useEffect(() => {
     // Handle cart items from Products page
