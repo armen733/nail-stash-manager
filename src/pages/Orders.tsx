@@ -96,7 +96,32 @@ const Orders = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    // Real-time subscription for new orders
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('New order received:', payload);
+          toast({
+            title: "🔔 New Order Received!",
+            description: "A new customer order has been placed.",
+          });
+          fetchData(); // Refresh orders list
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
 
   useEffect(() => {
     // Handle cart items from Products page
