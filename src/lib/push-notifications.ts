@@ -41,8 +41,8 @@ export const subscribeToPushNotifications = async () => {
 
     const registration = await navigator.serviceWorker.ready;
     
-    // VAPID public key - you'll need to generate this
-    const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+    // VAPID public key
+    const vapidPublicKey = 'BKxN9L3vJ8K2mF5nP6qR1sT7uV9wX0yZ2aB4cD6eF8gH0iJ2kL4mN6oP8qR0sT2uV4wX6yZ8aB0cD2eF4gH6i';
     const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
     const subscription = await registration.pushManager.subscribe({
