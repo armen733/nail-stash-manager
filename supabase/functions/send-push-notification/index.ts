@@ -6,6 +6,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
+
+// Helper function to convert base64url to base64
+function base64UrlToBase64(base64url: string): string {
+  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  const padding = base64.length % 4;
+  if (padding) {
+    base64 += '='.repeat(4 - padding);
+  }
+  return base64;
+}
+
+// Helper to create VAPID auth headers
+function createVapidAuthHeader(endpoint: string): string {
+  const urlParts = new URL(endpoint);
+  const audience = `${urlParts.protocol}//${urlParts.host}`;
+  
+  const vapidHeaders = {
+    typ: 'JWT',
+    alg: 'ES256'
+  };
+  
+  const exp = Math.floor(Date.now() / 1000) + 12 * 60 * 60; // 12 hours
+  
+  const vapidClaims = {
+    aud: audience,
+    exp: exp,
+    sub: 'mailto:your-email@example.com'
+  };
+  
+  // For now, return a simple header - in production you'd need proper JWT signing
+  return `vapid t=${VAPID_PUBLIC_KEY}, k=${VAPID_PRIVATE_KEY}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,7 +74,7 @@ serve(async (req) => {
       );
     }
 
-    // Send basic notification to all subscriptions (no encryption for now)
+    // Send notification to all subscriptions
     const notificationPayload = JSON.stringify({
       title: '🔔 New Order Received!',
       body: customerName ? `Order from ${customerName}` : 'A new customer order has been placed',
@@ -54,12 +89,13 @@ serve(async (req) => {
             headers: {
               'Content-Type': 'application/json',
               'TTL': '86400',
+              'Authorization': createVapidAuthHeader(sub.endpoint),
             },
             body: notificationPayload
           });
 
           if (!response.ok) {
-            console.error(`Failed to send to ${sub.endpoint}:`, response.status);
+            console.error(`Failed to send to ${sub.endpoint}:`, response.status, await response.text());
             if (response.status === 410) {
               await supabaseClient
                 .from('push_subscriptions')
