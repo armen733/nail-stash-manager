@@ -119,13 +119,13 @@ const Products = () => {
     }
   };
 
-  const uploadImage = async (): Promise<string | null> => {
+  const uploadImage = async () => {
     if (!imageFile) return null;
 
     setUploading(true);
     try {
       const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -141,7 +141,7 @@ const Products = () => {
       return publicUrl;
     } catch (error: any) {
       toast({
-        title: "Error uploading image",
+        title: "Upload Error",
         description: error.message,
         variant: "destructive",
       });
@@ -206,27 +206,6 @@ const Products = () => {
     }
   };
 
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      bit_type: product.bit_type || "",
-      grit: product.grit || "",
-      unit: product.unit || "piece",
-      sku: product.sku,
-      price_usd: product.price_usd.toString(),
-      salon_price_usd: product.salon_price_usd?.toString() || "",
-      wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-      stock_on_hand: product.stock_on_hand?.toString() || "0",
-      stock_reserved: product.stock_reserved?.toString() || "0",
-      reorder_level: product.reorder_level?.toString() || "10",
-      supplier: product.supplier || "",
-    });
-    setImagePreview(product.image_url);
-    setIsDialogOpen(true);
-  };
-
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
 
@@ -273,7 +252,6 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortBy === "name") return a.name.localeCompare(b.name);
     if (sortBy === "price") return a.price_usd - b.price_usd;
@@ -778,122 +756,6 @@ const Products = () => {
                         </Button>
                       )}
 
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingProduct(product);
-                            setFormData({
-                              name: product.name,
-                              category: product.category,
-                              bit_type: product.bit_type || "",
-                              grit: product.grit || "",
-                              unit: product.unit || "piece",
-                              sku: product.sku,
-                              price_usd: product.price_usd.toString(),
-                              salon_price_usd: product.salon_price_usd?.toString() || "",
-                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                              stock_on_hand: product.stock_on_hand?.toString() || "0",
-                              stock_reserved: product.stock_reserved?.toString() || "0",
-                              reorder_level: product.reorder_level?.toString() || "10",
-                              supplier: product.supplier || "",
-                            });
-                            setImagePreview(product.image_url);
-                            setIsDialogOpen(true);
-                          }}
-                          className="flex-1"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDuplicateProduct(product)}
-                          className="flex-1"
-                          title="Duplicate"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(product.id)}
-                          className="flex-1"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                hasNextPage={hasNextPage}
-                hasPrevPage={hasPrevPage}
-              />
-            </>
-          )}
-        </CardContent>
-                <Card key={product.id} className="overflow-hidden">
-                  <div className="aspect-square bg-muted flex items-center justify-center">
-                    {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="h-16 w-16 text-muted-foreground/30" />
-                    )}
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold text-lg">{product.name}</h3>
-                      <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
-                        {product.sku}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
-                      {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
-                      {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
-                      <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
-                      {product.stock_on_hand !== null && (
-                        <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
-                      )}
-                    </div>
-                    
-                    {getCartQuantity(product.id) > 0 ? (
-                      <div className="flex items-center gap-2 mt-4">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => removeFromCart(product.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <Badge variant="secondary" className="flex-1 justify-center py-1">
-                          {getCartQuantity(product.id)} in cart
-                        </Badge>
-                        <Button 
-                          size="sm" 
-                          onClick={() => addToCart(product)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button 
-                        size="sm" 
-                        className="w-full mt-4"
-                        onClick={() => addToCart(product)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Add to Cart
-                      </Button>
-                    )}
                       <div className="flex gap-2 mt-2">
                         <Button
                           size="sm"
