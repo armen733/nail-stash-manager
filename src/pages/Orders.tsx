@@ -385,8 +385,8 @@ const Orders = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      <div className="space-y-6 animate-fade-in max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground mt-1">Track and manage orders</p>
@@ -405,7 +405,7 @@ const Orders = () => {
                 Create Order
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
             </DialogHeader>
@@ -431,7 +431,7 @@ const Orders = () => {
                   <Label>Products *</Label>
                   <Button type="button" size="sm" onClick={addOrderItem}>
                     <Plus className="h-4 w-4 mr-1" />
-                    Add Product
+                    Add
                   </Button>
                 </div>
 
@@ -440,8 +440,8 @@ const Orders = () => {
                   const hasStockWarning = product && product.stock_on_hand !== null && item.quantity > product.stock_on_hand;
                   
                   return (
-                    <div key={index} className="space-y-2">
-                      <div className="flex gap-2 items-end">
+                    <div key={index} className="space-y-2 p-3 border rounded-lg">
+                      <div className="flex flex-col gap-3">
                         <div className="flex-1">
                           <Select
                             value={item.product_id}
@@ -453,40 +453,42 @@ const Orders = () => {
                             <SelectContent>
                               {products.map((product) => (
                                 <SelectItem key={product.id} value={product.id}>
-                                  <span className="flex items-center gap-2">
-                                    <span className="font-mono text-xs text-muted-foreground">[{product.sku}]</span>
-                                    <span>{product.name}</span>
-                                    <span className="text-muted-foreground">- ${product.price_usd}</span>
-                                    {product.stock_on_hand !== null && <span className="text-muted-foreground">(Stock: {product.stock_on_hand})</span>}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{product.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      ${product.price_usd} • Stock: {product.stock_on_hand ?? 0}
+                                    </span>
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="w-24">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateOrderItem(index, "quantity", parseInt(e.target.value))}
-                            placeholder="Qty"
-                            className={hasStockWarning ? "border-destructive" : ""}
-                          />
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateOrderItem(index, "quantity", parseInt(e.target.value))}
+                              placeholder="Quantity"
+                              className={hasStockWarning ? "border-destructive" : ""}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold whitespace-nowrap">
+                              ${(item.quantity * item.unit_price).toFixed(2)}
+                            </span>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => removeOrderItem(index)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="w-28 flex items-center justify-center">
-                          <span className="font-semibold">
-                            ${(item.quantity * item.unit_price).toFixed(2)}
-                          </span>
-                        </div>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => removeOrderItem(index)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                       {hasStockWarning && (
                         <Alert variant="destructive" className="py-2">
@@ -541,13 +543,13 @@ const Orders = () => {
       </div>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
           </DialogHeader>
           {viewOrder && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Order ID</Label>
                   <div className="font-mono text-sm">{viewOrder.id}</div>
@@ -568,7 +570,7 @@ const Orders = () => {
 
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-2">Customer</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div><span className="text-muted-foreground">Name: </span>{viewOrder.customer_name || "—"}</div>
                   <div><span className="text-muted-foreground">Email: </span>{viewOrder.customer_email || "—"}</div>
                   <div><span className="text-muted-foreground">Phone: </span>{viewOrder.customer_phone || "—"}</div>
