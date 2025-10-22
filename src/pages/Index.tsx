@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Stats {
   totalOrders: number;
@@ -46,16 +47,19 @@ const Index = () => {
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [timePeriod, setTimePeriod] = useState<"week" | "month">("month");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [timePeriod]);
 
   const fetchDashboardData = async () => {
     try {
       const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const periodStart = timePeriod === "week" 
+        ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes] = await Promise.all([
@@ -73,15 +77,15 @@ const Index = () => {
       if (stockRes.error) throw stockRes.error;
 
       const orders = ordersRes.data || [];
-      const monthlyOrders = orders.filter(o => new Date(o.created_at) >= new Date(firstDayOfMonth));
+      const periodOrders = orders.filter(o => new Date(o.created_at) >= new Date(periodStart));
 
       // Calculate stats
       const newStats: Stats = {
         totalOrders: orders.length,
-        monthlyOrders: monthlyOrders.length,
+        monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
         totalProducts: productsRes.data?.length || 0,
-        monthlyRevenue: monthlyOrders.reduce((sum, order) => sum + (order.total || 0), 0),
+        monthlyRevenue: periodOrders.reduce((sum, order) => sum + (order.total || 0), 0),
         totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
       };
       setStats(newStats);
@@ -155,9 +159,11 @@ const Index = () => {
     }
   };
 
+  const periodLabel = timePeriod === "week" ? "Weekly" : "Monthly";
+  
   const statsCards = [
     {
-      title: "Monthly Orders",
+      title: `${periodLabel} Orders`,
       value: loading ? "..." : stats.monthlyOrders.toString(),
       icon: TrendingUp,
       description: `${stats.totalOrders} total orders`,
@@ -175,7 +181,7 @@ const Index = () => {
       description: "In catalog",
     },
     {
-      title: "Monthly Revenue",
+      title: `${periodLabel} Revenue`,
       value: loading ? "..." : `$${stats.monthlyRevenue.toFixed(2)}`,
       icon: DollarSign,
       description: `$${stats.totalRevenue.toFixed(2)} total`,
@@ -184,9 +190,20 @@ const Index = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
+        </div>
+        <Select value={timePeriod} onValueChange={(value: "week" | "month") => setTimePeriod(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -211,9 +228,9 @@ const Index = () => {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader>
-            <CardTitle>Top Salons</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Top Salons</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : topSalons.length === 0 ? (
@@ -241,9 +258,9 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader>
-            <CardTitle>Top Products</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : topProducts.length === 0 ? (
@@ -271,16 +288,16 @@ const Index = () => {
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Stock Inventory Value</CardTitle>
-          <div className="text-right">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
+          <div className="text-left sm:text-right">
             <p className="text-sm text-muted-foreground">Total Expected Profit</p>
             <p className="text-2xl font-bold text-primary">
               ${loading ? "..." : totalStockValue.toFixed(2)}
             </p>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : stockValues.length === 0 ? (

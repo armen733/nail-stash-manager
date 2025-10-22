@@ -261,9 +261,7 @@ const Orders = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const subtotal = calculateTotal();
-      const tax = subtotal * 0.1;
-      const total = subtotal + tax;
+      const total = calculateTotal();
       
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -273,8 +271,8 @@ const Orders = () => {
             notes: formData.notes || null,
             created_by: user?.id,
             status: "Draft",
-            subtotal,
-            tax,
+            subtotal: total,
+            tax: 0,
             total,
           },
         ])
@@ -509,18 +507,10 @@ const Orders = () => {
                 )}
 
                 {orderItems.length > 0 && (
-                  <div className="border-t pt-3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>${calculateTotal().toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Tax (10%):</span>
-                      <span>${(calculateTotal() * 0.1).toFixed(2)}</span>
-                    </div>
+                  <div className="border-t pt-3">
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total:</span>
-                      <span>${(calculateTotal() * 1.1).toFixed(2)}</span>
+                      <span>${calculateTotal().toFixed(2)}</span>
                     </div>
                   </div>
                 )}
@@ -599,14 +589,6 @@ const Orders = () => {
               </div>
 
               <div className="border-t pt-4">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>${viewOrder.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Tax</span>
-                  <span>${viewOrder.tax.toFixed(2)}</span>
-                </div>
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
                   <span>${viewOrder.total.toFixed(2)}</span>
@@ -653,17 +635,18 @@ const Orders = () => {
                   <p className="text-muted-foreground">No active orders. Create your first order to get started.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order Date</TableHead>
-                      <TableHead>Salon</TableHead>
-                      <TableHead>Products</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[100px]">Order Date</TableHead>
+                        <TableHead className="min-w-[120px]">Salon</TableHead>
+                        <TableHead className="min-w-[150px]">Products</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="min-w-[80px]">Total</TableHead>
+                        <TableHead className="min-w-[180px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {filteredActiveOrders.map((order) => (
                       <TableRow key={order.id}>
@@ -706,6 +689,7 @@ const Orders = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </TabsContent>
 
@@ -718,16 +702,17 @@ const Orders = () => {
                   <p className="text-muted-foreground">No completed orders yet.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order Date</TableHead>
-                      <TableHead>Salon</TableHead>
-                      <TableHead>Products</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[100px]">Order Date</TableHead>
+                        <TableHead className="min-w-[120px]">Salon</TableHead>
+                        <TableHead className="min-w-[150px]">Products</TableHead>
+                        <TableHead className="min-w-[80px]">Status</TableHead>
+                        <TableHead className="min-w-[80px]">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {filteredCompletedOrders.map((order) => (
                       <TableRow key={order.id}>
@@ -752,6 +737,7 @@ const Orders = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </TabsContent>
           </Tabs>
