@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Pagination } from "@/components/Pagination";
+import { usePagination } from "@/hooks/usePagination";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +54,9 @@ const Products = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -268,7 +273,29 @@ const Products = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Sort products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "price") return a.price_usd - b.price_usd;
+    if (sortBy === "stock") return (b.stock_on_hand || 0) - (a.stock_on_hand || 0);
+    return 0;
+  });
+
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    hasNextPage,
+    hasPrevPage,
+    resetPage,
+  } = usePagination(sortedProducts, 12);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchTerm, categoryFilter, sortBy, resetPage]);
 
   const exportProducts = () => {
     const exportData = filteredProducts.map(p => ({
@@ -282,6 +309,79 @@ const Products = () => {
     }));
     downloadCSV(exportData, 'products');
     toast({ title: "Success", description: "Products exported successfully" });
+  };
+
+  const handleDuplicateProduct = async (product: Product) => {
+    const duplicatedData = {
+      name: `${product.name} (Copy)`,
+      category: product.category,
+      bit_type: product.bit_type,
+      grit: product.grit,
+      unit: product.unit,
+      sku: `${product.sku}-COPY-${Date.now()}`,
+      price_usd: product.price_usd,
+      salon_price_usd: product.salon_price_usd,
+      wholesale_price_usd: product.wholesale_price_usd,
+      image_url: product.image_url,
+      stock_on_hand: 0,
+      stock_reserved: 0,
+      reorder_level: product.reorder_level,
+      supplier: product.supplier,
+    };
+
+    try {
+      const { error } = await supabase.from("products").insert([duplicatedData]);
+      if (error) throw error;
+      
+      toast({ title: "Success", description: "Product duplicated successfully" });
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === paginatedItems.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(paginatedItems.map(p => p.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "Error", description: "No products selected", variant: "destructive" });
+      return;
+    }
+
+    if (!confirm(`Delete ${selectedProducts.size} product(s)?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .in("id", Array.from(selectedProducts));
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: `${selectedProducts.size} product(s) deleted` });
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const addToCart = (product: Product) => {
@@ -539,48 +639,205 @@ const Products = () => {
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat === "all" ? "All Categories" : cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="price">Price</SelectItem>
+                    <SelectItem value="stock">Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={exportProducts} variant="outline" size="default">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat === "all" ? "All Categories" : cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={exportProducts} variant="outline" size="default">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </div>
+            {selectedProducts.size > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">
+                  {selectedProducts.size} selected
+                </span>
+                <Button onClick={handleBulkDelete} variant="destructive" size="sm">
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete Selected
+                </Button>
+                <Button onClick={() => setSelectedProducts(new Set())} variant="outline" size="sm">
+                  Clear
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">Loading...</div>
-          ) : filteredProducts.length === 0 ? (
+          ) : paginatedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground">No products found. Add your first product to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredProducts.map((product) => (
+            <>
+              {paginatedItems.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <Checkbox
+                    checked={selectedProducts.size === paginatedItems.length && paginatedItems.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <span className="text-sm text-muted-foreground">Select All</span>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedItems.map((product) => (
+                  <Card key={product.id} className="overflow-hidden relative">
+                    <div className="absolute top-2 left-2 z-10">
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => toggleProductSelection(product.id)}
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="aspect-square bg-muted flex items-center justify-center">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="h-16 w-16 text-muted-foreground/30" />
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{product.name}</h3>
+                        <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
+                          {product.sku}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
+                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
+                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
+                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
+                        {product.stock_on_hand !== null && (
+                          <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
+                        )}
+                      </div>
+                      
+                      {getCartQuantity(product.id) > 0 ? (
+                        <div className="flex items-center gap-2 mt-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeFromCart(product.id)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm font-medium px-3">{getCartQuantity(product.id)}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => addToCart(product)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full mt-4"
+                          onClick={() => addToCart(product)}
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Add to Cart
+                        </Button>
+                      )}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setFormData({
+                              name: product.name,
+                              category: product.category,
+                              bit_type: product.bit_type || "",
+                              grit: product.grit || "",
+                              unit: product.unit || "piece",
+                              sku: product.sku,
+                              price_usd: product.price_usd.toString(),
+                              salon_price_usd: product.salon_price_usd?.toString() || "",
+                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+                              stock_on_hand: product.stock_on_hand?.toString() || "0",
+                              stock_reserved: product.stock_reserved?.toString() || "0",
+                              reorder_level: product.reorder_level?.toString() || "10",
+                              supplier: product.supplier || "",
+                            });
+                            setImagePreview(product.image_url);
+                            setIsDialogOpen(true);
+                          }}
+                          className="flex-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDuplicateProduct(product)}
+                          className="flex-1"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(product.id)}
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                hasNextPage={hasNextPage}
+                hasPrevPage={hasPrevPage}
+              />
+            </>
+          )}
+        </CardContent>
                 <Card key={product.id} className="overflow-hidden">
                   <div className="aspect-square bg-muted flex items-center justify-center">
                     {product.image_url ? (
@@ -637,20 +894,64 @@ const Products = () => {
                         Add to Cart
                       </Button>
                     )}
-                    
-                    <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(product)}>
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(product.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setFormData({
+                              name: product.name,
+                              category: product.category,
+                              bit_type: product.bit_type || "",
+                              grit: product.grit || "",
+                              unit: product.unit || "piece",
+                              sku: product.sku,
+                              price_usd: product.price_usd.toString(),
+                              salon_price_usd: product.salon_price_usd?.toString() || "",
+                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+                              stock_on_hand: product.stock_on_hand?.toString() || "0",
+                              stock_reserved: product.stock_reserved?.toString() || "0",
+                              reorder_level: product.reorder_level?.toString() || "10",
+                              supplier: product.supplier || "",
+                            });
+                            setImagePreview(product.image_url);
+                            setIsDialogOpen(true);
+                          }}
+                          className="flex-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDuplicateProduct(product)}
+                          className="flex-1"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(product.id)}
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+                hasNextPage={hasNextPage}
+                hasPrevPage={hasPrevPage}
+              />
+            </>
           )}
         </CardContent>
       </Card>

@@ -12,6 +12,8 @@ import Auth from "./pages/Auth";
 import Products from "./pages/Products";
 import Salons from "./pages/Salons";
 import Orders from "./pages/Orders";
+import Profile from "./pages/Profile";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
@@ -89,6 +91,26 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Orders />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Analytics />
                 </AppLayout>
               </ProtectedRoute>
             }
