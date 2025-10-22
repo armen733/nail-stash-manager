@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Building2, Search, Plus, Pencil, Trash2, Download, Filter } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -27,6 +28,7 @@ interface Salon {
 
 const Salons = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
   const [salons, setSalons] = useState<Salon[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -153,10 +155,28 @@ const Salons = () => {
     setEditingSalon(null);
   };
 
-  const filteredSalons = salons.filter((salon) =>
-    salon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    salon.city?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSalons = salons.filter((salon) => {
+    const matchesSearch = salon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      salon.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCity = cityFilter === "all" || salon.city === cityFilter;
+    return matchesSearch && matchesCity;
+  });
+
+  const cities = ["all", ...Array.from(new Set(salons.filter(s => s.city).map(s => s.city)))];
+
+  const exportSalons = () => {
+    const exportData = filteredSalons.map(s => ({
+      Name: s.name,
+      'Contact Name': s.contact_name || '',
+      Phone: s.phone || '',
+      Email: s.email || '',
+      Address: s.address || '',
+      City: s.city || '',
+      Notes: s.notes || '',
+    }));
+    downloadCSV(exportData, 'salons');
+    toast({ title: "Success", description: "Salons exported successfully" });
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -261,8 +281,8 @@ const Salons = () => {
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search salons..."
@@ -270,6 +290,25 @@ const Salons = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Select value={cityFilter} onValueChange={setCityFilter}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cities.map(city => (
+                    <SelectItem key={city} value={city}>
+                      {city === "all" ? "All Cities" : city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={exportSalons} variant="outline" size="default">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
             </div>
           </div>
         </CardHeader>

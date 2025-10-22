@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Package, DollarSign, AlertTriangle } from "lucide-react";
+import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { Button } from "@/components/ui/button";
+import { downloadCSV } from "@/lib/csv-export";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Stats {
@@ -48,6 +50,12 @@ interface RevenueData {
   revenue: number;
 }
 
+interface OrderStatusData {
+  status: string;
+  count: number;
+  color: string;
+}
+
 const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
@@ -65,6 +73,7 @@ const Index = () => {
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("month");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
+  const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,7 +91,7 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes] = await Promise.all([
-        supabase.from("orders").select("id, total, created_at, salon_id, salons(name)"),
+        supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("product_id, quantity, line_total, products(name)"),
@@ -204,6 +213,27 @@ const Index = () => {
       
       setRevenueData(trendData);
 
+      // Calculate order status breakdown
+      const statusCounts = orders.reduce((acc: Record<string, number>, order) => {
+        const status = order.status || 'Draft';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const statusColors: Record<string, string> = {
+        'Draft': 'hsl(var(--muted))',
+        'Sent': 'hsl(var(--primary))',
+        'Delivered': 'hsl(var(--chart-2))',
+      };
+
+      const statusBreakdown = Object.entries(statusCounts).map(([status, count]) => ({
+        status,
+        count,
+        color: statusColors[status] || 'hsl(var(--muted))',
+      }));
+
+      setOrderStatusData(statusBreakdown);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -216,6 +246,20 @@ const Index = () => {
   };
 
   const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : "Monthly";
+
+  const exportDashboardData = () => {
+    const exportData = [
+      { metric: 'Total Orders', value: stats.totalOrders },
+      { metric: 'Period Orders', value: stats.monthlyOrders },
+      { metric: 'Active Salons', value: stats.totalSalons },
+      { metric: 'Products', value: stats.totalProducts },
+      { metric: 'Period Revenue', value: `$${stats.monthlyRevenue.toFixed(2)}` },
+      { metric: 'Total Revenue', value: `$${stats.totalRevenue.toFixed(2)}` },
+      { metric: 'Total Stock Value', value: `$${totalStockValue.toFixed(2)}` },
+    ];
+    downloadCSV(exportData, 'dashboard-overview');
+    toast({ title: "Success", description: "Dashboard data exported successfully" });
+  };
   
   const statsCards = [
     {
@@ -251,16 +295,22 @@ const Index = () => {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
         </div>
-        <Select value={timePeriod} onValueChange={(value: "day" | "week" | "month") => setTimePeriod(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="day">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          <Select value={timePeriod} onValueChange={(value: "day" | "week" | "month") => setTimePeriod(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="day">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={exportDashboardData} variant="outline" size="default">
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {lowStockProducts.length > 0 && (
@@ -291,50 +341,99 @@ const Index = () => {
         ))}
       </div>
 
-      <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Revenue Trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : (
-            <ChartContainer
-              config={{
-                revenue: {
-                  label: "Revenue",
-                  color: "hsl(var(--primary))",
-                },
-              }}
-              className="h-[300px] w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickFormatter={(value) => `$${value}`}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Revenue Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              <ChartContainer
+                config={{
+                  revenue: {
+                    label: "Revenue",
+                    color: "hsl(var(--primary))",
+                  },
+                }}
+                className="h-[300px] w-full"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickFormatter={(value) => `$${value}`}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Order Status Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : orderStatusData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No orders yet. Create your first order to see analytics.
+                </p>
+              </div>
+            ) : (
+              <ChartContainer
+                config={{
+                  count: {
+                    label: "Orders",
+                  },
+                }}
+                className="h-[300px] w-full"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={orderStatusData}
+                      dataKey="count"
+                      nameKey="status"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={(entry) => `${entry.status}: ${entry.count}`}
+                    >
+                      {orderStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {lowStockProducts.length > 0 && (
         <Card className="shadow-[var(--shadow-card)] border-destructive/50">

@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell } from "lucide-react";
+import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell, Download, RefreshCw } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { subscribeToPushNotifications } from "@/lib/push-notifications";
@@ -86,6 +87,7 @@ interface OrderItem {
 const Orders = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -367,11 +369,52 @@ const Orders = () => {
   const normalizedSearch = searchTerm.toLowerCase();
   const filterBySalonName = (order: Order) => {
     const name = order.salons?.name || order.customer_name || '';
-    return name.toLowerCase().includes(normalizedSearch);
+    const matchesSearch = name.toLowerCase().includes(normalizedSearch);
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
   };
 
   const filteredActiveOrders = activeOrders.filter(filterBySalonName);
   const filteredCompletedOrders = completedOrders.filter(filterBySalonName);
+  const allFilteredOrders = statusFilter === "all" 
+    ? [...filteredActiveOrders, ...filteredCompletedOrders]
+    : orders.filter(filterBySalonName);
+
+  const exportOrders = () => {
+    const exportData = allFilteredOrders.map(o => ({
+      Date: new Date(o.order_date).toLocaleDateString(),
+      'Salon/Customer': o.salons?.name || o.customer_name || 'N/A',
+      Status: o.status,
+      Subtotal: `$${o.subtotal.toFixed(2)}`,
+      Tax: `$${o.tax.toFixed(2)}`,
+      Total: `$${o.total.toFixed(2)}`,
+      Notes: o.notes || '',
+    }));
+    downloadCSV(exportData, 'orders');
+    toast({ title: "Success", description: "Orders exported successfully" });
+  };
+
+  const handleQuickReorder = async (order: Order) => {
+    if (!order.order_items || order.order_items.length === 0) {
+      toast({ title: "Error", description: "No items found in this order", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const orderItemsData = order.order_items.map(item => ({
+        product_id: item.products ? products.find(p => p.name === item.products.name)?.id || '' : '',
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      }));
+
+      setOrderItems(orderItemsData);
+      setFormData({ salon_id: order.salon_id || '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}` });
+      setIsDialogOpen(true);
+      toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -668,6 +711,15 @@ const Orders = () => {
                             </div>
                           </div>
                           <div className="flex flex-row sm:flex-col gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleQuickReorder(order)}
+                              className="flex-1 sm:flex-none"
+                              title="Quick Reorder"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
