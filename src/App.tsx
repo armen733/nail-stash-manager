@@ -37,7 +37,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               style={{ background: 'transparent' }}
             />
           </header>
-          <div className="flex-1 p-6">{children}</div>
+          <div className="flex-1 p-6 overflow-x-hidden">{children}</div>
         </main>
       </div>
     </SidebarProvider>
