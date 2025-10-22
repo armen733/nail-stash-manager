@@ -635,60 +635,58 @@ const Orders = () => {
                   <p className="text-muted-foreground">No active orders. Create your first order to get started.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[100px]">Order Date</TableHead>
-                        <TableHead className="min-w-[120px]">Salon</TableHead>
-                        <TableHead className="min-w-[150px]">Products</TableHead>
-                        <TableHead className="min-w-[80px]">Status</TableHead>
-                        <TableHead className="min-w-[80px]">Total</TableHead>
-                        <TableHead className="min-w-[180px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  <TableBody>
-                    {filteredActiveOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name || order.customer_name || "—"}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {order.order_items && order.order_items.length > 0 ? (
-                              order.order_items.map((item, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {item.products?.name} × {item.quantity}
+                <div className="space-y-3">
+                  {filteredActiveOrders.map((order) => (
+                    <Card key={order.id} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                              {getStatusBadge(order.status)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(order.order_date).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm">
+                              {order.order_items && order.order_items.length > 0 ? (
+                                <div className="space-y-1">
+                                  {order.order_items.map((item, idx) => (
+                                    <div key={idx} className="text-muted-foreground">
+                                      {item.products?.name} × {item.quantity}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))
-                            ) : (
-                              <span className="text-muted-foreground">No items</span>
-                            )}
+                              ) : (
+                                <span className="text-muted-foreground">No items</span>
+                              )}
+                            </div>
+                            <div className="text-lg font-semibold text-primary pt-1">
+                              ${order.total.toFixed(2)}
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex flex-row sm:flex-col gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => setViewOrder(order)}
+                              className="flex-1 sm:flex-none"
                             >
                               View
                             </Button>
                             <Button
                               size="sm"
                               onClick={() => handleMarkAsDone(order.id)}
+                              className="flex-1 sm:flex-none"
                             >
                               <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Mark Done
+                              Done
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </TabsContent>
@@ -702,41 +700,38 @@ const Orders = () => {
                   <p className="text-muted-foreground">No completed orders yet.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[100px]">Order Date</TableHead>
-                        <TableHead className="min-w-[120px]">Salon</TableHead>
-                        <TableHead className="min-w-[150px]">Products</TableHead>
-                        <TableHead className="min-w-[80px]">Status</TableHead>
-                        <TableHead className="min-w-[80px]">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                  <TableBody>
-                    {filteredCompletedOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-medium">{order.salons?.name || order.customer_name || "—"}</TableCell>
-                        <TableCell>
+                <div className="space-y-3">
+                  {filteredCompletedOrders.map((order) => (
+                    <Card key={order.id} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                            {getStatusBadge(order.status)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(order.order_date).toLocaleDateString()}
+                          </div>
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
-                              order.order_items.map((item, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {item.products?.name} × {item.quantity}
-                                </div>
-                              ))
+                              <div className="space-y-1">
+                                {order.order_items.map((item, idx) => (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {item.products?.name} × {item.quantity}
+                                  </div>
+                                ))}
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="font-semibold">${order.total.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          <div className="text-lg font-semibold text-primary pt-1">
+                            ${order.total.toFixed(2)}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </TabsContent>
