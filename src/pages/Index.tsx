@@ -47,7 +47,7 @@ const Index = () => {
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [timePeriod, setTimePeriod] = useState<"week" | "month">("month");
+  const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("month");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,7 +57,9 @@ const Index = () => {
   const fetchDashboardData = async () => {
     try {
       const now = new Date();
-      const periodStart = timePeriod === "week" 
+      const periodStart = timePeriod === "day"
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        : timePeriod === "week" 
         ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
         : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -159,7 +161,7 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "week" ? "Weekly" : "Monthly";
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : "Monthly";
   
   const statsCards = [
     {
@@ -195,11 +197,12 @@ const Index = () => {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
         </div>
-        <Select value={timePeriod} onValueChange={(value: "week" | "month") => setTimePeriod(value)}>
+        <Select value={timePeriod} onValueChange={(value: "day" | "week" | "month") => setTimePeriod(value)}>
           <SelectTrigger className="w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="day">Today</SelectItem>
             <SelectItem value="week">This Week</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
           </SelectContent>
