@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Package, DollarSign } from "lucide-react";
+import { TrendingUp, Users, Package, DollarSign, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Stats {
   totalOrders: number;
@@ -33,6 +36,18 @@ interface StockValue {
   value: number;
 }
 
+interface LowStockProduct {
+  id: string;
+  name: string;
+  stock_on_hand: number;
+  reorder_level: number;
+}
+
+interface RevenueData {
+  date: string;
+  revenue: number;
+}
+
 const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
@@ -48,6 +63,8 @@ const Index = () => {
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("month");
+  const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -69,7 +86,7 @@ const Index = () => {
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("product_id, quantity, line_total, products(name)"),
-        supabase.from("products").select("name, stock_on_hand, price_usd"),
+        supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -150,6 +167,43 @@ const Index = () => {
       setStockValues(stockData);
       setTotalStockValue(stockData.reduce((sum, item) => sum + item.value, 0));
 
+      // Calculate low stock products
+      const lowStock = (stockRes.data || [])
+        .filter(p => p.stock_on_hand <= p.reorder_level && p.reorder_level > 0)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          stock_on_hand: p.stock_on_hand,
+          reorder_level: p.reorder_level,
+        }))
+        .sort((a, b) => a.stock_on_hand - b.stock_on_hand);
+      
+      setLowStockProducts(lowStock);
+
+      // Calculate revenue trend data (last 7 days for day/week, last 30 for month)
+      const days = timePeriod === "month" ? 30 : 7;
+      const trendData: RevenueData[] = [];
+      
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayOrders = orders.filter(o => {
+          const orderDate = new Date(o.created_at).toISOString().split('T')[0];
+          return orderDate === dateStr;
+        });
+        
+        const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        
+        trendData.push({
+          date: timePeriod === "month" ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : date.toLocaleDateString('en-US', { weekday: 'short' }),
+          revenue: dayRevenue,
+        });
+      }
+      
+      setRevenueData(trendData);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -209,6 +263,15 @@ const Index = () => {
         </Select>
       </div>
 
+      {lowStockProducts.length > 0 && (
+        <Alert variant="destructive" className="animate-fade-in">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>{lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''}</strong> running low on stock!
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
@@ -227,6 +290,79 @@ const Index = () => {
           </Card>
         ))}
       </div>
+
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader>
+          <CardTitle className="text-base sm:text-lg">Revenue Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : (
+            <ChartContainer
+              config={{
+                revenue: {
+                  label: "Revenue",
+                  color: "hsl(var(--primary))",
+                },
+              }}
+              className="h-[300px] w-full"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {lowStockProducts.length > 0 && (
+        <Card className="shadow-[var(--shadow-card)] border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Low Stock Alert ({lowStockProducts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <div className="space-y-3">
+              {lowStockProducts.map((product) => (
+                <div key={product.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div className="flex-1">
+                    <p className="font-medium">{product.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Current: {product.stock_on_hand} • Reorder at: {product.reorder_level}
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 bg-destructive/10 text-destructive rounded-full text-sm font-semibold">
+                    {product.stock_on_hand === 0 ? 'Out of Stock' : 'Low Stock'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
