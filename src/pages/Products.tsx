@@ -720,29 +720,15 @@ const Products = () => {
                       </Button>
                     </div>
                     <CardContent className="p-4 flex-1 flex flex-col">
-                      <div className="flex items-start justify-between gap-2 mb-2 min-h-[3.5rem]">
-                        <h3 className="font-semibold text-base text-foreground line-clamp-2 break-words flex-1 min-w-0">{product.name}</h3>
-                        <span className="font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded shrink-0 max-w-[60px] truncate">
+                      <div className="mb-2 space-y-1">
+                        <h3 className="font-semibold text-base sm:text-lg break-words whitespace-normal leading-snug text-foreground">
+                          {product.name}
+                        </h3>
+                        <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
                           {product.sku}
                         </span>
                       </div>
-                      <div className="space-y-1 text-sm flex-1">
-                        <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
-                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
-                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
-                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
-                        {product.stock_on_hand !== null && (
-                          <div className="flex items-center gap-2">
-                            <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
-                            {product.stock_on_hand < 10 && (
-                              <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
-                                {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      
+
                       {getCartQuantity(product.id) > 0 ? (
                         <div className="flex items-center gap-2 mt-4">
                           <Button
