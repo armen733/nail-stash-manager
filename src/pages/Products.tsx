@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Grid3x3, Grid2x2, LayoutGrid } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/Pagination";
@@ -64,7 +64,6 @@ const Products = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -631,44 +630,6 @@ const Products = () => {
                 />
               </div>
               <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={gridColumns === 2 ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => {
-                      console.log('Setting grid to 2 columns');
-                      setGridColumns(2);
-                    }}
-                    className="rounded-none border-r"
-                    title="2 columns"
-                  >
-                    <Grid2x2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={gridColumns === 3 ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => {
-                      console.log('Setting grid to 3 columns');
-                      setGridColumns(3);
-                    }}
-                    className="rounded-none border-r"
-                    title="3 columns"
-                  >
-                    <Grid3x3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={gridColumns === 4 ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => {
-                      console.log('Setting grid to 4 columns');
-                      setGridColumns(4);
-                    }}
-                    className="rounded-none"
-                    title="4 columns"
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                </div>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-[140px]">
                     <Filter className="mr-2 h-4 w-4" />
@@ -733,10 +694,7 @@ const Products = () => {
                   <span className="text-sm text-muted-foreground">Select All</span>
                 </div>
               )}
-              <div
-                className="grid gap-4"
-                style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${gridColumns === 2 ? 360 : gridColumns === 3 ? 280 : 220}px, 1fr))` }}
-              >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full min-w-0">
                     <div className="absolute top-2 left-2 z-10">
