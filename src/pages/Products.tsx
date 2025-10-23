@@ -734,8 +734,8 @@ const Products = () => {
                 </div>
               )}
               <div
-                className="grid gap-4 grid-cols-1 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
-                style={{ ['--cols' as any]: gridColumns }}
+                className="grid gap-4"
+                style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
               >
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full">
