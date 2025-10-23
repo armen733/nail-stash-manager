@@ -695,137 +695,112 @@ const Products = () => {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedItems.map((product) => (
-                  <Card key={product.id} className="overflow-hidden flex flex-col">
-                    <div className="relative w-full bg-muted" style={{ paddingBottom: '75%' }}>
-                      {product.image_url ? (
-                        <img 
-                          src={product.image_url} 
-                          alt={product.name} 
-                          className="absolute inset-0 w-full h-full object-contain p-4"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Package className="h-16 w-16 text-muted-foreground/30" />
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 z-10">
-                        <Checkbox
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={() => toggleProductSelection(product.id)}
-                          className="bg-background shadow-md"
-                        />
-                      </div>
-                      <span className="absolute top-3 right-3 font-mono text-xs text-foreground bg-background/90 px-2 py-1 rounded shadow-sm">
-                        {product.sku}
-                      </span>
+                  <Card key={product.id} className="overflow-hidden relative">
+                    <div className="absolute top-2 left-2 z-10">
+                      <Checkbox
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={() => toggleProductSelection(product.id)}
+                        className="bg-background"
+                      />
                     </div>
-                    <CardContent className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-semibold text-lg mb-3">{product.name}</h3>
-                      
-                      <div className="space-y-1.5 text-sm mb-4">
-                        <p className="text-muted-foreground">
-                          <span className="font-medium">Category:</span> {product.category}
-                        </p>
-                        {product.bit_type && (
-                          <p className="text-muted-foreground">
-                            <span className="font-medium">Bit Type:</span> {product.bit_type}
-                          </p>
-                        )}
-                        {product.grit && (
-                          <p className="text-muted-foreground">
-                            <span className="font-medium">Grit:</span> {product.grit}
-                          </p>
-                        )}
-                        <p className="font-bold text-xl text-foreground pt-2">
-                          ${product.price_usd}
-                        </p>
+                    <div className="aspect-square bg-muted flex items-center justify-center">
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="h-16 w-16 text-muted-foreground/30" />
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{product.name}</h3>
+                        <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
+                          {product.sku}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
+                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
+                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
+                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
                         {product.stock_on_hand !== null && (
-                          <p className="text-sm">
-                            <span className="text-muted-foreground font-medium">Stock:</span>{" "}
-                            <span className="font-semibold">{product.stock_on_hand}</span>
-                          </p>
+                          <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
                         )}
                       </div>
                       
-                      <div className="mt-auto space-y-3">
-                        {getCartQuantity(product.id) > 0 ? (
-                          <div className="flex items-center justify-center gap-3 py-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => removeFromCart(product.id)}
-                              className="h-9 w-9 p-0"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="text-base font-semibold min-w-[2rem] text-center">
-                              {getCartQuantity(product.id)}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => addToCart(product)}
-                              className="h-9 w-9 p-0"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
+                      {getCartQuantity(product.id) > 0 ? (
+                        <div className="flex items-center gap-2 mt-4">
                           <Button
-                            className="w-full"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeFromCart(product.id)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm font-medium px-3">{getCartQuantity(product.id)}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => addToCart(product)}
                           >
-                            <ShoppingCart className="mr-2 h-4 w-4" />
-                            Add to Cart
-                          </Button>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setEditingProduct(product);
-                              setFormData({
-                                name: product.name,
-                                category: product.category,
-                                bit_type: product.bit_type || "",
-                                grit: product.grit || "",
-                                unit: product.unit || "piece",
-                                sku: product.sku,
-                                price_usd: product.price_usd.toString(),
-                                salon_price_usd: product.salon_price_usd?.toString() || "",
-                                wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                                stock_on_hand: product.stock_on_hand?.toString() || "0",
-                                stock_reserved: product.stock_reserved?.toString() || "0",
-                                reorder_level: product.reorder_level?.toString() || "10",
-                                supplier: product.supplier || "",
-                              });
-                              setImagePreview(product.image_url);
-                              setIsDialogOpen(true);
-                            }}
-                            className="flex-1 h-10"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDuplicateProduct(product)}
-                            className="flex-1 h-10"
-                            title="Duplicate"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(product.id)}
-                            className="flex-1 h-10"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="w-full mt-4"
+                          onClick={() => addToCart(product)}
+                        >
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Add to Cart
+                        </Button>
+                      )}
+
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setFormData({
+                              name: product.name,
+                              category: product.category,
+                              bit_type: product.bit_type || "",
+                              grit: product.grit || "",
+                              unit: product.unit || "piece",
+                              sku: product.sku,
+                              price_usd: product.price_usd.toString(),
+                              salon_price_usd: product.salon_price_usd?.toString() || "",
+                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+                              stock_on_hand: product.stock_on_hand?.toString() || "0",
+                              stock_reserved: product.stock_reserved?.toString() || "0",
+                              reorder_level: product.reorder_level?.toString() || "10",
+                              supplier: product.supplier || "",
+                            });
+                            setImagePreview(product.image_url);
+                            setIsDialogOpen(true);
+                          }}
+                          className="flex-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDuplicateProduct(product)}
+                          className="flex-1"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(product.id)}
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
