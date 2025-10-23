@@ -735,10 +735,10 @@ const Products = () => {
               )}
               <div
                 className="grid gap-4"
-                style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${gridColumns === 2 ? 360 : gridColumns === 3 ? 280 : 220}px, 1fr))` }}
               >
                 {paginatedItems.map((product) => (
-                  <Card key={product.id} className="overflow-hidden flex flex-col h-full">
+                  <Card key={product.id} className="overflow-hidden flex flex-col h-full min-w-0">
                     <div className="absolute top-2 left-2 z-10">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
