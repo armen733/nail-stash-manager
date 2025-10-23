@@ -631,28 +631,40 @@ const Products = () => {
                 />
               </div>
               <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                <div className="flex border rounded-md">
+                <div className="flex border rounded-lg overflow-hidden">
                   <Button
                     variant={gridColumns === 2 ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => setGridColumns(2)}
-                    className="rounded-r-none"
+                    onClick={() => {
+                      console.log('Setting grid to 2 columns');
+                      setGridColumns(2);
+                    }}
+                    className="rounded-none border-r"
+                    title="2 columns"
                   >
                     <Grid2x2 className="h-4 w-4" />
                   </Button>
                   <Button
                     variant={gridColumns === 3 ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => setGridColumns(3)}
-                    className="rounded-none border-x"
+                    onClick={() => {
+                      console.log('Setting grid to 3 columns');
+                      setGridColumns(3);
+                    }}
+                    className="rounded-none border-r"
+                    title="3 columns"
                   >
                     <Grid3x3 className="h-4 w-4" />
                   </Button>
                   <Button
                     variant={gridColumns === 4 ? "secondary" : "ghost"}
                     size="sm"
-                    onClick={() => setGridColumns(4)}
-                    className="rounded-l-none"
+                    onClick={() => {
+                      console.log('Setting grid to 4 columns');
+                      setGridColumns(4);
+                    }}
+                    className="rounded-none"
+                    title="4 columns"
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
