@@ -695,7 +695,7 @@ const Products = () => {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedItems.map((product) => (
-                  <Card key={product.id} className="overflow-hidden relative">
+                  <Card key={product.id} className="overflow-hidden flex flex-col h-full">
                     <div className="absolute top-2 left-2 z-10">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
@@ -710,14 +710,14 @@ const Products = () => {
                         <Package className="h-16 w-16 text-muted-foreground/30" />
                       )}
                     </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{product.name}</h3>
+                    <CardContent className="p-4 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between gap-2 mb-2 min-h-[3.5rem]">
+                        <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
                         <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
                           {product.sku}
                         </span>
                       </div>
-                      <div className="space-y-1 text-sm">
+                      <div className="space-y-1 text-sm flex-1">
                         <p><span className="text-muted-foreground">Category:</span> {product.category}</p>
                         {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
                         {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
