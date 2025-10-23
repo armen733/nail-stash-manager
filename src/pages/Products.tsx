@@ -694,7 +694,7 @@ const Products = () => {
                   <span className="text-sm text-muted-foreground">Select All</span>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full min-w-0">
                     <div className="absolute top-2 left-2 z-10">
