@@ -25,6 +25,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -74,6 +81,7 @@ const Products = () => {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -1000,16 +1008,16 @@ const Products = () => {
         </div>
       )}
 
-      {/* Quick View Modal */}
-      <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Product Details</DialogTitle>
-          </DialogHeader>
-          {quickViewProduct && (
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+      {/* Quick View - Responsive (Drawer on mobile, Dialog on desktop) */}
+      {isMobile ? (
+        <Drawer open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>Product Details</DrawerTitle>
+            </DrawerHeader>
+            {quickViewProduct && (
+              <div className="space-y-4 p-4 overflow-y-auto">
+                <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center mb-4">
                   {quickViewProduct.image_url ? (
                     <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
                   ) : (
@@ -1055,7 +1063,7 @@ const Products = () => {
                       <p className="text-sm text-muted-foreground">Reorder Level: {quickViewProduct.reorder_level}</p>
                     )}
                   </div>
-                  <div className="flex gap-2 pt-4">
+                  <div className="flex gap-2 pt-4 pb-4">
                     {getCartQuantity(quickViewProduct.id) === 0 ? (
                       <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
                         <ShoppingCart className="mr-2 h-4 w-4" />
@@ -1102,10 +1110,116 @@ const Products = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            )}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Product Details</DialogTitle>
+            </DialogHeader>
+            {quickViewProduct && (
+              <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                    {quickViewProduct.image_url ? (
+                      <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="h-24 w-24 text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
+                      {quickViewProduct.bit_type && <p><span className="font-medium">Bit Type:</span> {quickViewProduct.bit_type}</p>}
+                      {quickViewProduct.grit && <p><span className="font-medium">Grit:</span> {quickViewProduct.grit}</p>}
+                      {quickViewProduct.unit && <p><span className="font-medium">Unit:</span> {quickViewProduct.unit}</p>}
+                      {quickViewProduct.supplier && <p><span className="font-medium">Supplier:</span> {quickViewProduct.supplier}</p>}
+                    </div>
+                    <div className="pt-3 border-t space-y-2">
+                      <p className="text-2xl font-bold">${quickViewProduct.price_usd}</p>
+                      {quickViewProduct.salon_price_usd && (
+                        <p className="text-sm"><span className="font-medium">Salon Price:</span> ${quickViewProduct.salon_price_usd}</p>
+                      )}
+                      {quickViewProduct.wholesale_price_usd && (
+                        <p className="text-sm"><span className="font-medium">Wholesale Price:</span> ${quickViewProduct.wholesale_price_usd}</p>
+                      )}
+                    </div>
+                    <div className="pt-3 border-t space-y-1">
+                      {quickViewProduct.stock_on_hand !== null && (
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">Stock: {quickViewProduct.stock_on_hand}</p>
+                          {quickViewProduct.stock_on_hand < 10 && (
+                            <Badge variant={quickViewProduct.stock_on_hand === 0 ? "destructive" : "secondary"}>
+                              {quickViewProduct.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      {quickViewProduct.stock_reserved !== null && quickViewProduct.stock_reserved > 0 && (
+                        <p className="text-sm text-muted-foreground">Reserved: {quickViewProduct.stock_reserved}</p>
+                      )}
+                      {quickViewProduct.reorder_level !== null && (
+                        <p className="text-sm text-muted-foreground">Reorder Level: {quickViewProduct.reorder_level}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 pt-4">
+                      {getCartQuantity(quickViewProduct.id) === 0 ? (
+                        <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Add to Cart
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Button variant="outline" onClick={() => removeFromCart(quickViewProduct.id)}>
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="font-medium px-3">{getCartQuantity(quickViewProduct.id)}</span>
+                          <Button variant="outline" onClick={() => addToCart(quickViewProduct)}>
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingProduct(quickViewProduct);
+                          setFormData({
+                            name: quickViewProduct.name,
+                            category: quickViewProduct.category,
+                            bit_type: quickViewProduct.bit_type || "",
+                            grit: quickViewProduct.grit || "",
+                            unit: quickViewProduct.unit || "piece",
+                            sku: quickViewProduct.sku,
+                            price_usd: quickViewProduct.price_usd.toString(),
+                            salon_price_usd: quickViewProduct.salon_price_usd?.toString() || "",
+                            wholesale_price_usd: quickViewProduct.wholesale_price_usd?.toString() || "",
+                            stock_on_hand: quickViewProduct.stock_on_hand?.toString() || "0",
+                            stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
+                            reorder_level: quickViewProduct.reorder_level?.toString() || "10",
+                            supplier: quickViewProduct.supplier || "",
+                          });
+                          setImagePreview(quickViewProduct.image_url);
+                          setQuickViewProduct(null);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
