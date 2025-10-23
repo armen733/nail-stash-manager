@@ -721,7 +721,7 @@ const Products = () => {
                     </div>
                     <CardContent className="p-4 flex-1 flex flex-col">
                       <div className="flex items-start justify-between gap-2 mb-2 min-h-[3.5rem]">
-                        <h3 className="font-semibold text-base line-clamp-2 break-words flex-1 min-w-0">{product.name}</h3>
+                        <h3 className="font-semibold text-base text-foreground line-clamp-2 break-words flex-1 min-w-0">{product.name}</h3>
                         <span className="font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded shrink-0 max-w-[60px] truncate">
                           {product.sku}
                         </span>
