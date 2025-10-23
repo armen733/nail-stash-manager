@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/Pagination";
@@ -11,6 +11,13 @@ import { usePagination } from "@/hooks/usePagination";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -363,6 +370,85 @@ const Products = () => {
     }
   };
 
+  const handleBulkDuplicate = async () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "Error", description: "No products selected", variant: "destructive" });
+      return;
+    }
+
+    const selectedItems = products.filter(p => selectedProducts.has(p.id));
+    const duplicatedData = selectedItems.map(product => ({
+      name: `${product.name} (Copy)`,
+      category: product.category,
+      bit_type: product.bit_type,
+      grit: product.grit,
+      unit: product.unit,
+      sku: `${product.sku}-COPY-${Date.now()}`,
+      price_usd: product.price_usd,
+      salon_price_usd: product.salon_price_usd,
+      wholesale_price_usd: product.wholesale_price_usd,
+      image_url: product.image_url,
+      stock_on_hand: 0,
+      stock_reserved: 0,
+      reorder_level: product.reorder_level,
+      supplier: product.supplier,
+    }));
+
+    try {
+      const { error } = await supabase.from("products").insert(duplicatedData);
+      if (error) throw error;
+      
+      toast({ title: "Success", description: `${selectedProducts.size} product(s) duplicated` });
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "Error", description: "No products selected", variant: "destructive" });
+      return;
+    }
+
+    const selectedItems = products.filter(p => selectedProducts.has(p.id));
+    const exportData = selectedItems.map(p => ({
+      Name: p.name,
+      SKU: p.sku,
+      Category: p.category,
+      'Price (USD)': p.price_usd,
+      'Stock On Hand': p.stock_on_hand || 0,
+      'Reorder Level': p.reorder_level || 0,
+      Supplier: p.supplier || '',
+    }));
+    downloadCSV(exportData, 'selected-products');
+    toast({ title: "Success", description: `${selectedProducts.size} product(s) exported` });
+  };
+
+  const handleShareSelected = () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "Error", description: "No products selected", variant: "destructive" });
+      return;
+    }
+
+    const selectedItems = products.filter(p => selectedProducts.has(p.id));
+    const shareText = selectedItems.map(p => `${p.name} (${p.sku}) - $${p.price_usd}`).join('\n');
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Selected Products',
+        text: shareText,
+      }).catch(() => {
+        navigator.clipboard.writeText(shareText);
+        toast({ title: "Copied to clipboard", description: "Product details copied to clipboard" });
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      toast({ title: "Copied to clipboard", description: "Product details copied to clipboard" });
+    }
+  };
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existingItem = prev.find(item => item.product.id === product.id);
@@ -664,229 +750,38 @@ const Products = () => {
                 <span className="text-sm text-muted-foreground">
                   {selectedProducts.size} selected
                 </span>
-                <Button onClick={handleBulkDelete} variant="destructive" size="sm">
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete Selected
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <MoreVertical className="mr-2 h-4 w-4" />
+                      Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuItem onClick={handleShareSelected}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share Selected
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleBulkExport}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Selected
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleBulkDuplicate}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate Selected
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleBulkDelete} className="text-destructive focus:text-destructive">
+                      <Trash className="mr-2 h-4 w-4" />
+                      Delete Selected
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button onClick={() => setSelectedProducts(new Set())} variant="outline" size="sm">
                   Clear
                 </Button>
               </div>
             )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading...</div>
-          ) : paginatedItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">No products found. Add your first product to get started.</p>
-            </div>
-          ) : (
-            <>
-              {paginatedItems.length > 0 && (
-                <div className="flex items-center gap-2 mb-4">
-                  <Checkbox
-                    checked={selectedProducts.size === paginatedItems.length && paginatedItems.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                  <span className="text-sm text-muted-foreground">Select All</span>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                {paginatedItems.map((product) => (
-                  <Card 
-                    key={product.id} 
-                    className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
-                    onClick={() => setQuickViewProduct(product)}
-                  >
-                      <div 
-                        className="absolute top-2 left-2 z-10" 
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                      <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={() => toggleProductSelection(product.id)}
-                        className="bg-background"
-                      />
-                    </div>
-                    <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
-                      {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                      ) : (
-                        <Package className="h-16 w-16 text-muted-foreground/30" />
-                      )}
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => setQuickViewProduct(product)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <CardContent className="p-4 flex-1 flex flex-col">
-                      <div className="mb-2 space-y-1">
-                        <h3 className="font-semibold text-base sm:text-lg break-words whitespace-normal leading-snug text-foreground">
-                          {product.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">{product.category}</p>
-                        <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
-                          {product.sku}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-1 text-sm flex-1">
-                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
-                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
-                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
-                        {product.stock_on_hand !== null && (
-                          <div className="flex items-center gap-2">
-                            <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
-                            {product.stock_on_hand < 10 && (
-                              <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
-                                {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {getCartQuantity(product.id) > 0 ? (
-                        <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeFromCart(product.id)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="text-sm font-medium px-3">{getCartQuantity(product.id)}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => addToCart(product)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="w-full mt-4 whitespace-nowrap"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                        >
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          <span className="sm:hidden">Add</span>
-                          <span className="hidden sm:inline">Add to Cart</span>
-                        </Button>
-                      )}
-
-                      <div className="mt-2 grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingProduct(product);
-                            setFormData({
-                              name: product.name,
-                              category: product.category,
-                              bit_type: product.bit_type || "",
-                              grit: product.grit || "",
-                              unit: product.unit || "piece",
-                              sku: product.sku,
-                              price_usd: product.price_usd.toString(),
-                              salon_price_usd: product.salon_price_usd?.toString() || "",
-                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                              stock_on_hand: product.stock_on_hand?.toString() || "0",
-                              stock_reserved: product.stock_reserved?.toString() || "0",
-                              reorder_level: product.reorder_level?.toString() || "10",
-                              supplier: product.supplier || "",
-                            });
-                            setImagePreview(product.image_url);
-                            setIsDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDuplicateProduct(product)}
-                          title="Duplicate"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                hasNextPage={hasNextPage}
-                hasPrevPage={hasPrevPage}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {cart.length > 0 && (
-        <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-50">
-          <Card className="shadow-lg border-2">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  <h3 className="font-semibold">Cart ({cartItemCount} items)</h3>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setCart([])}
-                >
-                  Clear
-                </Button>
-              </div>
-              <div className="max-h-48 overflow-y-auto mb-3 space-y-2">
-                {cart.map(item => (
-                  <div key={item.product.id} className="flex items-center justify-between text-sm">
-                    <span className="flex-1 truncate">{item.product.name}</span>
-                    <span className="text-muted-foreground mx-2">×{item.quantity}</span>
-                    <span className="font-semibold">${(item.product.price_usd * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t pt-3 mb-3">
-                <div className="flex items-center justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>${cartTotal.toFixed(2)}</span>
-                </div>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handlePlaceOrder}
-              >
-                Place Order
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Quick View Modal */}
       <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
