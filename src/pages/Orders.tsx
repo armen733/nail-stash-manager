@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell, Download, RefreshCw } from "lucide-react";
+import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell, Download, RefreshCw, CheckCircle } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -34,7 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Order {
   id: string;
@@ -111,6 +111,9 @@ const Orders = () => {
     // Request notification permission if not already granted
     if (permission === 'default') {
       requestPermission();
+    } else if (permission === 'granted' && !notificationsEnabled) {
+      // Auto-enable push notifications if permission granted
+      handleEnableNotifications();
     }
 
     // Real-time subscription for new orders
@@ -440,6 +443,12 @@ const Orders = () => {
               <Bell className="mr-2 h-4 w-4" />
               Enable Notifications
             </Button>
+          )}
+          {notificationsEnabled && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-500/10 border border-green-500/20">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-300">Notifications Active</span>
+            </div>
           )}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
