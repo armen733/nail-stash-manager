@@ -696,7 +696,7 @@ const Products = () => {
               )}
               <div className="grid grid-cols-2 gap-4">
                 {paginatedItems.map((product) => (
-                  <Card key={product.id} className="overflow-hidden flex flex-col h-full min-w-0">
+                  <Card key={product.id} className="relative overflow-hidden flex flex-col h-full min-w-0">
                     <div className="absolute top-2 left-2 z-10">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
@@ -721,8 +721,8 @@ const Products = () => {
                     </div>
                     <CardContent className="p-4 flex-1 flex flex-col">
                       <div className="flex items-start justify-between gap-2 mb-2 min-h-[3.5rem]">
-                        <h3 className="font-semibold text-lg line-clamp-2">{product.name}</h3>
-                        <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
+                        <h3 className="font-semibold text-lg line-clamp-2 break-words">{product.name}</h3>
+                        <span className="font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded shrink-0 max-w-[80px] truncate">
                           {product.sku}
                         </span>
                       </div>
@@ -764,15 +764,16 @@ const Products = () => {
                       ) : (
                         <Button
                           size="sm"
-                          className="w-full mt-4"
+                          className="w-full mt-4 whitespace-nowrap"
                           onClick={() => addToCart(product)}
                         >
                           <ShoppingCart className="mr-2 h-4 w-4" />
-                          Add to Cart
+                          <span className="sm:hidden">Add</span>
+                          <span className="hidden sm:inline">Add to Cart</span>
                         </Button>
                       )}
 
-                      <div className="flex gap-2 mt-2">
+                      <div className="mt-2 grid grid-cols-3 gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -796,7 +797,6 @@ const Products = () => {
                             setImagePreview(product.image_url);
                             setIsDialogOpen(true);
                           }}
-                          className="flex-1"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -804,7 +804,6 @@ const Products = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDuplicateProduct(product)}
-                          className="flex-1"
                           title="Duplicate"
                         >
                           <Copy className="h-4 w-4" />
@@ -813,7 +812,6 @@ const Products = () => {
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete(product.id)}
-                          className="flex-1"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
