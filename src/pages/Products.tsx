@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Grid3x3, Grid2x2, LayoutGrid } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/Pagination";
@@ -64,6 +64,8 @@ const Products = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -629,6 +631,32 @@ const Products = () => {
                 />
               </div>
               <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                <div className="flex border rounded-md">
+                  <Button
+                    variant={gridColumns === 2 ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(2)}
+                    className="rounded-r-none"
+                  >
+                    <Grid2x2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={gridColumns === 3 ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(3)}
+                    className="rounded-none border-x"
+                  >
+                    <Grid3x3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={gridColumns === 4 ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setGridColumns(4)}
+                    className="rounded-l-none"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </div>
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-[140px]">
                     <Filter className="mr-2 h-4 w-4" />
@@ -693,7 +721,11 @@ const Products = () => {
                   <span className="text-sm text-muted-foreground">Select All</span>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={`grid gap-4 ${
+                gridColumns === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                gridColumns === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+                'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              }`}>
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full">
                     <div className="absolute top-2 left-2 z-10">
@@ -703,12 +735,20 @@ const Products = () => {
                         className="bg-background"
                       />
                     </div>
-                    <div className="aspect-square bg-muted flex items-center justify-center">
+                    <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
                       {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                       ) : (
                         <Package className="h-16 w-16 text-muted-foreground/30" />
                       )}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setQuickViewProduct(product)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </div>
                     <CardContent className="p-4 flex-1 flex flex-col">
                       <div className="flex items-start justify-between gap-2 mb-2 min-h-[3.5rem]">
@@ -723,7 +763,14 @@ const Products = () => {
                         {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
                         <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
                         {product.stock_on_hand !== null && (
-                          <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
+                            {product.stock_on_hand < 10 && (
+                              <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
+                                {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
                       
@@ -860,6 +907,113 @@ const Products = () => {
           </Card>
         </div>
       )}
+
+      {/* Quick View Modal */}
+      <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+          </DialogHeader>
+          {quickViewProduct && (
+            <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                  {quickViewProduct.image_url ? (
+                    <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Package className="h-24 w-24 text-muted-foreground/30" />
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
+                    {quickViewProduct.bit_type && <p><span className="font-medium">Bit Type:</span> {quickViewProduct.bit_type}</p>}
+                    {quickViewProduct.grit && <p><span className="font-medium">Grit:</span> {quickViewProduct.grit}</p>}
+                    {quickViewProduct.unit && <p><span className="font-medium">Unit:</span> {quickViewProduct.unit}</p>}
+                    {quickViewProduct.supplier && <p><span className="font-medium">Supplier:</span> {quickViewProduct.supplier}</p>}
+                  </div>
+                  <div className="pt-3 border-t space-y-2">
+                    <p className="text-2xl font-bold">${quickViewProduct.price_usd}</p>
+                    {quickViewProduct.salon_price_usd && (
+                      <p className="text-sm"><span className="font-medium">Salon Price:</span> ${quickViewProduct.salon_price_usd}</p>
+                    )}
+                    {quickViewProduct.wholesale_price_usd && (
+                      <p className="text-sm"><span className="font-medium">Wholesale Price:</span> ${quickViewProduct.wholesale_price_usd}</p>
+                    )}
+                  </div>
+                  <div className="pt-3 border-t space-y-1">
+                    {quickViewProduct.stock_on_hand !== null && (
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">Stock: {quickViewProduct.stock_on_hand}</p>
+                        {quickViewProduct.stock_on_hand < 10 && (
+                          <Badge variant={quickViewProduct.stock_on_hand === 0 ? "destructive" : "secondary"}>
+                            {quickViewProduct.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    {quickViewProduct.stock_reserved !== null && quickViewProduct.stock_reserved > 0 && (
+                      <p className="text-sm text-muted-foreground">Reserved: {quickViewProduct.stock_reserved}</p>
+                    )}
+                    {quickViewProduct.reorder_level !== null && (
+                      <p className="text-sm text-muted-foreground">Reorder Level: {quickViewProduct.reorder_level}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    {getCartQuantity(quickViewProduct.id) === 0 ? (
+                      <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        Add to Cart
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Button variant="outline" onClick={() => removeFromCart(quickViewProduct.id)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="font-medium px-3">{getCartQuantity(quickViewProduct.id)}</span>
+                        <Button variant="outline" onClick={() => addToCart(quickViewProduct)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingProduct(quickViewProduct);
+                        setFormData({
+                          name: quickViewProduct.name,
+                          category: quickViewProduct.category,
+                          bit_type: quickViewProduct.bit_type || "",
+                          grit: quickViewProduct.grit || "",
+                          unit: quickViewProduct.unit || "piece",
+                          sku: quickViewProduct.sku,
+                          price_usd: quickViewProduct.price_usd.toString(),
+                          salon_price_usd: quickViewProduct.salon_price_usd?.toString() || "",
+                          wholesale_price_usd: quickViewProduct.wholesale_price_usd?.toString() || "",
+                          stock_on_hand: quickViewProduct.stock_on_hand?.toString() || "0",
+                          stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
+                          reorder_level: quickViewProduct.reorder_level?.toString() || "10",
+                          supplier: quickViewProduct.supplier || "",
+                        });
+                        setImagePreview(quickViewProduct.image_url);
+                        setQuickViewProduct(null);
+                        setIsDialogOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
