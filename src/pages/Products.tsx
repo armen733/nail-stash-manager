@@ -696,8 +696,15 @@ const Products = () => {
               )}
               <div className="grid grid-cols-2 gap-4">
                 {paginatedItems.map((product) => (
-                  <Card key={product.id} className="relative overflow-hidden flex flex-col h-full min-w-0">
-                    <div className="absolute top-2 left-2 z-10">
+                  <Card 
+                    key={product.id} 
+                    className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
+                    onClick={() => setQuickViewProduct(product)}
+                  >
+                      <div 
+                        className="absolute top-2 left-2 z-10" 
+                        onClick={(e) => e.stopPropagation()}
+                      >
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
                         onCheckedChange={() => toggleProductSelection(product.id)}
@@ -724,13 +731,30 @@ const Products = () => {
                         <h3 className="font-semibold text-base sm:text-lg break-words whitespace-normal leading-snug text-foreground">
                           {product.name}
                         </h3>
+                        <p className="text-sm text-muted-foreground">{product.category}</p>
                         <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
                           {product.sku}
                         </span>
                       </div>
+                      
+                      <div className="space-y-1 text-sm flex-1">
+                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
+                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
+                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
+                        {product.stock_on_hand !== null && (
+                          <div className="flex items-center gap-2">
+                            <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
+                            {product.stock_on_hand < 10 && (
+                              <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
+                                {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {getCartQuantity(product.id) > 0 ? (
-                        <div className="flex items-center gap-2 mt-4">
+                        <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
                           <Button
                             size="sm"
                             variant="outline"
@@ -751,7 +775,10 @@ const Products = () => {
                         <Button
                           size="sm"
                           className="w-full mt-4 whitespace-nowrap"
-                          onClick={() => addToCart(product)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product);
+                          }}
                         >
                           <ShoppingCart className="mr-2 h-4 w-4" />
                           <span className="sm:hidden">Add</span>
@@ -759,7 +786,7 @@ const Products = () => {
                         </Button>
                       )}
 
-                      <div className="mt-2 grid grid-cols-3 gap-2">
+                      <div className="mt-2 grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                           size="sm"
                           variant="outline"
