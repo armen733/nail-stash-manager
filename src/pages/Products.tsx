@@ -733,13 +733,10 @@ const Products = () => {
                   <span className="text-sm text-muted-foreground">Select All</span>
                 </div>
               )}
-              <div className={`grid gap-4 ${
-                gridColumns === 2
-                  ? 'grid-cols-1 md:grid-cols-2'
-                  : gridColumns === 3
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-              }`}>
+              <div
+                className="grid gap-4 grid-cols-1 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+                style={{ ['--cols' as any]: gridColumns }}
+              >
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full">
                     <div className="absolute top-2 left-2 z-10">
