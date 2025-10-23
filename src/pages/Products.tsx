@@ -734,9 +734,11 @@ const Products = () => {
                 </div>
               )}
               <div className={`grid gap-4 ${
-                gridColumns === 2 ? 'grid-cols-1 md:grid-cols-2' :
-                gridColumns === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
-                'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                gridColumns === 2
+                  ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2'
+                  : gridColumns === 3
+                  ? 'grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3'
+                  : 'grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4'
               }`}>
                 {paginatedItems.map((product) => (
                   <Card key={product.id} className="overflow-hidden flex flex-col h-full">
