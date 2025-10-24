@@ -7,7 +7,7 @@ import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, Alert
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { subscribeToPushNotifications } from "@/lib/push-notifications";
+import { subscribeToPushNotifications, isPushSupported } from "@/lib/push-notifications";
 import { useNotifications } from "@/hooks/useNotifications";
 import {
   Dialog,
@@ -108,10 +108,11 @@ const Orders = () => {
   useEffect(() => {
     fetchData();
 
-    // Request notification permission if not already granted
-    if (permission === 'default') {
+    // Request notification permission if supported and not already granted
+    const supported = isPushSupported();
+    if (supported && permission === 'default') {
       requestPermission();
-    } else if (permission === 'granted' && !notificationsEnabled) {
+    } else if (supported && permission === 'granted' && !notificationsEnabled) {
       // Auto-enable push notifications if permission granted
       handleEnableNotifications();
     }
@@ -438,7 +439,7 @@ const Orders = () => {
           <p className="text-muted-foreground mt-1">Track and manage orders</p>
         </div>
         <div className="flex gap-2">
-          {!notificationsEnabled && (
+          {!notificationsEnabled && isPushSupported() && (
             <Button variant="outline" onClick={handleEnableNotifications}>
               <Bell className="mr-2 h-4 w-4" />
               Enable Notifications

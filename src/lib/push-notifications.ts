@@ -1,5 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Basic feature detection helpers
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = () =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  (navigator as any).standalone === true;
+
+export const isPushSupported = () => {
+  const hasSW = 'serviceWorker' in navigator;
+  const hasNotif = 'Notification' in window;
+  const hasPush = 'PushManager' in window;
+  // iOS only supports Web Push for installed PWAs (standalone)
+  if (isIOS() && !isStandalone()) return false;
+  return hasSW && hasNotif && hasPush;
+};
+
 const urlBase64ToUint8Array = (base64String: string) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -14,7 +29,6 @@ const urlBase64ToUint8Array = (base64String: string) => {
   }
   return outputArray;
 };
-
 export const requestNotificationPermission = async () => {
   if (!('Notification' in window)) {
     throw new Error('This browser does not support notifications');
@@ -34,12 +48,24 @@ export const requestNotificationPermission = async () => {
 
 export const subscribeToPushNotifications = async () => {
   try {
+    if (!isPushSupported()) {
+      const reason = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(
+        window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true
+      )
+        ? 'On iOS, push notifications only work after installing the app to your Home Screen.'
+        : 'This browser does not support Web Push notifications.';
+      throw new Error(reason);
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     await requestNotificationPermission();
 
     const registration = await navigator.serviceWorker.ready;
+    if (!registration.pushManager) {
+      throw new Error('PushManager is not available on this device/browser');
+    }
     
     // VAPID public key
     const vapidPublicKey = 'BKxN9L3vJ8K2mF5nP6qR1sT7uV9wX0yZ2aB4cD6eF8gH0iJ2kL4mN6oP8qR0sT2uV4wX6yZ8aB0cD2eF4gH6i';
