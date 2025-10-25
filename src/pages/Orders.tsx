@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Order {
   id: string;
@@ -312,6 +313,7 @@ const Orders = () => {
 
 
 
+  const activeOrders = orders.filter((order) => order.status !== "Delivered" && order.status !== "Paid");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
 
   const normalizedSearch = searchTerm.toLowerCase();
@@ -322,8 +324,9 @@ const Orders = () => {
     return matchesSearch && matchesStatus;
   };
 
+  const filteredActiveOrders = activeOrders.filter(filterBySalonName);
   const filteredCompletedOrders = completedOrders.filter(filterBySalonName);
-  const allFilteredOrders = filteredCompletedOrders;
+  const allFilteredOrders = [...filteredActiveOrders, ...filteredCompletedOrders];
 
   const exportOrders = () => {
     const exportData = allFilteredOrders.map(o => ({
@@ -583,74 +586,127 @@ const Orders = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <History className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">Order History</h2>
-        </div>
-
-        <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </CardHeader>
-        <CardContent>
-          <div className="mt-6">
-            {loading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading...</div>
-            ) : filteredCompletedOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No completed orders yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredCompletedOrders.map((order) => (
-                  <Card key={order.id} className="shadow-sm">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(order.order_date).toLocaleDateString()}
-                        </div>
-                        <div className="text-sm">
-                          {order.order_items && order.order_items.length > 0 ? (
-                            <div className="space-y-1">
-                              {order.order_items.map((item, idx) => (
-                                <div key={idx} className="text-muted-foreground">
-                                  {item.products?.name} × {item.quantity}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">No items</span>
-                          )}
-                        </div>
-                        <div className="text-lg font-semibold text-primary pt-1">
-                          ${order.total.toFixed(2)}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <Button variant="outline" size="sm" onClick={exportOrders}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="active">
+                Active Orders ({filteredActiveOrders.length})
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                Order History ({filteredCompletedOrders.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active" className="mt-6">
+              {loading ? (
+                <div className="text-center py-12 text-muted-foreground">Loading...</div>
+              ) : filteredActiveOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <RefreshCw className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">No active orders.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredActiveOrders.map((order) => (
+                    <Card key={order.id} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                            {getStatusBadge(order.status)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(order.order_date).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm">
+                            {order.order_items && order.order_items.length > 0 ? (
+                              <div className="space-y-1">
+                                {order.order_items.map((item, idx) => (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {item.products?.name} × {item.quantity}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">No items</span>
+                            )}
+                          </div>
+                          <div className="text-lg font-semibold text-primary pt-1">
+                            ${order.total.toFixed(2)}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-6">
+              {loading ? (
+                <div className="text-center py-12 text-muted-foreground">Loading...</div>
+              ) : filteredCompletedOrders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">No completed orders yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredCompletedOrders.map((order) => (
+                    <Card key={order.id} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                            {getStatusBadge(order.status)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(order.order_date).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm">
+                            {order.order_items && order.order_items.length > 0 ? (
+                              <div className="space-y-1">
+                                {order.order_items.map((item, idx) => (
+                                  <div key={idx} className="text-muted-foreground">
+                                    {item.products?.name} × {item.quantity}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">No items</span>
+                            )}
+                          </div>
+                          <div className="text-lg font-semibold text-primary pt-1">
+                            ${order.total.toFixed(2)}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 };
