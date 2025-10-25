@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Download, RefreshCw } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -310,28 +310,8 @@ const Orders = () => {
     }
   };
 
-  const handleMarkAsDone = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "Delivered" })
-        .eq("id", orderId);
-
-      if (error) throw error;
-
-      toast({ title: "Success", description: "Order marked as delivered" });
-      fetchData();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
 
-  const activeOrders = orders.filter((order) => order.status === "Draft" || order.status === "Confirmed");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
 
   const normalizedSearch = searchTerm.toLowerCase();
@@ -342,11 +322,8 @@ const Orders = () => {
     return matchesSearch && matchesStatus;
   };
 
-  const filteredActiveOrders = activeOrders.filter(filterBySalonName);
   const filteredCompletedOrders = completedOrders.filter(filterBySalonName);
-  const allFilteredOrders = statusFilter === "all" 
-    ? [...filteredActiveOrders, ...filteredCompletedOrders]
-    : orders.filter(filterBySalonName);
+  const allFilteredOrders = filteredCompletedOrders;
 
   const exportOrders = () => {
     const exportData = allFilteredOrders.map(o => ({
@@ -621,137 +598,50 @@ const Orders = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="active">
-                <Clock className="h-4 w-4 mr-2" />
-                Active Orders ({activeOrders.length})
-              </TabsTrigger>
-              <TabsTrigger value="history">
-                <History className="h-4 w-4 mr-2" />
-                History ({completedOrders.length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="active" className="mt-6">
-              {loading ? (
-                <div className="text-center py-12 text-muted-foreground">Loading...</div>
-              ) : filteredActiveOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <ShoppingCart className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No active orders. Create your first order to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredActiveOrders.map((order) => (
-                    <Card key={order.id} className="shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                              {getStatusBadge(order.status)}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(order.order_date).toLocaleDateString()}
-                            </div>
-                            <div className="text-sm">
-                              {order.order_items && order.order_items.length > 0 ? (
-                                <div className="space-y-1">
-                                  {order.order_items.map((item, idx) => (
-                                    <div key={idx} className="text-muted-foreground">
-                                      {item.products?.name} × {item.quantity}
-                                    </div>
-                                  ))}
+          <div className="mt-6">
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            ) : filteredCompletedOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No completed orders yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredCompletedOrders.map((order) => (
+                  <Card key={order.id} className="shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                          {getStatusBadge(order.status)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(order.order_date).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm">
+                          {order.order_items && order.order_items.length > 0 ? (
+                            <div className="space-y-1">
+                              {order.order_items.map((item, idx) => (
+                                <div key={idx} className="text-muted-foreground">
+                                  {item.products?.name} × {item.quantity}
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground">No items</span>
-                              )}
+                              ))}
                             </div>
-                            <div className="text-lg font-semibold text-primary pt-1">
-                              ${order.total.toFixed(2)}
-                            </div>
-                          </div>
-                          <div className="flex flex-row sm:flex-col gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleQuickReorder(order)}
-                              className="flex-1 sm:flex-none"
-                              title="Quick Reorder"
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setViewOrder(order)}
-                              className="flex-1 sm:flex-none"
-                            >
-                              View
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleMarkAsDone(order.id)}
-                              className="flex-1 sm:flex-none"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Done
-                            </Button>
-                          </div>
+                          ) : (
+                            <span className="text-muted-foreground">No items</span>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-6">
-              {loading ? (
-                <div className="text-center py-12 text-muted-foreground">Loading...</div>
-              ) : filteredCompletedOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <History className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No completed orders yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredCompletedOrders.map((order) => (
-                    <Card key={order.id} className="shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                            {getStatusBadge(order.status)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(order.order_date).toLocaleDateString()}
-                          </div>
-                          <div className="text-sm">
-                            {order.order_items && order.order_items.length > 0 ? (
-                              <div className="space-y-1">
-                                {order.order_items.map((item, idx) => (
-                                  <div key={idx} className="text-muted-foreground">
-                                    {item.products?.name} × {item.quantity}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">No items</span>
-                            )}
-                          </div>
-                          <div className="text-lg font-semibold text-primary pt-1">
-                            ${order.total.toFixed(2)}
-                          </div>
+                        <div className="text-lg font-semibold text-primary pt-1">
+                          ${order.total.toFixed(2)}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
