@@ -67,9 +67,12 @@ export const subscribeToPushNotifications = async () => {
       throw new Error('PushManager is not available on this device/browser');
     }
     
-    // VAPID public key
-    const vapidPublicKey = 'BKxN9L3vJ8K2mF5nP6qR1sT7uV9wX0yZ2aB4cD6eF8gH0iJ2kL4mN6oP8qR0sT2uV4wX6yZ8aB0cD2eF4gH6i';
-    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+    // Get VAPID public key from backend (kept in secrets)
+    const { data: keyData, error: keyError } = await supabase.functions.invoke('get-vapid-key');
+    if (keyError || !keyData?.publicKey) {
+      throw new Error('Failed to load push configuration');
+    }
+    const convertedVapidKey = urlBase64ToUint8Array(keyData.publicKey);
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
