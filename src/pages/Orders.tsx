@@ -583,20 +583,26 @@ const Orders = () => {
         </DialogContent>
       </Dialog>
 
-      <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <History className="h-5 w-5" />
+          <h2 className="text-xl font-semibold">Order History</h2>
+        </div>
+
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
         <CardContent>
           <div className="mt-6">
             {loading ? (
@@ -643,7 +649,8 @@ const Orders = () => {
             )}
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
