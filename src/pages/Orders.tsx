@@ -3,12 +3,10 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Bell, Download, RefreshCw, CheckCircle } from "lucide-react";
+import { ShoppingCart, Search, Plus, CheckCircle2, Clock, History, Trash2, AlertTriangle, Download, RefreshCw } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { subscribeToPushNotifications, isPushSupported } from "@/lib/push-notifications";
-import { useNotifications } from "@/hooks/useNotifications";
 import {
   Dialog,
   DialogContent,
@@ -95,8 +93,6 @@ const Orders = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const { permission, requestPermission } = useNotifications();
 
   const [formData, setFormData] = useState({
     salon_id: "",
@@ -108,14 +104,7 @@ const Orders = () => {
   useEffect(() => {
     fetchData();
 
-    // Request notification permission if supported and not already granted
-    const supported = isPushSupported();
-    if (supported && permission === 'default') {
-      requestPermission();
-    } else if (supported && permission === 'granted' && !notificationsEnabled) {
-      // Auto-enable push notifications if permission granted
-      handleEnableNotifications();
-    }
+    // Notifications disabled
 
     // Real-time subscription for new orders
     const channel = supabase
@@ -136,17 +125,8 @@ const Orders = () => {
             description: "A new customer order has been placed.",
           });
           
-          // Send push notification
-          try {
-            const newOrder = payload.new as any;
-            await supabase.functions.invoke('send-push-notification', {
-              body: {
-                customerName: newOrder.customer_name
-              }
-            });
-          } catch (err) {
-            console.error('Failed to send push notification:', err);
-          }
+          // Push notifications disabled
+
           
           fetchData(); // Refresh orders list
         }
@@ -156,7 +136,7 @@ const Orders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast, permission, requestPermission]);
+  }, [toast]);
 
   useEffect(() => {
     // Handle cart items from Products page
@@ -350,22 +330,6 @@ const Orders = () => {
     }
   };
 
-  const handleEnableNotifications = async () => {
-    try {
-      await subscribeToPushNotifications();
-      setNotificationsEnabled(true);
-      toast({
-        title: "Notifications Enabled",
-        description: "You'll now receive push notifications for new orders",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   const activeOrders = orders.filter((order) => order.status === "Draft" || order.status === "Confirmed");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
@@ -439,18 +403,6 @@ const Orders = () => {
           <p className="text-muted-foreground mt-1">Track and manage orders</p>
         </div>
         <div className="flex gap-2">
-          {!notificationsEnabled && isPushSupported() && (
-            <Button variant="outline" onClick={handleEnableNotifications}>
-              <Bell className="mr-2 h-4 w-4" />
-              Enable Notifications
-            </Button>
-          )}
-          {notificationsEnabled && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-500/10 border border-green-500/20">
-              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-300">Notifications Active</span>
-            </div>
-          )}
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
