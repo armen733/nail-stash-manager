@@ -136,7 +136,9 @@ export type Database = {
           grit: string | null
           id: string
           image_url: string | null
+          is_parent: boolean
           name: string
+          parent_product_id: string | null
           price_usd: number
           reorder_level: number | null
           salon_price_usd: number | null
@@ -146,6 +148,7 @@ export type Database = {
           supplier: string | null
           unit: string | null
           updated_at: string
+          variant_name: string | null
           wholesale_price_usd: number | null
         }
         Insert: {
@@ -155,7 +158,9 @@ export type Database = {
           grit?: string | null
           id?: string
           image_url?: string | null
+          is_parent?: boolean
           name: string
+          parent_product_id?: string | null
           price_usd: number
           reorder_level?: number | null
           salon_price_usd?: number | null
@@ -165,6 +170,7 @@ export type Database = {
           supplier?: string | null
           unit?: string | null
           updated_at?: string
+          variant_name?: string | null
           wholesale_price_usd?: number | null
         }
         Update: {
@@ -174,7 +180,9 @@ export type Database = {
           grit?: string | null
           id?: string
           image_url?: string | null
+          is_parent?: boolean
           name?: string
+          parent_product_id?: string | null
           price_usd?: number
           reorder_level?: number | null
           salon_price_usd?: number | null
@@ -184,9 +192,18 @@ export type Database = {
           supplier?: string | null
           unit?: string | null
           updated_at?: string
+          variant_name?: string | null
           wholesale_price_usd?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

@@ -15,6 +15,9 @@ export const productSchema = z.object({
   stock_reserved: z.number().int().min(0, "Reserved stock cannot be negative").max(999999),
   reorder_level: z.number().int().min(0, "Reorder level cannot be negative").max(999999),
   supplier: z.string().trim().max(200).optional().nullable(),
+  is_parent: z.boolean().optional(),
+  parent_product_id: z.string().uuid().optional().nullable(),
+  variant_name: z.string().trim().max(100).optional().nullable(),
 });
 
 // Salon validation schema

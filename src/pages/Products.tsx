@@ -57,6 +57,10 @@ interface Product {
   stock_reserved: number | null;
   reorder_level: number | null;
   supplier: string | null;
+  is_parent: boolean | null;
+  parent_product_id: string | null;
+  variant_name: string | null;
+  variants?: Product[]; // Child products for parent products
 }
 
 interface CartItem {
@@ -97,6 +101,9 @@ const Products = () => {
     stock_reserved: "0",
     reorder_level: "10",
     supplier: "",
+    is_parent: false,
+    parent_product_id: "",
+    variant_name: "",
   });
 
   useEffect(() => {
@@ -111,7 +118,21 @@ const Products = () => {
         .order("name");
 
       if (error) throw error;
-      setProducts(data || []);
+      
+      // Group variants under their parent products
+      const parentProducts = (data || []).filter(p => p.is_parent || !p.parent_product_id);
+      const variantProducts = (data || []).filter(p => p.parent_product_id && !p.is_parent);
+      
+      // Attach variants to their parents
+      const productsWithVariants = parentProducts.map(parent => {
+        if (parent.is_parent) {
+          const variants = variantProducts.filter(v => v.parent_product_id === parent.id);
+          return { ...parent, variants };
+        }
+        return parent;
+      });
+      
+      setProducts(productsWithVariants);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -192,6 +213,9 @@ const Products = () => {
       stock_reserved: parseInt(formData.stock_reserved) || 0,
       reorder_level: parseInt(formData.reorder_level) || 10,
       supplier: formData.supplier || null,
+      is_parent: formData.is_parent || false,
+      parent_product_id: formData.parent_product_id || null,
+      variant_name: formData.variant_name || null,
     };
 
     try {
@@ -255,6 +279,9 @@ const Products = () => {
       stock_reserved: "0",
       reorder_level: "10",
       supplier: "",
+      is_parent: false,
+      parent_product_id: "",
+      variant_name: "",
     });
     setEditingProduct(null);
     setImageFile(null);
@@ -697,6 +724,66 @@ const Products = () => {
                 />
               </div>
 
+              {/* Variant Management Section */}
+              <div className="border-t pt-4 mt-4 space-y-4">
+                <h3 className="font-semibold text-sm">Product Variants</h3>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_parent"
+                    checked={formData.is_parent}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_parent: checked as boolean, parent_product_id: "", variant_name: "" })}
+                  />
+                  <Label htmlFor="is_parent" className="text-sm font-normal cursor-pointer">
+                    This is a parent product with variants
+                  </Label>
+                </div>
+
+                {!formData.is_parent && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="parent_product_id">Parent Product (Optional)</Label>
+                      <Select 
+                        value={formData.parent_product_id} 
+                        onValueChange={(value) => setFormData({ ...formData, parent_product_id: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select parent product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None (Standalone Product)</SelectItem>
+                          {products.filter(p => p.is_parent).map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.parent_product_id && (
+                      <div className="space-y-2">
+                        <Label htmlFor="variant_name">Variant Name *</Label>
+                        <Input
+                          id="variant_name"
+                          placeholder="e.g., Small - Fine Grit, Medium - Coarse"
+                          value={formData.variant_name}
+                          onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
+                          required={!!formData.parent_product_id}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter a descriptive name for this variant (size, grit, color, etc.)
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {formData.is_parent && (
+                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                    This product will serve as a parent. After creating it, you can add variants by creating new products and selecting this as their parent.
+                  </p>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
@@ -852,9 +939,21 @@ const Products = () => {
                           {product.name}
                         </h3>
                         <p className="text-sm text-muted-foreground">{product.category}</p>
-                        <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
-                          {product.sku}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
+                            {product.sku}
+                          </span>
+                          {product.is_parent && product.variants && product.variants.length > 0 && (
+                            <Badge variant="secondary" className="text-[10px] leading-none">
+                              {product.variants.length} Variant{product.variants.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          {product.variant_name && (
+                            <Badge variant="outline" className="text-[10px] leading-none">
+                              {product.variant_name}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-1 text-sm flex-1">
@@ -926,6 +1025,9 @@ const Products = () => {
                               stock_reserved: product.stock_reserved?.toString() || "0",
                               reorder_level: product.reorder_level?.toString() || "10",
                               supplier: product.supplier || "",
+                              is_parent: product.is_parent || false,
+                              parent_product_id: product.parent_product_id || "",
+                              variant_name: product.variant_name || "",
                             });
                             setImagePreview(product.image_url);
                             setIsDialogOpen(true);
@@ -1098,6 +1200,9 @@ const Products = () => {
                           stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
                           reorder_level: quickViewProduct.reorder_level?.toString() || "10",
                           supplier: quickViewProduct.supplier || "",
+                          is_parent: quickViewProduct.is_parent || false,
+                          parent_product_id: quickViewProduct.parent_product_id || "",
+                          variant_name: quickViewProduct.variant_name || "",
                         });
                         setImagePreview(quickViewProduct.image_url);
                         setQuickViewProduct(null);
@@ -1203,6 +1308,9 @@ const Products = () => {
                             stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
                             reorder_level: quickViewProduct.reorder_level?.toString() || "10",
                             supplier: quickViewProduct.supplier || "",
+                            is_parent: quickViewProduct.is_parent || false,
+                            parent_product_id: quickViewProduct.parent_product_id || "",
+                            variant_name: quickViewProduct.variant_name || "",
                           });
                           setImagePreview(quickViewProduct.image_url);
                           setQuickViewProduct(null);
