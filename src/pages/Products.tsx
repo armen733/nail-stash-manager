@@ -1030,14 +1030,14 @@ const Products = () => {
                     <div className="space-y-2">
                       <Label htmlFor="parent_product_id">Parent Product (Optional)</Label>
                       <Select 
-                        value={formData.parent_product_id} 
-                        onValueChange={(value) => setFormData({ ...formData, parent_product_id: value })}
+                        value={formData.parent_product_id || "none"} 
+                        onValueChange={(value) => setFormData({ ...formData, parent_product_id: value === "none" ? "" : value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select parent product" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None (Standalone Product)</SelectItem>
+                          <SelectItem value="none">None (Standalone Product)</SelectItem>
                           {products.filter(p => p.is_parent).map(p => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                           ))}
