@@ -83,6 +83,9 @@ const Products = () => {
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isConverterOpen, setIsConverterOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -528,6 +531,82 @@ const Products = () => {
     navigate('/orders', { state: { cartItems: cart } });
   };
 
+  // Group products by similar names (for conversion to variants)
+  const getProductGroups = () => {
+    const groups: { [key: string]: Product[] } = {};
+    
+    products.filter(p => !p.is_parent && !p.parent_product_id).forEach(product => {
+      const baseName = product.name.trim();
+      if (!groups[baseName]) {
+        groups[baseName] = [];
+      }
+      groups[baseName].push(product);
+    });
+    
+    // Only return groups with 2 or more products
+    return Object.entries(groups).filter(([_, prods]) => prods.length >= 2);
+  };
+
+  const handleConvertToVariants = async () => {
+    if (!selectedGroup || !selectedParentId) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a parent product",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const groupProducts = getProductGroups().find(([name]) => name === selectedGroup)?.[1] || [];
+      const parentProduct = groupProducts.find(p => p.id === selectedParentId);
+      const variantProducts = groupProducts.filter(p => p.id !== selectedParentId);
+
+      if (!parentProduct || variantProducts.length === 0) {
+        throw new Error("Invalid selection");
+      }
+
+      // Update parent product
+      const { error: parentError } = await supabase
+        .from("products")
+        .update({ is_parent: true })
+        .eq("id", parentProduct.id);
+
+      if (parentError) throw parentError;
+
+      // Update variant products
+      for (const variant of variantProducts) {
+        const variantName = variant.sku || `Variant ${variantProducts.indexOf(variant) + 1}`;
+        
+        const { error: variantError } = await supabase
+          .from("products")
+          .update({
+            parent_product_id: parentProduct.id,
+            variant_name: variantName,
+          })
+          .eq("id", variant.id);
+
+        if (variantError) throw variantError;
+      }
+
+      toast({
+        title: "Success!",
+        description: `Converted ${variantProducts.length} products to variants of "${parentProduct.name}"`,
+      });
+
+      setIsConverterOpen(false);
+      setSelectedGroup(null);
+      setSelectedParentId("");
+      fetchProducts();
+    } catch (error: any) {
+      toast({
+        title: "Conversion Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -535,16 +614,180 @@ const Products = () => {
           <h1 className="text-3xl font-bold text-foreground">Products</h1>
           <p className="text-muted-foreground mt-1">Manage your product catalog</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Dialog open={isConverterOpen} onOpenChange={setIsConverterOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Copy className="mr-2 h-4 w-4" />
+                Convert to Variants
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Convert Products to Variants</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Group similar products together by converting them into variants of a parent product
+                </p>
+              </DialogHeader>
+              <div className="space-y-4">
+                {getProductGroups().length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No duplicate products found to convert</p>
+                    <p className="text-sm mt-2">Products with the same name will appear here</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Select Product Group</Label>
+                      <Select value={selectedGroup || ""} onValueChange={(value) => {
+                        setSelectedGroup(value);
+                        setSelectedParentId("");
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a product group..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getProductGroups().map(([name, prods]) => (
+                            <SelectItem key={name} value={name}>
+                              {name} ({prods.length} products)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedGroup && (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Select Parent Product</Label>
+                          <p className="text-xs text-muted-foreground">
+                            The parent product will be the main product, and others will become its variants
+                          </p>
+                          <div className="grid gap-3">
+                            {getProductGroups()
+                              .find(([name]) => name === selectedGroup)?.[1]
+                              .map((product) => (
+                                <Card
+                                  key={product.id}
+                                  className={`cursor-pointer transition-all ${
+                                    selectedParentId === product.id
+                                      ? "ring-2 ring-primary bg-primary/5"
+                                      : "hover:bg-muted/50"
+                                  }`}
+                                  onClick={() => setSelectedParentId(product.id)}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-4">
+                                      <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                                        {product.image_url ? (
+                                          <img
+                                            src={product.image_url}
+                                            alt={product.name}
+                                            className="w-full h-full object-cover rounded-lg"
+                                          />
+                                        ) : (
+                                          <Package className="h-8 w-8 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div>
+                                            <h4 className="font-semibold">{product.name}</h4>
+                                            <p className="text-sm text-muted-foreground">
+                                              SKU: {product.sku}
+                                            </p>
+                                            <p className="text-sm font-semibold mt-1">
+                                              ${product.price_usd}
+                                            </p>
+                                          </div>
+                                          <Checkbox
+                                            checked={selectedParentId === product.id}
+                                            onCheckedChange={() => setSelectedParentId(product.id)}
+                                          />
+                                        </div>
+                                        {product.bit_type && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Type: {product.bit_type}
+                                          </p>
+                                        )}
+                                        {product.grit && (
+                                          <p className="text-xs text-muted-foreground">
+                                            Grit: {product.grit}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                          </div>
+                        </div>
+
+                        {selectedParentId && (
+                          <div className="bg-muted p-4 rounded-lg space-y-2">
+                            <h4 className="font-semibold text-sm">Preview:</h4>
+                            <p className="text-sm">
+                              <strong>Parent:</strong>{" "}
+                              {getProductGroups()
+                                .find(([name]) => name === selectedGroup)?.[1]
+                                .find((p) => p.id === selectedParentId)?.name}
+                            </p>
+                            <p className="text-sm">
+                              <strong>Variants ({getProductGroups()
+                                .find(([name]) => name === selectedGroup)?.[1]
+                                .filter((p) => p.id !== selectedParentId).length}):</strong>
+                            </p>
+                            <ul className="text-sm list-disc list-inside space-y-1 ml-2">
+                              {getProductGroups()
+                                .find(([name]) => name === selectedGroup)?.[1]
+                                .filter((p) => p.id !== selectedParentId)
+                                .map((p) => (
+                                  <li key={p.id}>
+                                    {p.sku} - ${p.price_usd}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsConverterOpen(false);
+                          setSelectedGroup(null);
+                          setSelectedParentId("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleConvertToVariants}
+                        disabled={!selectedGroup || !selectedParentId}
+                      >
+                        Convert to Variants
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
@@ -795,6 +1038,7 @@ const Products = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
