@@ -93,6 +93,7 @@ const Products = () => {
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isConverterOpen, setIsConverterOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string>("");
@@ -1590,7 +1591,12 @@ const Products = () => {
 
       {/* Quick View - Responsive (Drawer on mobile, Dialog on desktop) */}
       {isMobile ? (
-        <Drawer open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
+        <Drawer open={!!quickViewProduct} onOpenChange={(open) => {
+          if (!open) {
+            setQuickViewProduct(null);
+            setCurrentImageIndex(0);
+          }
+        }}>
           <DrawerContent className="max-h-[90vh]">
             <DrawerHeader>
               <DrawerTitle>Product Details</DrawerTitle>
@@ -1750,11 +1756,17 @@ const Products = () => {
                   </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </DrawerContent>
         </Drawer>
       ) : (
-        <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
+        <Dialog open={!!quickViewProduct} onOpenChange={(open) => {
+          if (!open) {
+            setQuickViewProduct(null);
+            setCurrentImageIndex(0);
+          }
+        }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Product Details</DialogTitle>
@@ -1917,9 +1929,11 @@ const Products = () => {
                     </div>
                   </div>
                 )}
-              </DialogContent>
-            </Dialog>
-          )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
         </div>
       );
     };
