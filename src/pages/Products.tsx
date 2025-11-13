@@ -42,6 +42,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface ProductImage {
+  id: string;
+  product_id: string;
+  image_url: string;
+  display_order: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -62,6 +69,7 @@ interface Product {
   parent_product_id: string | null;
   variant_name: string | null;
   variants?: Product[]; // Child products for parent products
+  images?: ProductImage[]; // Multiple images for the product
 }
 
 interface CartItem {
@@ -79,8 +87,9 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -123,18 +132,27 @@ const Products = () => {
         .order("name");
 
       if (error) throw error;
+
+      // Fetch all product images
+      const { data: imagesData, error: imagesError } = await supabase
+        .from("product_images")
+        .select("*")
+        .order("display_order");
+
+      if (imagesError) throw imagesError;
       
-      // Group variants under their parent products
+      // Group variants under their parent products and attach images
       const parentProducts = (data || []).filter(p => p.is_parent || !p.parent_product_id);
       const variantProducts = (data || []).filter(p => p.parent_product_id && !p.is_parent);
       
-      // Attach variants to their parents
+      // Attach variants and images to their parents
       const productsWithVariants = parentProducts.map(parent => {
+        const productImages = (imagesData || []).filter((img: any) => img.product_id === parent.id);
         if (parent.is_parent) {
           const variants = variantProducts.filter(v => v.parent_product_id === parent.id);
-          return { ...parent, variants };
+          return { ...parent, variants, images: productImages };
         }
-        return parent;
+        return { ...parent, images: productImages };
       });
       
       setProducts(productsWithVariants);
@@ -150,44 +168,95 @@ const Products = () => {
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      setImageFiles(prev => [...prev, ...newFiles]);
+      
+      newFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
-  const uploadImage = async () => {
-    if (!imageFile) return null;
+  const removeImagePreview = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (imageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("product_images")
+        .delete()
+        .eq("id", imageId);
+
+      if (error) throw error;
+      
+      setExistingImages(prev => prev.filter(img => img.id !== imageId));
+      toast({ title: "Success", description: "Image removed" });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const uploadImages = async (productId: string) => {
+    if (imageFiles.length === 0) return;
 
     setUploading(true);
     try {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const uploadedImages: { image_url: string; display_order: number }[] = [];
+      
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, imageFile);
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
 
-      return publicUrl;
+        uploadedImages.push({
+          image_url: publicUrl,
+          display_order: existingImages.length + i,
+        });
+      }
+
+      // Insert all uploaded images
+      const { error: insertError } = await supabase
+        .from("product_images")
+        .insert(
+          uploadedImages.map(img => ({
+            product_id: productId,
+            image_url: img.image_url,
+            display_order: img.display_order,
+          }))
+        );
+
+      if (insertError) throw insertError;
+
+      toast({ title: "Success", description: `${uploadedImages.length} image(s) uploaded` });
     } catch (error: any) {
       toast({
         title: "Upload Error",
         description: error.message,
         variant: "destructive",
       });
-      return null;
     } finally {
       setUploading(false);
     }
@@ -195,13 +264,6 @@ const Products = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    let imageUrl = editingProduct?.image_url || null;
-    
-    if (imageFile) {
-      const uploadedUrl = await uploadImage();
-      if (uploadedUrl) imageUrl = uploadedUrl;
-    }
 
     const productData = {
       name: formData.name,
@@ -213,7 +275,7 @@ const Products = () => {
       price_usd: parseFloat(formData.price_usd),
       salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
       wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
-      image_url: imageUrl,
+      image_url: null, // Deprecated, using product_images table now
       stock_on_hand: parseInt(formData.stock_on_hand) || 0,
       stock_reserved: parseInt(formData.stock_reserved) || 0,
       reorder_level: parseInt(formData.reorder_level) || 10,
@@ -224,6 +286,8 @@ const Products = () => {
     };
 
     try {
+      let productId: string;
+
       if (editingProduct) {
         const { error } = await supabase
           .from("products")
@@ -231,11 +295,25 @@ const Products = () => {
           .eq("id", editingProduct.id);
 
         if (error) throw error;
+        productId = editingProduct.id;
+        
+        // Upload new images
+        await uploadImages(productId);
+        
         toast({ title: "Success", description: "Product updated successfully" });
       } else {
-        const { error } = await supabase.from("products").insert([productData]);
+        const { data, error } = await supabase
+          .from("products")
+          .insert([productData])
+          .select()
+          .single();
 
         if (error) throw error;
+        productId = data.id;
+        
+        // Upload images for new product
+        await uploadImages(productId);
+        
         toast({ title: "Success", description: "Product added successfully" });
       }
 
@@ -289,8 +367,9 @@ const Products = () => {
       variant_name: "",
     });
     setEditingProduct(null);
-    setImageFile(null);
-    setImagePreview(null);
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
   };
 
   const filteredProducts = products.filter((product) => {
@@ -901,29 +980,53 @@ const Products = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Product Image</Label>
+                <Label>Product Images</Label>
                 <div className="flex flex-col gap-4">
-                  {imagePreview && (
-                    <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                  {/* Existing images */}
+                  {existingImages.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {existingImages.map((img, index) => (
+                        <div key={img.id} className="relative w-full aspect-square border rounded-lg overflow-hidden">
+                          <img src={img.image_url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => removeExistingImage(img.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
+                  
+                  {/* New image previews */}
+                  {imagePreviews.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative w-full aspect-square border rounded-lg overflow-hidden">
+                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-6 w-6"
+                            onClick={() => removeImagePreview(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageSelect}
                     className="hidden"
                   />
@@ -933,7 +1036,7 @@ const Products = () => {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Upload className="mr-2 h-4 w-4" />
-                    {imagePreview ? "Change Image" : "Upload Image"}
+                    Add Images
                   </Button>
                 </div>
               </div>
@@ -1378,7 +1481,7 @@ const Products = () => {
                               parent_product_id: product.parent_product_id || "",
                               variant_name: product.variant_name || "",
                             });
-                            setImagePreview(product.image_url);
+                            setExistingImages(product.images || []);
                             setIsDialogOpen(true);
                           }}
                         >
@@ -1608,7 +1711,7 @@ const Products = () => {
                           parent_product_id: quickViewProduct.parent_product_id || "",
                           variant_name: quickViewProduct.variant_name || "",
                         });
-                        setImagePreview(quickViewProduct.image_url);
+                        setExistingImages(quickViewProduct.images || []);
                         setQuickViewProduct(null);
                         setIsDialogOpen(true);
                       }}
@@ -1773,7 +1876,7 @@ const Products = () => {
                             parent_product_id: quickViewProduct.parent_product_id || "",
                             variant_name: quickViewProduct.variant_name || "",
                           });
-                          setImagePreview(quickViewProduct.image_url);
+                          setExistingImages(quickViewProduct.images || []);
                           setQuickViewProduct(null);
                           setIsDialogOpen(true);
                         }}
