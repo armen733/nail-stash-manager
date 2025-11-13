@@ -313,14 +313,6 @@ const Index = () => {
         </div>
       </div>
 
-      {lowStockProducts.length > 0 && (
-        <Alert variant="destructive" className="animate-fade-in">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>{lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''}</strong> running low on stock!
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => (
@@ -435,33 +427,6 @@ const Index = () => {
         </Card>
       </div>
 
-      {lowStockProducts.length > 0 && (
-        <Card className="shadow-[var(--shadow-card)] border-destructive/50">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Low Stock Alert ({lowStockProducts.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <div className="space-y-3">
-              {lowStockProducts.map((product) => (
-                <div key={product.id} className="flex items-center justify-between border-b pb-2 last:border-0">
-                  <div className="flex-1">
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Current: {product.stock_on_hand} • Reorder at: {product.reorder_level}
-                    </p>
-                  </div>
-                  <div className="px-3 py-1 bg-destructive/10 text-destructive rounded-full text-sm font-semibold">
-                    {product.stock_on_hand === 0 ? 'Out of Stock' : 'Low Stock'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
