@@ -104,7 +104,7 @@ const Products = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    category: "Nail Drill Bits",
+    category: "",
     bit_type: "",
     grit: "",
     unit: "piece",
@@ -1090,15 +1090,13 @@ const Products = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Nail Drill Bits">Nail Drill Bits</SelectItem>
-                      <SelectItem value="Sanding Bands">Sanding Bands</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    placeholder="Enter category (e.g., Nail Drill Bits)"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="unit">Unit</Label>
