@@ -842,7 +842,13 @@ const Products = () => {
                                   onClick={(e) => e.stopPropagation()}
                                 />
                                 <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                  {product.image_url ? (
+                                  {(product.images && product.images.length > 0) ? (
+                                    <img 
+                                      src={product.images[0].image_url} 
+                                      alt={product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : product.image_url ? (
                                     <img 
                                       src={product.image_url} 
                                       alt={product.name}
@@ -890,7 +896,13 @@ const Products = () => {
                                   <CardContent className="p-4">
                                     <div className="flex items-center gap-3">
                                       <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                        {product.image_url ? (
+                                        {(product.images && product.images.length > 0) ? (
+                                          <img 
+                                            src={product.images[0].image_url} 
+                                            alt={product.name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : product.image_url ? (
                                           <img 
                                             src={product.image_url} 
                                             alt={product.name}
@@ -1380,7 +1392,9 @@ const Products = () => {
                       />
                     </div>
                     <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
-                      {product.image_url ? (
+                      {(product.images && product.images.length > 0) ? (
+                        <img src={product.images[0].image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                      ) : product.image_url ? (
                         <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                       ) : (
                         <Package className="h-16 w-16 text-muted-foreground/30" />
@@ -1584,7 +1598,9 @@ const Products = () => {
             {quickViewProduct && (
               <div className="space-y-4 p-4 overflow-y-auto">
                 <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center mb-4">
-                  {quickViewProduct.image_url ? (
+                  {(quickViewProduct.images && quickViewProduct.images.length > 0) ? (
+                    <img src={quickViewProduct.images[0].image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+                  ) : quickViewProduct.image_url ? (
                     <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
                   ) : (
                     <Package className="h-24 w-24 text-muted-foreground/30" />
@@ -1747,7 +1763,9 @@ const Products = () => {
               <div className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                    {quickViewProduct.image_url ? (
+                    {(quickViewProduct.images && quickViewProduct.images.length > 0) ? (
+                      <img src={quickViewProduct.images[0].image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+                    ) : quickViewProduct.image_url ? (
                       <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
                     ) : (
                       <Package className="h-24 w-24 text-muted-foreground/30" />
