@@ -1076,13 +1076,26 @@ const Products = () => {
 
               {/* Variant Management Section */}
               <div className="border-t pt-4 mt-4 space-y-4">
-                <h3 className="font-semibold text-sm">Product Variants</h3>
+                <h3 className="font-semibold text-sm">Product Variants & Type</h3>
                 
+                <div className="space-y-2">
+                  <Label htmlFor="variant_name">Variant Type (Optional)</Label>
+                  <Input
+                    id="variant_name"
+                    placeholder="e.g., Ceramic, Diamond, Carbide, Fine Grit, Coarse"
+                    value={formData.variant_name}
+                    onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Specify the type or variation of this product (material, grit, size, etc.)
+                  </p>
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="is_parent"
                     checked={formData.is_parent}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_parent: checked as boolean, parent_product_id: "", variant_name: "" })}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_parent: checked as boolean, parent_product_id: "" })}
                   />
                   <Label htmlFor="is_parent" className="text-sm font-normal cursor-pointer">
                     This is a parent product with variants
@@ -1090,41 +1103,26 @@ const Products = () => {
                 </div>
 
                 {!formData.is_parent && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="parent_product_id">Parent Product (Optional)</Label>
-                      <Select 
-                        value={formData.parent_product_id || "none"} 
-                        onValueChange={(value) => setFormData({ ...formData, parent_product_id: value === "none" ? "" : value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select parent product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None (Standalone Product)</SelectItem>
-                          {products.filter(p => p.is_parent).map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {formData.parent_product_id && (
-                      <div className="space-y-2">
-                        <Label htmlFor="variant_name">Variant Name *</Label>
-                        <Input
-                          id="variant_name"
-                          placeholder="e.g., Small - Fine Grit, Medium - Coarse"
-                          value={formData.variant_name}
-                          onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
-                          required={!!formData.parent_product_id}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter a descriptive name for this variant (size, grit, color, etc.)
-                        </p>
-                      </div>
-                    )}
-                  </>
+                  <div className="space-y-2">
+                    <Label htmlFor="parent_product_id">Parent Product (Optional)</Label>
+                    <Select 
+                      value={formData.parent_product_id || "none"} 
+                      onValueChange={(value) => setFormData({ ...formData, parent_product_id: value === "none" ? "" : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select parent product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None (Standalone Product)</SelectItem>
+                        {products.filter(p => p.is_parent).map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Link this product as a variant of another product
+                    </p>
+                  </div>
                 )}
 
                 {formData.is_parent && (
