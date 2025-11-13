@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/Pagination";
 import { usePagination } from "@/hooks/usePagination";
@@ -86,6 +87,7 @@ const Products = () => {
   const [isConverterOpen, setIsConverterOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string>("");
+  const [selectedVariantProducts, setSelectedVariantProducts] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -555,20 +557,48 @@ const Products = () => {
     return duplicateGroups;
   };
 
+  const getEligibleProducts = () => {
+    return products.filter(
+      (p) => !p.is_parent && !p.parent_product_id
+    );
+  };
+
+  const toggleVariantSelection = (productId: string) => {
+    setSelectedVariantProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
   const handleConvertToVariants = async () => {
-    if (!selectedGroup || !selectedParentId) {
+    if (selectedVariantProducts.size < 2) {
       toast({
         title: "Selection Required",
-        description: "Please select a parent product",
+        description: "Please select at least 2 products to create variants",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedParentId) {
+      toast({
+        title: "Parent Required",
+        description: "Please select which product should be the parent",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const groupProducts = getProductGroups().find(([name]) => name === selectedGroup)?.[1] || [];
-      const parentProduct = groupProducts.find(p => p.id === selectedParentId);
-      const variantProducts = groupProducts.filter(p => p.id !== selectedParentId);
+      const selectedProductIds = Array.from(selectedVariantProducts);
+      const allSelectedProducts = products.filter(p => selectedProductIds.includes(p.id));
+      const parentProduct = allSelectedProducts.find(p => p.id === selectedParentId);
+      const variantProducts = allSelectedProducts.filter(p => p.id !== selectedParentId);
 
       if (!parentProduct || variantProducts.length === 0) {
         throw new Error("Invalid selection");
@@ -603,7 +633,7 @@ const Products = () => {
       });
 
       setIsConverterOpen(false);
-      setSelectedGroup(null);
+      setSelectedVariantProducts(new Set());
       setSelectedParentId("");
       fetchProducts();
     } catch (error: any) {
@@ -634,153 +664,158 @@ const Products = () => {
               <DialogHeader>
                 <DialogTitle>Convert Products to Variants</DialogTitle>
                 <p className="text-sm text-muted-foreground">
-                  Group similar products together by converting them into variants of a parent product
+                  Manually select products to group together as variants
                 </p>
               </DialogHeader>
               <div className="space-y-4">
-                {getProductGroups().length === 0 ? (
+                {getEligibleProducts().length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No duplicate products found to convert</p>
-                    <p className="text-sm mt-2">Products with the same name will appear here</p>
+                    <p>No products available to convert</p>
+                    <p className="text-sm mt-2">All products are already parents or variants</p>
                   </div>
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <Label>Select Product Group</Label>
-                      <Select value={selectedGroup || ""} onValueChange={(value) => {
-                        setSelectedGroup(value);
-                        setSelectedParentId("");
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a product group..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getProductGroups().map(([name, prods]) => (
-                            <SelectItem key={name} value={name}>
-                              {name} ({prods.length} products)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Select Products ({selectedVariantProducts.size} selected)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Check the products you want to group together. Select at least 2 products.
+                      </p>
+                      <div className="grid gap-3 max-h-[300px] overflow-y-auto border rounded-lg p-3">
+                        {getEligibleProducts().map((product) => (
+                          <Card
+                            key={product.id}
+                            className={cn(
+                              "cursor-pointer transition-all hover:border-primary",
+                              selectedVariantProducts.has(product.id) && "border-primary bg-primary/5"
+                            )}
+                            onClick={() => toggleVariantSelection(product.id)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  checked={selectedVariantProducts.has(product.id)}
+                                  onCheckedChange={() => toggleVariantSelection(product.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                  {product.image_url ? (
+                                    <img 
+                                      src={product.image_url} 
+                                      alt={product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <Package className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                                  <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                                  <p className="text-xs font-medium">${product.price_usd}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
 
-                    {selectedGroup && (
+                    {selectedVariantProducts.size >= 2 && (
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label>Select Parent Product</Label>
                           <p className="text-xs text-muted-foreground">
-                            The parent product will be the main product, and others will become its variants
+                            Choose which product should be the main product (others will become its variants)
                           </p>
                           <div className="grid gap-3">
-                            {getProductGroups()
-                              .find(([name]) => name === selectedGroup)?.[1]
-                              .map((product) => (
+                            {Array.from(selectedVariantProducts).map((productId) => {
+                              const product = products.find(p => p.id === productId);
+                              if (!product) return null;
+                              
+                              return (
                                 <Card
                                   key={product.id}
-                                  className={`cursor-pointer transition-all ${
-                                    selectedParentId === product.id
-                                      ? "ring-2 ring-primary bg-primary/5"
-                                      : "hover:bg-muted/50"
-                                  }`}
+                                  className={cn(
+                                    "cursor-pointer transition-all hover:border-primary",
+                                    selectedParentId === product.id && "border-primary bg-primary/5"
+                                  )}
                                   onClick={() => setSelectedParentId(product.id)}
                                 >
                                   <CardContent className="p-4">
-                                    <div className="flex items-start gap-4">
-                                      <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
                                         {product.image_url ? (
-                                          <img
-                                            src={product.image_url}
+                                          <img 
+                                            src={product.image_url} 
                                             alt={product.name}
-                                            className="w-full h-full object-cover rounded-lg"
+                                            className="w-full h-full object-cover"
                                           />
                                         ) : (
-                                          <Package className="h-8 w-8 text-muted-foreground" />
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <Package className="h-6 w-6 text-muted-foreground" />
+                                          </div>
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div>
-                                            <h4 className="font-semibold">{product.name}</h4>
-                                            <p className="text-sm text-muted-foreground">
-                                              SKU: {product.sku}
-                                            </p>
-                                            <p className="text-sm font-semibold mt-1">
-                                              ${product.price_usd}
-                                            </p>
-                                          </div>
-                                          <Checkbox
-                                            checked={selectedParentId === product.id}
-                                            onCheckedChange={() => setSelectedParentId(product.id)}
-                                          />
-                                        </div>
-                                        {product.bit_type && (
-                                          <p className="text-xs text-muted-foreground mt-1">
-                                            Type: {product.bit_type}
-                                          </p>
-                                        )}
-                                        {product.grit && (
-                                          <p className="text-xs text-muted-foreground">
-                                            Grit: {product.grit}
-                                          </p>
-                                        )}
+                                        <h4 className="font-medium truncate">{product.name}</h4>
+                                        <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
+                                        <p className="text-sm font-medium">${product.price_usd}</p>
                                       </div>
+                                      {selectedParentId === product.id && (
+                                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                      )}
                                     </div>
                                   </CardContent>
                                 </Card>
-                              ))}
+                              );
+                            })}
                           </div>
                         </div>
 
                         {selectedParentId && (
-                          <div className="bg-muted p-4 rounded-lg space-y-2">
-                            <h4 className="font-semibold text-sm">Preview:</h4>
-                            <p className="text-sm">
-                              <strong>Parent:</strong>{" "}
-                              {getProductGroups()
-                                .find(([name]) => name === selectedGroup)?.[1]
-                                .find((p) => p.id === selectedParentId)?.name}
-                            </p>
-                            <p className="text-sm">
-                              <strong>Variants ({getProductGroups()
-                                .find(([name]) => name === selectedGroup)?.[1]
-                                .filter((p) => p.id !== selectedParentId).length}):</strong>
-                            </p>
-                            <ul className="text-sm list-disc list-inside space-y-1 ml-2">
-                              {getProductGroups()
-                                .find(([name]) => name === selectedGroup)?.[1]
-                                .filter((p) => p.id !== selectedParentId)
-                                .map((p) => (
-                                  <li key={p.id}>
-                                    {p.sku} - ${p.price_usd}
-                                  </li>
-                                ))}
-                            </ul>
+                          <div className="space-y-2">
+                            <Label>Preview</Label>
+                            <Card className="bg-muted/50">
+                              <CardContent className="p-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">Parent Product:</span>
+                                    <span>
+                                      {products.find(p => p.id === selectedParentId)?.name}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Variants ({selectedVariantProducts.size - 1}):</span>
+                                    <ul className="list-disc list-inside mt-1 text-sm text-muted-foreground">
+                                      {Array.from(selectedVariantProducts)
+                                        .filter(id => id !== selectedParentId)
+                                        .map(id => {
+                                          const product = products.find(p => p.id === id);
+                                          return product ? (
+                                            <li key={id}>{product.sku} - {product.name}</li>
+                                          ) : null;
+                                        })}
+                                    </ul>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
                           </div>
                         )}
+
+                        <Button 
+                          onClick={handleConvertToVariants}
+                          disabled={!selectedParentId}
+                          className="w-full"
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Convert to Variants
+                        </Button>
                       </div>
                     )}
-
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsConverterOpen(false);
-                          setSelectedGroup(null);
-                          setSelectedParentId("");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleConvertToVariants}
-                        disabled={!selectedGroup || !selectedParentId}
-                      >
-                        Convert to Variants
-                      </Button>
-                    </div>
                   </>
                 )}
               </div>
