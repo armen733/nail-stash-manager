@@ -12,6 +12,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { ImageCarousel } from "@/components/ImageCarousel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,7 +94,6 @@ const Products = () => {
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isConverterOpen, setIsConverterOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedParentId, setSelectedParentId] = useState<string>("");
@@ -1591,27 +1591,19 @@ const Products = () => {
 
       {/* Quick View - Responsive (Drawer on mobile, Dialog on desktop) */}
       {isMobile ? (
-        <Drawer open={!!quickViewProduct} onOpenChange={(open) => {
-          if (!open) {
-            setQuickViewProduct(null);
-            setCurrentImageIndex(0);
-          }
-        }}>
+        <Drawer open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
           <DrawerContent className="max-h-[90vh]">
             <DrawerHeader>
               <DrawerTitle>Product Details</DrawerTitle>
             </DrawerHeader>
             {quickViewProduct && (
               <div className="space-y-4 p-4 overflow-y-auto">
-                <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center mb-4">
-                  {(quickViewProduct.images && quickViewProduct.images.length > 0) ? (
-                    <img src={quickViewProduct.images[0].image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
-                  ) : quickViewProduct.image_url ? (
-                    <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Package className="h-24 w-24 text-muted-foreground/30" />
-                  )}
-                </div>
+                <ImageCarousel
+                  images={quickViewProduct.images || []}
+                  fallbackImage={quickViewProduct.image_url}
+                  alt={quickViewProduct.name}
+                  className="mb-4"
+                />
                 <div className="space-y-3">
                   <div>
                     <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
@@ -1756,17 +1748,11 @@ const Products = () => {
                   </div>
                 </div>
               </div>
-              );
-            })()}
+            )}
           </DrawerContent>
         </Drawer>
       ) : (
-        <Dialog open={!!quickViewProduct} onOpenChange={(open) => {
-          if (!open) {
-            setQuickViewProduct(null);
-            setCurrentImageIndex(0);
-          }
-        }}>
+        <Dialog open={!!quickViewProduct} onOpenChange={(open) => !open && setQuickViewProduct(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Product Details</DialogTitle>
@@ -1774,15 +1760,11 @@ const Products = () => {
             {quickViewProduct && (
               <div className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="aspect-square bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                    {(quickViewProduct.images && quickViewProduct.images.length > 0) ? (
-                      <img src={quickViewProduct.images[0].image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
-                    ) : quickViewProduct.image_url ? (
-                      <img src={quickViewProduct.image_url} alt={quickViewProduct.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="h-24 w-24 text-muted-foreground/30" />
-                    )}
-                  </div>
+                  <ImageCarousel
+                    images={quickViewProduct.images || []}
+                    fallbackImage={quickViewProduct.image_url}
+                    alt={quickViewProduct.name}
+                  />
                   <div className="space-y-3">
                     <div>
                       <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
@@ -1929,13 +1911,11 @@ const Products = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            )}
           </DialogContent>
         </Dialog>
       )}
-        </div>
-      );
-    };
+    </div>
+  );
+};
 
     export default Products;
