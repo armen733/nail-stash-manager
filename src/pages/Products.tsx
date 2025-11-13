@@ -1417,6 +1417,41 @@ const Products = () => {
                       <p className="text-sm text-muted-foreground">Reorder Level: {quickViewProduct.reorder_level}</p>
                     )}
                   </div>
+
+                  {/* Show Variants if this is a parent product */}
+                  {quickViewProduct.is_parent && quickViewProduct.variants && quickViewProduct.variants.length > 0 && (
+                    <div className="pt-3 border-t space-y-3">
+                      <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                      <div className="space-y-2">
+                        {quickViewProduct.variants.map((variant) => (
+                          <Card key={variant.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setQuickViewProduct(variant)}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                  {variant.image_url ? (
+                                    <img src={variant.image_url} alt={variant.variant_name || ''} className="w-full h-full object-cover rounded" />
+                                  ) : (
+                                    <Package className="h-6 w-6 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
+                                  <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-sm font-semibold">${variant.price_usd}</p>
+                                    {variant.stock_on_hand !== null && (
+                                      <span className="text-xs text-muted-foreground">Stock: {variant.stock_on_hand}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pt-4 pb-4">
                     {getCartQuantity(quickViewProduct.id) === 0 ? (
                       <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
@@ -1525,7 +1560,44 @@ const Products = () => {
                         <p className="text-sm text-muted-foreground">Reorder Level: {quickViewProduct.reorder_level}</p>
                       )}
                     </div>
-                    <div className="flex gap-2 pt-4">
+                  </div>
+                </div>
+
+                {/* Show Variants if this is a parent product */}
+                {quickViewProduct.is_parent && quickViewProduct.variants && quickViewProduct.variants.length > 0 && (
+                  <div className="pt-3 border-t space-y-3">
+                    <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {quickViewProduct.variants.map((variant) => (
+                        <Card key={variant.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setQuickViewProduct(variant)}>
+                          <CardContent className="p-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                {variant.image_url ? (
+                                  <img src={variant.image_url} alt={variant.variant_name || ''} className="w-full h-full object-cover rounded" />
+                                ) : (
+                                  <Package className="h-6 w-6 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
+                                <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-sm font-semibold">${variant.price_usd}</p>
+                                  {variant.stock_on_hand !== null && (
+                                    <span className="text-xs text-muted-foreground">Stock: {variant.stock_on_hand}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
                       {getCartQuantity(quickViewProduct.id) === 0 ? (
                         <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
                           <ShoppingCart className="mr-2 h-4 w-4" />
@@ -1574,14 +1646,12 @@ const Products = () => {
                       </Button>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
-};
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      );
+    };
 
-export default Products;
+    export default Products;
