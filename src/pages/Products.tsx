@@ -535,7 +535,10 @@ const Products = () => {
   const getProductGroups = () => {
     const groups: { [key: string]: Product[] } = {};
     
-    products.filter(p => !p.is_parent && !p.parent_product_id).forEach(product => {
+    const eligibleProducts = products.filter(p => !p.is_parent && !p.parent_product_id);
+    console.log('Eligible products for grouping:', eligibleProducts.length);
+    
+    eligibleProducts.forEach(product => {
       const baseName = product.name.trim();
       if (!groups[baseName]) {
         groups[baseName] = [];
@@ -543,8 +546,13 @@ const Products = () => {
       groups[baseName].push(product);
     });
     
+    console.log('All groups:', groups);
+    
     // Only return groups with 2 or more products
-    return Object.entries(groups).filter(([_, prods]) => prods.length >= 2);
+    const duplicateGroups = Object.entries(groups).filter(([_, prods]) => prods.length >= 2);
+    console.log('Duplicate groups found:', duplicateGroups.length, duplicateGroups);
+    
+    return duplicateGroups;
   };
 
   const handleConvertToVariants = async () => {
