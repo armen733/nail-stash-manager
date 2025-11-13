@@ -645,6 +645,70 @@ const Products = () => {
     }
   };
 
+  const handleRemoveVariant = async (variantId: string) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({
+          parent_product_id: null,
+          variant_name: null,
+        })
+        .eq("id", variantId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Variant Removed",
+        description: "Product is now standalone",
+      });
+
+      fetchProducts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveParentStatus = async (productId: string) => {
+    try {
+      // First, detach all child variants
+      const { error: variantsError } = await supabase
+        .from("products")
+        .update({
+          parent_product_id: null,
+          variant_name: null,
+        })
+        .eq("parent_product_id", productId);
+
+      if (variantsError) throw variantsError;
+
+      // Then remove parent status
+      const { error: parentError } = await supabase
+        .from("products")
+        .update({ is_parent: false })
+        .eq("id", productId);
+
+      if (parentError) throw parentError;
+
+      toast({
+        title: "Parent Status Removed",
+        description: "All variants are now standalone products",
+      });
+
+      setQuickViewProduct(null);
+      fetchProducts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1456,20 +1520,30 @@ const Products = () => {
                   {/* Show Variants if this is a parent product */}
                   {quickViewProduct.is_parent && quickViewProduct.variants && quickViewProduct.variants.length > 0 && (
                     <div className="pt-3 border-t space-y-3">
-                      <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveParentStatus(quickViewProduct.id)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Remove All
+                        </Button>
+                      </div>
                       <div className="space-y-2">
                         {quickViewProduct.variants.map((variant) => (
-                          <Card key={variant.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setQuickViewProduct(variant)}>
+                          <Card key={variant.id} className="hover:bg-muted/50 transition-colors">
                             <CardContent className="p-3">
                               <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                   {variant.image_url ? (
                                     <img src={variant.image_url} alt={variant.variant_name || ''} className="w-full h-full object-cover rounded" />
                                   ) : (
                                     <Package className="h-6 w-6 text-muted-foreground" />
                                   )}
                                 </div>
-                                <div className="flex-1 min-w-0">
+                                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                   <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
                                   <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1479,6 +1553,16 @@ const Products = () => {
                                     )}
                                   </div>
                                 </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveVariant(variant.id);
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
                               </div>
                             </CardContent>
                           </Card>
@@ -1601,20 +1685,30 @@ const Products = () => {
                 {/* Show Variants if this is a parent product */}
                 {quickViewProduct.is_parent && quickViewProduct.variants && quickViewProduct.variants.length > 0 && (
                   <div className="pt-3 border-t space-y-3">
-                    <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Available Variants ({quickViewProduct.variants.length})</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveParentStatus(quickViewProduct.id)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Remove All
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {quickViewProduct.variants.map((variant) => (
-                        <Card key={variant.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setQuickViewProduct(variant)}>
+                        <Card key={variant.id} className="hover:bg-muted/50 transition-colors">
                           <CardContent className="p-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                 {variant.image_url ? (
                                   <img src={variant.image_url} alt={variant.variant_name || ''} className="w-full h-full object-cover rounded" />
                                 ) : (
                                   <Package className="h-6 w-6 text-muted-foreground" />
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
+                              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                 <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
                                 <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
                                 <div className="flex items-center gap-2 mt-1">
@@ -1624,6 +1718,16 @@ const Products = () => {
                                   )}
                                 </div>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveVariant(variant.id);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
