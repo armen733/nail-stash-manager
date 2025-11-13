@@ -134,7 +134,7 @@ const Products = () => {
       if (error) throw error;
 
       // Fetch all product images
-      const { data: imagesData, error: imagesError } = await supabase
+      const { data: imagesData, error: imagesError } = await (supabase as any)
         .from("product_images")
         .select("*")
         .order("display_order");
@@ -147,7 +147,7 @@ const Products = () => {
       
       // Attach variants and images to their parents
       const productsWithVariants = parentProducts.map(parent => {
-        const productImages = (imagesData || []).filter((img: any) => img.product_id === parent.id);
+        const productImages = (imagesData || []).filter((img: any) => img.product_id === parent.id) as ProductImage[];
         if (parent.is_parent) {
           const variants = variantProducts.filter(v => v.parent_product_id === parent.id);
           return { ...parent, variants, images: productImages };
@@ -155,7 +155,7 @@ const Products = () => {
         return { ...parent, images: productImages };
       });
       
-      setProducts(productsWithVariants);
+      setProducts(productsWithVariants as Product[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -190,7 +190,7 @@ const Products = () => {
 
   const removeExistingImage = async (imageId: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("product_images")
         .delete()
         .eq("id", imageId);
@@ -238,7 +238,7 @@ const Products = () => {
       }
 
       // Insert all uploaded images
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from("product_images")
         .insert(
           uploadedImages.map(img => ({
@@ -982,7 +982,19 @@ const Products = () => {
               <div className="space-y-2">
                 <Label>Product Images</Label>
                 <div className="flex flex-col gap-4">
-                  {/* Existing images */}
+                  {/* Legacy image from image_url field */}
+                  {editingProduct?.image_url && existingImages.length === 0 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="relative w-full aspect-square border rounded-lg overflow-hidden">
+                        <img src={editingProduct.image_url} alt="Product" className="w-full h-full object-cover" />
+                        <div className="absolute bottom-1 left-1 right-1">
+                          <Badge variant="secondary" className="text-xs w-full justify-center">Legacy Image</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Existing images from product_images table */}
                   {existingImages.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {existingImages.map((img, index) => (
