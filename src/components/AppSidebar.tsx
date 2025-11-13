@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -20,6 +20,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Products", url: "/products", icon: Package },
+  { title: "Low Stock", url: "/low-stock", icon: AlertTriangle },
   { title: "Salons", url: "/salons", icon: Building2 },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
