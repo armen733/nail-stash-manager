@@ -4,6 +4,7 @@ import { z } from "zod";
 export const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required").max(200, "Name too long"),
   category: z.string().trim().min(1, "Category is required"),
+  material: z.string().trim().max(100).optional().nullable(),
   bit_type: z.string().trim().max(100).optional().nullable(),
   grit: z.string().trim().max(50).optional().nullable(),
   unit: z.string().trim().max(50).optional().nullable(),
