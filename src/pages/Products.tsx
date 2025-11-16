@@ -55,6 +55,8 @@ interface Product {
   name: string;
   category: string;
   material: string | null;
+  shape: string | null;
+  direction: string | null;
   bit_type: string | null;
   grit: string | null;
   unit: string | null;
@@ -107,6 +109,8 @@ const Products = () => {
     name: "",
     category: "",
     material: "",
+    shape: "",
+    direction: "",
     bit_type: "",
     grit: "",
     unit: "piece",
@@ -271,6 +275,9 @@ const Products = () => {
     const productData = {
       name: formData.name,
       category: formData.category,
+      material: formData.material || null,
+      shape: formData.shape || null,
+      direction: formData.direction || null,
       bit_type: formData.bit_type || null,
       grit: formData.grit || null,
       unit: formData.unit || null,
@@ -355,6 +362,8 @@ const Products = () => {
       name: "",
       category: "",
       material: "",
+      shape: "",
+      direction: "",
       bit_type: "",
       grit: "",
       unit: "piece",
@@ -424,6 +433,9 @@ const Products = () => {
     const duplicatedData = {
       name: `${product.name} (Copy)`,
       category: product.category,
+      material: product.material,
+      shape: product.shape,
+      direction: product.direction,
       bit_type: product.bit_type,
       grit: product.grit,
       unit: product.unit,
@@ -503,6 +515,9 @@ const Products = () => {
     const duplicatedData = selectedItems.map(product => ({
       name: `${product.name} (Copy)`,
       category: product.category,
+      material: product.material,
+      shape: product.shape,
+      direction: product.direction,
       bit_type: product.bit_type,
       grit: product.grit,
       unit: product.unit,
@@ -1114,6 +1129,27 @@ const Products = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="shape">Shape</Label>
+                  <Input
+                    id="shape"
+                    value={formData.shape}
+                    onChange={(e) => setFormData({ ...formData, shape: e.target.value })}
+                    placeholder="Enter shape (e.g., Cone, Cylinder)"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="direction">Direction</Label>
+                  <Input
+                    id="direction"
+                    value={formData.direction}
+                    onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
+                    placeholder="Enter direction (e.g., Left, Right)"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="unit">Unit</Label>
                   <Input
                     id="unit"
@@ -1507,6 +1543,8 @@ const Products = () => {
                               name: product.name,
                               category: product.category,
                               material: product.material || "",
+                              shape: product.shape || "",
+                              direction: product.direction || "",
                               bit_type: product.bit_type || "",
                               grit: product.grit || "",
                               unit: product.unit || "piece",
@@ -1737,6 +1775,8 @@ const Products = () => {
                           name: quickViewProduct.name,
                           category: quickViewProduct.category,
                           material: quickViewProduct.material || "",
+                          shape: quickViewProduct.shape || "",
+                          direction: quickViewProduct.direction || "",
                           bit_type: quickViewProduct.bit_type || "",
                           grit: quickViewProduct.grit || "",
                           unit: quickViewProduct.unit || "piece",
@@ -1901,6 +1941,8 @@ const Products = () => {
                             name: quickViewProduct.name,
                             category: quickViewProduct.category,
                             material: quickViewProduct.material || "",
+                            shape: quickViewProduct.shape || "",
+                            direction: quickViewProduct.direction || "",
                             bit_type: quickViewProduct.bit_type || "",
                             grit: quickViewProduct.grit || "",
                             unit: quickViewProduct.unit || "piece",

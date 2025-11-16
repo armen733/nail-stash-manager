@@ -165,6 +165,7 @@ export type Database = {
           bit_type: string | null
           category: string
           created_at: string
+          direction: string | null
           grit: string | null
           id: string
           image_url: string | null
@@ -175,6 +176,7 @@ export type Database = {
           price_usd: number
           reorder_level: number | null
           salon_price_usd: number | null
+          shape: string | null
           sku: string
           stock_on_hand: number | null
           stock_reserved: number | null
@@ -188,6 +190,7 @@ export type Database = {
           bit_type?: string | null
           category: string
           created_at?: string
+          direction?: string | null
           grit?: string | null
           id?: string
           image_url?: string | null
@@ -198,6 +201,7 @@ export type Database = {
           price_usd: number
           reorder_level?: number | null
           salon_price_usd?: number | null
+          shape?: string | null
           sku: string
           stock_on_hand?: number | null
           stock_reserved?: number | null
@@ -211,6 +215,7 @@ export type Database = {
           bit_type?: string | null
           category?: string
           created_at?: string
+          direction?: string | null
           grit?: string | null
           id?: string
           image_url?: string | null
@@ -221,6 +226,7 @@ export type Database = {
           price_usd?: number
           reorder_level?: number | null
           salon_price_usd?: number | null
+          shape?: string | null
           sku?: string
           stock_on_hand?: number | null
           stock_reserved?: number | null
