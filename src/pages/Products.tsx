@@ -54,6 +54,7 @@ interface Product {
   id: string;
   name: string;
   category: string;
+  material: string | null;
   bit_type: string | null;
   grit: string | null;
   unit: string | null;
@@ -105,6 +106,7 @@ const Products = () => {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    material: "",
     bit_type: "",
     grit: "",
     unit: "piece",
@@ -351,7 +353,8 @@ const Products = () => {
   const resetForm = () => {
     setFormData({
       name: "",
-      category: "Nail Drill Bits",
+      category: "",
+      material: "",
       bit_type: "",
       grit: "",
       unit: "piece",
@@ -1099,6 +1102,18 @@ const Products = () => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="material">Material</Label>
+                  <Input
+                    id="material"
+                    value={formData.material}
+                    onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                    placeholder="Enter material (e.g., Carbide, Ceramic)"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="unit">Unit</Label>
                   <Input
                     id="unit"
@@ -1491,6 +1506,7 @@ const Products = () => {
                             setFormData({
                               name: product.name,
                               category: product.category,
+                              material: product.material || "",
                               bit_type: product.bit_type || "",
                               grit: product.grit || "",
                               unit: product.unit || "piece",
@@ -1720,6 +1736,7 @@ const Products = () => {
                         setFormData({
                           name: quickViewProduct.name,
                           category: quickViewProduct.category,
+                          material: quickViewProduct.material || "",
                           bit_type: quickViewProduct.bit_type || "",
                           grit: quickViewProduct.grit || "",
                           unit: quickViewProduct.unit || "piece",
@@ -1883,6 +1900,7 @@ const Products = () => {
                           setFormData({
                             name: quickViewProduct.name,
                             category: quickViewProduct.category,
+                            material: quickViewProduct.material || "",
                             bit_type: quickViewProduct.bit_type || "",
                             grit: quickViewProduct.grit || "",
                             unit: quickViewProduct.unit || "piece",

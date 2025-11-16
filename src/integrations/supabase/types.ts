@@ -169,6 +169,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_parent: boolean
+          material: string | null
           name: string
           parent_product_id: string | null
           price_usd: number
@@ -191,6 +192,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_parent?: boolean
+          material?: string | null
           name: string
           parent_product_id?: string | null
           price_usd: number
@@ -213,6 +215,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_parent?: boolean
+          material?: string | null
           name?: string
           parent_product_id?: string | null
           price_usd?: number
