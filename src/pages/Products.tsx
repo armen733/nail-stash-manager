@@ -174,6 +174,22 @@ const Products = () => {
     }
   };
 
+  // Get all unique categories from products
+  const getUniqueCategories = () => {
+    const categories = products.map(p => p.category).filter(Boolean);
+    return Array.from(new Set(categories)).sort();
+  };
+
+  // Get variant types for a specific category
+  const getVariantTypesForCategory = (category: string) => {
+    if (!category) return [];
+    const variantTypes = products
+      .filter(p => p.category === category && p.variant_name)
+      .map(p => p.variant_name)
+      .filter(Boolean);
+    return Array.from(new Set(variantTypes)).sort();
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -1110,11 +1126,17 @@ const Products = () => {
                   <Label htmlFor="category">Category *</Label>
                   <Input
                     id="category"
+                    list="category-suggestions"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     placeholder="Enter category (e.g., Nail Drill Bits)"
                     required
                   />
+                  <datalist id="category-suggestions">
+                    {getUniqueCategories().map(cat => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="material">Material</Label>
@@ -1259,12 +1281,18 @@ const Products = () => {
                   <Label htmlFor="variant_name">Variant Type (Optional)</Label>
                   <Input
                     id="variant_name"
+                    list="variant-type-suggestions"
                     placeholder="e.g., Ceramic, Diamond, Carbide, Fine Grit, Coarse"
                     value={formData.variant_name}
                     onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
                   />
+                  <datalist id="variant-type-suggestions">
+                    {getVariantTypesForCategory(formData.category).map(variant => (
+                      <option key={variant} value={variant} />
+                    ))}
+                  </datalist>
                   <p className="text-xs text-muted-foreground">
-                    Specify the type or variation of this product (material, grit, size, etc.)
+                    Specify the type or variation of this product {formData.category && `(showing existing types for ${formData.category})`}
                   </p>
                 </div>
 
