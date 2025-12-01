@@ -87,6 +87,7 @@ const Products = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -140,6 +141,9 @@ const Products = () => {
 
       if (error) throw error;
 
+      // Keep a flat list of all products for suggestions
+      setAllProducts((data || []) as Product[]);
+
       // Fetch all product images
       const { data: imagesData, error: imagesError } = await (supabase as any)
         .from("product_images")
@@ -174,19 +178,18 @@ const Products = () => {
     }
   };
 
-  // Get all unique categories from products
+  // Get all unique categories from existing products
   const getUniqueCategories = () => {
-    const categories = products.map(p => p.category).filter(Boolean);
+    const categories = allProducts.map(p => p.category).filter(Boolean);
     return Array.from(new Set(categories)).sort();
   };
 
-  // Get variant types for a specific category
+  // Get variant types for a specific category from all products
   const getVariantTypesForCategory = (category: string) => {
     if (!category) return [];
-    const variantTypes = products
+    const variantTypes = allProducts
       .filter(p => p.category === category && p.variant_name)
-      .map(p => p.variant_name)
-      .filter(Boolean);
+      .map(p => p.variant_name as string);
     return Array.from(new Set(variantTypes)).sort();
   };
 
