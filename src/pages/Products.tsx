@@ -1127,34 +1127,29 @@ const Products = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Select
-                    value={formData.category || "custom"}
-                    onValueChange={(value) => {
-                      if (value === "custom") {
-                        setFormData({ ...formData, category: "" });
-                      } else {
-                        setFormData({ ...formData, category: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select or type category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getUniqueCategories().map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                      <SelectItem value="custom">+ Add New Category</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {(!formData.category || !getUniqueCategories().includes(formData.category)) && (
+                  <div className="flex gap-2">
                     <Input
-                      placeholder="Enter new category"
+                      id="category"
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="Type or select category"
                       required
+                      className="flex-1"
                     />
-                  )}
+                    <Select
+                      value=""
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Existing" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getUniqueCategories().map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="material">Material</Label>
@@ -1297,43 +1292,34 @@ const Products = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="variant_name">Variant Type (Optional)</Label>
-                  <Select
-                    value={formData.variant_name || "custom"}
-                    onValueChange={(value) => {
-                      if (value === "custom") {
-                        setFormData({ ...formData, variant_name: "" });
-                      } else {
-                        setFormData({ ...formData, variant_name: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select or type variant type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formData.category && getVariantTypesForCategory(formData.category).length > 0 ? (
-                        <>
+                  <div className="flex gap-2">
+                    <Input
+                      id="variant_name"
+                      placeholder="Type or select variant type"
+                      value={formData.variant_name}
+                      onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
+                      className="flex-1"
+                    />
+                    {formData.category && getVariantTypesForCategory(formData.category).length > 0 && (
+                      <Select
+                        value=""
+                        onValueChange={(value) => setFormData({ ...formData, variant_name: value })}
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Existing" />
+                        </SelectTrigger>
+                        <SelectContent>
                           {getVariantTypesForCategory(formData.category).map(variant => (
                             <SelectItem key={variant} value={variant}>{variant}</SelectItem>
                           ))}
-                          <SelectItem value="custom">+ Add New Variant Type</SelectItem>
-                        </>
-                      ) : (
-                        <SelectItem value="custom">+ Add New Variant Type</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {(!formData.variant_name || (formData.category && !getVariantTypesForCategory(formData.category).includes(formData.variant_name))) && (
-                    <Input
-                      placeholder="Enter new variant type"
-                      value={formData.variant_name}
-                      onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
-                    />
-                  )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {formData.category 
-                      ? `Select existing variant types for ${formData.category} or add new one`
-                      : "Select a category first to see variant type suggestions"
+                      ? `Type new or select existing variant type for ${formData.category}`
+                      : "Specify the type or variation of this product"
                     }
                   </p>
                 </div>
