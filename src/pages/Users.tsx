@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Users() {
@@ -44,6 +44,7 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Registered</TableHead>
                 </TableRow>
@@ -57,6 +58,16 @@ export default function Users() {
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         {user.email}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {user.phone ? (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {user.phone}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
