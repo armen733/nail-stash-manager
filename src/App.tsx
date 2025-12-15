@@ -15,6 +15,7 @@ import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import Analytics from "./pages/Analytics";
 import LowStock from "./pages/LowStock";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
@@ -102,6 +103,16 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Orders />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Users />
                 </AppLayout>
               </ProtectedRoute>
             }
