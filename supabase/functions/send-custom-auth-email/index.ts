@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,11 +11,13 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: "signup" | "password_reset";
+  type: "signup" | "request_reset" | "verify_reset";
   email: string;
   name?: string;
   confirmationUrl?: string;
-  resetUrl?: string;
+  redirectUrl?: string;
+  token?: string;
+  newPassword?: string;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -36,6 +41,12 @@ async function sendEmail(to: string, subject: string, html: string) {
   }
   
   return response.json();
+}
+
+function generateToken(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
 const getSignupEmail = (name: string, confirmationUrl: string) => `
@@ -65,11 +76,10 @@ const getSignupEmail = (name: string, confirmationUrl: string) => `
     <div class="content">
       <h2>Welcome, ${name}!</h2>
       <p>Thank you for creating an account with NERA Beauty. We're excited to have you join our community of beauty professionals.</p>
-      <p>Please confirm your email address to get started:</p>
+      <p>You can now start shopping for premium nail supplies.</p>
       <p style="text-align: center; margin: 30px 0;">
-        <a href="${confirmationUrl}" class="button">Confirm Email</a>
+        <a href="${confirmationUrl}" class="button">Start Shopping</a>
       </p>
-      <p style="font-size: 14px; color: #718096;">If you didn't create this account, you can safely ignore this email.</p>
     </div>
     <div class="footer">
       <p>© 2024 NERA Beauty. All rights reserved.</p>
@@ -124,44 +134,121 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
   try {
-    const { type, email, name, confirmationUrl, resetUrl }: EmailRequest = await req.json();
+    const { type, email, name, confirmationUrl, redirectUrl, token, newPassword }: EmailRequest = await req.json();
 
-    console.log(`Sending ${type} email to ${email}`);
-
-    let html: string;
-    let subject: string;
+    console.log(`Processing ${type} request for ${email}`);
 
     switch (type) {
-      case "signup":
-        if (!confirmationUrl) {
-          throw new Error("confirmationUrl is required for signup emails");
-        }
-        html = getSignupEmail(name || "there", confirmationUrl);
-        subject = "Welcome to NERA Beauty - Confirm Your Email";
-        break;
+      case "signup": {
+        const html = getSignupEmail(name || "there", confirmationUrl || "https://nerabeautyus.com");
+        const emailResponse = await sendEmail(email, "Welcome to NERA Beauty!", html);
+        console.log("Welcome email sent:", emailResponse);
+        return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
 
-      case "password_reset":
-        if (!resetUrl) {
-          throw new Error("resetUrl is required for password reset emails");
+      case "request_reset": {
+        // Find user by email
+        const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+        if (userError) throw userError;
+        
+        const user = userData.users.find(u => u.email === email);
+        if (!user) {
+          // Don't reveal if email exists or not for security
+          console.log("User not found, but returning success for security");
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
         }
-        html = getPasswordResetEmail(resetUrl);
-        subject = "Reset Your NERA Beauty Password";
-        break;
+
+        // Generate reset token
+        const resetToken = generateToken();
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        // Invalidate any existing tokens for this email
+        await supabase
+          .from("password_reset_tokens")
+          .update({ used: true })
+          .eq("email", email)
+          .eq("used", false);
+
+        // Store new token
+        const { error: insertError } = await supabase
+          .from("password_reset_tokens")
+          .insert({
+            user_id: user.id,
+            email: email,
+            token: resetToken,
+            expires_at: expiresAt.toISOString(),
+          });
+
+        if (insertError) throw insertError;
+
+        // Send reset email
+        const resetUrl = `${redirectUrl || "https://nerabeautyus.com"}/reset-password?token=${resetToken}`;
+        const html = getPasswordResetEmail(resetUrl);
+        await sendEmail(email, "Reset Your NERA Beauty Password", html);
+
+        console.log("Password reset email sent");
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      case "verify_reset": {
+        if (!token || !newPassword) {
+          throw new Error("Token and new password are required");
+        }
+
+        // Find and validate token
+        const { data: tokenData, error: tokenError } = await supabase
+          .from("password_reset_tokens")
+          .select("*")
+          .eq("token", token)
+          .eq("used", false)
+          .single();
+
+        if (tokenError || !tokenData) {
+          throw new Error("Invalid or expired reset token");
+        }
+
+        if (new Date(tokenData.expires_at) < new Date()) {
+          throw new Error("Reset token has expired");
+        }
+
+        // Update user password
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          tokenData.user_id,
+          { password: newPassword }
+        );
+
+        if (updateError) throw updateError;
+
+        // Mark token as used
+        await supabase
+          .from("password_reset_tokens")
+          .update({ used: true })
+          .eq("id", tokenData.id);
+
+        console.log("Password reset successful");
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
 
       default:
-        throw new Error(`Unknown email type: ${type}`);
+        throw new Error(`Unknown request type: ${type}`);
     }
-
-    const emailResponse = await sendEmail(email, subject, html);
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
