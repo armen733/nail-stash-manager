@@ -70,6 +70,7 @@ export type Database = {
           id: string
           notes: string | null
           order_date: string
+          profile_id: string | null
           salon_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
@@ -87,6 +88,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_date?: string
+          profile_id?: string | null
           salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -104,6 +106,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_date?: string
+          profile_id?: string | null
           salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
@@ -115,6 +118,13 @@ export type Database = {
           {
             foreignKeyName: "orders_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

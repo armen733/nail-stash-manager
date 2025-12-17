@@ -69,6 +69,13 @@ interface Salon {
   name: string;
 }
 
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -89,15 +96,26 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [showNewUserForm, setShowNewUserForm] = useState(false);
 
   const [formData, setFormData] = useState({
     salon_id: "",
+    profile_id: "",
     notes: "",
+  });
+
+  const [newUserData, setNewUserData] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    address: "",
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -161,19 +179,22 @@ const Orders = () => {
 
   const fetchData = async () => {
     try {
-      const [ordersRes, salonsRes, productsRes] = await Promise.all([
+      const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
         supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, products(name))").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name").order("name"),
         supabase.from("products").select("id, name, price_usd, sku, stock_on_hand").order("name"),
+        supabase.from("profiles").select("id, full_name, email, phone").order("full_name"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
       if (salonsRes.error) throw salonsRes.error;
       if (productsRes.error) throw productsRes.error;
+      if (profilesRes.error) throw profilesRes.error;
 
       setOrders(ordersRes.data || []);
       setSalons(salonsRes.data || []);
       setProducts(productsRes.data || []);
+      setProfiles(profilesRes.data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -223,6 +244,51 @@ const Orders = () => {
       .filter(Boolean);
   };
 
+  const handleCreateInlineUser = async () => {
+    if (!newUserData.full_name || !newUserData.email || !newUserData.address) {
+      toast({
+        title: "Error",
+        description: "Name, email, and address are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: newUserData.email,
+          full_name: newUserData.full_name,
+          phone: newUserData.phone || null,
+          role: 'Customer',
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Refresh profiles and select the new user
+      await fetchData();
+      setFormData({ ...formData, profile_id: data.user.id });
+      setShowNewUserForm(false);
+      setNewUserData({ full_name: "", email: "", phone: "", address: "" });
+      
+      toast({
+        title: "Success",
+        description: "Customer created and selected",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -254,7 +320,8 @@ const Orders = () => {
         .from("orders")
         .insert([
           {
-            salon_id: formData.salon_id,
+            salon_id: formData.salon_id || null,
+            profile_id: formData.profile_id || null,
             notes: formData.notes || null,
             created_by: user?.id,
             status: "Draft",
@@ -299,7 +366,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
-      setFormData({ salon_id: "", notes: "" });
+      setFormData({ salon_id: "", profile_id: "", notes: "" });
       setOrderItems([]);
       fetchData();
     } catch (error: any) {
@@ -356,7 +423,7 @@ const Orders = () => {
       }));
 
       setOrderItems(orderItemsData);
-      setFormData({ salon_id: order.salon_id || '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}` });
+      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}` });
       setIsDialogOpen(true);
       toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
     } catch (error: any) {
@@ -395,21 +462,118 @@ const Orders = () => {
               <DialogTitle>Create New Order</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateOrder} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="salon_id">Salon *</Label>
-                <Select value={formData.salon_id} onValueChange={(value) => setFormData({ ...formData, salon_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select salon" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {salons.map((salon) => (
-                      <SelectItem key={salon.id} value={salon.id}>
-                        {salon.name}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profile_id">Customer</Label>
+                  <Select 
+                    value={formData.profile_id} 
+                    onValueChange={(value) => {
+                      if (value === "new") {
+                        setShowNewUserForm(true);
+                      } else {
+                        setFormData({ ...formData, profile_id: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">
+                        <span className="flex items-center gap-2 text-primary">
+                          <Plus className="h-4 w-4" /> Add New Customer
+                        </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{profile.full_name}</span>
+                            <span className="text-xs text-muted-foreground">{profile.email}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="salon_id">Salon</Label>
+                  <Select value={formData.salon_id} onValueChange={(value) => setFormData({ ...formData, salon_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select salon (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {salons.map((salon) => (
+                        <SelectItem key={salon.id} value={salon.id}>
+                          {salon.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              {showNewUserForm && (
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">New Customer Details</Label>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewUserForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="new_full_name">Name *</Label>
+                      <Input
+                        id="new_full_name"
+                        value={newUserData.full_name}
+                        onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
+                        placeholder="John Doe"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_email">Email *</Label>
+                      <Input
+                        id="new_email"
+                        type="email"
+                        value={newUserData.email}
+                        onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                        placeholder="john@example.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_phone">Phone</Label>
+                      <Input
+                        id="new_phone"
+                        type="tel"
+                        value={newUserData.phone}
+                        onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
+                        placeholder="+1 234 567 8900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_address">Address *</Label>
+                      <Input
+                        id="new_address"
+                        value={newUserData.address}
+                        onChange={(e) => setNewUserData({ ...newUserData, address: e.target.value })}
+                        placeholder="123 Main St"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    onClick={handleCreateInlineUser}
+                    disabled={isCreatingUser || !newUserData.full_name || !newUserData.email || !newUserData.address}
+                  >
+                    {isCreatingUser ? "Creating..." : "Create & Select Customer"}
+                  </Button>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -517,7 +681,7 @@ const Orders = () => {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!formData.salon_id || orderItems.length === 0}>
+                <Button type="submit" disabled={(showNewUserForm || (!formData.salon_id && !formData.profile_id)) || orderItems.length === 0}>
                   Create Order
                 </Button>
               </div>
