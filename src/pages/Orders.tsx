@@ -82,6 +82,7 @@ interface Product {
   price_usd: number;
   sku: string;
   stock_on_hand: number | null;
+  image_url: string | null;
 }
 
 interface OrderItem {
@@ -182,7 +183,7 @@ const Orders = () => {
       const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
         supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, products(name))").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name").order("name"),
-        supabase.from("products").select("id, name, price_usd, sku, stock_on_hand").order("name"),
+        supabase.from("products").select("id, name, price_usd, sku, stock_on_hand, image_url").order("name"),
         supabase.from("profiles").select("id, full_name, email, phone").order("full_name"),
       ]);
 
@@ -602,11 +603,26 @@ const Orders = () => {
                             <SelectContent>
                               {products.map((product) => (
                                 <SelectItem key={product.id} value={product.id}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{product.name}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      ${product.price_usd} • Stock: {product.stock_on_hand ?? 0}
-                                    </span>
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded bg-muted flex-shrink-0 overflow-hidden">
+                                      {product.image_url ? (
+                                        <img 
+                                          src={product.image_url} 
+                                          alt={product.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
+                                          No img
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{product.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        ${product.price_usd} • Stock: {product.stock_on_hand ?? 0}
+                                      </span>
+                                    </div>
                                   </div>
                                 </SelectItem>
                               ))}
