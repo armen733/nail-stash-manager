@@ -60,11 +60,11 @@ export function AppSidebar() {
                       end={item.url === "/"}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[3rem] px-4"
-                          : "hover:bg-sidebar-accent/50 min-h-[3rem] px-4"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[3.5rem] px-4 py-3 flex items-center gap-3"
+                          : "hover:bg-sidebar-accent/50 min-h-[3.5rem] px-4 py-3 flex items-center gap-3"
                       }
                     >
-                      <item.icon className="h-6 w-6 md:h-5 md:w-5" />
+                      <item.icon className="h-7 w-7 md:h-5 md:w-5 flex-shrink-0" />
                       {!collapsed && <span className="text-lg md:text-base">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
