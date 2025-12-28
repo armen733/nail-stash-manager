@@ -103,8 +103,13 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html, body {
-    @apply bg-background text-foreground overflow-x-hidden;
-    -webkit-overflow-scrolling: touch;
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
