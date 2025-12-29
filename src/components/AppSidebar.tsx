@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle, Users } from "lucide-react";
+import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle, Users, Percent } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -24,6 +24,7 @@ const menuItems = [
   { title: "Salons", url: "/salons", icon: Building2 },
   { title: "Orders", url: "/orders", icon: ShoppingCart },
   { title: "Users", url: "/users", icon: Users },
+  { title: "Promotions", url: "/promotions", icon: Percent },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Profile", url: "/profile", icon: User },
 ];

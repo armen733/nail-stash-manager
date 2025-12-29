@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import Analytics from "./pages/Analytics";
 import LowStock from "./pages/LowStock";
 import Users from "./pages/Users";
+import Promotions from "./pages/Promotions";
 import NotFound from "./pages/NotFound";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
@@ -133,6 +134,16 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Analytics />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Promotions />
                 </AppLayout>
               </ProtectedRoute>
             }
