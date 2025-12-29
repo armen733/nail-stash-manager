@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Percent, Gift, Crown, Trash2, Edit, Users } from "lucide-react";
+import { Plus, Percent, Gift, Crown, Trash2, Edit, Users, UserPlus, UsersRound } from "lucide-react";
 import { format } from "date-fns";
 
 interface DiscountCode {
@@ -48,13 +50,47 @@ interface UserTier {
   updated_at: string | null;
 }
 
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  loyalty_points: number | null;
+}
+
+const TIER_DISCOUNTS: Record<string, number> = {
+  none: 0,
+  bronze: 5,
+  silver: 10,
+  gold: 15,
+};
+
 const Promotions = () => {
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [loyaltyTransactions, setLoyaltyTransactions] = useState<LoyaltyTransaction[]>([]);
   const [userTiers, setUserTiers] = useState<UserTier[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
+
+  // Loyalty points dialog state
+  const [isPointsDialogOpen, setIsPointsDialogOpen] = useState(false);
+  const [pointsFormData, setPointsFormData] = useState({
+    targetType: "specific" as "specific" | "all",
+    userId: "",
+    points: 0,
+    type: "earned" as "earned" | "redeemed",
+    description: "",
+  });
+
+  // Tier dialog state
+  const [isTierDialogOpen, setIsTierDialogOpen] = useState(false);
+  const [tierFormData, setTierFormData] = useState({
+    targetType: "specific" as "specific" | "all",
+    userId: "",
+    tier: "none" as "none" | "bronze" | "silver" | "gold",
+    validUntil: "",
+  });
 
   // Form state for new/edit discount code
   const [formData, setFormData] = useState({
@@ -74,19 +110,22 @@ const Promotions = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [codesRes, transactionsRes, tiersRes] = await Promise.all([
+      const [codesRes, transactionsRes, tiersRes, profilesRes] = await Promise.all([
         supabase.from("discount_codes").select("*").order("created_at", { ascending: false }),
         supabase.from("loyalty_transactions").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("user_tiers").select("*").order("updated_at", { ascending: false }),
+        supabase.from("profiles").select("id, email, full_name, loyalty_points"),
       ]);
 
       if (codesRes.error) throw codesRes.error;
       if (transactionsRes.error) throw transactionsRes.error;
       if (tiersRes.error) throw tiersRes.error;
+      if (profilesRes.error) throw profilesRes.error;
 
       setDiscountCodes(codesRes.data || []);
       setLoyaltyTransactions(transactionsRes.data || []);
       setUserTiers(tiersRes.data || []);
+      setProfiles(profilesRes.data || []);
     } catch (error: any) {
       toast.error("Error loading promotions data: " + error.message);
     } finally {
@@ -105,6 +144,25 @@ const Promotions = () => {
       is_active: true,
     });
     setEditingCode(null);
+  };
+
+  const resetPointsForm = () => {
+    setPointsFormData({
+      targetType: "specific",
+      userId: "",
+      points: 0,
+      type: "earned",
+      description: "",
+    });
+  };
+
+  const resetTierForm = () => {
+    setTierFormData({
+      targetType: "specific",
+      userId: "",
+      tier: "none",
+      validUntil: "",
+    });
   };
 
   const handleSaveDiscountCode = async () => {
@@ -191,6 +249,109 @@ const Promotions = () => {
     }
   };
 
+  // Handle loyalty points adjustment
+  const handleAdjustPoints = async () => {
+    if (pointsFormData.points <= 0) {
+      toast.error("Please enter a valid number of points");
+      return;
+    }
+
+    if (pointsFormData.targetType === "specific" && !pointsFormData.userId) {
+      toast.error("Please select a user");
+      return;
+    }
+
+    try {
+      const targetUsers = pointsFormData.targetType === "all" 
+        ? profiles.map(p => p.id)
+        : [pointsFormData.userId];
+
+      // Create loyalty transactions
+      const transactions = targetUsers.map(userId => ({
+        user_id: userId,
+        points: pointsFormData.points,
+        type: pointsFormData.type,
+        description: pointsFormData.description || `Manual ${pointsFormData.type} - Admin adjustment`,
+      }));
+
+      const { error: txError } = await supabase
+        .from("loyalty_transactions")
+        .insert(transactions);
+      if (txError) throw txError;
+
+      // Update profile loyalty_points
+      for (const userId of targetUsers) {
+        const profile = profiles.find(p => p.id === userId);
+        const currentPoints = profile?.loyalty_points || 0;
+        const newPoints = pointsFormData.type === "earned" 
+          ? currentPoints + pointsFormData.points
+          : Math.max(0, currentPoints - pointsFormData.points);
+
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ loyalty_points: newPoints })
+          .eq("id", userId);
+        if (profileError) throw profileError;
+      }
+
+      toast.success(`Points ${pointsFormData.type} for ${targetUsers.length} user(s)`);
+      setIsPointsDialogOpen(false);
+      resetPointsForm();
+      fetchData();
+    } catch (error: any) {
+      toast.error("Error adjusting points: " + error.message);
+    }
+  };
+
+  // Handle tier adjustment
+  const handleAdjustTier = async () => {
+    if (tierFormData.targetType === "specific" && !tierFormData.userId) {
+      toast.error("Please select a user");
+      return;
+    }
+
+    try {
+      const targetUsers = tierFormData.targetType === "all" 
+        ? profiles.map(p => p.id)
+        : [tierFormData.userId];
+
+      const tierDiscount = TIER_DISCOUNTS[tierFormData.tier];
+      const validUntil = tierFormData.validUntil || null;
+
+      for (const userId of targetUsers) {
+        const existingTier = userTiers.find(t => t.user_id === userId);
+
+        const tierData = {
+          user_id: userId,
+          current_tier: tierFormData.tier,
+          tier_discount_percent: tierDiscount,
+          tier_valid_until: validUntil,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existingTier) {
+          const { error } = await supabase
+            .from("user_tiers")
+            .update(tierData)
+            .eq("id", existingTier.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("user_tiers")
+            .insert([tierData]);
+          if (error) throw error;
+        }
+      }
+
+      toast.success(`Tier updated for ${targetUsers.length} user(s)`);
+      setIsTierDialogOpen(false);
+      resetTierForm();
+      fetchData();
+    } catch (error: any) {
+      toast.error("Error adjusting tier: " + error.message);
+    }
+  };
+
   const getTierBadgeColor = (tier: string | null) => {
     switch (tier) {
       case "gold": return "bg-yellow-500 text-yellow-950";
@@ -198,6 +359,11 @@ const Promotions = () => {
       case "bronze": return "bg-amber-600 text-amber-50";
       default: return "bg-muted text-muted-foreground";
     }
+  };
+
+  const getUserName = (userId: string) => {
+    const profile = profiles.find(p => p.id === userId);
+    return profile ? profile.full_name || profile.email : userId.slice(0, 8) + "...";
   };
 
   return (
@@ -391,14 +557,170 @@ const Promotions = () => {
 
         {/* Loyalty Points Tab */}
         <TabsContent value="loyalty" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Loyalty Transactions</h2>
-            <div className="text-sm text-muted-foreground">
-              1 point per $1 spent • 100 points = $5 off
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">Loyalty Points</h2>
+              <p className="text-sm text-muted-foreground">1 point per $1 spent • 100 points = $5 off</p>
             </div>
+            <Dialog open={isPointsDialogOpen} onOpenChange={(open) => {
+              setIsPointsDialogOpen(open);
+              if (!open) resetPointsForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adjust Points
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Adjust Loyalty Points</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Apply To</Label>
+                    <Select
+                      value={pointsFormData.targetType}
+                      onValueChange={(value: "specific" | "all") => setPointsFormData({ ...pointsFormData, targetType: value, userId: "" })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border">
+                        <SelectItem value="specific">
+                          <div className="flex items-center gap-2">
+                            <UserPlus className="h-4 w-4" />
+                            Specific User
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="all">
+                          <div className="flex items-center gap-2">
+                            <UsersRound className="h-4 w-4" />
+                            All Users ({profiles.length})
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {pointsFormData.targetType === "specific" && (
+                    <div className="space-y-2">
+                      <Label>Select User</Label>
+                      <Select
+                        value={pointsFormData.userId}
+                        onValueChange={(value) => setPointsFormData({ ...pointsFormData, userId: value })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Choose a user..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border max-h-[200px]">
+                          {profiles.map((profile) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              <div className="flex flex-col">
+                                <span>{profile.full_name}</span>
+                                <span className="text-xs text-muted-foreground">{profile.email} • {profile.loyalty_points || 0} pts</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Action</Label>
+                      <Select
+                        value={pointsFormData.type}
+                        onValueChange={(value: "earned" | "redeemed") => setPointsFormData({ ...pointsFormData, type: value })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border">
+                          <SelectItem value="earned">Add Points</SelectItem>
+                          <SelectItem value="redeemed">Remove Points</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="points">Points</Label>
+                      <Input
+                        id="points"
+                        type="number"
+                        min="1"
+                        value={pointsFormData.points || ""}
+                        onChange={(e) => setPointsFormData({ ...pointsFormData, points: parseInt(e.target.value) || 0 })}
+                        placeholder="100"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Reason (optional)</Label>
+                    <Textarea
+                      id="description"
+                      value={pointsFormData.description}
+                      onChange={(e) => setPointsFormData({ ...pointsFormData, description: e.target.value })}
+                      placeholder="e.g. Birthday bonus, Promotion, Correction..."
+                      rows={2}
+                    />
+                  </div>
+
+                  <Button onClick={handleAdjustPoints} className="w-full">
+                    {pointsFormData.type === "earned" ? "Add" : "Remove"} {pointsFormData.points || 0} Points
+                    {pointsFormData.targetType === "all" && ` to ${profiles.length} users`}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
+          {/* User Points Overview */}
           <Card>
+            <CardHeader>
+              <CardTitle className="text-base">User Points Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              ) : profiles.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No users found.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Points</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {profiles.map((profile) => (
+                        <TableRow key={profile.id}>
+                          <TableCell className="font-medium">{profile.full_name}</TableCell>
+                          <TableCell className="text-muted-foreground">{profile.email}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="secondary">{profile.loyalty_points || 0} pts</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Transactions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recent Transactions</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -413,6 +735,7 @@ const Promotions = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Points</TableHead>
                         <TableHead className="hidden md:table-cell">Description</TableHead>
@@ -424,6 +747,7 @@ const Promotions = () => {
                           <TableCell>
                             {tx.created_at ? format(new Date(tx.created_at), "MMM d, yyyy") : "-"}
                           </TableCell>
+                          <TableCell className="font-medium">{getUserName(tx.user_id)}</TableCell>
                           <TableCell>
                             <Badge variant={tx.type === "earned" ? "default" : "secondary"}>
                               {tx.type}
@@ -447,8 +771,113 @@ const Promotions = () => {
 
         {/* Customer Tiers Tab */}
         <TabsContent value="tiers" className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <h2 className="text-xl font-semibold">Customer Tiers</h2>
+            <Dialog open={isTierDialogOpen} onOpenChange={(open) => {
+              setIsTierDialogOpen(open);
+              if (!open) resetTierForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Crown className="mr-2 h-4 w-4" />
+                  Set Tier
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Set Customer Tier</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Apply To</Label>
+                    <Select
+                      value={tierFormData.targetType}
+                      onValueChange={(value: "specific" | "all") => setTierFormData({ ...tierFormData, targetType: value, userId: "" })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border">
+                        <SelectItem value="specific">
+                          <div className="flex items-center gap-2">
+                            <UserPlus className="h-4 w-4" />
+                            Specific User
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="all">
+                          <div className="flex items-center gap-2">
+                            <UsersRound className="h-4 w-4" />
+                            All Users ({profiles.length})
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {tierFormData.targetType === "specific" && (
+                    <div className="space-y-2">
+                      <Label>Select User</Label>
+                      <Select
+                        value={tierFormData.userId}
+                        onValueChange={(value) => setTierFormData({ ...tierFormData, userId: value })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Choose a user..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border max-h-[200px]">
+                          {profiles.map((profile) => {
+                            const tier = userTiers.find(t => t.user_id === profile.id);
+                            return (
+                              <SelectItem key={profile.id} value={profile.id}>
+                                <div className="flex flex-col">
+                                  <span>{profile.full_name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {profile.email} • Current: {tier?.current_tier || "none"}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Tier</Label>
+                    <Select
+                      value={tierFormData.tier}
+                      onValueChange={(value: "none" | "bronze" | "silver" | "gold") => setTierFormData({ ...tierFormData, tier: value })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border">
+                        <SelectItem value="none">None (0% discount)</SelectItem>
+                        <SelectItem value="bronze">Bronze (5% discount)</SelectItem>
+                        <SelectItem value="silver">Silver (10% discount)</SelectItem>
+                        <SelectItem value="gold">Gold (15% discount)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tier_valid_until">Valid Until (optional)</Label>
+                    <Input
+                      id="tier_valid_until"
+                      type="date"
+                      value={tierFormData.validUntil}
+                      onChange={(e) => setTierFormData({ ...tierFormData, validUntil: e.target.value })}
+                    />
+                  </div>
+
+                  <Button onClick={handleAdjustTier} className="w-full">
+                    Set to {tierFormData.tier.charAt(0).toUpperCase() + tierFormData.tier.slice(1)}
+                    {tierFormData.targetType === "all" && ` for ${profiles.length} users`}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Tier Info Cards */}
@@ -498,14 +927,14 @@ const Promotions = () => {
               ) : userTiers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No customer tiers yet. Tiers are assigned when customers make purchases.</p>
+                  <p>No customer tiers yet. Use "Set Tier" to assign tiers manually.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>User ID</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Tier</TableHead>
                         <TableHead>Discount</TableHead>
                         <TableHead className="hidden md:table-cell">Monthly Spend</TableHead>
@@ -515,8 +944,8 @@ const Promotions = () => {
                     <TableBody>
                       {userTiers.map((tier) => (
                         <TableRow key={tier.id}>
-                          <TableCell className="font-mono text-xs">
-                            {tier.user_id.slice(0, 8)}...
+                          <TableCell className="font-medium">
+                            {getUserName(tier.user_id)}
                           </TableCell>
                           <TableCell>
                             <Badge className={getTierBadgeColor(tier.current_tier)}>
