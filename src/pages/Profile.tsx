@@ -67,9 +67,13 @@ const Profile = () => {
         });
       }
     } catch (error: any) {
+      const isPermissionDenied = error.message?.includes('permission denied') || 
+                                  error.message?.includes('Permission denied');
       toast({
-        title: "Error",
-        description: error.message || "Failed to update notification settings",
+        title: isPermissionDenied ? "Permission Required" : "Error",
+        description: isPermissionDenied 
+          ? "Please allow notifications in your browser settings (click the lock icon in the address bar)"
+          : error.message || "Failed to update notification settings",
         variant: "destructive",
       });
     } finally {
