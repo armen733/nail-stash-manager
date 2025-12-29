@@ -73,19 +73,19 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
   });
 
   return (
-    <div className="min-h-screen flex w-full safe-top safe-left safe-right">
+    <div className="min-h-screen flex w-full safe-left safe-right">
       <AppSidebar />
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <header className="min-h-[60px] border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 pt-[max(env(safe-area-inset-top,0px),12px)]">
+      <main className="flex-1 flex flex-col min-w-0">
+        <header className="border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 py-4 pt-[max(env(safe-area-inset-top,0px),16px)]">
           <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2" />
           <img 
             src={logo} 
             alt="NÉRA Beauty" 
-            className="h-10 w-auto object-contain"
+            className="h-14 sm:h-16 w-auto object-contain"
             style={{ background: 'transparent' }}
           />
         </header>
-        <div className="flex-1 p-4 sm:p-6 safe-bottom">
+        <div className="flex-1 p-4 sm:p-6 safe-bottom overflow-y-auto">
           <Suspense fallback={<PageLoader />}>
             {children}
           </Suspense>
