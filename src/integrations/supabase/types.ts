@@ -195,9 +195,12 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           customer_phone: string | null
+          discount_amount: number | null
           id: string
           notes: string | null
           order_date: string
+          points_earned: number | null
+          points_redeemed: number | null
           profile_id: string | null
           salon_id: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -215,9 +218,12 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
           id?: string
           notes?: string | null
           order_date?: string
+          points_earned?: number | null
+          points_redeemed?: number | null
           profile_id?: string | null
           salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -235,9 +241,12 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          discount_amount?: number | null
           id?: string
           notes?: string | null
           order_date?: string
+          points_earned?: number | null
+          points_redeemed?: number | null
           profile_id?: string | null
           salon_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
