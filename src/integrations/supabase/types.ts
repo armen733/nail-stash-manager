@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_percent: number
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_order_amount: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_percent: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_percent?: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_order_amount?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          points: number
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points: number
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points?: number
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -292,6 +369,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          loyalty_points: number | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
@@ -301,6 +379,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          loyalty_points?: number | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
@@ -310,6 +389,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          loyalty_points?: number | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
