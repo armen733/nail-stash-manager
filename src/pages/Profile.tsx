@@ -111,20 +111,20 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in max-w-2xl mx-auto px-1">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your account information</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Profile Settings</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your account information</p>
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <User className="h-5 w-5" />
             Personal Information
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           <form onSubmit={handleUpdate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name</Label>
@@ -134,18 +134,19 @@ const Profile = () => {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
                 required
+                className="h-11 min-h-[44px]"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
+                <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <Input
                   id="email"
                   value={profile.email}
                   disabled
-                  className="flex-1"
+                  className="flex-1 h-11 min-h-[44px]"
                 />
               </div>
               <p className="text-xs text-muted-foreground">Email cannot be changed</p>
@@ -153,15 +154,15 @@ const Profile = () => {
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <Badge variant="secondary">{profile.role}</Badge>
+              <div className="flex items-center gap-2 min-h-[44px]">
+                <Shield className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <Badge variant="secondary" className="text-sm py-1">{profile.role}</Badge>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Member Since</Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground min-h-[44px] flex items-center">
                 {new Date(profile.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -170,14 +171,15 @@ const Profile = () => {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-4">
-              <Button type="submit" disabled={saving}>
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button type="submit" disabled={saving} className="h-11 min-h-[44px]">
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
               <Button
                 type="button"
                 variant="destructive"
                 onClick={handleLogout}
+                className="h-11 min-h-[44px]"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
