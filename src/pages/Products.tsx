@@ -7,8 +7,7 @@ import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, 
 import { downloadCSV } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pagination } from "@/components/Pagination";
-import { usePagination } from "@/hooks/usePagination";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -392,18 +391,12 @@ const Products = () => {
   const suppliers = ["all", ...getUniqueSuppliers()];
 
   const {
-    currentPage,
-    totalPages,
-    paginatedItems,
-    goToPage,
-    hasNextPage,
-    hasPrevPage,
-    resetPage,
-  } = usePagination(sortedProducts, 20);
-
-  useEffect(() => {
-    resetPage();
-  }, [searchTerm, categoryFilter, sortBy, supplierFilter, stockStatusFilter, priceRange, advancedCategoryFilter, variantTypeFilter, resetPage]);
+    displayedItems,
+    hasMore,
+    loaderRef,
+    totalCount,
+    displayedCount,
+  } = useInfiniteScroll(sortedProducts, 20);
 
   // Reset variant type filter when category changes
   useEffect(() => {
@@ -621,10 +614,10 @@ const Products = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedProducts.size === paginatedItems.length) {
+    if (selectedProducts.size === displayedItems.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(paginatedItems.map(p => p.id)));
+      setSelectedProducts(new Set(displayedItems.map(p => p.id)));
     }
   };
 
@@ -1760,25 +1753,30 @@ const Products = () => {
         <CardContent>
           {loading ? (
             <ProductGridSkeleton count={12} />
-          ) : paginatedItems.length === 0 ? (
+          ) : displayedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground">No products found. Add your first product to get started.</p>
             </div>
           ) : (
             <>
-              {paginatedItems.length > 0 && (
-                <div className="flex items-center gap-2 mb-4">
-                  <Checkbox
-                    checked={selectedProducts.size === paginatedItems.length && paginatedItems.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                  <span className="text-sm text-muted-foreground">Select All</span>
+              {displayedItems.length > 0 && (
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedProducts.size === displayedItems.length && displayedItems.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">Select All</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    Showing {displayedCount} of {totalCount} products
+                  </span>
                 </div>
               )}
               {viewMode === "grid" ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {paginatedItems.map((product) => (
+                  {displayedItems.map((product) => (
                     <Card 
                       key={product.id} 
                       className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
@@ -1956,7 +1954,7 @@ const Products = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedItems.map((product) => (
+                      {displayedItems.map((product) => (
                         <TableRow key={product.id} className="cursor-pointer" onClick={() => setQuickViewProduct(product)}>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox
@@ -2052,13 +2050,15 @@ const Products = () => {
                   </Table>
                 </div>
               )}
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={goToPage}
-                hasNextPage={hasNextPage}
-                hasPrevPage={hasPrevPage}
-              />
+              {/* Infinite scroll loader */}
+              <div ref={loaderRef} className="flex justify-center py-6">
+                {hasMore && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span className="text-sm">Loading more...</span>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </CardContent>
