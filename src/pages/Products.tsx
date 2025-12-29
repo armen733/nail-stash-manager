@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ const Products = () => {
   const { data: categoryVariantTypes = [] } = useCategoryVariantTypes();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -355,32 +357,38 @@ const Products = () => {
     setExistingImages([]);
   };
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
-    const matchesAdvancedCategory = advancedCategoryFilter === "all" || product.category === advancedCategoryFilter;
-    const matchesVariantType = variantTypeFilter === "all" || product.variant_name === variantTypeFilter || product.bit_type === variantTypeFilter;
-    const matchesSupplier = supplierFilter === "all" || product.supplier === supplierFilter;
-    const matchesPrice = product.price_usd >= priceRange[0] && product.price_usd <= priceRange[1];
-    
-    // Stock status filter
-    let matchesStockStatus = true;
-    const stock = product.stock_on_hand || 0;
-    const reorderLevel = product.reorder_level || 10;
-    if (stockStatusFilter === "out_of_stock") matchesStockStatus = stock === 0;
-    else if (stockStatusFilter === "low_stock") matchesStockStatus = stock > 0 && stock <= reorderLevel;
-    else if (stockStatusFilter === "in_stock") matchesStockStatus = stock > reorderLevel;
-    
-    return matchesSearch && matchesCategory && matchesAdvancedCategory && matchesVariantType && matchesSupplier && matchesPrice && matchesStockStatus;
-  });
+  // Memoize filtered products to avoid recalculation on every render
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      const matchesSearch = product.name.toLowerCase().includes(searchLower) ||
+        product.sku.toLowerCase().includes(searchLower);
+      const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+      const matchesAdvancedCategory = advancedCategoryFilter === "all" || product.category === advancedCategoryFilter;
+      const matchesVariantType = variantTypeFilter === "all" || product.variant_name === variantTypeFilter || product.bit_type === variantTypeFilter;
+      const matchesSupplier = supplierFilter === "all" || product.supplier === supplierFilter;
+      const matchesPrice = product.price_usd >= priceRange[0] && product.price_usd <= priceRange[1];
+      
+      // Stock status filter
+      let matchesStockStatus = true;
+      const stock = product.stock_on_hand || 0;
+      const reorderLevel = product.reorder_level || 10;
+      if (stockStatusFilter === "out_of_stock") matchesStockStatus = stock === 0;
+      else if (stockStatusFilter === "low_stock") matchesStockStatus = stock > 0 && stock <= reorderLevel;
+      else if (stockStatusFilter === "in_stock") matchesStockStatus = stock > reorderLevel;
+      
+      return matchesSearch && matchesCategory && matchesAdvancedCategory && matchesVariantType && matchesSupplier && matchesPrice && matchesStockStatus;
+    });
+  }, [products, debouncedSearchTerm, categoryFilter, advancedCategoryFilter, variantTypeFilter, supplierFilter, priceRange, stockStatusFilter]);
 
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortBy === "name") return a.name.localeCompare(b.name);
-    if (sortBy === "price") return a.price_usd - b.price_usd;
-    if (sortBy === "stock") return (b.stock_on_hand || 0) - (a.stock_on_hand || 0);
-    return 0;
-  });
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "price") return a.price_usd - b.price_usd;
+      if (sortBy === "stock") return (b.stock_on_hand || 0) - (a.stock_on_hand || 0);
+      return 0;
+    });
+  }, [filteredProducts, sortBy]);
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
   const suppliers = ["all", ...getUniqueSuppliers()];
