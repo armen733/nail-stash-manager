@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2 } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, List, FileUp, Boxes } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ImageCarousel } from "@/components/ImageCarousel";
+import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +45,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface ProductImage {
   id: string;
@@ -103,8 +114,25 @@ const Products = () => {
   const [selectedParentId, setSelectedParentId] = useState<string>("");
   const [selectedVariantProducts, setSelectedVariantProducts] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // New state for improvements
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
+  const [bulkStockValue, setBulkStockValue] = useState("");
+  const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [importPreview, setImportPreview] = useState<string>("");
+  
+  // Advanced filters
+  const [supplierFilter, setSupplierFilter] = useState("all");
+  const [stockStatusFilter, setStockStatusFilter] = useState<"all" | "in_stock" | "low_stock" | "out_of_stock">("all");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [maxPrice, setMaxPrice] = useState(1000);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -167,6 +195,14 @@ const Products = () => {
       });
       
       setProducts(productsWithVariants as Product[]);
+
+      // Calculate max price for range filter
+      const prices = (data || []).map(p => p.price_usd);
+      if (prices.length > 0) {
+        const max = Math.ceil(Math.max(...prices) / 100) * 100;
+        setMaxPrice(max);
+        setPriceRange([0, max]);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -176,6 +212,12 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get all unique suppliers
+  const getUniqueSuppliers = () => {
+    const suppliers = allProducts.map(p => p.supplier).filter(Boolean) as string[];
+    return Array.from(new Set(suppliers)).sort();
   };
 
   // Get all unique categories from existing products
@@ -408,7 +450,18 @@ const Products = () => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesSupplier = supplierFilter === "all" || product.supplier === supplierFilter;
+    const matchesPrice = product.price_usd >= priceRange[0] && product.price_usd <= priceRange[1];
+    
+    // Stock status filter
+    let matchesStockStatus = true;
+    const stock = product.stock_on_hand || 0;
+    const reorderLevel = product.reorder_level || 10;
+    if (stockStatusFilter === "out_of_stock") matchesStockStatus = stock === 0;
+    else if (stockStatusFilter === "low_stock") matchesStockStatus = stock > 0 && stock <= reorderLevel;
+    else if (stockStatusFilter === "in_stock") matchesStockStatus = stock > reorderLevel;
+    
+    return matchesSearch && matchesCategory && matchesSupplier && matchesPrice && matchesStockStatus;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -419,6 +472,7 @@ const Products = () => {
   });
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
+  const suppliers = ["all", ...getUniqueSuppliers()];
 
   const {
     currentPage,
@@ -432,7 +486,7 @@ const Products = () => {
 
   useEffect(() => {
     resetPage();
-  }, [searchTerm, categoryFilter, sortBy, resetPage]);
+  }, [searchTerm, categoryFilter, sortBy, supplierFilter, stockStatusFilter, priceRange, resetPage]);
 
   const exportProducts = () => {
     const exportData = filteredProducts.map(p => ({
@@ -440,13 +494,158 @@ const Products = () => {
       SKU: p.sku,
       Category: p.category,
       'Price (USD)': p.price_usd,
+      'Salon Price': p.salon_price_usd || '',
+      'Wholesale Price': p.wholesale_price_usd || '',
       'Stock On Hand': p.stock_on_hand || 0,
       'Reorder Level': p.reorder_level || 0,
       Supplier: p.supplier || '',
+      Material: p.material || '',
+      'Bit Type': p.bit_type || '',
+      Grit: p.grit || '',
     }));
     downloadCSV(exportData, 'products');
     toast({ title: "Success", description: "Products exported successfully" });
   };
+
+  // Bulk stock update handler
+  const handleBulkStockUpdate = async () => {
+    if (selectedProducts.size === 0) {
+      toast({ title: "Error", description: "No products selected", variant: "destructive" });
+      return;
+    }
+
+    const stockValue = parseInt(bulkStockValue);
+    if (isNaN(stockValue) || stockValue < 0) {
+      toast({ title: "Error", description: "Please enter a valid stock value", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const selectedItems = products.filter(p => selectedProducts.has(p.id));
+      
+      for (const product of selectedItems) {
+        let newStock: number;
+        const currentStock = product.stock_on_hand || 0;
+        
+        if (bulkStockAction === "set") newStock = stockValue;
+        else if (bulkStockAction === "add") newStock = currentStock + stockValue;
+        else newStock = Math.max(0, currentStock - stockValue);
+
+        const { error } = await supabase
+          .from("products")
+          .update({ stock_on_hand: newStock })
+          .eq("id", product.id);
+
+        if (error) throw error;
+      }
+
+      toast({ title: "Success", description: `Stock updated for ${selectedItems.length} product(s)` });
+      setIsBulkStockOpen(false);
+      setBulkStockValue("");
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  // CSV import handlers
+  const handleCSVSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setImportPreview(text.slice(0, 1000) + (text.length > 1000 ? "..." : ""));
+      
+      // Parse CSV
+      const lines = text.split("\n").filter(line => line.trim());
+      if (lines.length < 2) {
+        toast({ title: "Error", description: "CSV file is empty or has no data rows", variant: "destructive" });
+        return;
+      }
+
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+      const data = lines.slice(1).map(line => {
+        const values = line.split(",").map(v => v.trim().replace(/['"]/g, ""));
+        const row: any = {};
+        headers.forEach((header, i) => {
+          row[header] = values[i] || "";
+        });
+        return row;
+      }).filter(row => row.name || row.sku);
+
+      setImportData(data);
+      setIsImportOpen(true);
+    };
+    reader.readAsText(file);
+    
+    // Reset input
+    if (csvInputRef.current) csvInputRef.current.value = "";
+  };
+
+  const handleImportProducts = async () => {
+    if (importData.length === 0) {
+      toast({ title: "Error", description: "No valid data to import", variant: "destructive" });
+      return;
+    }
+
+    try {
+      let imported = 0;
+      let skipped = 0;
+
+      for (const row of importData) {
+        // Map common column names
+        const productData = {
+          name: row.name || row.product_name || row["product name"] || "",
+          sku: row.sku || row.code || `SKU-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          category: row.category || "Uncategorized",
+          price_usd: parseFloat(row.price_usd || row.price || row["price (usd)"] || "0") || 0,
+          salon_price_usd: parseFloat(row.salon_price_usd || row.salon_price || row["salon price"] || "") || null,
+          wholesale_price_usd: parseFloat(row.wholesale_price_usd || row.wholesale_price || row["wholesale price"] || "") || null,
+          stock_on_hand: parseInt(row.stock_on_hand || row.stock || row["stock on hand"] || "0") || 0,
+          reorder_level: parseInt(row.reorder_level || row["reorder level"] || "10") || 10,
+          supplier: row.supplier || null,
+          material: row.material || null,
+          bit_type: row.bit_type || row["bit type"] || null,
+          grit: row.grit || null,
+        };
+
+        if (!productData.name) {
+          skipped++;
+          continue;
+        }
+
+        const { error } = await supabase.from("products").insert([productData]);
+        if (error) {
+          console.error("Import error for row:", row, error);
+          skipped++;
+        } else {
+          imported++;
+        }
+      }
+
+      toast({ 
+        title: "Import Complete", 
+        description: `Imported ${imported} product(s). ${skipped > 0 ? `Skipped ${skipped} row(s).` : ""}` 
+      });
+      setIsImportOpen(false);
+      setImportData([]);
+      setImportPreview("");
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Import Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const clearAdvancedFilters = () => {
+    setSupplierFilter("all");
+    setStockStatusFilter("all");
+    setPriceRange([0, maxPrice]);
+  };
+
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice;
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -1379,6 +1578,15 @@ const Products = () => {
         </div>
       </div>
 
+      {/* CSV Import Input (hidden) */}
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv"
+        onChange={handleCSVSelect}
+        className="hidden"
+      />
+
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader>
           <div className="flex flex-col gap-4">
@@ -1398,7 +1606,7 @@ const Products = () => {
                     <Filter className="mr-2 h-4 w-4" />
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border">
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>
                         {cat === "all" ? "All Categories" : cat}
@@ -1410,12 +1618,104 @@ const Products = () => {
                   <SelectTrigger className="w-[120px]">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border">
                     <SelectItem value="name">Name</SelectItem>
                     <SelectItem value="price">Price</SelectItem>
                     <SelectItem value="stock">Stock</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {/* Advanced Filters */}
+                <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+                  <PopoverTrigger asChild>
+                    <Button variant={hasActiveFilters ? "default" : "outline"} size="default">
+                      <Filter className="mr-2 h-4 w-4" />
+                      Filters
+                      {hasActiveFilters && <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 justify-center">!</Badge>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 bg-background border" align="end">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Advanced Filters</h4>
+                      
+                      <div className="space-y-2">
+                        <Label>Supplier</Label>
+                        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border">
+                            {suppliers.map(s => (
+                              <SelectItem key={s} value={s}>
+                                {s === "all" ? "All Suppliers" : s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Stock Status</Label>
+                        <Select value={stockStatusFilter} onValueChange={(v: typeof stockStatusFilter) => setStockStatusFilter(v)}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border">
+                            <SelectItem value="all">All Stock Levels</SelectItem>
+                            <SelectItem value="in_stock">In Stock</SelectItem>
+                            <SelectItem value="low_stock">Low Stock</SelectItem>
+                            <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Price Range: ${priceRange[0]} - ${priceRange[1]}</Label>
+                        <Slider
+                          value={priceRange}
+                          onValueChange={(v) => setPriceRange(v as [number, number])}
+                          min={0}
+                          max={maxPrice}
+                          step={1}
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={clearAdvancedFilters} className="flex-1">
+                          Clear
+                        </Button>
+                        <Button size="sm" onClick={() => setShowAdvancedFilters(false)} className="flex-1">
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                {/* View Toggle */}
+                <div className="flex border rounded-md">
+                  <Button 
+                    variant={viewMode === "grid" ? "default" : "ghost"} 
+                    size="icon" 
+                    className="rounded-r-none"
+                    onClick={() => setViewMode("grid")}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant={viewMode === "table" ? "default" : "ghost"} 
+                    size="icon" 
+                    className="rounded-l-none"
+                    onClick={() => setViewMode("table")}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="default">
+                  <FileUp className="mr-2 h-4 w-4" />
+                  Import
+                </Button>
                 <Button onClick={exportProducts} variant="outline" size="default">
                   <Download className="mr-2 h-4 w-4" />
                   Export
@@ -1434,7 +1734,11 @@ const Products = () => {
                       Actions
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuContent align="start" className="w-48 bg-background border">
+                    <DropdownMenuItem onClick={() => setIsBulkStockOpen(true)}>
+                      <Boxes className="mr-2 h-4 w-4" />
+                      Update Stock
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleShareSelected}>
                       <Share2 className="mr-2 h-4 w-4" />
                       Share Selected
@@ -1480,168 +1784,282 @@ const Products = () => {
                   <span className="text-sm text-muted-foreground">Select All</span>
                 </div>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {paginatedItems.map((product) => (
-                  <Card 
-                    key={product.id} 
-                    className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
-                    onClick={() => setQuickViewProduct(product)}
-                  >
-                    <div 
-                      className="absolute top-2 left-2 z-10" 
-                      onClick={(e) => e.stopPropagation()}
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {paginatedItems.map((product) => (
+                    <Card 
+                      key={product.id} 
+                      className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
+                      onClick={() => setQuickViewProduct(product)}
                     >
-                      <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={() => toggleProductSelection(product.id)}
-                        className="bg-background"
-                      />
-                    </div>
-                    <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
-                      {(product.images && product.images.length > 0) ? (
-                        <img src={product.images[0].image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                      ) : product.image_url ? (
-                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                      ) : (
-                        <Package className="h-16 w-16 text-muted-foreground/30" />
-                      )}
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setQuickViewProduct(product);
-                        }}
+                      <div 
+                        className="absolute top-2 left-2 z-10" 
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <CardContent className="p-4 flex-1 flex flex-col">
-                      <div className="mb-2 space-y-1">
-                        <h3 className="font-semibold text-base sm:text-lg break-words whitespace-normal leading-snug text-foreground">
-                          {product.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">{product.category}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {product.sku}
-                          </span>
-                          {product.is_parent && product.variants && product.variants.length > 0 && (
-                            <Badge variant="secondary" className="text-[10px] leading-none">
-                              {product.variants.length} Variant{product.variants.length > 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                          {product.variant_name && (
-                            <Badge variant="outline" className="text-[10px] leading-none">
-                              {product.variant_name}
-                            </Badge>
-                          )}
-                        </div>
+                        <Checkbox
+                          checked={selectedProducts.has(product.id)}
+                          onCheckedChange={() => toggleProductSelection(product.id)}
+                          className="bg-background"
+                        />
                       </div>
-                      
-                      <div className="space-y-1 text-sm flex-1">
-                        {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
-                        {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
-                        <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
-                        {product.stock_on_hand !== null && (
-                          <div className="flex items-center gap-2">
-                            <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
-                            {product.stock_on_hand < 10 && (
-                              <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
-                                {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                      <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
+                        {(product.images && product.images.length > 0) ? (
+                          <img src={product.images[0].image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                        ) : product.image_url ? (
+                          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                        ) : (
+                          <Package className="h-16 w-16 text-muted-foreground/30" />
+                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQuickViewProduct(product);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <CardContent className="p-4 flex-1 flex flex-col">
+                        <div className="mb-2 space-y-1">
+                          <h3 className="font-semibold text-base sm:text-lg break-words whitespace-normal leading-snug text-foreground">
+                            {product.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">{product.category}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
+                              {product.sku}
+                            </span>
+                            {product.is_parent && product.variants && product.variants.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px] leading-none">
+                                {product.variants.length} Variant{product.variants.length > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            {product.variant_name && (
+                              <Badge variant="outline" className="text-[10px] leading-none">
+                                {product.variant_name}
                               </Badge>
                             )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                        
+                        <div className="space-y-1 text-sm flex-1">
+                          {product.bit_type && <p><span className="text-muted-foreground">Bit Type:</span> {product.bit_type}</p>}
+                          {product.grit && <p><span className="text-muted-foreground">Grit:</span> {product.grit}</p>}
+                          <p className="font-semibold text-lg mt-2">${product.price_usd}</p>
+                          {product.stock_on_hand !== null && (
+                            <div className="flex items-center gap-2">
+                              <p className="text-muted-foreground">Stock: {product.stock_on_hand}</p>
+                              {product.stock_on_hand < 10 && (
+                                <Badge variant={product.stock_on_hand === 0 ? "destructive" : "secondary"} className="text-xs">
+                                  {product.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
 
-                      {getCartQuantity(product.id) > 0 ? (
-                        <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                        {getCartQuantity(product.id) > 0 ? (
+                          <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => removeFromCart(product.id)}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="text-sm font-medium px-3">{getCartQuantity(product.id)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => addToCart(product)}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => removeFromCart(product.id)}
+                            className="w-full mt-4 whitespace-nowrap"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(product);
+                            }}
                           >
-                            <Minus className="h-4 w-4" />
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            <span className="sm:hidden">Add</span>
+                            <span className="hidden sm:inline">Add to Cart</span>
                           </Button>
-                          <span className="text-sm font-medium px-3">{getCartQuantity(product.id)}</span>
+                        )}
+
+                        <div className="mt-2 grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => addToCart(product)}
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setFormData({
+                                name: product.name,
+                                category: product.category,
+                                material: product.material || "",
+                                shape: product.shape || "",
+                                direction: product.direction || "",
+                                bit_type: product.bit_type || "",
+                                grit: product.grit || "",
+                                unit: product.unit || "piece",
+                                sku: product.sku,
+                                price_usd: product.price_usd.toString(),
+                                salon_price_usd: product.salon_price_usd?.toString() || "",
+                                wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+                                stock_on_hand: product.stock_on_hand?.toString() || "0",
+                                stock_reserved: product.stock_reserved?.toString() || "0",
+                                reorder_level: product.reorder_level?.toString() || "10",
+                                supplier: product.supplier || "",
+                                is_parent: product.is_parent || false,
+                                parent_product_id: product.parent_product_id || "",
+                                variant_name: product.variant_name || "",
+                              });
+                              setExistingImages(product.images || []);
+                              setIsDialogOpen(true);
+                            }}
                           >
-                            <Plus className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDuplicateProduct(product)}
+                            title="Duplicate"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className="w-full mt-4 whitespace-nowrap"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                        >
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          <span className="sm:hidden">Add</span>
-                          <span className="hidden sm:inline">Add to Cart</span>
-                        </Button>
-                      )}
-
-                      <div className="mt-2 grid grid-cols-3 gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingProduct(product);
-                            setFormData({
-                              name: product.name,
-                              category: product.category,
-                              material: product.material || "",
-                              shape: product.shape || "",
-                              direction: product.direction || "",
-                              bit_type: product.bit_type || "",
-                              grit: product.grit || "",
-                              unit: product.unit || "piece",
-                              sku: product.sku,
-                              price_usd: product.price_usd.toString(),
-                              salon_price_usd: product.salon_price_usd?.toString() || "",
-                              wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                              stock_on_hand: product.stock_on_hand?.toString() || "0",
-                              stock_reserved: product.stock_reserved?.toString() || "0",
-                              reorder_level: product.reorder_level?.toString() || "10",
-                              supplier: product.supplier || "",
-                              is_parent: product.is_parent || false,
-                              parent_product_id: product.parent_product_id || "",
-                              variant_name: product.variant_name || "",
-                            });
-                            setExistingImages(product.images || []);
-                            setIsDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDuplicateProduct(product)}
-                          title="Duplicate"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                /* Table View */
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10"></TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">Stock</TableHead>
+                        <TableHead className="hidden md:table-cell">Supplier</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedItems.map((product) => (
+                        <TableRow key={product.id} className="cursor-pointer" onClick={() => setQuickViewProduct(product)}>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedProducts.has(product.id)}
+                              onCheckedChange={() => toggleProductSelection(product.id)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-muted rounded overflow-hidden flex-shrink-0">
+                                {(product.images && product.images.length > 0) ? (
+                                  <img src={product.images[0].image_url} alt={product.name} className="w-full h-full object-cover" />
+                                ) : product.image_url ? (
+                                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-muted-foreground/30" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">{product.name}</p>
+                                {product.is_parent && product.variants && product.variants.length > 0 && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    {product.variants.length} variants
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{product.sku}</TableCell>
+                          <TableCell>{product.category}</TableCell>
+                          <TableCell className="text-right font-medium">${product.price_usd}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span>{product.stock_on_hand || 0}</span>
+                              {(product.stock_on_hand || 0) === 0 && (
+                                <Badge variant="destructive" className="text-[10px]">Out</Badge>
+                              )}
+                              {(product.stock_on_hand || 0) > 0 && (product.stock_on_hand || 0) <= (product.reorder_level || 10) && (
+                                <Badge variant="secondary" className="text-[10px]">Low</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            {product.supplier || "-"}
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex justify-end gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => addToCart(product)}>
+                                <ShoppingCart className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => {
+                                  setEditingProduct(product);
+                                  setFormData({
+                                    name: product.name,
+                                    category: product.category,
+                                    material: product.material || "",
+                                    shape: product.shape || "",
+                                    direction: product.direction || "",
+                                    bit_type: product.bit_type || "",
+                                    grit: product.grit || "",
+                                    unit: product.unit || "piece",
+                                    sku: product.sku,
+                                    price_usd: product.price_usd.toString(),
+                                    salon_price_usd: product.salon_price_usd?.toString() || "",
+                                    wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+                                    stock_on_hand: product.stock_on_hand?.toString() || "0",
+                                    stock_reserved: product.stock_reserved?.toString() || "0",
+                                    reorder_level: product.reorder_level?.toString() || "10",
+                                    supplier: product.supplier || "",
+                                    is_parent: product.is_parent || false,
+                                    parent_product_id: product.parent_product_id || "",
+                                    variant_name: product.variant_name || "",
+                                  });
+                                  setExistingImages(product.images || []);
+                                  setIsDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => handleDelete(product.id)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -2028,6 +2446,74 @@ const Products = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Bulk Stock Update Dialog */}
+      <Dialog open={isBulkStockOpen} onOpenChange={setIsBulkStockOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Stock Update</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Update stock for {selectedProducts.size} selected product(s)
+            </p>
+            <div className="space-y-2">
+              <Label>Action</Label>
+              <Select value={bulkStockAction} onValueChange={(v: "set" | "add" | "subtract") => setBulkStockAction(v)}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  <SelectItem value="set">Set stock to</SelectItem>
+                  <SelectItem value="add">Add to stock</SelectItem>
+                  <SelectItem value="subtract">Subtract from stock</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Value</Label>
+              <Input
+                type="number"
+                min="0"
+                value={bulkStockValue}
+                onChange={(e) => setBulkStockValue(e.target.value)}
+                placeholder="Enter quantity"
+              />
+            </div>
+            <Button onClick={handleBulkStockUpdate} className="w-full">
+              Update Stock
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* CSV Import Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Products from CSV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Found {importData.length} product(s) to import
+            </p>
+            <div className="bg-muted p-3 rounded text-xs font-mono max-h-40 overflow-auto">
+              {importPreview || "No preview available"}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Expected columns: name, sku, category, price (or price_usd), stock (or stock_on_hand), supplier
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsImportOpen(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button onClick={handleImportProducts} className="flex-1">
+                Import {importData.length} Products
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
