@@ -634,7 +634,13 @@ const Products = () => {
       return;
     }
 
-    if (!confirm(`Delete ${selectedProducts.size} product(s)?`)) return;
+    // First confirmation
+    if (!confirm(`Are you sure you want to delete ${selectedProducts.size} product(s)?`)) return;
+    
+    // Second confirmation for safety (especially when many products selected)
+    if (selectedProducts.size >= 3) {
+      if (!confirm(`FINAL WARNING: This will permanently delete ${selectedProducts.size} products. This action cannot be undone. Continue?`)) return;
+    }
 
     try {
       const { error } = await supabase
@@ -1530,19 +1536,34 @@ const Products = () => {
               />
             </div>
             
-            {/* Filter row - clean and simple */}
-            <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
-              {/* Single Unified Filter Button */}
+            {/* Filter row - clean layout */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Sort Selector - First for quick access */}
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
+                <SelectTrigger className="w-[110px] h-10">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="stock">Stock</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter Button */}
               <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                 <PopoverTrigger asChild>
-                  <Button variant={hasActiveFilters || categoryFilter !== "all" ? "default" : "outline"} size="default" className="min-h-[44px] flex-shrink-0">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <span>Filters</span>
+                  <Button 
+                    variant={hasActiveFilters || categoryFilter !== "all" ? "default" : "outline"} 
+                    size="sm"
+                    className="h-10 px-3"
+                  >
+                    <Filter className="h-4 w-4 mr-1.5" />
+                    Filters
                     {(hasActiveFilters || categoryFilter !== "all") && (
-                      <Badge variant="secondary" className="ml-2 h-5 min-w-5 p-0 justify-center text-xs">
+                      <Badge variant="secondary" className="ml-1.5 h-5 w-5 p-0 justify-center text-xs rounded-full">
                         {[
                           categoryFilter !== "all" ? 1 : 0,
-                          advancedCategoryFilter !== "all" ? 1 : 0,
                           variantTypeFilter !== "all" ? 1 : 0,
                           supplierFilter !== "all" ? 1 : 0,
                           stockStatusFilter !== "all" ? 1 : 0,
@@ -1552,17 +1573,32 @@ const Products = () => {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 bg-background border" align="start">
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Filter Products</h4>
+                <PopoverContent className="w-72 bg-background border p-4" align="start" sideOffset={8}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">Filter Products</h4>
+                      {(hasActiveFilters || categoryFilter !== "all") && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setCategoryFilter("all");
+                            clearAdvancedFilters();
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      )}
+                    </div>
                     
-                    <div className="space-y-2">
-                      <Label>Category</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Category</Label>
                       <Select value={categoryFilter} onValueChange={(v) => {
                         setCategoryFilter(v);
                         setAdvancedCategoryFilter(v);
                       }}>
-                        <SelectTrigger className="bg-background min-h-[44px]">
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background border">
@@ -1574,14 +1610,14 @@ const Products = () => {
                       </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label>Variant Type</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Variant Type</Label>
                       <Select value={variantTypeFilter} onValueChange={setVariantTypeFilter}>
-                        <SelectTrigger className="bg-background min-h-[44px]">
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background border">
-                          <SelectItem value="all">All Variant Types</SelectItem>
+                          <SelectItem value="all">All Types</SelectItem>
                           {getVariantTypesForCategoryFilter(categoryFilter).map(type => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                           ))}
@@ -1589,10 +1625,10 @@ const Products = () => {
                       </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label>Supplier</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Supplier</Label>
                       <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                        <SelectTrigger className="bg-background min-h-[44px]">
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background border">
@@ -1605,14 +1641,14 @@ const Products = () => {
                       </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label>Stock Status</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Stock Status</Label>
                       <Select value={stockStatusFilter} onValueChange={(v: typeof stockStatusFilter) => setStockStatusFilter(v)}>
-                        <SelectTrigger className="bg-background min-h-[44px]">
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-background border">
-                          <SelectItem value="all">All Stock Levels</SelectItem>
+                          <SelectItem value="all">All Stock</SelectItem>
                           <SelectItem value="in_stock">In Stock</SelectItem>
                           <SelectItem value="low_stock">Low Stock</SelectItem>
                           <SelectItem value="out_of_stock">Out of Stock</SelectItem>
@@ -1620,43 +1656,28 @@ const Products = () => {
                       </Select>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label>Price Range: ${priceRange[0]} - ${priceRange[1]}</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Price: ${priceRange[0]} - ${priceRange[1]}</Label>
                       <Slider
                         value={priceRange}
                         onValueChange={(v) => setPriceRange(v as [number, number])}
                         min={0}
                         max={maxPrice}
                         step={1}
+                        className="mt-2"
                       />
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="default" onClick={() => {
-                        setCategoryFilter("all");
-                        clearAdvancedFilters();
-                      }} className="flex-1 min-h-[44px]">
-                        Clear All
-                      </Button>
-                      <Button size="default" onClick={() => setShowAdvancedFilters(false)} className="flex-1 min-h-[44px]">
-                        Apply
-                      </Button>
-                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => setShowAdvancedFilters(false)} 
+                      className="w-full h-9 mt-2"
+                    >
+                      Apply Filters
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
-              
-              {/* Sort Selector */}
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
-                <SelectTrigger className="min-w-[100px] min-h-[44px] flex-shrink-0">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border">
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="price">Price</SelectItem>
-                  <SelectItem value="stock">Stock</SelectItem>
-                </SelectContent>
-              </Select>
               
               {/* View Toggle */}
               <div className="flex border rounded-md flex-shrink-0">
