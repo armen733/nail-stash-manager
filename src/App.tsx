@@ -50,10 +50,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full safe-top safe-left safe-right">
         <AppSidebar />
         <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <header className="h-20 border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0">
+          <header className="min-h-[80px] border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 pt-[env(safe-area-inset-top,0px)]">
             <SidebarTrigger className="absolute left-4" />
             <img 
               src={logo} 
@@ -62,7 +62,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               style={{ background: 'transparent' }}
             />
           </header>
-          <div className="flex-1 p-4 sm:p-6">
+          <div className="flex-1 p-4 sm:p-6 safe-bottom">
             <Suspense fallback={<PageLoader />}>
               {children}
             </Suspense>
