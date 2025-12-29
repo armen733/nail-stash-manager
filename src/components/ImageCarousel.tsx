@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import useEmblaCarousel from "embla-carousel-react";
 
 interface ImageCarouselProps {
   images: Array<{ id: string; image_url: string }>;
@@ -11,7 +12,7 @@ interface ImageCarouselProps {
 }
 
 export const ImageCarousel = ({ images, fallbackImage, alt, className }: ImageCarouselProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   
   const allImages = images.length > 0 
     ? images.map(img => img.image_url)
@@ -21,13 +22,41 @@ export const ImageCarousel = ({ images, fallbackImage, alt, className }: ImageCa
 
   const hasMultipleImages = allImages.length > 1;
 
-  const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % allImages.length);
-  };
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    loop: true,
+    dragFree: false,
+    containScroll: "trimSnaps",
+  });
 
-  const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-  };
+  const scrollPrev = useCallback(() => {
+    emblaApi?.scrollPrev();
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
+    emblaApi?.scrollNext();
+  }, [emblaApi]);
+
+  const scrollTo = useCallback((index: number) => {
+    emblaApi?.scrollTo(index);
+  }, [emblaApi]);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
   if (allImages.length === 0) {
     return (
@@ -37,57 +66,88 @@ export const ImageCarousel = ({ images, fallbackImage, alt, className }: ImageCa
     );
   }
 
+  // Single image - no carousel needed
+  if (!hasMultipleImages) {
+    return (
+      <div className={cn("relative aspect-square bg-muted rounded-lg overflow-hidden", className)}>
+        <img 
+          src={allImages[0]} 
+          alt={alt} 
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={cn("relative aspect-square bg-muted rounded-lg overflow-hidden", className)}>
-      <img 
-        src={allImages[currentIndex]} 
-        alt={alt} 
-        className="w-full h-full object-cover"
-      />
-      
-      {hasMultipleImages && (
-        <>
-          {/* Navigation Arrows */}
-          <Button
-            variant="secondary"
-            size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
-            onClick={prevImage}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/80 hover:bg-background"
-            onClick={nextImage}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
-          {/* Dots Indicator */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {allImages.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all",
-                  index === currentIndex 
-                    ? "bg-primary w-6" 
-                    : "bg-background/60 hover:bg-background/80"
-                )}
-                aria-label={`Go to image ${index + 1}`}
+      {/* Embla Carousel Container */}
+      <div className="overflow-hidden h-full" ref={emblaRef}>
+        <div className="flex h-full touch-pan-y">
+          {allImages.map((src, index) => (
+            <div 
+              key={index} 
+              className="flex-[0_0_100%] min-w-0 h-full"
+            >
+              <img 
+                src={src} 
+                alt={`${alt} ${index + 1}`} 
+                className="w-full h-full object-cover"
+                draggable={false}
               />
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Navigation Arrows */}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 min-h-[44px] min-w-[44px] rounded-full bg-background/80 hover:bg-background touch-manipulation"
+        onClick={(e) => {
+          e.stopPropagation();
+          scrollPrev();
+        }}
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 min-h-[44px] min-w-[44px] rounded-full bg-background/80 hover:bg-background touch-manipulation"
+        onClick={(e) => {
+          e.stopPropagation();
+          scrollNext();
+        }}
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Button>
 
-          {/* Image Counter */}
-          <div className="absolute top-2 right-2 bg-background/80 text-foreground px-2 py-1 rounded text-xs font-medium">
-            {currentIndex + 1} / {allImages.length}
-          </div>
-        </>
-      )}
+      {/* Dots Indicator */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+        {allImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={(e) => {
+              e.stopPropagation();
+              scrollTo(index);
+            }}
+            className={cn(
+              "h-2.5 rounded-full transition-all touch-manipulation",
+              index === selectedIndex 
+                ? "bg-primary w-6" 
+                : "bg-background/60 hover:bg-background/80 w-2.5"
+            )}
+            aria-label={`Go to image ${index + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* Image Counter */}
+      <div className="absolute top-2 right-2 bg-background/80 text-foreground px-2 py-1 rounded text-xs font-medium">
+        {selectedIndex + 1} / {allImages.length}
+      </div>
     </div>
   );
 };
