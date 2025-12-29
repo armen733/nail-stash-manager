@@ -14,55 +14,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Percent, Gift, Crown, Trash2, Edit, Users, UserPlus, UsersRound, Settings } from "lucide-react";
 import { format } from "date-fns";
-
-interface DiscountCode {
-  id: string;
-  code: string;
-  discount_percent: number;
-  valid_from: string | null;
-  valid_until: string | null;
-  max_uses: number | null;
-  current_uses: number | null;
-  min_order_amount: number | null;
-  is_active: boolean | null;
-  created_at: string | null;
-}
-
-interface LoyaltyTransaction {
-  id: string;
-  user_id: string;
-  points: number;
-  type: string;
-  order_id: string | null;
-  description: string | null;
-  created_at: string | null;
-}
-
-interface UserTier {
-  id: string;
-  user_id: string;
-  current_tier: string | null;
-  tier_discount_percent: number | null;
-  monthly_spend: number | null;
-  spend_month: string | null;
-  tier_valid_until: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-interface Profile {
-  id: string;
-  email: string;
-  full_name: string;
-  loyalty_points: number | null;
-}
-
-interface LoyaltySettings {
-  id: string;
-  points_per_dollar: number;
-  points_required_for_redemption: number;
-  redemption_value_usd: number;
-}
+import { 
+  usePromotions, 
+  useDeleteDiscountCode, 
+  useToggleDiscountCode, 
+  useUpdateLoyaltySettings,
+  PROMOTIONS_QUERY_KEY,
+  DiscountCode,
+  LoyaltyTransaction,
+  UserTier,
+  Profile,
+  LoyaltySettings,
+} from "@/hooks/usePromotions";
+import { useQueryClient } from "@tanstack/react-query";
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import { PromotionsTabSkeleton, LoyaltySettingsSkeleton } from "@/components/skeletons/PromotionsSkeleton";
 
 const TIER_DISCOUNTS: Record<string, number> = {
   none: 0,
