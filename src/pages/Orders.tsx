@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -244,6 +244,57 @@ const Orders = () => {
         return null;
       })
       .filter(Boolean);
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to delete this order?")) return;
+    
+    try {
+      // First delete order items
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("order_id", orderId);
+      
+      if (itemsError) throw itemsError;
+
+      // Then delete the order
+      const { error: orderError } = await supabase
+        .from("orders")
+        .delete()
+        .eq("id", orderId);
+      
+      if (orderError) throw orderError;
+
+      toast({ title: "Success", description: "Order deleted" });
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkDelivered = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "Delivered" })
+        .eq("id", orderId);
+      
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Order marked as delivered" });
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateInlineUser = async () => {
@@ -846,8 +897,29 @@ const Orders = () => {
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                          <div className="text-lg font-semibold text-primary pt-1">
-                            ${order.total.toFixed(2)}
+                          <div className="flex items-center justify-between pt-2">
+                            <div className="text-lg font-semibold text-primary">
+                              ${order.total.toFixed(2)}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-9"
+                                onClick={() => handleMarkDelivered(order.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Delivered
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-9"
+                                onClick={() => handleDeleteOrder(order.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -891,8 +963,18 @@ const Orders = () => {
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                          <div className="text-lg font-semibold text-primary pt-1">
-                            ${order.total.toFixed(2)}
+                          <div className="flex items-center justify-between pt-2">
+                            <div className="text-lg font-semibold text-primary">
+                              ${order.total.toFixed(2)}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-9"
+                              onClick={() => handleDeleteOrder(order.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
