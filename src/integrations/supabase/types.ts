@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      category_variant_types: {
+        Row: {
+          category: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          variant_type: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          variant_type: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          variant_type?: string
+        }
+        Relationships: []
+      }
       discount_codes: {
         Row: {
           code: string
