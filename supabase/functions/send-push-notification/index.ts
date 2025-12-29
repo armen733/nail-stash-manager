@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? 'BKxN9L3vJ8K2mF5nP6qR1sT7uV9wX0yZ2aB4cD6eF8gH0iJ2kL4mN6oP8qR0sT2uV4wX6yZ8aB0cD2eF4gH6i';
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@nerabeauty.com';
 
@@ -16,78 +16,77 @@ function base64UrlEncode(data: Uint8Array): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Import private key for signing
-async function importPrivateKey(privateKeyBase64: string): Promise<CryptoKey> {
-  try {
-    // Remove base64url encoding and convert to raw bytes
-    const padding = '='.repeat((4 - (privateKeyBase64.length % 4)) % 4);
-    const base64 = (privateKeyBase64 + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-    
-    const rawKey = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    
-    return await crypto.subtle.importKey(
-      'pkcs8',
-      rawKey,
-      {
-        name: 'ECDSA',
-        namedCurve: 'P-256',
-      },
-      false,
-      ['sign']
-    );
-  } catch (error) {
-    console.error('Error importing private key:', error);
-    throw error;
+// Base64 URL decode
+function base64UrlDecode(str: string): Uint8Array {
+  const padding = '='.repeat((4 - (str.length % 4)) % 4);
+  const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
   }
+  return outputArray;
+}
+
+// Import VAPID keys and create signing key
+async function importVapidKeys(): Promise<CryptoKey> {
+  const privateKeyBytes = base64UrlDecode(VAPID_PRIVATE_KEY);
+  const publicKeyBytes = base64UrlDecode(VAPID_PUBLIC_KEY);
+  
+  console.log('Private key length:', privateKeyBytes.length);
+  console.log('Public key length:', publicKeyBytes.length);
+  
+  if (privateKeyBytes.length !== 32) {
+    throw new Error(`Invalid private key length: ${privateKeyBytes.length}, expected 32`);
+  }
+  
+  if (publicKeyBytes.length !== 65) {
+    throw new Error(`Invalid public key length: ${publicKeyBytes.length}, expected 65`);
+  }
+  
+  // Build JWK from raw keys
+  // Public key is 65 bytes: 0x04 || x (32 bytes) || y (32 bytes)
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: base64UrlEncode(publicKeyBytes.subarray(1, 33)),
+    y: base64UrlEncode(publicKeyBytes.subarray(33, 65)),
+    d: base64UrlEncode(privateKeyBytes),
+  };
+  
+  return await crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
 }
 
 // Create VAPID JWT token
-async function createVapidToken(endpoint: string): Promise<string> {
-  if (!VAPID_PRIVATE_KEY) {
-    console.warn('VAPID_PRIVATE_KEY not set, using public key only');
-    return `vapid t=${VAPID_PUBLIC_KEY}, k=${VAPID_PUBLIC_KEY}`;
-  }
-
-  try {
-    const urlParts = new URL(endpoint);
-    const audience = `${urlParts.protocol}//${urlParts.host}`;
-    
-    const header = {
-      typ: 'JWT',
-      alg: 'ES256'
-    };
-    
-    const exp = Math.floor(Date.now() / 1000) + 12 * 60 * 60; // 12 hours
-    const payload = {
-      aud: audience,
-      exp: exp,
-      sub: VAPID_SUBJECT
-    };
-    
-    // Encode header and payload
-    const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-    const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
-    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-    
-    // Sign the token
-    const privateKey = await importPrivateKey(VAPID_PRIVATE_KEY);
-    const signature = await crypto.subtle.sign(
-      { name: 'ECDSA', hash: 'SHA-256' },
-      privateKey,
-      new TextEncoder().encode(unsignedToken)
-    );
-    
-    const encodedSignature = base64UrlEncode(new Uint8Array(signature));
-    const jwt = `${unsignedToken}.${encodedSignature}`;
-    
-    return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
-  } catch (error) {
-    console.error('Error creating VAPID token:', error);
-    // Fallback to simple header
-    return `vapid t=${VAPID_PUBLIC_KEY}, k=${VAPID_PUBLIC_KEY}`;
-  }
+async function createVapidToken(endpoint: string, privateKey: CryptoKey): Promise<string> {
+  const urlParts = new URL(endpoint);
+  const audience = `${urlParts.protocol}//${urlParts.host}`;
+  
+  const header = { typ: 'JWT', alg: 'ES256' };
+  const exp = Math.floor(Date.now() / 1000) + 12 * 60 * 60; // 12 hours
+  const payload = { aud: audience, exp: exp, sub: VAPID_SUBJECT };
+  
+  const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
+  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
+  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+  
+  const signatureBuffer = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    privateKey,
+    new TextEncoder().encode(unsignedToken)
+  );
+  
+  const signature = new Uint8Array(signatureBuffer);
+  const encodedSignature = base64UrlEncode(signature);
+  const jwt = `${unsignedToken}.${encodedSignature}`;
+  
+  return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
 }
 
 serve(async (req) => {
@@ -96,16 +95,45 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Push notification function called');
+    
+    // Validate VAPID keys upfront
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      console.error('VAPID keys not configured');
+      return new Response(
+        JSON.stringify({ error: 'VAPID keys not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Import keys once
+    let signingKey: CryptoKey;
+    try {
+      signingKey = await importVapidKeys();
+      console.log('VAPID keys imported successfully');
+    } catch (keyError) {
+      console.error('Failed to import VAPID keys:', keyError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid VAPID keys: ' + String(keyError) }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { customerName } = await req.json();
+    let customerName = 'Customer';
+    try {
+      const body = await req.json();
+      customerName = body.customerName || 'Customer';
+    } catch {
+      // Body might be empty
+    }
 
-    console.log('Sending push notification for new order');
+    console.log('Sending push notification for customer:', customerName);
 
-    // Get all push subscriptions
     const { data: subscriptions, error: subError } = await supabaseClient
       .from('push_subscriptions')
       .select('*');
@@ -123,69 +151,66 @@ serve(async (req) => {
       );
     }
 
-    // Send notification to all subscriptions
+    console.log(`Found ${subscriptions.length} subscriptions`);
+
     const notificationPayload = JSON.stringify({
       title: '🔔 New Order Received!',
-      body: customerName ? `Order from ${customerName}` : 'A new customer order has been placed',
+      body: `Order from ${customerName}`,
       url: '/orders'
     });
 
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         try {
-          const authHeader = await createVapidToken(sub.endpoint);
+          console.log(`Sending to: ${sub.endpoint.substring(0, 50)}...`);
+          
+          const authHeader = await createVapidToken(sub.endpoint, signingKey);
           
           const response = await fetch(sub.endpoint, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'application/octet-stream',
               'TTL': '86400',
               'Authorization': authHeader,
             },
             body: notificationPayload
           });
 
+          console.log(`Response: ${response.status}`);
+
           if (!response.ok) {
-            console.error(`Failed to send to ${sub.endpoint}:`, response.status, await response.text());
+            const errorText = await response.text();
+            console.error(`Failed: ${response.status} ${errorText}`);
+            
             if (response.status === 410 || response.status === 404) {
-              // Subscription expired or no longer valid
-              await supabaseClient
-                .from('push_subscriptions')
-                .delete()
-                .eq('id', sub.id);
-              console.log(`Deleted expired subscription ${sub.id}`);
+              await supabaseClient.from('push_subscriptions').delete().eq('id', sub.id);
+              console.log(`Deleted expired subscription`);
             }
-          } else {
-            console.log(`Successfully sent notification to ${sub.endpoint}`);
+            return { success: false, status: response.status, error: errorText };
           }
-          return response;
+          
+          console.log(`Success!`);
+          return { success: true, status: response.status };
         } catch (error) {
-          console.error('Error sending notification:', error);
-          throw error;
+          console.error('Error:', error);
+          return { success: false, error: String(error) };
         }
       })
     );
 
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    console.log(`Notification results: ${successful}/${results.length} successful`);
+    const successful = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
+    console.log(`Results: ${successful}/${results.length} successful`);
 
     return new Response(
-      JSON.stringify({ 
-        message: 'Notifications sent',
-        total: results.length,
-        successful
-      }),
+      JSON.stringify({ message: 'Notifications processed', total: results.length, successful }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Error in send-push-notification:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error?.message || 'Unknown error' }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
