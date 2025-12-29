@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Percent, Gift, Crown, Trash2, Edit, Users, UserPlus, UsersRound } from "lucide-react";
+import { Plus, Percent, Gift, Crown, Trash2, Edit, Users, UserPlus, UsersRound, Settings } from "lucide-react";
 import { format } from "date-fns";
 
 interface DiscountCode {
@@ -57,6 +57,13 @@ interface Profile {
   loyalty_points: number | null;
 }
 
+interface LoyaltySettings {
+  id: string;
+  points_per_dollar: number;
+  points_required_for_redemption: number;
+  redemption_value_usd: number;
+}
+
 const TIER_DISCOUNTS: Record<string, number> = {
   none: 0,
   bronze: 5,
@@ -69,9 +76,18 @@ const Promotions = () => {
   const [loyaltyTransactions, setLoyaltyTransactions] = useState<LoyaltyTransaction[]>([]);
   const [userTiers, setUserTiers] = useState<UserTier[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
+  
+  // Settings dialog state
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [settingsFormData, setSettingsFormData] = useState({
+    points_per_dollar: 1,
+    points_required_for_redemption: 100,
+    redemption_value_usd: 5,
+  });
 
   // Loyalty points dialog state
   const [isPointsDialogOpen, setIsPointsDialogOpen] = useState(false);
@@ -110,11 +126,12 @@ const Promotions = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [codesRes, transactionsRes, tiersRes, profilesRes] = await Promise.all([
+      const [codesRes, transactionsRes, tiersRes, profilesRes, settingsRes] = await Promise.all([
         supabase.from("discount_codes").select("*").order("created_at", { ascending: false }),
         supabase.from("loyalty_transactions").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("user_tiers").select("*").order("updated_at", { ascending: false }),
         supabase.from("profiles").select("id, email, full_name, loyalty_points"),
+        supabase.from("loyalty_settings").select("*").limit(1).single(),
       ]);
 
       if (codesRes.error) throw codesRes.error;
@@ -126,6 +143,15 @@ const Promotions = () => {
       setLoyaltyTransactions(transactionsRes.data || []);
       setUserTiers(tiersRes.data || []);
       setProfiles(profilesRes.data || []);
+      
+      if (settingsRes.data) {
+        setLoyaltySettings(settingsRes.data);
+        setSettingsFormData({
+          points_per_dollar: settingsRes.data.points_per_dollar,
+          points_required_for_redemption: settingsRes.data.points_required_for_redemption,
+          redemption_value_usd: settingsRes.data.redemption_value_usd,
+        });
+      }
     } catch (error: any) {
       toast.error("Error loading promotions data: " + error.message);
     } finally {
@@ -163,6 +189,33 @@ const Promotions = () => {
       tier: "none",
       validUntil: "",
     });
+  };
+
+  const handleSaveSettings = async () => {
+    if (!loyaltySettings) return;
+    
+    try {
+      const { error } = await supabase
+        .from("loyalty_settings")
+        .update({
+          points_per_dollar: settingsFormData.points_per_dollar,
+          points_required_for_redemption: settingsFormData.points_required_for_redemption,
+          redemption_value_usd: settingsFormData.redemption_value_usd,
+        })
+        .eq("id", loyaltySettings.id);
+      
+      if (error) throw error;
+      
+      setLoyaltySettings({
+        ...loyaltySettings,
+        ...settingsFormData,
+      });
+      
+      toast.success("Loyalty settings updated");
+      setIsSettingsDialogOpen(false);
+    } catch (error: any) {
+      toast.error("Error saving settings: " + error.message);
+    }
   };
 
   const handleSaveDiscountCode = async () => {
@@ -557,10 +610,94 @@ const Promotions = () => {
 
         {/* Loyalty Points Tab */}
         <TabsContent value="loyalty" className="space-y-4">
+          {/* Settings Card */}
+          <Card className="bg-muted/30">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium">Point Conversion Settings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {loyaltySettings ? (
+                      <>
+                        {loyaltySettings.points_per_dollar} point{loyaltySettings.points_per_dollar !== 1 ? 's' : ''} per $1 spent • {loyaltySettings.points_required_for_redemption} points = ${loyaltySettings.redemption_value_usd} off
+                      </>
+                    ) : (
+                      "Loading settings..."
+                    )}
+                  </p>
+                </div>
+                <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configure
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[95vw] sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Loyalty Point Settings</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="points_per_dollar">Points earned per $1 spent</Label>
+                        <Input
+                          id="points_per_dollar"
+                          type="number"
+                          min="1"
+                          value={settingsFormData.points_per_dollar}
+                          onChange={(e) => setSettingsFormData({ ...settingsFormData, points_per_dollar: parseInt(e.target.value) || 1 })}
+                        />
+                        <p className="text-xs text-muted-foreground">Customer earns this many points for every $1 spent</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="points_required">Points required for redemption</Label>
+                        <Input
+                          id="points_required"
+                          type="number"
+                          min="1"
+                          value={settingsFormData.points_required_for_redemption}
+                          onChange={(e) => setSettingsFormData({ ...settingsFormData, points_required_for_redemption: parseInt(e.target.value) || 100 })}
+                        />
+                        <p className="text-xs text-muted-foreground">Minimum points needed to redeem for a discount</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="redemption_value">Redemption value ($)</Label>
+                        <Input
+                          id="redemption_value"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={settingsFormData.redemption_value_usd}
+                          onChange={(e) => setSettingsFormData({ ...settingsFormData, redemption_value_usd: parseFloat(e.target.value) || 5 })}
+                        />
+                        <p className="text-xs text-muted-foreground">Dollar value of the discount when points are redeemed</p>
+                      </div>
+                      
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">Preview</p>
+                        <p className="text-sm text-muted-foreground">
+                          Customers earn {settingsFormData.points_per_dollar} point{settingsFormData.points_per_dollar !== 1 ? 's' : ''} per $1 spent.
+                          <br />
+                          {settingsFormData.points_required_for_redemption} points = ${settingsFormData.redemption_value_usd} off
+                        </p>
+                      </div>
+                      
+                      <Button onClick={handleSaveSettings} className="w-full h-11 min-h-[44px]">
+                        Save Settings
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold">Loyalty Points</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">1 point per $1 spent • 100 points = $5 off</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Manage user points and view transactions</p>
             </div>
             <Dialog open={isPointsDialogOpen} onOpenChange={(open) => {
               setIsPointsDialogOpen(open);
