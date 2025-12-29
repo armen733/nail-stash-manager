@@ -360,7 +360,7 @@ const Products = () => {
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
     const matchesAdvancedCategory = advancedCategoryFilter === "all" || product.category === advancedCategoryFilter;
-    const matchesVariantType = variantTypeFilter === "all" || product.bit_type === variantTypeFilter;
+    const matchesVariantType = variantTypeFilter === "all" || product.variant_name === variantTypeFilter || product.bit_type === variantTypeFilter;
     const matchesSupplier = supplierFilter === "all" || product.supplier === supplierFilter;
     const matchesPrice = product.price_usd >= priceRange[0] && product.price_usd <= priceRange[1];
     
