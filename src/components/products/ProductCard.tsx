@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Package, Pencil, Copy, Trash2, ShoppingCart, Eye, Minus, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Product } from "./types";
 import { LazyImage } from "@/components/ui/lazy-image";
+
 interface ProductCardProps {
   product: Product;
   isSelected: boolean;
@@ -19,7 +21,7 @@ interface ProductCardProps {
   onRemoveFromCart: () => void;
 }
 
-export function ProductCard({
+const ProductCardComponent = ({
   product,
   isSelected,
   cartQuantity,
@@ -30,7 +32,7 @@ export function ProductCard({
   onDelete,
   onAddToCart,
   onRemoveFromCart,
-}: ProductCardProps) {
+}: ProductCardProps) => {
   const stockLevel = product.stock_on_hand || 0;
   const reorderLevel = product.reorder_level || 10;
   const isOutOfStock = stockLevel === 0;
@@ -176,4 +178,16 @@ export function ProductCard({
       </CardContent>
     </Card>
   );
-}
+};
+
+// Memoize to prevent unnecessary re-renders when parent state changes
+export const ProductCard = memo(ProductCardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.stock_on_hand === nextProps.product.stock_on_hand &&
+    prevProps.product.price_usd === nextProps.product.price_usd &&
+    prevProps.product.name === nextProps.product.name &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.cartQuantity === nextProps.cartQuantity
+  );
+});
