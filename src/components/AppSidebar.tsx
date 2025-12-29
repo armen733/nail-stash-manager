@@ -12,7 +12,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -32,15 +32,16 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const collapsed = state === "collapsed";
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error("Error signing out");
-    } else {
+    try {
+      await signOut();
       toast.success("Signed out successfully");
       navigate("/auth");
+    } catch (error) {
+      toast.error("Error signing out");
     }
   };
 

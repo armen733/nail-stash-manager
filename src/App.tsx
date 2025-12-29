@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,21 +8,40 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Products from "./pages/Products";
-import Salons from "./pages/Salons";
-import Orders from "./pages/Orders";
-import Profile from "./pages/Profile";
-import Analytics from "./pages/Analytics";
-import LowStock from "./pages/LowStock";
-import Users from "./pages/Users";
-import Promotions from "./pages/Promotions";
-import NotFound from "./pages/NotFound";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
 
-const queryClient = new QueryClient();
+// Lazy load pages for better performance
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Products = lazy(() => import("./pages/Products"));
+const Salons = lazy(() => import("./pages/Salons"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const LowStock = lazy(() => import("./pages/LowStock"));
+const Users = lazy(() => import("./pages/Users"));
+const Promotions = lazy(() => import("./pages/Promotions"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Configure React Query with better caching defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - data won't refetch if fresh
+      gcTime: 1000 * 60 * 30, // 30 minutes - keep in cache
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+      retry: 1, // Only retry failed requests once
+    },
+  },
+});
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { theme, resolvedTheme } = useTheme();
@@ -42,7 +62,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
               style={{ background: 'transparent' }}
             />
           </header>
-          <div className="flex-1 p-4 sm:p-6">{children}</div>
+          <div className="flex-1 p-4 sm:p-6">
+            <Suspense fallback={<PageLoader />}>
+              {children}
+            </Suspense>
+          </div>
         </main>
       </div>
     </SidebarProvider>
@@ -55,103 +79,116 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Index />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Products />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/low-stock"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <LowStock />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/salons"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Salons />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Orders />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Users />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Profile />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Analytics />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/promotions"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Promotions />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            <Route path="/auth" element={
+              <Suspense fallback={<PageLoader />}>
+                <Auth />
+              </Suspense>
+            } />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Index />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Products />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/low-stock"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LowStock />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/salons"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Salons />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Orders />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Users />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Profile />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Analytics />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/promotions"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Promotions />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={
+              <Suspense fallback={<PageLoader />}>
+                <NotFound />
+              </Suspense>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
