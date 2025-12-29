@@ -366,6 +366,22 @@ const Orders = () => {
         }
       }
 
+      // Send push notification for new order
+      try {
+        const customerName = formData.profile_id 
+          ? profiles.find(p => p.id === formData.profile_id)?.full_name 
+          : formData.salon_id 
+            ? salons.find(s => s.id === formData.salon_id)?.name 
+            : 'Customer';
+        
+        await supabase.functions.invoke('send-push-notification', {
+          body: { customerName: customerName || 'Customer' }
+        });
+      } catch (pushError) {
+        console.log('Push notification failed:', pushError);
+        // Don't fail the order creation if push fails
+      }
+
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "" });
