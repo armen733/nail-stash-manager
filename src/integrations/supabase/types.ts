@@ -53,6 +53,33 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_settings: {
+        Row: {
+          created_at: string
+          id: string
+          points_per_dollar: number
+          points_required_for_redemption: number
+          redemption_value_usd: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_per_dollar?: number
+          points_required_for_redemption?: number
+          redemption_value_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_per_dollar?: number
+          points_required_for_redemption?: number
+          redemption_value_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loyalty_transactions: {
         Row: {
           created_at: string | null
