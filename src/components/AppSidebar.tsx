@@ -53,7 +53,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-56 lg:w-60"} collapsible="icon">
+    <Sidebar collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
         <SidebarGroup>
           <SidebarGroupLabel className="px-3 py-3">
