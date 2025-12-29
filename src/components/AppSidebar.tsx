@@ -31,15 +31,14 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile, openMobile } = useSidebar();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const collapsed = state === "collapsed";
 
   const handleNavClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    // Always close on mobile when clicking a nav item
+    setOpenMobile(false);
   };
 
   const handleLogout = async () => {
@@ -47,6 +46,7 @@ export function AppSidebar() {
       await signOut();
       toast.success("Signed out successfully");
       navigate("/auth");
+      setOpenMobile(false);
     } catch (error) {
       toast.error("Error signing out");
     }
@@ -56,9 +56,9 @@ export function AppSidebar() {
     <Sidebar className={collapsed ? "w-16" : "w-80"} collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
         <SidebarGroup>
-          <SidebarGroupLabel className="px-4 py-3">
+          <SidebarGroupLabel className="px-5 py-4">
             {!collapsed ? (
-              <img src={neraLogoDark} alt="NÉRA Beauty" className="h-8 w-auto" />
+              <img src={neraLogoDark} alt="NÉRA Beauty" className="h-10 w-auto" />
             ) : null}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -72,12 +72,12 @@ export function AppSidebar() {
                       onClick={handleNavClick}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[56px] px-5 py-3.5 flex items-center gap-4 touch-manipulation"
-                          : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70 min-h-[56px] px-5 py-3.5 flex items-center gap-4 touch-manipulation"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold min-h-[60px] px-6 py-4 flex items-center gap-5 touch-manipulation"
+                          : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70 min-h-[60px] px-6 py-4 flex items-center gap-5 touch-manipulation"
                       }
                     >
-                      <item.icon className="h-6 w-6 flex-shrink-0" />
-                      {!collapsed && <span className="text-base font-medium">{item.title}</span>}
+                      <item.icon className="h-7 w-7 flex-shrink-0" />
+                      {!collapsed && <span className="text-lg font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -86,18 +86,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-5 space-y-3 pb-[env(safe-area-inset-bottom,20px)]">
-        <div className="flex items-center gap-4 min-h-[56px] px-5 py-2">
+      <SidebarFooter className="p-6 space-y-4 pb-[env(safe-area-inset-bottom,24px)]">
+        <div className="flex items-center gap-5 min-h-[60px] px-6 py-3">
           <ThemeToggle />
-          {!collapsed && <span className="text-base text-muted-foreground">Theme</span>}
+          {!collapsed && <span className="text-lg text-muted-foreground">Theme</span>}
         </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
-          className="w-full justify-start min-h-[56px] px-5 touch-manipulation active:bg-sidebar-accent/70"
+          className="w-full justify-start min-h-[60px] px-6 touch-manipulation active:bg-sidebar-accent/70"
         >
-          <LogOut className="h-6 w-6" />
-          {!collapsed && <span className="ml-4 text-base font-medium">Logout</span>}
+          <LogOut className="h-7 w-7" />
+          {!collapsed && <span className="ml-5 text-lg font-medium">Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
