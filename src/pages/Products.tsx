@@ -407,13 +407,13 @@ const Products = () => {
 
   // Reset variant type filter when category changes
   useEffect(() => {
-    if (advancedCategoryFilter !== "all") {
-      const availableTypes = getVariantTypesForCategoryFilter(advancedCategoryFilter);
+    if (categoryFilter !== "all") {
+      const availableTypes = getVariantTypesForCategoryFilter(categoryFilter);
       if (variantTypeFilter !== "all" && !availableTypes.includes(variantTypeFilter)) {
         setVariantTypeFilter("all");
       }
     }
-  }, [advancedCategoryFilter]);
+  }, [categoryFilter]);
 
   const exportProducts = () => {
     const exportData = filteredProducts.map(p => ({
