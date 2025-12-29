@@ -61,12 +61,12 @@ export function AppSidebar() {
                       end={item.url === "/"}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[3.5rem] px-4 py-3 flex items-center gap-3"
-                          : "hover:bg-sidebar-accent/50 min-h-[3.5rem] px-4 py-3 flex items-center gap-3"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium min-h-[52px] px-4 py-3 flex items-center gap-3 touch-manipulation"
+                          : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70 min-h-[52px] px-4 py-3 flex items-center gap-3 touch-manipulation"
                       }
                     >
-                      <item.icon className="h-7 w-7 md:h-5 md:w-5 flex-shrink-0" />
-                      {!collapsed && <span className="text-lg md:text-base">{item.title}</span>}
+                      <item.icon className="h-6 w-6 flex-shrink-0" />
+                      {!collapsed && <span className="text-base">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -75,18 +75,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 space-y-3">
-        <div className="flex items-center gap-3 min-h-[3rem]">
+      <SidebarFooter className="p-4 space-y-2">
+        <div className="flex items-center gap-3 min-h-[52px] px-4 py-2">
           <ThemeToggle />
-          {!collapsed && <span className="text-base md:text-sm text-muted-foreground">Theme</span>}
+          {!collapsed && <span className="text-base text-muted-foreground">Theme</span>}
         </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
-          className="w-full justify-start min-h-[3rem] px-4"
+          className="w-full justify-start min-h-[52px] px-4 touch-manipulation active:bg-sidebar-accent/70"
         >
-          <LogOut className="h-6 w-6 md:h-5 md:w-5" />
-          {!collapsed && <span className="text-lg md:text-base">Logout</span>}
+          <LogOut className="h-6 w-6" />
+          {!collapsed && <span className="ml-3 text-base">Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
