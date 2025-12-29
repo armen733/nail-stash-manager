@@ -50,7 +50,7 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
   const { theme, resolvedTheme } = useTheme();
   const currentTheme = theme === "system" ? resolvedTheme : theme;
   const logo = currentTheme === "dark" ? logoDark : logoLight;
-  const { setOpen, setOpenMobile, isMobile } = useSidebar();
+  const { setOpen, setOpenMobile, isMobile, openMobile } = useSidebar();
 
   // Add swipe gestures for mobile
   useSwipeGesture({
@@ -75,6 +75,16 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="h-screen flex w-full safe-left safe-right overflow-hidden">
       <AppSidebar />
+      
+      {/* Mobile backdrop overlay */}
+      {isMobile && openMobile && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 animate-fade-in"
+          onClick={() => setOpenMobile(false)}
+          aria-hidden="true"
+        />
+      )}
+      
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header className="border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 py-6 pt-[max(env(safe-area-inset-top,0px),24px)]">
           <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2" />
