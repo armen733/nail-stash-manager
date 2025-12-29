@@ -26,6 +26,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -106,7 +116,7 @@ const Orders = () => {
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
-
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     salon_id: "",
     profile_id: "",
@@ -246,15 +256,15 @@ const Orders = () => {
       .filter(Boolean);
   };
 
-  const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+  const handleDeleteOrder = async () => {
+    if (!deleteOrderId) return;
     
     try {
       // First delete order items
       const { error: itemsError } = await supabase
         .from("order_items")
         .delete()
-        .eq("order_id", orderId);
+        .eq("order_id", deleteOrderId);
       
       if (itemsError) throw itemsError;
 
@@ -262,11 +272,12 @@ const Orders = () => {
       const { error: orderError } = await supabase
         .from("orders")
         .delete()
-        .eq("id", orderId);
+        .eq("id", deleteOrderId);
       
       if (orderError) throw orderError;
 
       toast({ title: "Success", description: "Order deleted" });
+      setDeleteOrderId(null);
       fetchData();
     } catch (error: any) {
       toast({
@@ -274,6 +285,7 @@ const Orders = () => {
         description: error.message,
         variant: "destructive",
       });
+      setDeleteOrderId(null);
     }
   };
 
@@ -915,7 +927,7 @@ const Orders = () => {
                                 size="sm"
                                 variant="destructive"
                                 className="h-9"
-                                onClick={() => handleDeleteOrder(order.id)}
+                                onClick={() => setDeleteOrderId(order.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -971,7 +983,7 @@ const Orders = () => {
                               size="sm"
                               variant="destructive"
                               className="h-9"
-                              onClick={() => handleDeleteOrder(order.id)}
+                              onClick={() => setDeleteOrderId(order.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -986,6 +998,24 @@ const Orders = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteOrderId} onOpenChange={(open) => !open && setDeleteOrderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
