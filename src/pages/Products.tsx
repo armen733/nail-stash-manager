@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,16 +66,24 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { CartPanel } from "@/components/products/CartPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
+import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
+import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Products = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  // Use React Query for products
+  const { data: productsData, isLoading: loading } = useProducts();
+  const products = productsData?.products || [];
+  const allProducts = productsData?.allProducts || [];
+  const queryMaxPrice = productsData?.maxPrice || 1000;
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -113,62 +121,17 @@ const Products = () => {
 
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
 
+  // Update maxPrice when query data changes
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-
-      // Keep a flat list of all products for suggestions
-      setAllProducts((data || []) as Product[]);
-
-      // Fetch all product images
-      const { data: imagesData, error: imagesError } = await (supabase as any)
-        .from("product_images")
-        .select("*")
-        .order("display_order");
-
-      if (imagesError) throw imagesError;
-      
-      // Group variants under their parent products and attach images
-      const parentProducts = (data || []).filter(p => p.is_parent || !p.parent_product_id);
-      const variantProducts = (data || []).filter(p => p.parent_product_id && !p.is_parent);
-      
-      // Attach variants and images to their parents
-      const productsWithVariants = parentProducts.map(parent => {
-        const productImages = (imagesData || []).filter((img: any) => img.product_id === parent.id) as ProductImage[];
-        if (parent.is_parent) {
-          const variants = variantProducts.filter(v => v.parent_product_id === parent.id);
-          return { ...parent, variants, images: productImages };
-        }
-        return { ...parent, images: productImages };
-      });
-      
-      setProducts(productsWithVariants as Product[]);
-
-      // Calculate max price for range filter
-      const prices = (data || []).map(p => p.price_usd);
-      if (prices.length > 0) {
-        const max = Math.ceil(Math.max(...prices) / 100) * 100;
-        setMaxPrice(max);
-        setPriceRange([0, max]);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (queryMaxPrice > 0) {
+      setMaxPrice(queryMaxPrice);
+      setPriceRange([0, queryMaxPrice]);
     }
+  }, [queryMaxPrice]);
+
+  // Invalidate products query instead of manual refetch
+  const refreshProducts = () => {
+    queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY });
   };
 
   // Get all unique suppliers
@@ -362,7 +325,7 @@ const Products = () => {
 
       setIsDialogOpen(false);
       resetForm();
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -380,7 +343,7 @@ const Products = () => {
 
       if (error) throw error;
       toast({ title: "Success", description: "Product deleted successfully" });
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -507,7 +470,7 @@ const Products = () => {
       setIsBulkStockOpen(false);
       setBulkStockValue("");
       setSelectedProducts(new Set());
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -597,7 +560,7 @@ const Products = () => {
       setIsImportOpen(false);
       setImportData([]);
       setImportPreview("");
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({ title: "Import Error", description: error.message, variant: "destructive" });
     }
@@ -639,7 +602,7 @@ const Products = () => {
       if (error) throw error;
       
       toast({ title: "Success", description: "Product duplicated successfully" });
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -683,7 +646,7 @@ const Products = () => {
 
       toast({ title: "Success", description: `${selectedProducts.size} product(s) deleted` });
       setSelectedProducts(new Set());
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -722,7 +685,7 @@ const Products = () => {
       
       toast({ title: "Success", description: `${selectedProducts.size} product(s) duplicated` });
       setSelectedProducts(new Set());
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -917,7 +880,7 @@ const Products = () => {
       setIsConverterOpen(false);
       setSelectedVariantProducts(new Set());
       setSelectedParentId("");
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({
         title: "Conversion Error",
@@ -944,7 +907,7 @@ const Products = () => {
         description: "Product is now standalone",
       });
 
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -981,7 +944,7 @@ const Products = () => {
       });
 
       setQuickViewProduct(null);
-      fetchProducts();
+      refreshProducts();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -1771,7 +1734,7 @@ const Products = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading...</div>
+            <ProductGridSkeleton count={12} />
           ) : paginatedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />

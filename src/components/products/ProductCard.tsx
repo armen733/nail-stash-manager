@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Product } from "./types";
-
+import { LazyImage } from "@/components/ui/lazy-image";
 interface ProductCardProps {
   product: Product;
   isSelected: boolean;
@@ -48,16 +48,28 @@ export function ProductCard({
         onClick={onQuickView}
       >
         {(product.images && product.images.length > 0) ? (
-          <img 
+          <LazyImage 
             src={product.images[0].image_url} 
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            aspectRatio="square"
+            className="w-full h-full group-hover:scale-105 transition-transform"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Package className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+            }
           />
         ) : product.image_url ? (
-          <img 
+          <LazyImage 
             src={product.image_url} 
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            aspectRatio="square"
+            className="w-full h-full group-hover:scale-105 transition-transform"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Package className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+            }
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
