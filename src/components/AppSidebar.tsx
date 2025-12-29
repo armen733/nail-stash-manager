@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import neraLogoDark from "@/assets/nera-logo-dark.png";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -55,8 +56,10 @@ export function AppSidebar() {
     <Sidebar className={collapsed ? "w-16" : "w-80"} collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xl font-semibold px-5 py-5">
-            {!collapsed && "Salon Supply"}
+          <SidebarGroupLabel className="px-4 py-3">
+            {!collapsed ? (
+              <img src={neraLogoDark} alt="NÉRA Beauty" className="h-8 w-auto" />
+            ) : null}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
