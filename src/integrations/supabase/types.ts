@@ -152,6 +152,8 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
+          tier_discount_applied: string | null
+          tier_discount_percent: number | null
           total: number
           updated_at: string
         }
@@ -170,6 +172,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          tier_discount_applied?: string | null
+          tier_discount_percent?: number | null
           total?: number
           updated_at?: string
         }
@@ -188,6 +192,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          tier_discount_applied?: string | null
+          tier_discount_percent?: number | null
           total?: number
           updated_at?: string
         }
@@ -490,6 +496,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_tiers: {
+        Row: {
+          created_at: string | null
+          current_tier: string | null
+          id: string
+          monthly_spend: number | null
+          spend_month: string | null
+          tier_discount_percent: number | null
+          tier_valid_until: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_tier?: string | null
+          id?: string
+          monthly_spend?: number | null
+          spend_month?: string | null
+          tier_discount_percent?: number | null
+          tier_valid_until?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_tier?: string | null
+          id?: string
+          monthly_spend?: number | null
+          spend_month?: string | null
+          tier_discount_percent?: number | null
+          tier_valid_until?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
