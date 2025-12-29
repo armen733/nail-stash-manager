@@ -165,8 +165,8 @@ const Profile = () => {
   return (
     <div className="space-y-3 sm:space-y-4 animate-fade-in max-w-2xl mx-auto px-1">
       <div>
-        <h1 className="text-base sm:text-lg font-semibold text-foreground">Profile Settings</h1>
-        <p className="text-xs text-muted-foreground">Manage your account information</p>
+        <h1 className="text-sm sm:text-base font-medium text-foreground">Profile Settings</h1>
+        <p className="text-[11px] text-muted-foreground">Manage your account</p>
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
