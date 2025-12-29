@@ -1530,49 +1530,38 @@ const Products = () => {
               />
             </div>
             
-            {/* Filter row - scrollable on mobile */}
+            {/* Filter row - clean and simple */}
             <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="min-w-[130px] min-h-[44px] flex-shrink-0">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background border">
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat === "all" ? "All Categories" : cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
-                <SelectTrigger className="min-w-[100px] min-h-[44px] flex-shrink-0">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border">
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="price">Price</SelectItem>
-                  <SelectItem value="stock">Stock</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {/* Advanced Filters */}
+              {/* Single Unified Filter Button */}
               <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
                 <PopoverTrigger asChild>
-                  <Button variant={hasActiveFilters ? "default" : "outline"} size="default" className="min-h-[44px] flex-shrink-0">
-                    <Filter className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Filters</span>
-                    {hasActiveFilters && <Badge variant="secondary" className="ml-1 sm:ml-2 h-5 w-5 p-0 justify-center">!</Badge>}
+                  <Button variant={hasActiveFilters || categoryFilter !== "all" ? "default" : "outline"} size="default" className="min-h-[44px] flex-shrink-0">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <span>Filters</span>
+                    {(hasActiveFilters || categoryFilter !== "all") && (
+                      <Badge variant="secondary" className="ml-2 h-5 min-w-5 p-0 justify-center text-xs">
+                        {[
+                          categoryFilter !== "all" ? 1 : 0,
+                          advancedCategoryFilter !== "all" ? 1 : 0,
+                          variantTypeFilter !== "all" ? 1 : 0,
+                          supplierFilter !== "all" ? 1 : 0,
+                          stockStatusFilter !== "all" ? 1 : 0,
+                          (priceRange[0] > 0 || priceRange[1] < maxPrice) ? 1 : 0,
+                        ].reduce((a, b) => a + b, 0)}
+                      </Badge>
+                    )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 bg-background border" align="end">
+                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 bg-background border" align="start">
                   <div className="space-y-4">
-                    <h4 className="font-medium">Advanced Filters</h4>
+                    <h4 className="font-medium">Filter Products</h4>
                     
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select value={advancedCategoryFilter} onValueChange={setAdvancedCategoryFilter}>
+                      <Select value={categoryFilter} onValueChange={(v) => {
+                        setCategoryFilter(v);
+                        setAdvancedCategoryFilter(v);
+                      }}>
                         <SelectTrigger className="bg-background min-h-[44px]">
                           <SelectValue />
                         </SelectTrigger>
@@ -1593,7 +1582,7 @@ const Products = () => {
                         </SelectTrigger>
                         <SelectContent className="bg-background border">
                           <SelectItem value="all">All Variant Types</SelectItem>
-                          {getVariantTypesForCategoryFilter(advancedCategoryFilter).map(type => (
+                          {getVariantTypesForCategoryFilter(categoryFilter).map(type => (
                             <SelectItem key={type} value={type}>{type}</SelectItem>
                           ))}
                         </SelectContent>
@@ -1643,8 +1632,11 @@ const Products = () => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button variant="outline" size="default" onClick={clearAdvancedFilters} className="flex-1 min-h-[44px]">
-                        Clear
+                      <Button variant="outline" size="default" onClick={() => {
+                        setCategoryFilter("all");
+                        clearAdvancedFilters();
+                      }} className="flex-1 min-h-[44px]">
+                        Clear All
                       </Button>
                       <Button size="default" onClick={() => setShowAdvancedFilters(false)} className="flex-1 min-h-[44px]">
                         Apply
@@ -1653,6 +1645,18 @@ const Products = () => {
                   </div>
                 </PopoverContent>
               </Popover>
+              
+              {/* Sort Selector */}
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
+                <SelectTrigger className="min-w-[100px] min-h-[44px] flex-shrink-0">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="stock">Stock</SelectItem>
+                </SelectContent>
+              </Select>
               
               {/* View Toggle */}
               <div className="flex border rounded-md flex-shrink-0">
