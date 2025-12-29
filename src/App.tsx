@@ -76,12 +76,12 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen flex w-full safe-top safe-left safe-right">
       <AppSidebar />
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <header className="min-h-[80px] border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 pt-[env(safe-area-inset-top,0px)]">
-          <SidebarTrigger className="absolute left-4" />
+        <header className="h-14 border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 pt-[env(safe-area-inset-top,0px)]">
+          <SidebarTrigger className="absolute left-3" />
           <img 
             src={logo} 
             alt="NÉRA Beauty" 
-            className="w-[160px] sm:w-[220px] h-auto object-contain py-5" 
+            className="h-8 w-auto object-contain" 
             style={{ background: 'transparent' }}
           />
         </header>
