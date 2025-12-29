@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { User, Mail, Shield, LogOut } from "lucide-react";
+import { User, Mail, Shield, LogOut, Bell, BellOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { isPushSupported, subscribeToPushNotifications, unsubscribeFromPushNotifications } from "@/lib/push-notifications";
 
 interface Profile {
   id: string;
@@ -22,12 +23,59 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
+    checkNotificationStatus();
   }, []);
+
+  const checkNotificationStatus = async () => {
+    setPushSupported(isPushSupported());
+    
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setNotificationsEnabled(!!subscription);
+      } catch (error) {
+        console.error('Error checking notification status:', error);
+      }
+    }
+  };
+
+  const handleToggleNotifications = async () => {
+    setNotificationsLoading(true);
+    try {
+      if (notificationsEnabled) {
+        await unsubscribeFromPushNotifications();
+        setNotificationsEnabled(false);
+        toast({
+          title: "Notifications disabled",
+          description: "You won't receive push notifications anymore",
+        });
+      } else {
+        await subscribeToPushNotifications();
+        setNotificationsEnabled(true);
+        toast({
+          title: "Notifications enabled",
+          description: "You'll receive notifications for new orders",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update notification settings",
+        variant: "destructive",
+      });
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -186,6 +234,54 @@ const Profile = () => {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Bell className="h-5 w-5" />
+            Notification Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-1">
+                <Label>Push Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  {pushSupported 
+                    ? "Receive notifications when new orders are placed"
+                    : "Push notifications are not supported on this device/browser"}
+                </p>
+              </div>
+              <Button
+                onClick={handleToggleNotifications}
+                disabled={!pushSupported || notificationsLoading}
+                variant={notificationsEnabled ? "destructive" : "default"}
+                className="h-11 min-h-[44px] sm:w-auto w-full"
+              >
+                {notificationsLoading ? (
+                  "Loading..."
+                ) : notificationsEnabled ? (
+                  <>
+                    <BellOff className="mr-2 h-4 w-4" />
+                    Disable
+                  </>
+                ) : (
+                  <>
+                    <Bell className="mr-2 h-4 w-4" />
+                    Enable
+                  </>
+                )}
+              </Button>
+            </div>
+            {notificationsEnabled && (
+              <Badge variant="secondary" className="text-sm">
+                ✓ Notifications are enabled
+              </Badge>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
