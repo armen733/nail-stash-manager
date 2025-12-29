@@ -133,6 +133,8 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedCategoryFilter, setAdvancedCategoryFilter] = useState("all");
+  const [variantTypeFilter, setVariantTypeFilter] = useState("all");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -224,6 +226,21 @@ const Products = () => {
   const getUniqueCategories = () => {
     const categories = allProducts.map(p => p.category).filter(Boolean);
     return Array.from(new Set(categories)).sort();
+  };
+
+  // Get all unique variant types (bit_type) from existing products
+  const getUniqueVariantTypes = () => {
+    const variantTypes = allProducts.map(p => p.bit_type).filter(Boolean) as string[];
+    return Array.from(new Set(variantTypes)).sort();
+  };
+
+  // Get variant types for a specific category
+  const getVariantTypesForCategoryFilter = (category: string) => {
+    if (category === "all") return getUniqueVariantTypes();
+    const variantTypes = allProducts
+      .filter(p => p.category === category && p.bit_type)
+      .map(p => p.bit_type as string);
+    return Array.from(new Set(variantTypes)).sort();
   };
 
   // Get variant types for a specific category from all products
@@ -450,6 +467,8 @@ const Products = () => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+    const matchesAdvancedCategory = advancedCategoryFilter === "all" || product.category === advancedCategoryFilter;
+    const matchesVariantType = variantTypeFilter === "all" || product.bit_type === variantTypeFilter;
     const matchesSupplier = supplierFilter === "all" || product.supplier === supplierFilter;
     const matchesPrice = product.price_usd >= priceRange[0] && product.price_usd <= priceRange[1];
     
@@ -461,7 +480,7 @@ const Products = () => {
     else if (stockStatusFilter === "low_stock") matchesStockStatus = stock > 0 && stock <= reorderLevel;
     else if (stockStatusFilter === "in_stock") matchesStockStatus = stock > reorderLevel;
     
-    return matchesSearch && matchesCategory && matchesSupplier && matchesPrice && matchesStockStatus;
+    return matchesSearch && matchesCategory && matchesAdvancedCategory && matchesVariantType && matchesSupplier && matchesPrice && matchesStockStatus;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -486,7 +505,17 @@ const Products = () => {
 
   useEffect(() => {
     resetPage();
-  }, [searchTerm, categoryFilter, sortBy, supplierFilter, stockStatusFilter, priceRange, resetPage]);
+  }, [searchTerm, categoryFilter, sortBy, supplierFilter, stockStatusFilter, priceRange, advancedCategoryFilter, variantTypeFilter, resetPage]);
+
+  // Reset variant type filter when category changes
+  useEffect(() => {
+    if (advancedCategoryFilter !== "all") {
+      const availableTypes = getVariantTypesForCategoryFilter(advancedCategoryFilter);
+      if (variantTypeFilter !== "all" && !availableTypes.includes(variantTypeFilter)) {
+        setVariantTypeFilter("all");
+      }
+    }
+  }, [advancedCategoryFilter]);
 
   const exportProducts = () => {
     const exportData = filteredProducts.map(p => ({
@@ -643,9 +672,11 @@ const Products = () => {
     setSupplierFilter("all");
     setStockStatusFilter("all");
     setPriceRange([0, maxPrice]);
+    setAdvancedCategoryFilter("all");
+    setVariantTypeFilter("all");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice;
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -1637,6 +1668,36 @@ const Products = () => {
                   <PopoverContent className="w-80 bg-background border" align="end">
                     <div className="space-y-4">
                       <h4 className="font-medium">Advanced Filters</h4>
+                      
+                      <div className="space-y-2">
+                        <Label>Category</Label>
+                        <Select value={advancedCategoryFilter} onValueChange={setAdvancedCategoryFilter}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border">
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {getUniqueCategories().map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Variant Type</Label>
+                        <Select value={variantTypeFilter} onValueChange={setVariantTypeFilter}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border">
+                            <SelectItem value="all">All Variant Types</SelectItem>
+                            {getVariantTypesForCategoryFilter(advancedCategoryFilter).map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       
                       <div className="space-y-2">
                         <Label>Supplier</Label>
