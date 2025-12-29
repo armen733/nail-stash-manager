@@ -64,16 +64,16 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
       <Card className="w-full max-w-md shadow-[var(--shadow-card)] animate-scale-in">
-        <CardHeader className="text-center space-y-3">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-primary" />
+        <CardHeader className="text-center space-y-3 p-4 sm:p-6">
+          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Salon Supply Manager</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">Salon Supply Manager</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
             {isLogin ? "Sign in to your account" : "Create your account"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
@@ -85,6 +85,7 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
+                  className="h-11 min-h-[44px]"
                 />
               </div>
             )}
@@ -97,6 +98,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11 min-h-[44px]"
               />
             </div>
             <div className="space-y-2">
@@ -109,17 +111,18 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                className="h-11 min-h-[44px]"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-11 min-h-[44px]" disabled={loading}>
               {loading ? "Please wait..." : isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline py-2 px-4 min-h-[44px] touch-manipulation"
             >
               {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
             </button>

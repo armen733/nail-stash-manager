@@ -54,43 +54,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface ProductImage {
-  id: string;
-  product_id: string;
-  image_url: string;
-  display_order: number;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  material: string | null;
-  shape: string | null;
-  direction: string | null;
-  bit_type: string | null;
-  grit: string | null;
-  unit: string | null;
-  sku: string;
-  price_usd: number;
-  salon_price_usd: number | null;
-  wholesale_price_usd: number | null;
-  image_url: string | null;
-  stock_on_hand: number | null;
-  stock_reserved: number | null;
-  reorder_level: number | null;
-  supplier: string | null;
-  is_parent: boolean | null;
-  parent_product_id: string | null;
-  variant_name: string | null;
-  variants?: Product[]; // Child products for parent products
-  images?: ProductImage[]; // Multiple images for the product
-}
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
+// Import product components
+import { 
+  Product, 
+  ProductImage, 
+  CartItem, 
+  ProductFormData, 
+  defaultFormData 
+} from "@/components/products/types";
+import { ProductCard } from "@/components/products/ProductCard";
+import { CartPanel } from "@/components/products/CartPanel";
+import { BulkStockDialog } from "@/components/products/BulkStockDialog";
+import { ImportDialog } from "@/components/products/ImportDialog";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -136,27 +111,7 @@ const Products = () => {
   const [advancedCategoryFilter, setAdvancedCategoryFilter] = useState("all");
   const [variantTypeFilter, setVariantTypeFilter] = useState("all");
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    material: "",
-    shape: "",
-    direction: "",
-    bit_type: "",
-    grit: "",
-    unit: "piece",
-    sku: "",
-    price_usd: "",
-    salon_price_usd: "",
-    wholesale_price_usd: "",
-    stock_on_hand: "0",
-    stock_reserved: "0",
-    reorder_level: "10",
-    supplier: "",
-    is_parent: false,
-    parent_product_id: "",
-    variant_name: "",
-  });
+  const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
 
   useEffect(() => {
     fetchProducts();
@@ -436,27 +391,7 @@ const Products = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      category: "",
-      material: "",
-      shape: "",
-      direction: "",
-      bit_type: "",
-      grit: "",
-      unit: "piece",
-      sku: "",
-      price_usd: "",
-      salon_price_usd: "",
-      wholesale_price_usd: "",
-      stock_on_hand: "0",
-      stock_reserved: "0",
-      reorder_level: "10",
-      supplier: "",
-      is_parent: false,
-      parent_product_id: "",
-      variant_name: "",
-    });
+    setFormData(defaultFormData);
     setEditingProduct(null);
     setImageFiles([]);
     setImagePreviews([]);
@@ -2141,48 +2076,11 @@ const Products = () => {
         </CardContent>
       </Card>
 
-      {cart.length > 0 && (
-        <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-50">
-          <Card className="shadow-lg border-2">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  <h3 className="font-semibold">Cart ({cartItemCount} items)</h3>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setCart([])}
-                >
-                  Clear
-                </Button>
-              </div>
-              <div className="max-h-48 overflow-y-auto mb-3 space-y-2">
-                {cart.map(item => (
-                  <div key={item.product.id} className="flex items-center justify-between text-sm">
-                    <span className="flex-1 truncate">{item.product.name}</span>
-                    <span className="text-muted-foreground mx-2">×{item.quantity}</span>
-                    <span className="font-semibold">${(item.product.price_usd * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t pt-3 mb-3">
-                <div className="flex items-center justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>${cartTotal.toFixed(2)}</span>
-                </div>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handlePlaceOrder}
-              >
-                Place Order
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <CartPanel 
+        cart={cart} 
+        onClear={() => setCart([])} 
+        onPlaceOrder={handlePlaceOrder} 
+      />
 
       {/* Quick View - Responsive (Drawer on mobile, Dialog on desktop) */}
       {isMobile ? (
