@@ -101,18 +101,18 @@ const LowStock = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-            Low Stock Management
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive flex-shrink-0" />
+            <span className="truncate">Low Stock Management</span>
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Products that need reordering ({products.length})
           </p>
         </div>
-        <Button onClick={fetchLowStockProducts} variant="outline" size="default">
+        <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto">
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
@@ -142,47 +142,47 @@ const LowStock = () => {
             const status = getStockStatus(product.stock_on_hand);
             return (
               <Card key={product.id} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {product.name}
+                <CardHeader className="pb-3 p-4 sm:p-6 sm:pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">
+                        <span className="truncate">{product.name}</span>
                         {product.variant_name && (
-                          <span className="text-sm font-normal text-muted-foreground">
+                          <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                             ({product.variant_name})
                           </span>
                         )}
                       </CardTitle>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge variant="outline">{product.category}</Badge>
-                        <Badge variant="outline">SKU: {product.sku}</Badge>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                        <Badge variant="outline" className="text-xs">SKU: {product.sku}</Badge>
                         {product.supplier && (
-                          <Badge variant="outline">{product.supplier}</Badge>
+                          <Badge variant="outline" className="text-xs">{product.supplier}</Badge>
                         )}
                       </div>
                     </div>
-                    <Badge variant={status.variant}>{status.label}</Badge>
+                    <Badge variant={status.variant} className="self-start flex-shrink-0">{status.label}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Current Stock</p>
-                      <p className="text-2xl font-bold text-destructive">
+                      <p className="text-xs sm:text-sm text-muted-foreground">Current Stock</p>
+                      <p className="text-lg sm:text-2xl font-bold text-destructive">
                         {product.stock_on_hand}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Reorder Level</p>
-                      <p className="text-2xl font-bold">{product.reorder_level}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Reorder Level</p>
+                      <p className="text-lg sm:text-2xl font-bold">{product.reorder_level}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Unit Price</p>
-                      <p className="text-2xl font-bold">${product.price_usd.toFixed(2)}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Unit Price</p>
+                      <p className="text-lg sm:text-2xl font-bold">${product.price_usd.toFixed(2)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Shortage</p>
-                      <p className="text-2xl font-bold text-destructive">
+                      <p className="text-xs sm:text-sm text-muted-foreground">Shortage</p>
+                      <p className="text-lg sm:text-2xl font-bold text-destructive">
                         {product.reorder_level - product.stock_on_hand}
                       </p>
                     </div>
@@ -192,7 +192,7 @@ const LowStock = () => {
                       <DialogTrigger asChild>
                         <Button
                           variant="default"
-                          size="sm"
+                          className="h-11 min-h-[44px]"
                           onClick={() => {
                             setEditingProduct(product);
                             setNewStock(product.stock_on_hand.toString());
@@ -202,10 +202,10 @@ const LowStock = () => {
                           Update Stock
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-w-[95vw] sm:max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Update Stock Level</DialogTitle>
-                          <DialogDescription>
+                          <DialogTitle className="text-lg sm:text-xl">Update Stock Level</DialogTitle>
+                          <DialogDescription className="text-sm">
                             Update the current stock for {product.name}
                           </DialogDescription>
                         </DialogHeader>
@@ -219,11 +219,13 @@ const LowStock = () => {
                               value={newStock}
                               onChange={(e) => setNewStock(e.target.value)}
                               placeholder="Enter new stock quantity"
+                              className="h-11 min-h-[44px]"
                             />
                           </div>
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                             <Button
                               variant="outline"
+                              className="h-11 min-h-[44px]"
                               onClick={() => {
                                 setEditingProduct(null);
                                 setNewStock("");
@@ -231,7 +233,7 @@ const LowStock = () => {
                             >
                               Cancel
                             </Button>
-                            <Button onClick={handleUpdateStock}>
+                            <Button onClick={handleUpdateStock} className="h-11 min-h-[44px]">
                               Update Stock
                             </Button>
                           </div>

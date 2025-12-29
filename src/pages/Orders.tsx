@@ -445,18 +445,18 @@ const Orders = () => {
   };
 
   return (
-      <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Orders</h1>
-          <p className="text-muted-foreground mt-1">Track and manage orders</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Orders</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Track and manage orders</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="h-11 min-h-[44px] px-4 text-sm">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Order
+                <span className="hidden xs:inline">Create </span>Order
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -768,18 +768,18 @@ const Orders = () => {
       </Dialog>
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <div className="flex items-center gap-4">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search orders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11 min-h-[44px]"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={exportOrders}>
+            <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

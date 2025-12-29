@@ -367,26 +367,26 @@ const Promotions = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Promotions</h1>
-        <p className="text-muted-foreground mt-1">Manage discount codes, loyalty points, and customer tiers</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Promotions</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage discount codes, loyalty points, and customer tiers</p>
       </div>
 
       <Tabs defaultValue="discount-codes" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="discount-codes" className="flex items-center gap-2">
-            <Percent className="h-4 w-4" />
+        <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsTrigger value="discount-codes" className="flex items-center gap-1.5 sm:gap-2 py-2.5 sm:py-2 text-xs sm:text-sm min-h-[44px]">
+            <Percent className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Discount Codes</span>
             <span className="sm:hidden">Codes</span>
           </TabsTrigger>
-          <TabsTrigger value="loyalty" className="flex items-center gap-2">
-            <Gift className="h-4 w-4" />
+          <TabsTrigger value="loyalty" className="flex items-center gap-1.5 sm:gap-2 py-2.5 sm:py-2 text-xs sm:text-sm min-h-[44px]">
+            <Gift className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Loyalty Points</span>
             <span className="sm:hidden">Loyalty</span>
           </TabsTrigger>
-          <TabsTrigger value="tiers" className="flex items-center gap-2">
-            <Crown className="h-4 w-4" />
+          <TabsTrigger value="tiers" className="flex items-center gap-1.5 sm:gap-2 py-2.5 sm:py-2 text-xs sm:text-sm min-h-[44px]">
+            <Crown className="h-4 w-4 flex-shrink-0" />
             <span className="hidden sm:inline">Customer Tiers</span>
             <span className="sm:hidden">Tiers</span>
           </TabsTrigger>
@@ -394,19 +394,19 @@ const Promotions = () => {
 
         {/* Discount Codes Tab */}
         <TabsContent value="discount-codes" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Discount Codes</h2>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold">Discount Codes</h2>
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
               setIsAddDialogOpen(open);
               if (!open) resetForm();
             }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="h-11 min-h-[44px] w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Code
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="max-w-[95vw] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>{editingCode ? "Edit" : "Add"} Discount Code</DialogTitle>
                 </DialogHeader>
@@ -485,7 +485,7 @@ const Promotions = () => {
                     />
                     <Label htmlFor="is_active">Active</Label>
                   </div>
-                  <Button onClick={handleSaveDiscountCode} className="w-full">
+                  <Button onClick={handleSaveDiscountCode} className="w-full h-11 min-h-[44px]">
                     {editingCode ? "Update" : "Create"} Code
                   </Button>
                 </div>
@@ -494,7 +494,7 @@ const Promotions = () => {
           </div>
 
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="p-0 sm:p-0">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : discountCodes.length === 0 ? (
@@ -536,11 +536,11 @@ const Promotions = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => handleEditCode(code)}>
+                            <div className="flex justify-end gap-1 sm:gap-2">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 min-h-[44px] min-w-[44px]" onClick={() => handleEditCode(code)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDeleteCode(code.id)}>
+                              <Button variant="ghost" size="icon" className="h-10 w-10 min-h-[44px] min-w-[44px]" onClick={() => handleDeleteCode(code.id)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
@@ -557,22 +557,22 @@ const Promotions = () => {
 
         {/* Loyalty Points Tab */}
         <TabsContent value="loyalty" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
             <div>
-              <h2 className="text-xl font-semibold">Loyalty Points</h2>
-              <p className="text-sm text-muted-foreground">1 point per $1 spent • 100 points = $5 off</p>
+              <h2 className="text-lg sm:text-xl font-semibold">Loyalty Points</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">1 point per $1 spent • 100 points = $5 off</p>
             </div>
             <Dialog open={isPointsDialogOpen} onOpenChange={(open) => {
               setIsPointsDialogOpen(open);
               if (!open) resetPointsForm();
             }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="h-11 min-h-[44px] w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Adjust Points
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="max-w-[95vw] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Adjust Loyalty Points</DialogTitle>
                 </DialogHeader>
@@ -667,7 +667,7 @@ const Promotions = () => {
                     />
                   </div>
 
-                  <Button onClick={handleAdjustPoints} className="w-full">
+                  <Button onClick={handleAdjustPoints} className="w-full h-11 min-h-[44px]">
                     {pointsFormData.type === "earned" ? "Add" : "Remove"} {pointsFormData.points || 0} Points
                     {pointsFormData.targetType === "all" && ` to ${profiles.length} users`}
                   </Button>
@@ -678,10 +678,10 @@ const Promotions = () => {
 
           {/* User Points Overview */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">User Points Overview</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-sm sm:text-base">User Points Overview</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 sm:p-0">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : profiles.length === 0 ? (
@@ -718,10 +718,10 @@ const Promotions = () => {
 
           {/* Recent Transactions */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Recent Transactions</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-sm sm:text-base">Recent Transactions</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 sm:p-0">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : loyaltyTransactions.length === 0 ? (
@@ -771,19 +771,19 @@ const Promotions = () => {
 
         {/* Customer Tiers Tab */}
         <TabsContent value="tiers" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <h2 className="text-xl font-semibold">Customer Tiers</h2>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+            <h2 className="text-lg sm:text-xl font-semibold">Customer Tiers</h2>
             <Dialog open={isTierDialogOpen} onOpenChange={(open) => {
               setIsTierDialogOpen(open);
               if (!open) resetTierForm();
             }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="h-11 min-h-[44px] w-full sm:w-auto">
                   <Crown className="mr-2 h-4 w-4" />
                   Set Tier
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="max-w-[95vw] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Set Customer Tier</DialogTitle>
                 </DialogHeader>
