@@ -186,23 +186,23 @@ const Salons = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Salons</h1>
-          <p className="text-muted-foreground mt-1">Manage your salon clients</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salons</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="min-h-[44px] w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add Salon
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingSalon ? "Edit Salon" : "Add New Salon"}</DialogTitle>
             </DialogHeader>
@@ -214,6 +214,7 @@ const Salons = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
+                  className="min-h-[44px]"
                 />
               </div>
 
@@ -223,16 +224,18 @@ const Salons = () => {
                   id="contact_name"
                   value={formData.contact_name}
                   onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                  className="min-h-[44px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="min-h-[44px]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -242,6 +245,7 @@ const Salons = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="min-h-[44px]"
                   />
                 </div>
               </div>
@@ -252,6 +256,7 @@ const Salons = () => {
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="min-h-[44px]"
                 />
               </div>
 
@@ -261,6 +266,7 @@ const Salons = () => {
                   id="city"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="min-h-[44px]"
                 />
               </div>
 
@@ -270,14 +276,15 @@ const Salons = () => {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="min-h-[44px]"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="min-h-[44px]">
                   {editingSalon ? "Update Salon" : "Add Salon"}
                 </Button>
               </div>
@@ -287,24 +294,24 @@ const Salons = () => {
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search salons..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 min-h-[44px]"
               />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Select value={cityFilter} onValueChange={setCityFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectTrigger className="flex-1 sm:w-[180px] min-h-[44px]">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border">
                   {cities.map(city => (
                     <SelectItem key={city} value={city}>
                       {city === "all" ? "All Cities" : city}
@@ -312,14 +319,14 @@ const Salons = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={exportSalons} variant="outline" size="default">
-                <Download className="mr-2 h-4 w-4" />
-                Export
+              <Button onClick={exportSalons} variant="outline" size="default" className="min-h-[44px]">
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export</span>
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">Loading...</div>
           ) : filteredSalons.length === 0 ? (
@@ -328,23 +335,23 @@ const Salons = () => {
               <p className="text-muted-foreground">No salons yet. Add your first salon client to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredSalons.map((salon) => (
-                <Card key={salon.id} className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <h3 className="font-semibold text-lg">{salon.name}</h3>
+                <Card key={salon.id} className="p-3 sm:p-4">
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      <h3 className="font-semibold text-base sm:text-lg truncate">{salon.name}</h3>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="icon" variant="ghost" onClick={() => handleEdit(salon)}>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button size="icon" variant="ghost" onClick={() => handleEdit(salon)} className="h-10 w-10">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(salon.id)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive h-10 w-10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -352,19 +359,19 @@ const Salons = () => {
                   </div>
                   <div className="space-y-1 text-sm">
                     {salon.contact_name && (
-                      <p className="text-muted-foreground">Contact: {salon.contact_name}</p>
+                      <p className="text-muted-foreground truncate">Contact: {salon.contact_name}</p>
                     )}
                     {salon.phone && (
-                      <p className="text-muted-foreground">Phone: {salon.phone}</p>
+                      <p className="text-muted-foreground truncate">Phone: {salon.phone}</p>
                     )}
                     {salon.email && (
-                      <p className="text-muted-foreground">Email: {salon.email}</p>
+                      <p className="text-muted-foreground truncate">Email: {salon.email}</p>
                     )}
                     {salon.city && (
-                      <p className="text-muted-foreground">City: {salon.city}</p>
+                      <p className="text-muted-foreground truncate">City: {salon.city}</p>
                     )}
                     {salon.address && (
-                      <p className="text-muted-foreground text-xs mt-2">{salon.address}</p>
+                      <p className="text-muted-foreground text-xs mt-2 truncate">{salon.address}</p>
                     )}
                   </div>
                 </Card>

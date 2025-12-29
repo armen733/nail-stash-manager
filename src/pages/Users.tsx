@@ -96,20 +96,20 @@ export default function Users() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <UsersIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Users</h1>
+          <UsersIcon className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+          <h1 className="text-2xl sm:text-3xl font-bold">Users</h1>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="min-h-[44px] w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Add User
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
             </DialogHeader>
@@ -122,6 +122,7 @@ export default function Users() {
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   placeholder="John Doe"
                   required
+                  className="min-h-[44px]"
                 />
               </div>
               <div className="space-y-2">
@@ -133,6 +134,7 @@ export default function Users() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="john@example.com"
                   required
+                  className="min-h-[44px]"
                 />
               </div>
               <div className="space-y-2">
@@ -143,6 +145,7 @@ export default function Users() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+1 234 567 8900"
+                  className="min-h-[44px]"
                 />
               </div>
               <div className="space-y-2">
@@ -153,21 +156,21 @@ export default function Users() {
                     setFormData({ ...formData, role: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="min-h-[44px]">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border">
                     <SelectItem value="Customer">Customer</SelectItem>
                     <SelectItem value="Sales Rep">Sales Rep</SelectItem>
                     <SelectItem value="Owner">Owner</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="min-h-[44px]">
                   {isLoading ? "Creating..." : "Create User"}
                 </Button>
               </div>
@@ -177,62 +180,64 @@ export default function Users() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Registered Users</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Registered Users</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           {usersLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 sm:p-0">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
           ) : users && users.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Registered</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        {user.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {user.phone ? (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          {user.phone}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                        {user.role}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(user.created_at), "MMM d, yyyy")}
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Name</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[130px] hidden sm:table-cell">Phone</TableHead>
+                    <TableHead className="min-w-[100px]">Role</TableHead>
+                    <TableHead className="min-w-[120px] hidden md:table-cell">Registered</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium py-3">{user.full_name}</TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate max-w-[150px] sm:max-w-none">{user.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 hidden sm:table-cell">
+                        {user.phone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            {user.phone}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                          {user.role}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 hidden md:table-cell">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-4 w-4 flex-shrink-0" />
+                          {format(new Date(user.created_at), "MMM d, yyyy")}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
               No registered users yet.
