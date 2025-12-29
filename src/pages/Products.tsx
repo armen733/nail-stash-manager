@@ -68,6 +68,7 @@ import { ImportDialog } from "@/components/products/ImportDialog";
 import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -78,6 +79,9 @@ const Products = () => {
   const products = productsData?.products || [];
   const allProducts = productsData?.allProducts || [];
   const queryMaxPrice = productsData?.maxPrice || 1000;
+
+  // Fetch category-variant type mappings from database
+  const { data: categoryVariantTypes = [] } = useCategoryVariantTypes();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -145,28 +149,19 @@ const Products = () => {
     return Array.from(new Set(categories)).sort();
   };
 
-  // Get all unique variant types (bit_type) from existing products
+  // Get all unique variant types from category_variant_types table
   const getUniqueVariantTypes = () => {
-    const variantTypes = allProducts.map(p => p.bit_type).filter(Boolean) as string[];
-    return Array.from(new Set(variantTypes)).sort();
+    return getVariantTypesForCategory(categoryVariantTypes, "all");
   };
 
-  // Get variant types for a specific category
+  // Get variant types for a specific category from category_variant_types table
   const getVariantTypesForCategoryFilter = (category: string) => {
-    if (category === "all") return getUniqueVariantTypes();
-    const variantTypes = allProducts
-      .filter(p => p.category === category && p.bit_type)
-      .map(p => p.bit_type as string);
-    return Array.from(new Set(variantTypes)).sort();
+    return getVariantTypesForCategory(categoryVariantTypes, category);
   };
 
-  // Get variant types for a specific category from all products
-  const getVariantTypesForCategory = (category: string) => {
-    if (!category) return [];
-    const variantTypes = allProducts
-      .filter(p => p.category === category && p.variant_name)
-      .map(p => p.variant_name as string);
-    return Array.from(new Set(variantTypes)).sort();
+  // Get variant types for form dropdown (using category_variant_types table)
+  const getVariantTypesForFormCategory = (category: string) => {
+    return getVariantTypesForCategory(categoryVariantTypes, category);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1427,7 +1422,7 @@ const Products = () => {
                       onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
                       className="flex-1"
                     />
-                    {formData.category && getVariantTypesForCategory(formData.category).length > 0 && (
+                    {formData.category && getVariantTypesForFormCategory(formData.category).length > 0 && (
                       <Select
                         value=""
                         onValueChange={(value) => setFormData({ ...formData, variant_name: value })}
@@ -1436,7 +1431,7 @@ const Products = () => {
                           <SelectValue placeholder="Existing" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getVariantTypesForCategory(formData.category).map(variant => (
+                          {getVariantTypesForFormCategory(formData.category).map(variant => (
                             <SelectItem key={variant} value={variant}>{variant}</SelectItem>
                           ))}
                         </SelectContent>
