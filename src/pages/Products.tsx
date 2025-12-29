@@ -1619,169 +1619,177 @@ const Products = () => {
       />
 
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="relative flex-1 w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border">
-                    {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat === "all" ? "All Categories" : cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border">
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="price">Price</SelectItem>
-                    <SelectItem value="stock">Stock</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Advanced Filters */}
-                <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-                  <PopoverTrigger asChild>
-                    <Button variant={hasActiveFilters ? "default" : "outline"} size="default">
-                      <Filter className="mr-2 h-4 w-4" />
-                      Filters
-                      {hasActiveFilters && <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 justify-center">!</Badge>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 bg-background border" align="end">
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Advanced Filters</h4>
-                      
-                      <div className="space-y-2">
-                        <Label>Category</Label>
-                        <Select value={advancedCategoryFilter} onValueChange={setAdvancedCategoryFilter}>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border">
-                            <SelectItem value="all">All Categories</SelectItem>
-                            {getUniqueCategories().map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Variant Type</Label>
-                        <Select value={variantTypeFilter} onValueChange={setVariantTypeFilter}>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border">
-                            <SelectItem value="all">All Variant Types</SelectItem>
-                            {getVariantTypesForCategoryFilter(advancedCategoryFilter).map(type => (
-                              <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Supplier</Label>
-                        <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border">
-                            {suppliers.map(s => (
-                              <SelectItem key={s} value={s}>
-                                {s === "all" ? "All Suppliers" : s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Stock Status</Label>
-                        <Select value={stockStatusFilter} onValueChange={(v: typeof stockStatusFilter) => setStockStatusFilter(v)}>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border">
-                            <SelectItem value="all">All Stock Levels</SelectItem>
-                            <SelectItem value="in_stock">In Stock</SelectItem>
-                            <SelectItem value="low_stock">Low Stock</SelectItem>
-                            <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Price Range: ${priceRange[0]} - ${priceRange[1]}</Label>
-                        <Slider
-                          value={priceRange}
-                          onValueChange={(v) => setPriceRange(v as [number, number])}
-                          min={0}
-                          max={maxPrice}
-                          step={1}
-                        />
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={clearAdvancedFilters} className="flex-1">
-                          Clear
-                        </Button>
-                        <Button size="sm" onClick={() => setShowAdvancedFilters(false)} className="flex-1">
-                          Apply
-                        </Button>
-                      </div>
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Search */}
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 min-h-[44px]"
+              />
+            </div>
+            
+            {/* Filter row - scrollable on mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-hide">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="min-w-[130px] min-h-[44px] flex-shrink-0">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat === "all" ? "All Categories" : cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
+                <SelectTrigger className="min-w-[100px] min-h-[44px] flex-shrink-0">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border">
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="price">Price</SelectItem>
+                  <SelectItem value="stock">Stock</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Advanced Filters */}
+              <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+                <PopoverTrigger asChild>
+                  <Button variant={hasActiveFilters ? "default" : "outline"} size="default" className="min-h-[44px] flex-shrink-0">
+                    <Filter className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Filters</span>
+                    {hasActiveFilters && <Badge variant="secondary" className="ml-1 sm:ml-2 h-5 w-5 p-0 justify-center">!</Badge>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 bg-background border" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Advanced Filters</h4>
+                    
+                    <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select value={advancedCategoryFilter} onValueChange={setAdvancedCategoryFilter}>
+                        <SelectTrigger className="bg-background min-h-[44px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border">
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {getUniqueCategories().map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  </PopoverContent>
-                </Popover>
-                
-                {/* View Toggle */}
-                <div className="flex border rounded-md">
-                  <Button 
-                    variant={viewMode === "grid" ? "default" : "ghost"} 
-                    size="icon" 
-                    className="rounded-r-none"
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant={viewMode === "table" ? "default" : "ghost"} 
-                    size="icon" 
-                    className="rounded-l-none"
-                    onClick={() => setViewMode("table")}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="default">
-                  <FileUp className="mr-2 h-4 w-4" />
-                  Import
+                    
+                    <div className="space-y-2">
+                      <Label>Variant Type</Label>
+                      <Select value={variantTypeFilter} onValueChange={setVariantTypeFilter}>
+                        <SelectTrigger className="bg-background min-h-[44px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border">
+                          <SelectItem value="all">All Variant Types</SelectItem>
+                          {getVariantTypesForCategoryFilter(advancedCategoryFilter).map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Supplier</Label>
+                      <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                        <SelectTrigger className="bg-background min-h-[44px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border">
+                          {suppliers.map(s => (
+                            <SelectItem key={s} value={s}>
+                              {s === "all" ? "All Suppliers" : s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Stock Status</Label>
+                      <Select value={stockStatusFilter} onValueChange={(v: typeof stockStatusFilter) => setStockStatusFilter(v)}>
+                        <SelectTrigger className="bg-background min-h-[44px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border">
+                          <SelectItem value="all">All Stock Levels</SelectItem>
+                          <SelectItem value="in_stock">In Stock</SelectItem>
+                          <SelectItem value="low_stock">Low Stock</SelectItem>
+                          <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Price Range: ${priceRange[0]} - ${priceRange[1]}</Label>
+                      <Slider
+                        value={priceRange}
+                        onValueChange={(v) => setPriceRange(v as [number, number])}
+                        min={0}
+                        max={maxPrice}
+                        step={1}
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="default" onClick={clearAdvancedFilters} className="flex-1 min-h-[44px]">
+                        Clear
+                      </Button>
+                      <Button size="default" onClick={() => setShowAdvancedFilters(false)} className="flex-1 min-h-[44px]">
+                        Apply
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              {/* View Toggle */}
+              <div className="flex border rounded-md flex-shrink-0">
+                <Button 
+                  variant={viewMode === "grid" ? "default" : "ghost"} 
+                  size="icon" 
+                  className="rounded-r-none min-h-[44px] min-w-[44px]"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
                 </Button>
-                <Button onClick={exportProducts} variant="outline" size="default">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
+                <Button 
+                  variant={viewMode === "table" ? "default" : "ghost"} 
+                  size="icon" 
+                  className="rounded-l-none min-h-[44px] min-w-[44px]"
+                  onClick={() => setViewMode("table")}
+                >
+                  <List className="h-4 w-4" />
                 </Button>
               </div>
+              
+              <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
+                <FileUp className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
+                <FileUp className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+              <Button onClick={exportProducts} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button onClick={exportProducts} variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
             </div>
             {selectedProducts.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
