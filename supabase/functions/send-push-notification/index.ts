@@ -28,6 +28,76 @@ function base64UrlDecode(str: string): Uint8Array {
   return outputArray;
 }
 
+// Convert DER signature to raw r||s format (64 bytes)
+// Web Crypto returns DER format, but VAPID needs raw format
+function derToRaw(derSignature: Uint8Array): Uint8Array {
+  // DER format: 0x30 [total-length] 0x02 [r-length] [r] 0x02 [s-length] [s]
+  const raw = new Uint8Array(64);
+  
+  // Check for DER sequence tag
+  if (derSignature[0] !== 0x30) {
+    // Already in raw format or invalid - return as is if 64 bytes
+    if (derSignature.length === 64) {
+      return derSignature;
+    }
+    throw new Error('Invalid signature format');
+  }
+  
+  let offset = 2; // Skip sequence tag and length
+  
+  // Read r
+  if (derSignature[offset] !== 0x02) {
+    throw new Error('Expected integer tag for r');
+  }
+  offset++;
+  const rLen = derSignature[offset];
+  offset++;
+  
+  let rStart = offset;
+  let rBytes = rLen;
+  
+  // Skip leading zero if present (used for positive number encoding)
+  if (derSignature[rStart] === 0x00 && rLen > 32) {
+    rStart++;
+    rBytes--;
+  }
+  
+  // Copy r, padding with zeros if needed
+  const rPadding = 32 - rBytes;
+  if (rPadding > 0) {
+    raw.fill(0, 0, rPadding);
+  }
+  raw.set(derSignature.subarray(rStart, rStart + rBytes), Math.max(0, rPadding));
+  
+  offset += rLen;
+  
+  // Read s
+  if (derSignature[offset] !== 0x02) {
+    throw new Error('Expected integer tag for s');
+  }
+  offset++;
+  const sLen = derSignature[offset];
+  offset++;
+  
+  let sStart = offset;
+  let sBytes = sLen;
+  
+  // Skip leading zero if present
+  if (derSignature[sStart] === 0x00 && sLen > 32) {
+    sStart++;
+    sBytes--;
+  }
+  
+  // Copy s, padding with zeros if needed
+  const sPadding = 32 - sBytes;
+  if (sPadding > 0) {
+    raw.fill(0, 32, 32 + sPadding);
+  }
+  raw.set(derSignature.subarray(sStart, sStart + sBytes), 32 + Math.max(0, sPadding));
+  
+  return raw;
+}
+
 // Import VAPID keys and create signing key
 async function importVapidKeys(): Promise<CryptoKey> {
   const privateKeyBytes = base64UrlDecode(VAPID_PRIVATE_KEY);
@@ -82,8 +152,11 @@ async function createVapidToken(endpoint: string, privateKey: CryptoKey): Promis
     new TextEncoder().encode(unsignedToken)
   );
   
-  const signature = new Uint8Array(signatureBuffer);
-  const encodedSignature = base64UrlEncode(signature);
+  // Convert DER signature to raw format (64 bytes: r || s)
+  const derSignature = new Uint8Array(signatureBuffer);
+  const rawSignature = derToRaw(derSignature);
+  
+  const encodedSignature = base64UrlEncode(rawSignature);
   const jwt = `${unsignedToken}.${encodedSignature}`;
   
   return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
