@@ -432,31 +432,6 @@ const Orders = () => {
         }
       }
 
-      // Send push notification for new order
-      try {
-        const profile = formData.profile_id ? profiles.find(p => p.id === formData.profile_id) : null;
-        const salon = formData.salon_id ? salons.find(s => s.id === formData.salon_id) : null;
-        const customerName = profile?.full_name || salon?.name || 'Customer';
-        const customerPhone = profile?.phone || salon?.phone || null;
-        const customerEmail = profile?.email || salon?.email || null;
-        const customerAddress = salon?.address || null;
-        
-        await supabase.functions.invoke('send-push-notification', {
-          body: { 
-            orderId: order.id,
-            customerName,
-            customerPhone,
-            customerEmail,
-            customerAddress,
-            total,
-            orderDate: new Date().toISOString().split('T')[0]
-          }
-        });
-      } catch (pushError) {
-        console.log('Push notification failed:', pushError);
-        // Don't fail the order creation if push fails
-      }
-
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "" });
