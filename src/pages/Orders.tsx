@@ -77,6 +77,9 @@ interface OrderItemWithProduct {
 interface Salon {
   id: string;
   name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
 }
 
 interface Profile {
@@ -193,7 +196,7 @@ const Orders = () => {
     try {
       const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
         supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, products(name))").order("order_date", { ascending: false }),
-        supabase.from("salons").select("id, name").order("name"),
+        supabase.from("salons").select("id, name, phone, email, address").order("name"),
         supabase.from("products").select("id, name, price_usd, sku, stock_on_hand, image_url, product_images(image_url)").order("name"),
         supabase.from("profiles").select("id, full_name, email, phone").order("full_name"),
       ]);
@@ -431,14 +434,23 @@ const Orders = () => {
 
       // Send push notification for new order
       try {
-        const customerName = formData.profile_id 
-          ? profiles.find(p => p.id === formData.profile_id)?.full_name 
-          : formData.salon_id 
-            ? salons.find(s => s.id === formData.salon_id)?.name 
-            : 'Customer';
+        const profile = formData.profile_id ? profiles.find(p => p.id === formData.profile_id) : null;
+        const salon = formData.salon_id ? salons.find(s => s.id === formData.salon_id) : null;
+        const customerName = profile?.full_name || salon?.name || 'Customer';
+        const customerPhone = profile?.phone || salon?.phone || null;
+        const customerEmail = profile?.email || salon?.email || null;
+        const customerAddress = salon?.address || null;
         
         await supabase.functions.invoke('send-push-notification', {
-          body: { customerName: customerName || 'Customer' }
+          body: { 
+            orderId: order.id,
+            customerName,
+            customerPhone,
+            customerEmail,
+            customerAddress,
+            total,
+            orderDate: new Date().toISOString().split('T')[0]
+          }
         });
       } catch (pushError) {
         console.log('Push notification failed:', pushError);
