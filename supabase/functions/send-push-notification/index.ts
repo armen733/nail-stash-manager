@@ -173,42 +173,13 @@ async function encryptPayload(
   };
 }
 
-// Convert DER signature to raw format
-function derToRaw(derSignature: Uint8Array): Uint8Array {
-  const raw = new Uint8Array(64);
-  
-  if (derSignature[0] !== 0x30) {
-    if (derSignature.length === 64) return derSignature;
-    throw new Error('Invalid signature format');
-  }
-  
-  let offset = 2;
-  if (derSignature[offset] !== 0x02) throw new Error('Expected integer tag for r');
-  offset++;
-  const rLen = derSignature[offset]; offset++;
-  let rStart = offset, rBytes = rLen;
-  if (derSignature[rStart] === 0x00 && rLen > 32) { rStart++; rBytes--; }
-  const rPadding = 32 - rBytes;
-  if (rPadding > 0) raw.fill(0, 0, rPadding);
-  raw.set(derSignature.subarray(rStart, rStart + rBytes), Math.max(0, rPadding));
-  offset += rLen;
-  
-  if (derSignature[offset] !== 0x02) throw new Error('Expected integer tag for s');
-  offset++;
-  const sLen = derSignature[offset]; offset++;
-  let sStart = offset, sBytes = sLen;
-  if (derSignature[sStart] === 0x00 && sLen > 32) { sStart++; sBytes--; }
-  const sPadding = 32 - sBytes;
-  if (sPadding > 0) raw.fill(0, 32, 32 + sPadding);
-  raw.set(derSignature.subarray(sStart, sStart + sBytes), 32 + Math.max(0, sPadding));
-  
-  return raw;
-}
-
 // Import VAPID keys
 async function importVapidKeys(): Promise<CryptoKey> {
   const privateKeyBytes = base64UrlDecode(VAPID_PRIVATE_KEY);
   const publicKeyBytes = base64UrlDecode(VAPID_PUBLIC_KEY);
+  
+  console.log('Private key bytes:', privateKeyBytes.length);
+  console.log('Public key bytes:', publicKeyBytes.length);
   
   if (privateKeyBytes.length !== 32) throw new Error(`Invalid private key length: ${privateKeyBytes.length}`);
   if (publicKeyBytes.length !== 65) throw new Error(`Invalid public key length: ${publicKeyBytes.length}`);
@@ -221,34 +192,46 @@ async function importVapidKeys(): Promise<CryptoKey> {
     d: base64UrlEncode(privateKeyBytes),
   };
   
-  return crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  console.log('JWK x length:', jwk.x.length);
+  console.log('JWK y length:', jwk.y.length);
+  console.log('JWK d length:', jwk.d.length);
+  
+  return crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign']);
 }
 
-// Create VAPID authorization header
+// Create VAPID authorization header - following RFC 8292
 async function createVapidAuth(endpoint: string, signingKey: CryptoKey): Promise<string> {
   const urlParts = new URL(endpoint);
   const audience = `${urlParts.protocol}//${urlParts.host}`;
   
   const header = { typ: 'JWT', alg: 'ES256' };
+  const now = Math.floor(Date.now() / 1000);
   const payload = { 
     aud: audience, 
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
+    exp: now + (12 * 60 * 60), // 12 hours from now
     sub: VAPID_SUBJECT 
   };
+  
+  console.log('JWT payload:', JSON.stringify(payload));
   
   const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
   const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
   
-  const signatureBuffer = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
+  const signatureArrayBuffer = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: { name: 'SHA-256' } },
     signingKey,
     new TextEncoder().encode(unsignedToken)
   );
   
-  const rawSignature = derToRaw(new Uint8Array(signatureBuffer));
-  const jwt = `${unsignedToken}.${base64UrlEncode(rawSignature)}`;
+  // Deno's Web Crypto returns raw 64-byte signature (r || s) for P-256
+  const signatureBytes = new Uint8Array(signatureArrayBuffer);
+  console.log('Signature length:', signatureBytes.length);
   
+  const encodedSignature = base64UrlEncode(signatureBytes);
+  const jwt = `${unsignedToken}.${encodedSignature}`;
+  
+  // RFC 8292 format: vapid t=<jwt>, k=<public-key>
   return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
 }
 
@@ -268,8 +251,11 @@ serve(async (req) => {
       );
     }
     
+    console.log('VAPID_PUBLIC_KEY length:', VAPID_PUBLIC_KEY.length);
+    console.log('VAPID_SUBJECT:', VAPID_SUBJECT);
+    
     const signingKey = await importVapidKeys();
-    console.log('VAPID keys loaded');
+    console.log('VAPID keys loaded and imported');
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -321,16 +307,23 @@ serve(async (req) => {
             sub.auth
           );
           
+          console.log('Payload encrypted, size:', encrypted.length);
+          
           // Create VAPID authorization
           const authHeader = await createVapidAuth(sub.endpoint, signingKey);
+          console.log('Auth header created');
+          
+          // Build Crypto-Key header with both dh and p256ecdsa
+          const cryptoKeyHeader = `dh=${base64UrlEncode(serverPublicKey)};p256ecdsa=${VAPID_PUBLIC_KEY}`;
           
           const response = await fetch(sub.endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/octet-stream',
               'Content-Encoding': 'aesgcm',
+              'Content-Length': String(encrypted.length),
               'Encryption': `salt=${base64UrlEncode(salt)}`,
-              'Crypto-Key': `dh=${base64UrlEncode(serverPublicKey)}; p256ecdsa=${VAPID_PUBLIC_KEY}`,
+              'Crypto-Key': cryptoKeyHeader,
               'TTL': '86400',
               'Authorization': authHeader,
             },
