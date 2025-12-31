@@ -6,233 +6,45 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
-const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@nerabeauty.com';
+const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID') ?? '';
 
-// Base64 URL encode/decode utilities
-function base64UrlEncode(data: Uint8Array): string {
-  const base64 = btoa(String.fromCharCode(...data));
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function base64UrlDecode(str: string): Uint8Array {
-  const padding = '='.repeat((4 - (str.length % 4)) % 4);
-  const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
-}
-
-// Generate random bytes
-function getRandomBytes(length: number): Uint8Array {
-  return crypto.getRandomValues(new Uint8Array(length));
-}
-
-// HKDF implementation for key derivation
-async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number): Promise<Uint8Array> {
-  // Extract
-  const saltKey = salt.length > 0 ? salt : new Uint8Array(32);
-  const extractKey = await crypto.subtle.importKey(
-    'raw', 
-    saltKey.buffer as ArrayBuffer, 
-    { name: 'HMAC', hash: 'SHA-256' }, 
-    false, 
-    ['sign']
-  );
-  const prk = new Uint8Array(await crypto.subtle.sign('HMAC', extractKey, ikm.buffer as ArrayBuffer));
-  
-  // Expand
-  const prkKey = await crypto.subtle.importKey(
-    'raw', 
-    prk.buffer as ArrayBuffer, 
-    { name: 'HMAC', hash: 'SHA-256' }, 
-    false, 
-    ['sign']
-  );
-  
-  const result = new Uint8Array(length);
-  let prev = new Uint8Array(0);
-  let offset = 0;
-  let counter = 1;
-  
-  while (offset < length) {
-    const input = new Uint8Array(prev.length + info.length + 1);
-    input.set(prev);
-    input.set(info, prev.length);
-    input[prev.length + info.length] = counter;
-    
-    prev = new Uint8Array(await crypto.subtle.sign('HMAC', prkKey, input.buffer as ArrayBuffer));
-    const toCopy = Math.min(prev.length, length - offset);
-    result.set(prev.subarray(0, toCopy), offset);
-    offset += toCopy;
-    counter++;
+// Send Telegram notification
+async function sendTelegramNotification(customerName: string): Promise<boolean> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.log('Telegram not configured, skipping');
+    return false;
   }
-  
-  return result;
-}
 
-// Create info for HKDF
-function createInfo(type: string, clientPublicKey: Uint8Array, serverPublicKey: Uint8Array): Uint8Array {
-  const typeBytes = new TextEncoder().encode(type);
-  const info = new Uint8Array(18 + typeBytes.length + 1 + 5 + 2 + clientPublicKey.length + 2 + serverPublicKey.length);
-  
-  let offset = 0;
-  const contentEncoding = new TextEncoder().encode('Content-Encoding: ');
-  info.set(contentEncoding, offset); offset += contentEncoding.length;
-  info.set(typeBytes, offset); offset += typeBytes.length;
-  info[offset++] = 0; // null terminator
-  info.set(new TextEncoder().encode('P-256'), offset); offset += 5;
-  info[offset++] = 0; info[offset++] = 65; // client key length
-  info.set(clientPublicKey, offset); offset += clientPublicKey.length;
-  info[offset++] = 0; info[offset++] = 65; // server key length
-  info.set(serverPublicKey, offset);
-  
-  return info;
-}
+  try {
+    const message = `🔔 *New Order Received!*\n\nCustomer: ${customerName}\n\nCheck the orders page for details.`;
+    
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown'
+        })
+      }
+    );
 
-// Encrypt the payload for Web Push
-async function encryptPayload(
-  payload: string,
-  p256dh: string,
-  auth: string
-): Promise<{ encrypted: Uint8Array; salt: Uint8Array; serverPublicKey: Uint8Array }> {
-  const clientPublicKey = base64UrlDecode(p256dh);
-  const clientAuth = base64UrlDecode(auth);
-  
-  // Generate ephemeral key pair
-  const keyPair = await crypto.subtle.generateKey(
-    { name: 'ECDH', namedCurve: 'P-256' },
-    true,
-    ['deriveBits']
-  );
-  
-  // Export server public key
-  const serverPublicKeyRaw = await crypto.subtle.exportKey('raw', keyPair.publicKey);
-  const serverPublicKey = new Uint8Array(serverPublicKeyRaw);
-  
-  // Import client public key
-  const clientKey = await crypto.subtle.importKey(
-    'raw',
-    clientPublicKey.buffer as ArrayBuffer,
-    { name: 'ECDH', namedCurve: 'P-256' },
-    false,
-    []
-  );
-  
-  // Derive shared secret
-  const sharedSecretBits = await crypto.subtle.deriveBits(
-    { name: 'ECDH', public: clientKey },
-    keyPair.privateKey,
-    256
-  );
-  const sharedSecret = new Uint8Array(sharedSecretBits);
-  
-  // Generate random salt
-  const salt = getRandomBytes(16);
-  
-  // Derive PRK using auth secret
-  const authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
-  const prk = await hkdf(clientAuth, sharedSecret, authInfo, 32);
-  
-  // Derive content encryption key
-  const cekInfo = createInfo('aesgcm', clientPublicKey, serverPublicKey);
-  const contentEncryptionKey = await hkdf(salt, prk, cekInfo, 16);
-  
-  // Derive nonce
-  const nonceInfo = createInfo('nonce', clientPublicKey, serverPublicKey);
-  const nonce = await hkdf(salt, prk, nonceInfo, 12);
-  
-  // Pad and encrypt payload
-  const payloadBytes = new TextEncoder().encode(payload);
-  const paddingLength = 2;
-  const paddedPayload = new Uint8Array(paddingLength + payloadBytes.length);
-  paddedPayload[0] = 0;
-  paddedPayload[1] = 0;
-  paddedPayload.set(payloadBytes, paddingLength);
-  
-  // Import encryption key
-  const key = await crypto.subtle.importKey(
-    'raw',
-    contentEncryptionKey.buffer as ArrayBuffer,
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt']
-  );
-  
-  // Encrypt
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: nonce.buffer as ArrayBuffer },
-    key,
-    paddedPayload.buffer as ArrayBuffer
-  );
-  
-  return {
-    encrypted: new Uint8Array(encrypted),
-    salt,
-    serverPublicKey
-  };
-}
-
-// Import VAPID keys
-async function importVapidKeys(): Promise<CryptoKey> {
-  const privateKeyBytes = base64UrlDecode(VAPID_PRIVATE_KEY);
-  const publicKeyBytes = base64UrlDecode(VAPID_PUBLIC_KEY);
-  
-  console.log('Private key bytes:', privateKeyBytes.length);
-  console.log('Public key bytes:', publicKeyBytes.length);
-  
-  if (privateKeyBytes.length !== 32) throw new Error(`Invalid private key length: ${privateKeyBytes.length}`);
-  if (publicKeyBytes.length !== 65) throw new Error(`Invalid public key length: ${publicKeyBytes.length}`);
-  
-  const jwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    x: base64UrlEncode(publicKeyBytes.subarray(1, 33)),
-    y: base64UrlEncode(publicKeyBytes.subarray(33, 65)),
-    d: base64UrlEncode(privateKeyBytes),
-  };
-  
-  console.log('JWK x length:', jwk.x.length);
-  console.log('JWK y length:', jwk.y.length);
-  console.log('JWK d length:', jwk.d.length);
-  
-  return crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign']);
-}
-
-// Create VAPID authorization header - following RFC 8292
-async function createVapidAuth(endpoint: string, signingKey: CryptoKey): Promise<string> {
-  const urlParts = new URL(endpoint);
-  const audience = `${urlParts.protocol}//${urlParts.host}`;
-  
-  const header = { typ: 'JWT', alg: 'ES256' };
-  const now = Math.floor(Date.now() / 1000);
-  const payload = { 
-    aud: audience, 
-    exp: now + (12 * 60 * 60), // 12 hours from now
-    sub: VAPID_SUBJECT 
-  };
-  
-  console.log('JWT payload:', JSON.stringify(payload));
-  
-  const encodedHeader = base64UrlEncode(new TextEncoder().encode(JSON.stringify(header)));
-  const encodedPayload = base64UrlEncode(new TextEncoder().encode(JSON.stringify(payload)));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-  
-  const signatureArrayBuffer = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: { name: 'SHA-256' } },
-    signingKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-  
-  // Deno's Web Crypto returns raw 64-byte signature (r || s) for P-256
-  const signatureBytes = new Uint8Array(signatureArrayBuffer);
-  console.log('Signature length:', signatureBytes.length);
-  
-  const encodedSignature = base64UrlEncode(signatureBytes);
-  const jwt = `${unsignedToken}.${encodedSignature}`;
-  
-  // RFC 8292 format: vapid t=<jwt>, k=<public-key>
-  return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
+    const result = await response.json();
+    
+    if (result.ok) {
+      console.log('Telegram notification sent successfully');
+      return true;
+    } else {
+      console.error('Telegram error:', result.description);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error sending Telegram notification:', error);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -243,25 +55,6 @@ serve(async (req) => {
   try {
     console.log('Push notification function called');
     
-    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-      console.error('VAPID keys not configured');
-      return new Response(
-        JSON.stringify({ error: 'VAPID keys not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('VAPID_PUBLIC_KEY length:', VAPID_PUBLIC_KEY.length);
-    console.log('VAPID_SUBJECT:', VAPID_SUBJECT);
-    
-    const signingKey = await importVapidKeys();
-    console.log('VAPID keys loaded and imported');
-    
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     let customerName = 'Customer';
     try {
       const body = await req.json();
@@ -270,93 +63,15 @@ serve(async (req) => {
 
     console.log('Processing notification for:', customerName);
 
-    const { data: subscriptions, error: subError } = await supabaseClient
-      .from('push_subscriptions')
-      .select('*');
-
-    if (subError) {
-      console.error('Error fetching subscriptions:', subError);
-      throw subError;
-    }
-
-    if (!subscriptions || subscriptions.length === 0) {
-      console.log('No subscriptions found');
-      return new Response(
-        JSON.stringify({ message: 'No subscriptions' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Found ${subscriptions.length} subscriptions`);
-
-    const notificationPayload = JSON.stringify({
-      title: '🔔 New Order!',
-      body: `Order from ${customerName}`,
-      url: '/orders'
-    });
-
-    const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
-        try {
-          console.log(`Sending to endpoint: ${sub.endpoint.substring(0, 60)}...`);
-          
-          // Encrypt the payload
-          const { encrypted, salt, serverPublicKey } = await encryptPayload(
-            notificationPayload,
-            sub.p256dh,
-            sub.auth
-          );
-          
-          console.log('Payload encrypted, size:', encrypted.length);
-          
-          // Create VAPID authorization
-          const authHeader = await createVapidAuth(sub.endpoint, signingKey);
-          console.log('Auth header created');
-          
-          // Build Crypto-Key header with both dh and p256ecdsa
-          const cryptoKeyHeader = `dh=${base64UrlEncode(serverPublicKey)};p256ecdsa=${VAPID_PUBLIC_KEY}`;
-          
-          const response = await fetch(sub.endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'Content-Encoding': 'aesgcm',
-              'Content-Length': String(encrypted.length),
-              'Encryption': `salt=${base64UrlEncode(salt)}`,
-              'Crypto-Key': cryptoKeyHeader,
-              'TTL': '86400',
-              'Authorization': authHeader,
-            },
-            body: encrypted.buffer as ArrayBuffer
-          });
-
-          console.log(`Response status: ${response.status}`);
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Failed: ${response.status} - ${errorText}`);
-            
-            if (response.status === 410 || response.status === 404) {
-              await supabaseClient.from('push_subscriptions').delete().eq('id', sub.id);
-              console.log('Deleted expired subscription');
-            }
-            return { success: false, status: response.status, error: errorText };
-          }
-          
-          console.log('Push sent successfully!');
-          return { success: true, status: response.status };
-        } catch (error) {
-          console.error('Error sending push:', error);
-          return { success: false, error: String(error) };
-        }
-      })
-    );
-
-    const successful = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
-    console.log(`Results: ${successful}/${results.length} successful`);
+    // Send Telegram notification (primary - reliable)
+    const telegramSent = await sendTelegramNotification(customerName);
+    console.log('Telegram notification result:', telegramSent);
 
     return new Response(
-      JSON.stringify({ message: 'Notifications processed', total: results.length, successful }),
+      JSON.stringify({ 
+        message: 'Notification processed', 
+        telegram: telegramSent 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
