@@ -8,6 +8,32 @@ const corsHeaders = {
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
 const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID') ?? '';
 
+// Simple deduplication - track recently processed order IDs
+const recentlyProcessed = new Map<string, number>();
+const DEDUP_WINDOW_MS = 30000; // 30 seconds
+
+function shouldProcess(orderId: string): boolean {
+  if (!orderId) return true; // No ID, process anyway
+  
+  const now = Date.now();
+  const lastProcessed = recentlyProcessed.get(orderId);
+  
+  // Clean up old entries
+  for (const [id, timestamp] of recentlyProcessed.entries()) {
+    if (now - timestamp > DEDUP_WINDOW_MS) {
+      recentlyProcessed.delete(id);
+    }
+  }
+  
+  if (lastProcessed && now - lastProcessed < DEDUP_WINDOW_MS) {
+    console.log(`Skipping duplicate notification for order ${orderId}`);
+    return false;
+  }
+  
+  recentlyProcessed.set(orderId, now);
+  return true;
+}
+
 interface OrderDetails {
   orderId?: string;
   customerName?: string;
@@ -86,7 +112,20 @@ serve(async (req) => {
       orderDetails = await req.json();
     } catch {}
 
-    console.log('Processing notification for order:', orderDetails.orderId || 'unknown');
+    const orderId = orderDetails.orderId || '';
+    console.log('Processing notification for order:', orderId || 'unknown');
+
+    // Check for duplicate
+    if (!shouldProcess(orderId)) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'Duplicate notification skipped', 
+          telegram: false,
+          skipped: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Send Telegram notification with full details
     const telegramSent = await sendTelegramNotification(orderDetails);
