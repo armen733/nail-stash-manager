@@ -788,57 +788,107 @@ const Orders = () => {
       </div>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
           </DialogHeader>
           {viewOrder && (
             <div className="space-y-4">
+              {/* Order Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Order ID</Label>
-                  <div className="font-mono text-sm">{viewOrder.id}</div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Order ID</Label>
+                  <div className="font-mono text-sm mt-1">{viewOrder.id.slice(0, 8)}...</div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Date</Label>
-                  <div>{new Date(viewOrder.order_date).toLocaleDateString()}</div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Status</Label>
+                  <div className="mt-1">{getStatusBadge(viewOrder.status)}</div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
-                  <div>{getStatusBadge(viewOrder.status)}</div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Order Date</Label>
+                  <div className="mt-1">{new Date(viewOrder.order_date).toLocaleDateString()}</div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Salon</Label>
-                  <div>{viewOrder.salons?.name || viewOrder.customer_name || "—"}</div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Placed At</Label>
+                  <div className="mt-1">{new Date(viewOrder.created_at).toLocaleString()}</div>
                 </div>
               </div>
 
+              {/* Customer Info */}
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-2">Customer</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-muted-foreground">Name: </span>{viewOrder.customer_name || "—"}</div>
-                  <div><span className="text-muted-foreground">Email: </span>{viewOrder.customer_email || "—"}</div>
-                  <div><span className="text-muted-foreground">Phone: </span>{viewOrder.customer_phone || "—"}</div>
-                  <div><span className="text-muted-foreground">Address: </span>{viewOrder.customer_address || "—"}</div>
+                <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Customer Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <Label className="text-xs text-muted-foreground">Name</Label>
+                    <div className="font-medium mt-1">{viewOrder.customer_name || viewOrder.salons?.name || "—"}</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <div className="font-medium mt-1 break-all">{viewOrder.customer_email || "—"}</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <Label className="text-xs text-muted-foreground">Phone</Label>
+                    <div className="font-medium mt-1">{viewOrder.customer_phone || "—"}</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <Label className="text-xs text-muted-foreground">Address</Label>
+                    <div className="font-medium mt-1">{viewOrder.customer_address || "—"}</div>
+                  </div>
                 </div>
               </div>
 
+              {/* Salon Info */}
+              {viewOrder.salons?.name && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Salon</h3>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="font-medium">{viewOrder.salons.name}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Order Items */}
               <div className="border-t pt-4">
-                <h3 className="font-semibold mb-2">Items</h3>
-                <div className="space-y-1 text-sm">
+                <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Order Items</h3>
+                <div className="space-y-2">
                   {(viewOrder.order_items || []).map((it) => (
-                    <div key={it.id} className="flex justify-between">
-                      <span>{it.products?.name} × {it.quantity}</span>
-                      <span>${(it.quantity * it.unit_price).toFixed(2)}</span>
+                    <div key={it.id} className="flex justify-between items-center bg-muted/50 rounded-lg p-3">
+                      <div>
+                        <span className="font-medium">{it.products?.name}</span>
+                        <span className="text-muted-foreground ml-2">× {it.quantity}</span>
+                      </div>
+                      <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
                     </div>
                   ))}
+                  {(!viewOrder.order_items || viewOrder.order_items.length === 0) && (
+                    <div className="text-muted-foreground text-center py-4">No items in this order</div>
+                  )}
                 </div>
               </div>
 
+              {/* Notes */}
+              {viewOrder.notes && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Notes</h3>
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm">{viewOrder.notes}</div>
+                </div>
+              )}
+
+              {/* Totals */}
               <div className="border-t pt-4">
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>${viewOrder.total.toFixed(2)}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${viewOrder.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>${viewOrder.tax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                    <span>Total</span>
+                    <span className="text-primary">${viewOrder.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -886,7 +936,11 @@ const Orders = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredActiveOrders.map((order) => (
-                    <Card key={order.id} className="shadow-sm">
+                    <Card 
+                      key={order.id} 
+                      className="shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setViewOrder(order)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
@@ -899,11 +953,16 @@ const Orders = () => {
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
                               <div className="space-y-1">
-                                {order.order_items.map((item, idx) => (
+                                {order.order_items.slice(0, 2).map((item, idx) => (
                                   <div key={idx} className="text-muted-foreground">
                                     {item.products?.name} × {item.quantity}
                                   </div>
                                 ))}
+                                {order.order_items.length > 2 && (
+                                  <div className="text-muted-foreground text-xs">
+                                    +{order.order_items.length - 2} more items
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span className="text-muted-foreground">No items</span>
@@ -918,7 +977,10 @@ const Orders = () => {
                                 size="sm"
                                 variant="outline"
                                 className="h-9"
-                                onClick={() => handleMarkDelivered(order.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkDelivered(order.id);
+                                }}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 Delivered
@@ -927,7 +989,10 @@ const Orders = () => {
                                 size="sm"
                                 variant="destructive"
                                 className="h-9"
-                                onClick={() => setDeleteOrderId(order.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteOrderId(order.id);
+                                }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -952,7 +1017,11 @@ const Orders = () => {
               ) : (
                 <div className="space-y-3">
                   {filteredCompletedOrders.map((order) => (
-                    <Card key={order.id} className="shadow-sm">
+                    <Card 
+                      key={order.id} 
+                      className="shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setViewOrder(order)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
@@ -965,11 +1034,16 @@ const Orders = () => {
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
                               <div className="space-y-1">
-                                {order.order_items.map((item, idx) => (
+                                {order.order_items.slice(0, 2).map((item, idx) => (
                                   <div key={idx} className="text-muted-foreground">
                                     {item.products?.name} × {item.quantity}
                                   </div>
                                 ))}
+                                {order.order_items.length > 2 && (
+                                  <div className="text-muted-foreground text-xs">
+                                    +{order.order_items.length - 2} more items
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span className="text-muted-foreground">No items</span>
@@ -983,7 +1057,10 @@ const Orders = () => {
                               size="sm"
                               variant="destructive"
                               className="h-9"
-                              onClick={() => setDeleteOrderId(order.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteOrderId(order.id);
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
