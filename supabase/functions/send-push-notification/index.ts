@@ -58,6 +58,8 @@ async function sendTelegramNotification(order: OrderDetails): Promise<boolean> {
     const address = order.customerAddress || 'Not provided';
     const total = order.total ? `$${Number(order.total).toFixed(2)}` : 'N/A';
     const date = order.orderDate || new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     
     const message = `🔔 *New Order Received!*
 
@@ -68,6 +70,7 @@ async function sendTelegramNotification(order: OrderDetails): Promise<boolean> {
 
 💰 *Total:* ${total}
 📅 *Date:* ${date}
+🕐 *Time:* ${time}
 
 Check the orders page for full details.`;
     
