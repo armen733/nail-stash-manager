@@ -70,6 +70,7 @@ import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAbandonedCart } from "@/hooks/useAbandonedCart";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -772,11 +773,16 @@ const Products = () => {
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Abandoned cart tracking
+  const { markAsConverted } = useAbandonedCart(cart);
+
   const handlePlaceOrder = () => {
     if (cart.length === 0) {
       toast({ title: "Cart is empty", description: "Add some products to cart first", variant: "destructive" });
       return;
     }
+    // Mark cart as converted before navigating to order
+    markAsConverted();
     navigate('/orders', { state: { cartItems: cart } });
   };
 
