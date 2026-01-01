@@ -40,7 +40,7 @@ const Auth = () => {
         toast.success("Welcome back!");
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -51,7 +51,22 @@ const Auth = () => {
           },
         });
         if (error) throw error;
-        toast.success("Account created! You can now log in.");
+        
+        // Send custom welcome email
+        try {
+          await supabase.functions.invoke('send-custom-auth-email', {
+            body: {
+              type: 'signup',
+              email: email,
+              name: fullName,
+              redirectUrl: `${window.location.origin}/auth`
+            }
+          });
+        } catch (emailError) {
+          console.log('Welcome email could not be sent:', emailError);
+        }
+        
+        toast.success("Account created! Check your email for confirmation.");
         setIsLogin(true);
       }
     } catch (error: any) {
