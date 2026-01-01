@@ -587,16 +587,21 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const data: EmailRequest = await req.json();
     console.log(`Processing ${data.type} email for ${data.email}`);
+    console.log('Received data:', JSON.stringify(data, null, 2));
 
     let html: string;
     let subject: string;
 
     switch (data.type) {
       case "order_confirmation":
+        console.log('Order confirmation - items received:', data.items?.length || 0);
+        console.log('Items data:', JSON.stringify(data.items, null, 2));
+        
         // Enrich items with product images from database
         if (data.items && data.items.length > 0) {
           console.log('Fetching product images for order items...');
           const productNames = data.items.map(item => item.name);
+          console.log('Product names to look up:', productNames);
           
           const { data: products, error: productsError } = await supabase
             .from('products')
@@ -606,7 +611,8 @@ const handler = async (req: Request): Promise<Response> => {
           if (productsError) {
             console.error('Error fetching products:', productsError);
           } else if (products) {
-            console.log('Found products:', products.length);
+            console.log('Found products from DB:', products.length);
+            console.log('Products with images:', JSON.stringify(products, null, 2));
             // Create a map of product name to image_url
             const imageMap = new Map(products.map(p => [p.name, p.image_url]));
             
@@ -615,7 +621,10 @@ const handler = async (req: Request): Promise<Response> => {
               ...item,
               image_url: item.image_url || imageMap.get(item.name) || null
             }));
+            console.log('Enriched items:', JSON.stringify(data.items, null, 2));
           }
+        } else {
+          console.log('No items received in order confirmation!');
         }
         
         subject = `Order Confirmed - #${data.orderId || 'N/A'}`;
