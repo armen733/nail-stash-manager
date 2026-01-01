@@ -8,9 +8,10 @@ const corsHeaders = {
 };
 
 // Logo URLs - hosted on the app's public folder
-// Light/cream logo for dark backgrounds, dark logo for light backgrounds
-const LOGO_FOR_DARK_BG = "https://nera-beauty-dashboard.lovable.app/images/nera-logo-dark-bg.png";
-const LOGO_FOR_LIGHT_BG = "https://nera-beauty-dashboard.lovable.app/images/nera-logo-light-bg.png";
+// Use dark logo for light backgrounds (most email clients show light backgrounds)
+const LOGO_URL = "https://nerabeautyus.com/images/nera-logo-light-bg.png";
+// Brand gold color
+const BRAND_GOLD = "#CC9F5C";
 
 interface CartItem {
   name: string;
@@ -81,31 +82,40 @@ async function sendEmail(to: string, subject: string, html: string) {
   return responseData;
 }
 
-// Email header with actual NERA logo (cream/gold logo for dark background)
+// Email header with NERA logo for light backgrounds
 const emailHeader = `
   <tr>
-    <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
-      <img src="${LOGO_FOR_DARK_BG}" alt="NERA Beauty" style="max-width: 180px; height: auto;" />
+    <td align="center" style="padding: 40px 40px 24px; text-align: center; background-color: #ffffff;">
+      <img src="${LOGO_URL}" alt="NERA Beauty" style="max-width: 160px; height: auto; display: block; margin: 0 auto;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" style="padding: 0 40px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+          <td style="height: 1px; background: linear-gradient(90deg, transparent, ${BRAND_GOLD}, transparent);"></td>
+        </tr>
+      </table>
     </td>
   </tr>
 `;
 
 const emailFooter = `
   <tr>
-    <td style="padding: 30px 40px; background: #0a0a0a; border-top: 1px solid #2a2a2a; text-align: center;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+    <td align="center" style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e6e6e6;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 16px;">
         <tr>
           <td align="center">
-            <a href="https://nerabeautyus.com" style="color: #d4af37; text-decoration: none; font-size: 12px; margin: 0 10px;">Shop</a>
-            <span style="color: #444;">|</span>
-            <a href="https://nerabeautyus.com/account" style="color: #d4af37; text-decoration: none; font-size: 12px; margin: 0 10px;">Account</a>
-            <span style="color: #444;">|</span>
-            <a href="mailto:info@nerabeautyus.com" style="color: #d4af37; text-decoration: none; font-size: 12px; margin: 0 10px;">Contact</a>
+            <a href="https://nerabeautyus.com" style="color: ${BRAND_GOLD}; text-decoration: none; font-size: 12px; margin: 0 10px;">Shop</a>
+            <span style="color: #e6e6e6;">|</span>
+            <a href="https://nerabeautyus.com/account" style="color: ${BRAND_GOLD}; text-decoration: none; font-size: 12px; margin: 0 10px;">Account</a>
+            <span style="color: #e6e6e6;">|</span>
+            <a href="mailto:info@nerabeautyus.com" style="color: ${BRAND_GOLD}; text-decoration: none; font-size: 12px; margin: 0 10px;">Contact</a>
           </td>
         </tr>
       </table>
-      <p style="margin: 0 0 10px; font-size: 12px; color: #666;">Questions? Contact us at info@nerabeautyus.com</p>
-      <p style="margin: 0; font-size: 11px; color: #444;">&copy; 2025 NERA Beauty. All rights reserved.</p>
+      <p style="margin: 0 0 8px; font-size: 13px; color: #737373; text-align: center;">Need help? Contact us at <a href="mailto:info@nerabeautyus.com" style="color: ${BRAND_GOLD}; text-decoration: none;">info@nerabeautyus.com</a></p>
+      <p style="margin: 0; font-size: 12px; color: #737373; text-align: center;">© 2025 NERA Beauty. Professional nail supplies.</p>
     </td>
   </tr>
 `;
@@ -113,18 +123,18 @@ const emailFooter = `
 const getOrderConfirmationEmail = (data: EmailRequest) => {
   const itemsHtml = (data.items || []).map(item => `
     <tr>
-      <td style="padding: 15px 0; border-bottom: 1px solid #2a2a2a;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <td style="padding: 15px 0; border-bottom: 1px solid #e6e6e6;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
             <td style="width: 60px; vertical-align: top;">
-              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #2a2a2a;">` : `<div style="width: 50px; height: 50px; background: #1a1a1a; border-radius: 6px; border: 1px solid #2a2a2a;"></div>`}
+              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #e6e6e6;">` : `<div style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 6px; border: 1px solid #e6e6e6;"></div>`}
             </td>
             <td style="vertical-align: top; padding-left: 15px;">
-              <p style="margin: 0 0 5px; font-size: 14px; color: #ffffff;">${item.name}</p>
-              <p style="margin: 0; font-size: 12px; color: #888;">Qty: ${item.quantity} &times; $${item.unit_price.toFixed(2)}</p>
+              <p style="margin: 0 0 5px; font-size: 14px; color: #141414;">${item.name}</p>
+              <p style="margin: 0; font-size: 12px; color: #737373;">Qty: ${item.quantity} × $${item.unit_price.toFixed(2)}</p>
             </td>
             <td style="vertical-align: top; text-align: right;">
-              <p style="margin: 0; font-size: 14px; color: #d4af37; font-weight: 600;">$${item.line_total.toFixed(2)}</p>
+              <p style="margin: 0; font-size: 14px; color: ${BRAND_GOLD}; font-weight: 600;">$${item.line_total.toFixed(2)}</p>
             </td>
           </tr>
         </table>
@@ -138,55 +148,43 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation</title>
+  <title>Order Confirmation - NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6;">
           ${emailHeader}
-          <!-- Success Icon -->
-          <tr>
-            <td style="padding: 40px 40px 0; text-align: center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="width: 70px; height: 70px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; text-align: center; vertical-align: middle;">
-                    <span style="font-size: 32px; line-height: 70px;">&#10003;</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 30px 40px;">
-              <h2 style="margin: 0 0 10px; font-size: 24px; font-weight: 400; color: #ffffff; text-align: center;">Order Confirmed!</h2>
-              <p style="margin: 0 0 5px; font-size: 14px; color: #888; text-align: center;">Order #${data.orderId || 'N/A'}</p>
-              <p style="margin: 0 0 30px; font-size: 14px; color: #888; text-align: center;">${data.orderDate || new Date().toLocaleDateString()}</p>
+            <td align="center" style="padding: 32px 40px 40px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 600; color: #141414; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Order Confirmed!</h1>
+              <p style="margin: 0 0 4px; font-size: 14px; color: #737373; text-align: center;">Order #${data.orderId || 'N/A'}</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #737373; text-align: center;">${data.orderDate || new Date().toLocaleDateString()}</p>
               
-              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.7; color: #b0b0b0; text-align: center;">
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 Thank you for your order, ${data.name || 'valued customer'}! We're preparing your items and will notify you when they ship.
               </p>
 
               <!-- Order Items -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td style="padding-bottom: 15px; border-bottom: 1px solid #2a2a2a;">
-                    <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #d4af37; letter-spacing: 2px; text-transform: uppercase;">Order Items</h3>
+                  <td style="padding-bottom: 12px; border-bottom: 1px solid #e6e6e6;">
+                    <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">Order Items</h3>
                   </td>
                 </tr>
                 ${itemsHtml}
               </table>
 
               <!-- Order Summary -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: #0d0d0d; border-radius: 12px; border: 1px solid #2a2a2a; padding: 20px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f0f0f0; border-radius: 12px;">
                 <tr>
                   <td style="padding: 20px;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="padding: 8px 0; color: #888; font-size: 14px;">Subtotal</td>
-                        <td style="padding: 8px 0; color: #ffffff; font-size: 14px; text-align: right;">$${(data.subtotal || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Subtotal</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 14px; text-align: right;">$${(data.subtotal || 0).toFixed(2)}</td>
                       </tr>
                       ${data.discount && data.discount > 0 ? `
                       <tr>
@@ -195,15 +193,15 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: #888; font-size: 14px;">Tax</td>
-                        <td style="padding: 8px 0; color: #ffffff; font-size: 14px; text-align: right;">$${(data.tax || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Tax</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 14px; text-align: right;">$${(data.tax || 0).toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 15px 0 0; border-top: 1px solid #2a2a2a;"></td>
+                        <td colspan="2" style="padding: 12px 0 0; border-top: 1px solid #e6e6e6;"></td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: #ffffff; font-size: 18px; font-weight: 600;">Total</td>
-                        <td style="padding: 8px 0; color: #d4af37; font-size: 18px; font-weight: 600; text-align: right;">$${(data.total || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 18px; font-weight: 600;">Total</td>
+                        <td style="padding: 8px 0; color: ${BRAND_GOLD}; font-size: 18px; font-weight: 600; text-align: right;">$${(data.total || 0).toFixed(2)}</td>
                       </tr>
                     </table>
                   </td>
@@ -212,11 +210,11 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
 
               ${data.pointsEarned && data.pointsEarned > 0 ? `
               <!-- Points Earned -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 20px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top: 20px;">
                 <tr>
-                  <td style="padding: 15px 20px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.2); text-align: center;">
-                    <p style="margin: 0; font-size: 14px; color: #d4af37;">
-                      &#11088; You earned <strong>${data.pointsEarned} loyalty points</strong> with this order!
+                  <td align="center" style="padding: 16px 20px; background-color: #f0f0f0; border-radius: 12px;">
+                    <p style="margin: 0; font-size: 14px; color: ${BRAND_GOLD};">
+                      ⭐ You earned <strong>${data.pointsEarned} loyalty points</strong> with this order!
                     </p>
                   </td>
                 </tr>
@@ -224,10 +222,16 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
               ` : ''}
 
               <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding: 30px 0;">
-                    <a href="https://nerabeautyus.com/account/orders" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">View Order</a>
+                  <td align="center" style="padding: 28px 0 0; text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: ${BRAND_GOLD}; border-radius: 8px;">
+                          <a href="https://nerabeautyus.com/orders" style="display: inline-block; padding: 16px 48px; background-color: ${BRAND_GOLD}; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">View Order</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -246,18 +250,18 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
 const getAbandonedCartEmail = (data: EmailRequest) => {
   const cartItemsHtml = (data.cartItems || []).map(item => `
     <tr>
-      <td style="padding: 15px 0; border-bottom: 1px solid #2a2a2a;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <td style="padding: 15px 0; border-bottom: 1px solid #e6e6e6;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
             <td style="width: 80px; vertical-align: top;">
-              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #2a2a2a;">` : `<div style="width: 70px; height: 70px; background: #1a1a1a; border-radius: 8px; border: 1px solid #2a2a2a;"></div>`}
+              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #e6e6e6;">` : `<div style="width: 70px; height: 70px; background: #f0f0f0; border-radius: 8px; border: 1px solid #e6e6e6;"></div>`}
             </td>
             <td style="vertical-align: middle; padding-left: 15px;">
-              <p style="margin: 0 0 5px; font-size: 15px; color: #ffffff;">${item.name}</p>
-              <p style="margin: 0; font-size: 13px; color: #888;">Qty: ${item.quantity}</p>
+              <p style="margin: 0 0 5px; font-size: 15px; color: #141414;">${item.name}</p>
+              <p style="margin: 0; font-size: 13px; color: #737373;">Qty: ${item.quantity}</p>
             </td>
             <td style="vertical-align: middle; text-align: right;">
-              <p style="margin: 0; font-size: 16px; color: #d4af37; font-weight: 600;">$${item.price.toFixed(2)}</p>
+              <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">$${item.price.toFixed(2)}</p>
             </td>
           </tr>
         </table>
@@ -271,52 +275,40 @@ const getAbandonedCartEmail = (data: EmailRequest) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You left something behind</title>
+  <title>You left something behind - NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6;">
           ${emailHeader}
-          <!-- Icon -->
-          <tr>
-            <td style="padding: 40px 40px 0; text-align: center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="width: 70px; height: 70px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); border-radius: 50%; text-align: center; vertical-align: middle;">
-                    <span style="font-size: 32px; line-height: 70px;">&#128722;</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 30px 40px;">
-              <h2 style="margin: 0 0 10px; font-size: 24px; font-weight: 400; color: #ffffff; text-align: center;">You Left Something Behind</h2>
-              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.7; color: #b0b0b0; text-align: center;">
+            <td align="center" style="padding: 32px 40px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #141414; text-align: center; font-family: 'Playfair Display', Georgia, serif;">You Left Something Behind</h1>
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 Hi ${data.name || 'there'}! We noticed you left some amazing products in your cart. They're waiting for you!
               </p>
 
               <!-- Cart Items -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 20px;">
                 <tr>
-                  <td style="padding-bottom: 15px; border-bottom: 1px solid #2a2a2a;">
-                    <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #d4af37; letter-spacing: 2px; text-transform: uppercase;">Your Cart</h3>
+                  <td style="padding-bottom: 12px; border-bottom: 1px solid #e6e6e6;">
+                    <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">Your Cart</h3>
                   </td>
                 </tr>
                 ${cartItemsHtml}
               </table>
 
               <!-- Cart Total -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
                 <tr>
-                  <td style="padding: 15px 0; border-top: 2px solid #2a2a2a;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <td style="padding: 15px 0; border-top: 2px solid #e6e6e6;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="color: #ffffff; font-size: 16px; font-weight: 600;">Cart Total</td>
-                        <td style="color: #d4af37; font-size: 20px; font-weight: 600; text-align: right;">$${(data.cartTotal || 0).toFixed(2)}</td>
+                        <td style="color: #141414; font-size: 16px; font-weight: 600;">Cart Total</td>
+                        <td style="color: ${BRAND_GOLD}; font-size: 20px; font-weight: 600; text-align: right;">$${(data.cartTotal || 0).toFixed(2)}</td>
                       </tr>
                     </table>
                   </td>
@@ -324,21 +316,27 @@ const getAbandonedCartEmail = (data: EmailRequest) => {
               </table>
 
               <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding: 10px 0 30px;">
-                    <a href="${data.cartUrl || 'https://nerabeautyus.com/cart'}" style="display: inline-block; padding: 18px 60px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); color: #0a0a0a; text-decoration: none; font-size: 15px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Complete Your Order</a>
+                  <td align="center" style="padding: 0 0 28px; text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: ${BRAND_GOLD}; border-radius: 8px;">
+                          <a href="${data.cartUrl || 'https://nerabeautyus.com/products'}" style="display: inline-block; padding: 16px 48px; background-color: ${BRAND_GOLD}; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Complete Your Order</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
 
               <!-- Urgency Note -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="padding: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.2); text-align: center;">
-                    <p style="margin: 0; font-size: 13px; color: #999; line-height: 1.6;">
-                      &#9200; Don't wait too long! Items in your cart may sell out.<br>
-                      <span style="color: #d4af37;">Free shipping on orders over $50</span>
+                  <td align="center" style="padding: 20px; background-color: #f0f0f0; border-radius: 12px;">
+                    <p style="margin: 0; font-size: 14px; color: #141414; line-height: 1.6; text-align: center;">
+                      <span style="color: ${BRAND_GOLD}; font-weight: 600;">Don't wait too long!</span><br />
+                      <span style="color: #737373;">Items in your cart may sell out. Free shipping on orders over $50.</span>
                     </p>
                   </td>
                 </tr>
@@ -363,44 +361,32 @@ const getNewsletterWelcomeEmail = (data: EmailRequest) => `
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6;">
           ${emailHeader}
-          <!-- Welcome Banner -->
-          <tr>
-            <td style="padding: 40px 40px 0; text-align: center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="width: 80px; height: 80px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); border-radius: 50%; text-align: center; vertical-align: middle;">
-                    <span style="font-size: 36px; line-height: 80px;">&#10024;</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
           <!-- Content -->
           <tr>
-            <td style="padding: 30px 40px;">
-              <h2 style="margin: 0 0 10px; font-size: 26px; font-weight: 400; color: #ffffff; text-align: center;">Welcome to the Family!</h2>
-              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.7; color: #b0b0b0; text-align: center;">
+            <td align="center" style="padding: 32px 40px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #141414; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Welcome to the Family!</h1>
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 Hi ${data.name || 'there'}! Thank you for subscribing to the NERA Beauty newsletter. Get ready for exclusive offers, new product launches, and pro tips delivered straight to your inbox.
               </p>
 
               ${data.discountCodeWelcome ? `
               <!-- Discount Code -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
                 <tr>
-                  <td style="padding: 30px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 150, 46, 0.1) 100%); border-radius: 12px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center;">
-                    <p style="margin: 0 0 10px; font-size: 14px; color: #b0b0b0; text-transform: uppercase; letter-spacing: 2px;">Your Exclusive Welcome Gift</p>
-                    <p style="margin: 0 0 15px; font-size: 28px; color: #d4af37; font-weight: 600;">20% OFF</p>
-                    <p style="margin: 0 0 5px; font-size: 12px; color: #888;">Use code at checkout:</p>
-                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                  <td align="center" style="padding: 28px; background-color: #f0f0f0; border-radius: 12px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #737373; text-transform: uppercase; letter-spacing: 2px;">Your Exclusive Welcome Gift</p>
+                    <p style="margin: 0 0 12px; font-size: 28px; color: ${BRAND_GOLD}; font-weight: 600;">20% OFF</p>
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #737373;">Use code at checkout:</p>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                       <tr>
-                        <td style="padding: 12px 30px; background: #0a0a0a; border-radius: 6px; border: 2px dashed #d4af37;">
-                          <span style="font-size: 20px; font-weight: 700; color: #d4af37; letter-spacing: 3px;">${data.discountCodeWelcome}</span>
+                        <td align="center" style="padding: 12px 30px; background-color: #ffffff; border-radius: 8px; border: 2px dashed ${BRAND_GOLD};">
+                          <span style="font-size: 20px; font-weight: 700; color: ${BRAND_GOLD}; letter-spacing: 3px;">${data.discountCodeWelcome}</span>
                         </td>
                       </tr>
                     </table>
@@ -410,57 +396,57 @@ const getNewsletterWelcomeEmail = (data: EmailRequest) => `
               ` : ''}
 
               <!-- What to Expect -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 30px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px;">
                 <tr>
-                  <td style="padding-bottom: 20px;">
-                    <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #d4af37; letter-spacing: 2px; text-transform: uppercase; text-align: center;">What You'll Get</h3>
+                  <td style="padding-bottom: 16px;">
+                    <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase; text-align: center;">What You'll Get</h3>
                   </td>
                 </tr>
                 <tr>
                   <td>
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="padding: 15px; background: #0d0d0d; border-radius: 8px; margin-bottom: 10px;">
-                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <td style="padding: 16px; background-color: #f0f0f0; border-radius: 8px;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                               <td style="width: 40px; vertical-align: top;">
-                                <span style="font-size: 20px;">&#127873;</span>
+                                <span style="font-size: 20px;">🎁</span>
                               </td>
                               <td>
-                                <p style="margin: 0 0 5px; font-size: 14px; color: #ffffff; font-weight: 600;">Exclusive Offers</p>
-                                <p style="margin: 0; font-size: 13px; color: #888;">Subscriber-only discounts and early access to sales</p>
+                                <p style="margin: 0 0 4px; font-size: 14px; color: #141414; font-weight: 600;">Exclusive Offers</p>
+                                <p style="margin: 0; font-size: 13px; color: #737373;">Subscriber-only discounts and early access to sales</p>
                               </td>
                             </tr>
                           </table>
                         </td>
                       </tr>
-                      <tr><td style="height: 10px;"></td></tr>
+                      <tr><td style="height: 8px;"></td></tr>
                       <tr>
-                        <td style="padding: 15px; background: #0d0d0d; border-radius: 8px;">
-                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <td style="padding: 16px; background-color: #f0f0f0; border-radius: 8px;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                               <td style="width: 40px; vertical-align: top;">
-                                <span style="font-size: 20px;">&#128142;</span>
+                                <span style="font-size: 20px;">💎</span>
                               </td>
                               <td>
-                                <p style="margin: 0 0 5px; font-size: 14px; color: #ffffff; font-weight: 600;">New Arrivals</p>
-                                <p style="margin: 0; font-size: 13px; color: #888;">Be first to know about our latest products</p>
+                                <p style="margin: 0 0 4px; font-size: 14px; color: #141414; font-weight: 600;">New Arrivals</p>
+                                <p style="margin: 0; font-size: 13px; color: #737373;">Be first to know about our latest products</p>
                               </td>
                             </tr>
                           </table>
                         </td>
                       </tr>
-                      <tr><td style="height: 10px;"></td></tr>
+                      <tr><td style="height: 8px;"></td></tr>
                       <tr>
-                        <td style="padding: 15px; background: #0d0d0d; border-radius: 8px;">
-                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <td style="padding: 16px; background-color: #f0f0f0; border-radius: 8px;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                               <td style="width: 40px; vertical-align: top;">
-                                <span style="font-size: 20px;">&#128161;</span>
+                                <span style="font-size: 20px;">💡</span>
                               </td>
                               <td>
-                                <p style="margin: 0 0 5px; font-size: 14px; color: #ffffff; font-weight: 600;">Pro Tips & Tutorials</p>
-                                <p style="margin: 0; font-size: 13px; color: #888;">Expert nail art techniques and trends</p>
+                                <p style="margin: 0 0 4px; font-size: 14px; color: #141414; font-weight: 600;">Pro Tips & Tutorials</p>
+                                <p style="margin: 0; font-size: 13px; color: #737373;">Expert nail art techniques and trends</p>
                               </td>
                             </tr>
                           </table>
@@ -472,10 +458,16 @@ const getNewsletterWelcomeEmail = (data: EmailRequest) => `
               </table>
 
               <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding: 10px 0 20px;">
-                    <a href="https://nerabeautyus.com" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Start Shopping</a>
+                  <td align="center" style="text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: ${BRAND_GOLD}; border-radius: 8px;">
+                          <a href="https://nerabeautyus.com" style="display: inline-block; padding: 16px 48px; background-color: ${BRAND_GOLD}; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Start Shopping</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
