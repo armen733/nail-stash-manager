@@ -183,17 +183,21 @@ const emailFooterDark = `
 `;
 
 const getOrderConfirmationEmail = (data: EmailRequest) => {
-  const itemsHtml = (data.items || []).map(item => `
+  const itemsHtml = (data.items || []).map(item => {
+    // Log item details for debugging
+    console.log('Order item:', JSON.stringify(item));
+    
+    return `
     <tr>
-      <td style="padding: 16px 0; border-bottom: 1px solid ${DARK_BORDER};">
+      <td style="padding: 16px 0; border-bottom: 1px solid #e6e6e6;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
           <tr>
-            <td style="width: 70px; vertical-align: top;">
-              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid ${DARK_BORDER};">` : `<div style="width: 60px; height: 60px; background: ${DARK_MUTED}; border-radius: 8px; border: 1px solid ${DARK_BORDER};"></div>`}
+            <td style="width: 80px; vertical-align: top;">
+              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid #e6e6e6;">` : `<div style="width: 70px; height: 70px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #e6e6e6;"></div>`}
             </td>
             <td style="vertical-align: top; padding-left: 16px;">
-              <p style="margin: 0 0 6px; font-size: 15px; color: ${DARK_TEXT}; font-weight: 500;">${item.name}</p>
-              <p style="margin: 0; font-size: 13px; color: ${DARK_MUTED_TEXT};">Qty: ${item.quantity} × $${item.unit_price.toFixed(2)}</p>
+              <p style="margin: 0 0 6px; font-size: 15px; color: #141414; font-weight: 500;">${item.name}</p>
+              <p style="margin: 0; font-size: 13px; color: #737373;">Qty: ${item.quantity} × $${item.unit_price.toFixed(2)}</p>
             </td>
             <td style="vertical-align: top; text-align: right;">
               <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">$${item.line_total.toFixed(2)}</p>
@@ -202,7 +206,8 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
         </table>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `
 <!DOCTYPE html>
@@ -212,33 +217,33 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Order Confirmation - NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${DARK_BG}; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: ${DARK_BG};">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: ${DARK_CARD}; border-radius: 16px; overflow: hidden; border: 1px solid ${DARK_BORDER};">
-          ${emailHeaderDark}
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+          ${emailHeaderLight}
           <!-- Content -->
           <tr>
-            <td align="center" style="padding: 32px 40px 40px; background-color: ${DARK_CARD};">
+            <td align="center" style="padding: 32px 40px 40px; background-color: #ffffff;">
               <!-- Thank You Message -->
               <h1 style="margin: 0 0 8px; font-size: 32px; font-weight: 600; color: ${BRAND_GOLD}; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Thank You!</h1>
-              <p style="margin: 0 0 24px; font-size: 18px; color: ${DARK_TEXT}; text-align: center;">Your order has been confirmed</p>
+              <p style="margin: 0 0 24px; font-size: 18px; color: #141414; text-align: center;">Your order has been confirmed</p>
               
               <!-- Order Info -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px; background-color: ${DARK_MUTED}; border-radius: 12px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px; background-color: #fafafa; border-radius: 12px; border: 1px solid #e6e6e6;">
                 <tr>
                   <td style="padding: 20px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
                         <td style="text-align: center; padding: 0 16px;">
-                          <p style="margin: 0 0 4px; font-size: 11px; color: ${DARK_MUTED_TEXT}; text-transform: uppercase; letter-spacing: 1px;">Order ID</p>
+                          <p style="margin: 0 0 4px; font-size: 11px; color: #737373; text-transform: uppercase; letter-spacing: 1px;">Order ID</p>
                           <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">#${data.orderId || 'N/A'}</p>
                         </td>
-                        <td style="width: 1px; background-color: ${DARK_BORDER};"></td>
+                        <td style="width: 1px; background-color: #e6e6e6;"></td>
                         <td style="text-align: center; padding: 0 16px;">
-                          <p style="margin: 0 0 4px; font-size: 11px; color: ${DARK_MUTED_TEXT}; text-transform: uppercase; letter-spacing: 1px;">Order Date</p>
-                          <p style="margin: 0; font-size: 16px; color: ${DARK_TEXT}; font-weight: 500;">${data.orderDate || new Date().toLocaleDateString()}</p>
+                          <p style="margin: 0 0 4px; font-size: 11px; color: #737373; text-transform: uppercase; letter-spacing: 1px;">Order Date</p>
+                          <p style="margin: 0; font-size: 16px; color: #141414; font-weight: 500;">${data.orderDate || new Date().toLocaleDateString()}</p>
                         </td>
                       </tr>
                     </table>
@@ -246,14 +251,14 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                 </tr>
               </table>
               
-              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: ${DARK_TEXT}; text-align: center;">
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 Thank you for your purchase, ${data.name || 'valued customer'}! We are preparing your items and will notify you when they ship.
               </p>
 
               <!-- Order Items -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td style="padding-bottom: 12px; border-bottom: 1px solid ${DARK_BORDER};">
+                  <td style="padding-bottom: 12px; border-bottom: 1px solid #e6e6e6;">
                     <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">Your Order</h3>
                   </td>
                 </tr>
@@ -261,13 +266,13 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
               </table>
 
               <!-- Order Summary -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: ${DARK_MUTED}; border-radius: 12px; margin-bottom: 24px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #fafafa; border-radius: 12px; margin-bottom: 24px; border: 1px solid #e6e6e6;">
                 <tr>
                   <td style="padding: 20px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="padding: 8px 0; color: ${DARK_MUTED_TEXT}; font-size: 14px;">Subtotal</td>
-                        <td style="padding: 8px 0; color: ${DARK_TEXT}; font-size: 14px; text-align: right;">$${(data.subtotal || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Subtotal</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 14px; text-align: right;">$${(data.subtotal || 0).toFixed(2)}</td>
                       </tr>
                       ${data.discount && data.discount > 0 ? `
                       <tr>
@@ -276,14 +281,14 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                       </tr>
                       ` : ''}
                       <tr>
-                        <td style="padding: 8px 0; color: ${DARK_MUTED_TEXT}; font-size: 14px;">Tax</td>
-                        <td style="padding: 8px 0; color: ${DARK_TEXT}; font-size: 14px; text-align: right;">$${(data.tax || 0).toFixed(2)}</td>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Tax</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 14px; text-align: right;">$${(data.tax || 0).toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 12px 0 0; border-top: 1px solid ${DARK_BORDER};"></td>
+                        <td colspan="2" style="padding: 12px 0 0; border-top: 1px solid #e6e6e6;"></td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; color: ${DARK_TEXT}; font-size: 18px; font-weight: 600;">Total</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 18px; font-weight: 600;">Total</td>
                         <td style="padding: 8px 0; color: ${BRAND_GOLD}; font-size: 20px; font-weight: 600; text-align: right;">$${(data.total || 0).toFixed(2)}</td>
                       </tr>
                     </table>
@@ -295,8 +300,8 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
               <!-- Points Earned -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
                 <tr>
-                  <td align="center" style="padding: 16px 20px; background-color: ${DARK_MUTED}; border-radius: 12px; border: 1px solid ${BRAND_GOLD}40;">
-                    <p style="margin: 0; font-size: 14px; color: ${BRAND_GOLD};">
+                  <td align="center" style="padding: 16px 20px; background-color: #fffbeb; border-radius: 12px; border: 1px solid ${BRAND_GOLD}40;">
+                    <p style="margin: 0; font-size: 14px; color: #92400e;">
                       ⭐ You earned <strong>${data.pointsEarned} loyalty points</strong> with this order!
                     </p>
                   </td>
@@ -319,12 +324,12 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                 </tr>
               </table>
               
-              <p style="margin: 24px 0 0; font-size: 14px; color: ${DARK_MUTED_TEXT}; text-align: center; line-height: 1.6;">
+              <p style="margin: 24px 0 0; font-size: 14px; color: #737373; text-align: center; line-height: 1.6;">
                 Check out more products at <a href="https://nerabeautyus.com" style="color: ${BRAND_GOLD}; text-decoration: none;">nerabeautyus.com</a>
               </p>
             </td>
           </tr>
-          ${emailFooterDark}
+          ${emailFooterLight}
         </table>
       </td>
     </tr>
