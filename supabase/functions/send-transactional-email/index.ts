@@ -603,9 +603,14 @@ const handler = async (req: Request): Promise<Response> => {
           const productNames = data.items.map(item => item.name);
           console.log('Product names to look up:', productNames);
           
+          // Fetch products with their gallery images
           const { data: products, error: productsError } = await supabase
             .from('products')
-            .select('name, image_url')
+            .select(`
+              name, 
+              image_url,
+              product_images (image_url, display_order)
+            `)
             .in('name', productNames);
           
           if (productsError) {
@@ -613,8 +618,17 @@ const handler = async (req: Request): Promise<Response> => {
           } else if (products) {
             console.log('Found products from DB:', products.length);
             console.log('Products with images:', JSON.stringify(products, null, 2));
-            // Create a map of product name to image_url
-            const imageMap = new Map(products.map(p => [p.name, p.image_url]));
+            
+            // Create a map of product name to image_url (prefer product_images, fallback to image_url)
+            const imageMap = new Map(products.map(p => {
+              // Get image from product_images table (first one by display_order)
+              const galleryImages = p.product_images as Array<{image_url: string, display_order: number}> || [];
+              const firstGalleryImage = galleryImages.length > 0 
+                ? galleryImages.sort((a, b) => a.display_order - b.display_order)[0].image_url 
+                : null;
+              // Use gallery image first, then fallback to product.image_url
+              return [p.name, firstGalleryImage || p.image_url];
+            }));
             
             // Enrich items with images
             data.items = data.items.map(item => ({
