@@ -137,24 +137,24 @@ const getSignupEmail = (name: string, confirmationUrl: string) => `
 </html>
 `;
 
-const getPasswordResetEmail = (resetUrl: string) => `
-<!DOCTYPE html>
+const getPasswordResetEmail = (resetUrl: string) => {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Your Password</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: Arial, Helvetica, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1a1a1a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
           <!-- Header -->
           <tr>
             <td style="padding: 50px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
               <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 8px; color: #d4af37;">NERA</h1>
-              <p style="margin: 8px 0 0; font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase;">Beauty</p>
+              <p style="margin: 8px 0 0; font-size: 11px; letter-spacing: 4px; color: #888888; text-transform: uppercase;">Beauty</p>
             </td>
           </tr>
           <!-- Icon -->
@@ -162,8 +162,8 @@ const getPasswordResetEmail = (resetUrl: string) => `
             <td style="padding: 40px 40px 0; text-align: center;">
               <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
                 <tr>
-                  <td style="width: 70px; height: 70px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); border-radius: 50%; text-align: center; vertical-align: middle;">
-                    <span style="font-size: 28px; line-height: 70px;">&#128274;</span>
+                  <td style="width: 70px; height: 70px; background-color: #d4af37; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 28px;">
+                    &#128274;
                   </td>
                 </tr>
               </table>
@@ -180,15 +180,15 @@ const getPasswordResetEmail = (resetUrl: string) => `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="${resetUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Reset Password</a>
+                    <a href="${resetUrl}" style="display: inline-block; padding: 16px 48px; background-color: #d4af37; color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Reset Password</a>
                   </td>
                 </tr>
               </table>
               <!-- Security Note -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
                 <tr>
-                  <td style="padding: 20px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.2);">
-                    <p style="margin: 0; font-size: 13px; color: #999; text-align: center; line-height: 1.6;">
+                  <td style="padding: 20px; background-color: #252525; border-radius: 8px; border: 1px solid #333333;">
+                    <p style="margin: 0; font-size: 13px; color: #999999; text-align: center; line-height: 1.6;">
                       This link expires in <strong style="color: #d4af37;">1 hour</strong><br>
                       If you did not request this, you can safely ignore this email.
                     </p>
@@ -199,9 +199,9 @@ const getPasswordResetEmail = (resetUrl: string) => `
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px 40px; background: #0a0a0a; border-top: 1px solid #2a2a2a; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 12px; color: #666;">Questions? Contact us at info@nerabeautyus.com</p>
-              <p style="margin: 0; font-size: 11px; color: #444;">&copy; 2025 NERA Beauty. All rights reserved.</p>
+            <td style="padding: 30px 40px; background-color: #0a0a0a; border-top: 1px solid #2a2a2a; text-align: center;">
+              <p style="margin: 0 0 10px; font-size: 12px; color: #666666;">Questions? Contact us at info@nerabeautyus.com</p>
+              <p style="margin: 0; font-size: 11px; color: #444444;">2025 NERA Beauty. All rights reserved.</p>
             </td>
           </tr>
         </table>
@@ -209,8 +209,8 @@ const getPasswordResetEmail = (resetUrl: string) => `
     </tr>
   </table>
 </body>
-</html>
-`;
+</html>`;
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
