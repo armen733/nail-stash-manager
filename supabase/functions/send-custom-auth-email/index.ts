@@ -66,7 +66,8 @@ function generateToken(): string {
 }
 
 const getSignupEmail = (name: string, confirmationUrl: string) => {
-  const logoUrl = "https://nerabeautyus.com/images/nera-logo-dark-bg.png";
+  // Using the logo for light backgrounds since email clients show light backgrounds
+  const logoUrl = "https://nerabeautyus.com/images/nera-logo-light-bg.png";
   
   return `<!DOCTYPE html>
 <html>
@@ -75,56 +76,66 @@ const getSignupEmail = (name: string, confirmationUrl: string) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0A0A0A; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0A0A0A;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #121212; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6;">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 40px 40px 24px; text-align: center; background-color: #121212;">
+            <td align="center" style="padding: 40px 40px 24px; text-align: center; background-color: #ffffff;">
               <img src="${logoUrl}" alt="NERA Beauty" width="160" height="auto" style="display: block; margin: 0 auto; max-width: 160px;" />
             </td>
           </tr>
           
           <!-- Divider -->
           <tr>
-            <td style="padding: 0 40px;">
-              <div style="height: 1px; background: linear-gradient(90deg, transparent, #CC9F5C, transparent);"></div>
+            <td align="center" style="padding: 0 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="height: 1px; background: linear-gradient(90deg, transparent, #CC9F5C, transparent);"></td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px 40px 40px;">
-              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #EBEBEB; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Welcome, ${name}!</h1>
-              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #EBEBEB; text-align: center;">
+            <td align="center" style="padding: 32px 40px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #141414; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Welcome, ${name}!</h1>
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 Thank you for joining NERA Beauty. You now have access to our exclusive collection of premium nail supplies designed for professionals.
               </p>
               
               <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding: 8px 0 28px;">
-                    <a href="${confirmationUrl}" style="display: inline-block; padding: 16px 48px; background-color: #CC9F5C; color: #0A0A0A; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Start Shopping</a>
+                  <td align="center" style="padding: 8px 0 28px; text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: #CC9F5C; border-radius: 8px;">
+                          <a href="${confirmationUrl}" style="display: inline-block; padding: 16px 48px; background-color: #CC9F5C; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Start Shopping</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
               
               <!-- Features -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="padding: 20px; background-color: #242424; border-radius: 12px; border: 1px solid #262626;">
-                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <td align="center" style="padding: 20px; background-color: #f0f0f0; border-radius: 12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td width="33%" style="text-align: center; padding: 8px;">
+                        <td width="33%" align="center" style="text-align: center; padding: 8px;">
                           <p style="margin: 0; font-size: 11px; color: #CC9F5C; letter-spacing: 1px; font-weight: 600;">PREMIUM QUALITY</p>
                         </td>
-                        <td width="33%" style="text-align: center; padding: 8px;">
+                        <td width="33%" align="center" style="text-align: center; padding: 8px;">
                           <p style="margin: 0; font-size: 11px; color: #CC9F5C; letter-spacing: 1px; font-weight: 600;">FAST SHIPPING</p>
                         </td>
-                        <td width="33%" style="text-align: center; padding: 8px;">
+                        <td width="33%" align="center" style="text-align: center; padding: 8px;">
                           <p style="margin: 0; font-size: 11px; color: #CC9F5C; letter-spacing: 1px; font-weight: 600;">PRO SUPPORT</p>
                         </td>
                       </tr>
@@ -137,7 +148,7 @@ const getSignupEmail = (name: string, confirmationUrl: string) => {
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #0A0A0A; border-top: 1px solid #262626;">
+            <td align="center" style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e6e6e6;">
               <p style="margin: 0 0 8px; font-size: 13px; color: #737373; text-align: center;">Need help? Contact us at <a href="mailto:info@nerabeautyus.com" style="color: #CC9F5C; text-decoration: none;">info@nerabeautyus.com</a></p>
               <p style="margin: 0; font-size: 12px; color: #737373; text-align: center;">© 2025 NERA Beauty. Professional nail supplies.</p>
             </td>
@@ -153,7 +164,8 @@ const getSignupEmail = (name: string, confirmationUrl: string) => {
 
 
 const getPasswordResetEmail = (resetUrl: string) => {
-  const logoUrl = "https://nerabeautyus.com/images/nera-logo-dark-bg.png";
+  // Using the logo for light backgrounds (dark logo) since email clients show light backgrounds
+  const logoUrl = "https://nerabeautyus.com/images/nera-logo-light-bg.png";
   
   return `<!DOCTYPE html>
 <html>
@@ -162,48 +174,58 @@ const getPasswordResetEmail = (resetUrl: string) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Your Password - NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0A0A0A; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0A0A0A;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #121212; border-radius: 16px; overflow: hidden; border: 1px solid #262626;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6;">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 40px 40px 24px; text-align: center; background-color: #121212;">
+            <td align="center" style="padding: 40px 40px 24px; text-align: center; background-color: #ffffff;">
               <img src="${logoUrl}" alt="NERA Beauty" width="160" height="auto" style="display: block; margin: 0 auto; max-width: 160px;" />
             </td>
           </tr>
           
           <!-- Divider -->
           <tr>
-            <td style="padding: 0 40px;">
-              <div style="height: 1px; background: linear-gradient(90deg, transparent, #CC9F5C, transparent);"></div>
+            <td align="center" style="padding: 0 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="height: 1px; background: linear-gradient(90deg, transparent, #CC9F5C, transparent);"></td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px 40px 40px;">
-              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #EBEBEB; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Reset Your Password</h1>
-              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #EBEBEB; text-align: center;">
+            <td align="center" style="padding: 32px 40px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 600; color: #141414; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Reset Your Password</h1>
+              <p style="margin: 0 0 28px; font-size: 16px; line-height: 1.7; color: #141414; text-align: center;">
                 We received a request to reset your password. Click the button below to create a new secure password for your account.
               </p>
               
               <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td align="center" style="padding: 8px 0 28px;">
-                    <a href="${resetUrl}" style="display: inline-block; padding: 16px 48px; background-color: #CC9F5C; color: #0A0A0A; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Reset Password</a>
+                  <td align="center" style="padding: 8px 0 28px; text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: #CC9F5C; border-radius: 8px;">
+                          <a href="${resetUrl}" style="display: inline-block; padding: 16px 48px; background-color: #CC9F5C; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">Reset Password</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
               
               <!-- Security Notice -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                  <td style="padding: 20px; background-color: #242424; border-radius: 12px; border: 1px solid #262626;">
-                    <p style="margin: 0; font-size: 14px; color: #EBEBEB; text-align: center; line-height: 1.6;">
+                  <td align="center" style="padding: 20px; background-color: #f0f0f0; border-radius: 12px;">
+                    <p style="margin: 0; font-size: 14px; color: #141414; text-align: center; line-height: 1.6;">
                       <span style="color: #CC9F5C; font-weight: 600;">Link expires in 1 hour</span><br />
                       <span style="color: #737373;">If you did not request this reset, you can safely ignore this email.</span>
                     </p>
@@ -215,7 +237,7 @@ const getPasswordResetEmail = (resetUrl: string) => {
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #0A0A0A; border-top: 1px solid #262626;">
+            <td align="center" style="padding: 24px 40px; background-color: #fafafa; border-top: 1px solid #e6e6e6;">
               <p style="margin: 0 0 8px; font-size: 13px; color: #737373; text-align: center;">Need help? Contact us at <a href="mailto:info@nerabeautyus.com" style="color: #CC9F5C; text-decoration: none;">info@nerabeautyus.com</a></p>
               <p style="margin: 0; font-size: 12px; color: #737373; text-align: center;">© 2025 NERA Beauty. Professional nail supplies.</p>
             </td>
