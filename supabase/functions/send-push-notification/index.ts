@@ -117,11 +117,13 @@ async function sendTelegramNotification(order: OrderDetails, items: OrderItem[])
     }
     
     const divider = '▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬';
+    const orderId = order.orderId ? order.orderId.slice(0, 8).toUpperCase() : 'N/A';
     
     const message = `${divider}
 🔔 *New Order Received!*
 ${divider}
 
+🆔 *Order ID:* #${orderId}
 👤 *Customer:* ${name}
 📞 *Phone:* ${phone}
 ✉️ *Email:* ${email}
