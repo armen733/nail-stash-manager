@@ -116,7 +116,7 @@ async function sendTelegramNotification(order: OrderDetails, items: OrderItem[])
         .join('\n');
     }
     
-    const divider = '━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    const divider = '▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬';
     
     const message = `${divider}
 🔔 *New Order Received!*
@@ -135,7 +135,7 @@ ${productsText || 'No items'}
 🕐 *Time:* ${time}
 
 Check the orders page for full details.
-${divider}`;
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`;
     
     const response = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
