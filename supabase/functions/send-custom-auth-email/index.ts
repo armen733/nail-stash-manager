@@ -24,26 +24,39 @@ interface EmailRequest {
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
+  console.log(`Sending email to: ${to}, subject: ${subject}`);
+  console.log(`HTML content length: ${html.length} characters`);
+  
+  if (!html || html.trim().length === 0) {
+    throw new Error("Email HTML content is empty");
+  }
+  
+  const emailPayload = {
+    from: "NERA Beauty <info@nerabeautyus.com>",
+    to: [to],
+    subject,
+    html,
+  };
+  
+  console.log("Email payload (without html):", JSON.stringify({ ...emailPayload, html: `[${html.length} chars]` }));
+  
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from: "NERA Beauty <info@nerabeautyus.com>",
-      to: [to],
-      subject,
-      html,
-    }),
+    body: JSON.stringify(emailPayload),
   });
   
+  const responseData = await response.json();
+  console.log("Resend API response:", JSON.stringify(responseData));
+  
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to send email");
+    throw new Error(responseData.message || "Failed to send email");
   }
   
-  return response.json();
+  return responseData;
 }
 
 function generateToken(): string {
