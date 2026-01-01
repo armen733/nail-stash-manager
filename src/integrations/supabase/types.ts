@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          email: string | null
+          email_sent_at: string | null
+          id: string
+          items: Json
+          name: string | null
+          total: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          email_sent_at?: string | null
+          id?: string
+          items?: Json
+          name?: string | null
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          email_sent_at?: string | null
+          id?: string
+          items?: Json
+          name?: string | null
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abandoned_carts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_variant_types: {
         Row: {
           category: string
