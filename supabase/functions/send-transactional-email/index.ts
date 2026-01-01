@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -588,6 +593,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (data.type) {
       case "order_confirmation":
+        // Enrich items with product images from database
+        if (data.items && data.items.length > 0) {
+          console.log('Fetching product images for order items...');
+          const productNames = data.items.map(item => item.name);
+          
+          const { data: products, error: productsError } = await supabase
+            .from('products')
+            .select('name, image_url')
+            .in('name', productNames);
+          
+          if (productsError) {
+            console.error('Error fetching products:', productsError);
+          } else if (products) {
+            console.log('Found products:', products.length);
+            // Create a map of product name to image_url
+            const imageMap = new Map(products.map(p => [p.name, p.image_url]));
+            
+            // Enrich items with images
+            data.items = data.items.map(item => ({
+              ...item,
+              image_url: item.image_url || imageMap.get(item.name) || null
+            }));
+          }
+        }
+        
         subject = `Order Confirmed - #${data.orderId || 'N/A'}`;
         html = getOrderConfirmationEmail(data);
         break;
