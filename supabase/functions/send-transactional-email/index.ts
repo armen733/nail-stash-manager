@@ -44,10 +44,12 @@ interface EmailRequest {
   type: "order_confirmation" | "abandoned_cart" | "newsletter_welcome";
   email: string;
   name?: string;
+  customerName?: string; // Alternative field name from customer app
   // Order confirmation fields
   orderId?: string;
   orderDate?: string;
   items?: OrderItem[];
+  orderItems?: Array<{name: string; quantity: number; price: number; image_url?: string}>; // Alternative from customer app
   subtotal?: number;
   discount?: number;
   discountCode?: string;
@@ -594,49 +596,69 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (data.type) {
       case "order_confirmation":
-        console.log('Order confirmation - items received:', data.items?.length || 0);
+        // Normalize field names - customer app uses orderItems/customerName, we expect items/name
+        if (!data.name && data.customerName) {
+          data.name = data.customerName;
+        }
+        
+        // Convert orderItems to items format if items is not provided
+        if ((!data.items || data.items.length === 0) && data.orderItems && data.orderItems.length > 0) {
+          console.log('Converting orderItems to items format...');
+          data.items = data.orderItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            unit_price: item.price,
+            line_total: item.price * item.quantity,
+            image_url: item.image_url
+          }));
+        }
+        
+        console.log('Order confirmation - items count:', data.items?.length || 0);
         console.log('Items data:', JSON.stringify(data.items, null, 2));
         
-        // Enrich items with product images from database
+        // Enrich items with product images from database if any are missing
         if (data.items && data.items.length > 0) {
-          console.log('Fetching product images for order items...');
-          const productNames = data.items.map(item => item.name);
-          console.log('Product names to look up:', productNames);
+          const itemsMissingImages = data.items.filter(item => !item.image_url);
           
-          // Fetch products with their gallery images
-          const { data: products, error: productsError } = await supabase
-            .from('products')
-            .select(`
-              name, 
-              image_url,
-              product_images (image_url, display_order)
-            `)
-            .in('name', productNames);
-          
-          if (productsError) {
-            console.error('Error fetching products:', productsError);
-          } else if (products) {
-            console.log('Found products from DB:', products.length);
-            console.log('Products with images:', JSON.stringify(products, null, 2));
+          if (itemsMissingImages.length > 0) {
+            console.log('Fetching product images for items missing images...');
+            const productNames = itemsMissingImages.map(item => item.name);
+            console.log('Product names to look up:', productNames);
             
-            // Create a map of product name to image_url (prefer product_images, fallback to image_url)
-            const imageMap = new Map(products.map(p => {
-              // Get image from product_images table (first one by display_order)
-              const galleryImages = p.product_images as Array<{image_url: string, display_order: number}> || [];
-              const firstGalleryImage = galleryImages.length > 0 
-                ? galleryImages.sort((a, b) => a.display_order - b.display_order)[0].image_url 
-                : null;
-              // Use gallery image first, then fallback to product.image_url
-              return [p.name, firstGalleryImage || p.image_url];
-            }));
+            // Fetch products with their gallery images
+            const { data: products, error: productsError } = await supabase
+              .from('products')
+              .select(`
+                name, 
+                image_url,
+                product_images (image_url, display_order)
+              `)
+              .in('name', productNames);
             
-            // Enrich items with images
-            data.items = data.items.map(item => ({
-              ...item,
-              image_url: item.image_url || imageMap.get(item.name) || null
-            }));
-            console.log('Enriched items:', JSON.stringify(data.items, null, 2));
+            if (productsError) {
+              console.error('Error fetching products:', productsError);
+            } else if (products) {
+              console.log('Found products from DB:', products.length);
+              
+              // Create a map of product name to image_url (prefer product_images, fallback to image_url)
+              const imageMap = new Map(products.map(p => {
+                // Get image from product_images table (first one by display_order)
+                const galleryImages = p.product_images as Array<{image_url: string, display_order: number}> || [];
+                const firstGalleryImage = galleryImages.length > 0 
+                  ? galleryImages.sort((a, b) => a.display_order - b.display_order)[0].image_url 
+                  : null;
+                // Use gallery image first, then fallback to product.image_url
+                return [p.name, firstGalleryImage || p.image_url];
+              }));
+              
+              // Enrich items with images
+              data.items = data.items.map(item => ({
+                ...item,
+                image_url: item.image_url || imageMap.get(item.name) || null
+              }));
+            }
           }
+          console.log('Final items with images:', JSON.stringify(data.items, null, 2));
         } else {
           console.log('No items received in order confirmation!');
         }
