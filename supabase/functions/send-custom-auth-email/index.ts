@@ -5,6 +5,9 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+// Log API key status (first 8 chars only for debugging)
+console.log("RESEND_API_KEY loaded:", RESEND_API_KEY ? `${RESEND_API_KEY.substring(0, 8)}...` : "NOT SET");
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
