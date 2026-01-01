@@ -7,9 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Logo URLs - light logo for dark backgrounds
-const LOGO_FOR_DARK_BG = "https://wxwdlyiyrqwgiwtmrajp.supabase.co/storage/v1/object/public/brand-assets/nera-logo-dark-bg.png";
-const LOGO_FOR_LIGHT_BG = "https://wxwdlyiyrqwgiwtmrajp.supabase.co/storage/v1/object/public/brand-assets/nera-logo-light-bg.png";
+// Logo URLs - hosted on the app's public folder
+// Light/cream logo for dark backgrounds, dark logo for light backgrounds
+const LOGO_FOR_DARK_BG = "https://nera-beauty-dashboard.lovable.app/images/nera-logo-dark-bg.png";
+const LOGO_FOR_LIGHT_BG = "https://nera-beauty-dashboard.lovable.app/images/nera-logo-light-bg.png";
 
 interface CartItem {
   name: string;
