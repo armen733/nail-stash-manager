@@ -7,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Logo URLs - light logo for dark backgrounds
+const LOGO_FOR_DARK_BG = "https://wxwdlyiyrqwgiwtmrajp.supabase.co/storage/v1/object/public/brand-assets/nera-logo-dark-bg.png";
+const LOGO_FOR_LIGHT_BG = "https://wxwdlyiyrqwgiwtmrajp.supabase.co/storage/v1/object/public/brand-assets/nera-logo-light-bg.png";
+
 interface CartItem {
   name: string;
   quantity: number;
@@ -48,6 +52,10 @@ interface EmailRequest {
 async function sendEmail(to: string, subject: string, html: string) {
   console.log(`Sending email to ${to}: ${subject}`);
   
+  if (!RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY is not configured");
+  }
+  
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -62,20 +70,21 @@ async function sendEmail(to: string, subject: string, html: string) {
     }),
   });
   
+  const responseData = await response.json();
+  
   if (!response.ok) {
-    const error = await response.json();
-    console.error("Resend API error:", error);
-    throw new Error(error.message || "Failed to send email");
+    console.error("Resend API error:", responseData);
+    throw new Error(responseData.message || "Failed to send email");
   }
   
-  return response.json();
+  return responseData;
 }
 
+// Email header with actual NERA logo (cream/gold logo for dark background)
 const emailHeader = `
   <tr>
-    <td style="padding: 50px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
-      <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 8px; color: #d4af37;">NERA</h1>
-      <p style="margin: 8px 0 0; font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase;">Beauty</p>
+    <td style="padding: 40px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
+      <img src="${LOGO_FOR_DARK_BG}" alt="NERA Beauty" style="max-width: 180px; height: auto;" />
     </td>
   </tr>
 `;
