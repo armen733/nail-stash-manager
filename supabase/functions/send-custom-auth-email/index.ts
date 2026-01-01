@@ -65,8 +65,10 @@ function generateToken(): string {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-const getSignupEmail = (name: string, confirmationUrl: string) => `
-<!DOCTYPE html>
+const getSignupEmail = (name: string, confirmationUrl: string) => {
+  const logoUrl = "https://nerabeautyus.com/images/nera-logo-dark-bg.png";
+  
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -74,46 +76,56 @@ const getSignupEmail = (name: string, confirmationUrl: string) => `
   <title>Welcome to NERA Beauty</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
-          <!-- Header -->
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-radius: 24px; overflow: hidden; border: 1px solid rgba(42, 179, 140, 0.2);">
+          
+          <!-- Logo Header -->
           <tr>
-            <td style="padding: 50px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
-              <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 8px; color: #d4af37;">NERA</h1>
-              <p style="margin: 8px 0 0; font-size: 11px; letter-spacing: 4px; color: #888; text-transform: uppercase;">Beauty</p>
+            <td style="padding: 48px 40px 32px; text-align: center;">
+              <img src="${logoUrl}" alt="NERA Beauty" width="180" height="auto" style="display: block; margin: 0 auto; max-width: 180px;" />
             </td>
           </tr>
+          
+          <!-- Divider -->
+          <tr>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(42, 179, 140, 0.3), transparent);"></div>
+            </td>
+          </tr>
+          
           <!-- Content -->
           <tr>
-            <td style="padding: 50px 40px;">
-              <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 400; color: #ffffff; text-align: center;">Welcome, ${name}!</h2>
-              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.7; color: #b0b0b0; text-align: center;">
+            <td style="padding: 48px 48px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 300; color: #ffffff; text-align: center; letter-spacing: 1px;">Welcome, ${name}!</h1>
+              <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.8; color: #9ca3af; text-align: center;">
                 Thank you for joining NERA Beauty. You now have access to our exclusive collection of premium nail supplies designed for professionals.
               </p>
-              <!-- Button -->
+              
+              <!-- CTA Button -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center" style="padding: 20px 0;">
-                    <a href="${confirmationUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%); color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Start Shopping</a>
+                  <td align="center" style="padding: 8px 0 32px;">
+                    <a href="${confirmationUrl}" style="display: inline-block; padding: 18px 56px; background: linear-gradient(135deg, #2ab38c 0%, #1e8a6b 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-radius: 12px; box-shadow: 0 8px 24px -4px rgba(42, 179, 140, 0.4);">Start Shopping</a>
                   </td>
                 </tr>
               </table>
+              
               <!-- Features -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 40px; border-top: 1px solid #2a2a2a; padding-top: 40px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center">
-                    <table role="presentation" cellspacing="0" cellpadding="0">
+                  <td style="padding: 24px; background: rgba(42, 179, 140, 0.08); border-radius: 16px; border: 1px solid rgba(42, 179, 140, 0.15);">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 0 20px; text-align: center;">
-                          <p style="margin: 0; font-size: 12px; color: #d4af37; letter-spacing: 2px;">PREMIUM QUALITY</p>
+                        <td width="33%" style="text-align: center; padding: 8px;">
+                          <p style="margin: 0; font-size: 12px; color: #2ab38c; letter-spacing: 1px; font-weight: 500;">PREMIUM QUALITY</p>
                         </td>
-                        <td style="padding: 0 20px; text-align: center;">
-                          <p style="margin: 0; font-size: 12px; color: #d4af37; letter-spacing: 2px;">FAST SHIPPING</p>
+                        <td width="33%" style="text-align: center; padding: 8px;">
+                          <p style="margin: 0; font-size: 12px; color: #2ab38c; letter-spacing: 1px; font-weight: 500;">FAST SHIPPING</p>
                         </td>
-                        <td style="padding: 0 20px; text-align: center;">
-                          <p style="margin: 0; font-size: 12px; color: #d4af37; letter-spacing: 2px;">PRO SUPPORT</p>
+                        <td width="33%" style="text-align: center; padding: 8px;">
+                          <p style="margin: 0; font-size: 12px; color: #2ab38c; letter-spacing: 1px; font-weight: 500;">PRO SUPPORT</p>
                         </td>
                       </tr>
                     </table>
@@ -122,88 +134,94 @@ const getSignupEmail = (name: string, confirmationUrl: string) => `
               </table>
             </td>
           </tr>
+          
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px 40px; background: #0a0a0a; border-top: 1px solid #2a2a2a; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 12px; color: #666;">Questions? Contact us at info@nerabeautyus.com</p>
-              <p style="margin: 0; font-size: 11px; color: #444;">&copy; 2025 NERA Beauty. All rights reserved.</p>
+            <td style="padding: 32px 40px; background: #080808; border-top: 1px solid rgba(42, 179, 140, 0.1);">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-align: center;">Need help? Contact us at <a href="mailto:info@nerabeautyus.com" style="color: #2ab38c; text-decoration: none;">info@nerabeautyus.com</a></p>
+              <p style="margin: 0; font-size: 12px; color: #4b5563; text-align: center;">© 2025 NERA Beauty. Professional nail supplies.</p>
             </td>
           </tr>
+          
         </table>
       </td>
     </tr>
   </table>
 </body>
-</html>
-`;
+</html>`;
+};
+
 
 const getPasswordResetEmail = (resetUrl: string) => {
+  // Using the logo from the deployed app's public folder - for dark background
+  const logoUrl = "https://nerabeautyus.com/images/nera-logo-dark-bg.png";
+  
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Your Password</title>
+  <title>Reset Your Password - NERA Beauty</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: Arial, Helvetica, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1a1a1a; border-radius: 16px; overflow: hidden; border: 1px solid #2a2a2a;">
-          <!-- Header -->
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width: 600px; background: linear-gradient(180deg, #141414 0%, #0a0a0a 100%); border-radius: 24px; overflow: hidden; border: 1px solid rgba(42, 179, 140, 0.2);">
+          
+          <!-- Logo Header -->
           <tr>
-            <td style="padding: 50px 40px 30px; text-align: center; border-bottom: 1px solid #2a2a2a;">
-              <h1 style="margin: 0; font-size: 32px; font-weight: 300; letter-spacing: 8px; color: #d4af37;">NERA</h1>
-              <p style="margin: 8px 0 0; font-size: 11px; letter-spacing: 4px; color: #888888; text-transform: uppercase;">Beauty</p>
+            <td style="padding: 48px 40px 32px; text-align: center;">
+              <img src="${logoUrl}" alt="NERA Beauty" width="180" height="auto" style="display: block; margin: 0 auto; max-width: 180px;" />
             </td>
           </tr>
-          <!-- Icon -->
+          
+          <!-- Divider -->
           <tr>
-            <td style="padding: 40px 40px 0; text-align: center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="width: 70px; height: 70px; background-color: #d4af37; border-radius: 50%; text-align: center; vertical-align: middle; font-size: 28px;">
-                    &#128274;
-                  </td>
-                </tr>
-              </table>
+            <td style="padding: 0 40px;">
+              <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(42, 179, 140, 0.3), transparent);"></div>
             </td>
           </tr>
+          
           <!-- Content -->
           <tr>
-            <td style="padding: 30px 40px 50px;">
-              <h2 style="margin: 0 0 20px; font-size: 24px; font-weight: 400; color: #ffffff; text-align: center;">Reset Your Password</h2>
-              <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.7; color: #b0b0b0; text-align: center;">
-                We received a request to reset your password. Click the button below to create a new password for your account.
+            <td style="padding: 48px 48px 40px;">
+              <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 300; color: #ffffff; text-align: center; letter-spacing: 1px;">Reset Your Password</h1>
+              <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.8; color: #9ca3af; text-align: center;">
+                We received a request to reset your password. Click the button below to create a new secure password for your account.
               </p>
-              <!-- Button -->
+              
+              <!-- CTA Button -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td align="center" style="padding: 20px 0;">
-                    <a href="${resetUrl}" style="display: inline-block; padding: 16px 48px; background-color: #d4af37; color: #0a0a0a; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px;">Reset Password</a>
+                  <td align="center" style="padding: 8px 0 32px;">
+                    <a href="${resetUrl}" style="display: inline-block; padding: 18px 56px; background: linear-gradient(135deg, #2ab38c 0%, #1e8a6b 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-radius: 12px; box-shadow: 0 8px 24px -4px rgba(42, 179, 140, 0.4);">Reset Password</a>
                   </td>
                 </tr>
               </table>
-              <!-- Security Note -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
+              
+              <!-- Security Notice -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="padding: 20px; background-color: #252525; border-radius: 8px; border: 1px solid #333333;">
-                    <p style="margin: 0; font-size: 13px; color: #999999; text-align: center; line-height: 1.6;">
-                      This link expires in <strong style="color: #d4af37;">1 hour</strong><br>
-                      If you did not request this, you can safely ignore this email.
+                  <td style="padding: 24px; background: rgba(42, 179, 140, 0.08); border-radius: 16px; border: 1px solid rgba(42, 179, 140, 0.15);">
+                    <p style="margin: 0; font-size: 14px; color: #9ca3af; text-align: center; line-height: 1.7;">
+                      <span style="color: #2ab38c; font-weight: 500;">⏱ Link expires in 1 hour</span><br />
+                      If you didn't request this reset, you can safely ignore this email.
                     </p>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
+          
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px 40px; background-color: #0a0a0a; border-top: 1px solid #2a2a2a; text-align: center;">
-              <p style="margin: 0 0 10px; font-size: 12px; color: #666666;">Questions? Contact us at info@nerabeautyus.com</p>
-              <p style="margin: 0; font-size: 11px; color: #444444;">2025 NERA Beauty. All rights reserved.</p>
+            <td style="padding: 32px 40px; background: #080808; border-top: 1px solid rgba(42, 179, 140, 0.1);">
+              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280; text-align: center;">Need help? Contact us at <a href="mailto:info@nerabeautyus.com" style="color: #2ab38c; text-decoration: none;">info@nerabeautyus.com</a></p>
+              <p style="margin: 0; font-size: 12px; color: #4b5563; text-align: center;">© 2025 NERA Beauty. Professional nail supplies.</p>
             </td>
           </tr>
+          
         </table>
       </td>
     </tr>
