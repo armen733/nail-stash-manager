@@ -86,20 +86,20 @@ export default function Users() {
       
       if (tiersError) throw tiersError;
 
-      // Fetch all orders for total spent calculation
+      // Fetch all orders for total spent calculation (include all statuses except cancelled)
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
-        .select("profile_id, customer_email, total, status")
-        .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
+        .select("profile_id, customer_email, total, status");
       
       if (ordersError) throw ordersError;
       
       // Combine data with total spent
       const usersWithTiers = profiles.map(profile => {
         const userOrders = orders?.filter(o => 
-          o.profile_id === profile.id || o.customer_email === profile.email
+          o.profile_id === profile.id || 
+          (o.customer_email && o.customer_email.toLowerCase() === profile.email.toLowerCase())
         ) || [];
-        const totalSpent = userOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+        const totalSpent = userOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
         const orderCount = userOrders.length;
         
         return {
