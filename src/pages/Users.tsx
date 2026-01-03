@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,7 @@ export default function Users() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -233,7 +234,18 @@ export default function Users() {
 
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Customer List</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <CardTitle className="text-lg sm:text-xl">Customer List</CardTitle>
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
           {usersLoading ? (
@@ -243,11 +255,17 @@ export default function Users() {
               ))}
             </div>
           ) : users && users.length > 0 ? (
-            <div className="space-y-2 p-4 sm:p-0">
-              {users.map((user) => {
-                const tier = user.user_tiers?.[0];
-                return (
-                  <div
+            (() => {
+              const filteredUsers = users.filter(user => 
+                user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+              return filteredUsers.length > 0 ? (
+                <div className="space-y-2 p-4 sm:p-0">
+                  {filteredUsers.map((user) => {
+                    const tier = user.user_tiers?.[0];
+                    return (
+                      <div
                     key={user.id}
                     className="p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => setSelectedUser(user)}
@@ -271,9 +289,15 @@ export default function Users() {
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No customers found matching "{searchTerm}"
+                </p>
+              );
+            })()
           ) : (
             <p className="text-center text-muted-foreground py-8">
               No customers yet.
