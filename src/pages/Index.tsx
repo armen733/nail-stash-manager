@@ -469,19 +469,21 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Export as visual donut chart PNG - matching app layout (chart + table side by side)
+              // Export as high-quality visual donut chart PNG (2x scale for better quality)
+              const scale = 2;
               const canvas = document.createElement('canvas');
-              canvas.width = 900;
-              canvas.height = 450;
+              canvas.width = 900 * scale;
+              canvas.height = 450 * scale;
               const ctx = canvas.getContext('2d')!;
+              ctx.scale(scale, scale);
               
               // Background
               ctx.fillStyle = '#1a1a2e';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillRect(0, 0, 900, 450);
               
               // Title
               ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 24px sans-serif';
+              ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
               ctx.textAlign = 'left';
               ctx.fillText('Sales by Category', 40, 45);
               
@@ -493,7 +495,7 @@ const Index = () => {
               const chartRadius = 120;
               const innerRadius = 60;
               
-              // Draw all slices
+              // Draw all slices with anti-aliasing
               let startAngle = -Math.PI / 2;
               const sliceData: { cat: typeof categorySalesData[0]; midAngle: number }[] = [];
               
@@ -540,11 +542,11 @@ const Index = () => {
                 // Label text
                 const textX = labelX + (isRight ? 8 : -8);
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px sans-serif';
+                ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = isRight ? 'left' : 'right';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(cat.category, textX, labelY - 7);
-                ctx.font = '11px sans-serif';
+                ctx.font = '11px system-ui, -apple-system, sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
                 ctx.fillText(`${cat.percentage}%`, textX, labelY + 7);
               });
@@ -556,7 +558,7 @@ const Index = () => {
               
               // Table header
               ctx.fillStyle = 'rgba(255,255,255,0.5)';
-              ctx.font = 'bold 13px sans-serif';
+              ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
               ctx.textAlign = 'left';
               ctx.fillText('Revenue Breakdown', tableX, tableY);
               
@@ -572,19 +574,19 @@ const Index = () => {
                 
                 // Category name
                 ctx.fillStyle = '#ffffff';
-                ctx.font = '14px sans-serif';
+                ctx.font = '14px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillText(cat.category, tableX + 25, rowY + 4);
                 
                 // Percentage
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.font = '12px sans-serif';
+                ctx.font = '12px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'right';
                 ctx.fillText(`${cat.percentage}%`, tableX + 300, rowY + 4);
                 
                 // Revenue
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px sans-serif';
+                ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
                 ctx.fillText(`$${cat.revenue.toFixed(0)}`, tableX + 380, rowY + 4);
                 
                 // Divider line
@@ -608,11 +610,11 @@ const Index = () => {
               ctx.stroke();
               
               ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 14px sans-serif';
+              ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
               ctx.textAlign = 'left';
               ctx.fillText('Total Revenue', tableX, totalRowY + 5);
               ctx.fillStyle = 'hsl(210, 70%, 60%)';
-              ctx.font = 'bold 16px sans-serif';
+              ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
               ctx.textAlign = 'right';
               ctx.fillText(`$${total.toFixed(0)}`, tableX + 380, totalRowY + 5);
               
@@ -828,19 +830,23 @@ const Index = () => {
               variant="outline" 
               size="sm" 
               onClick={async () => {
-                // Export as visual bar chart PNG with thumbnails
+                // Export as high-quality visual bar chart PNG with thumbnails (2x scale)
+                const scale = 2;
+                const baseWidth = 750;
+                const baseHeight = 500;
                 const canvas = document.createElement('canvas');
-                canvas.width = 750;
-                canvas.height = 500;
+                canvas.width = baseWidth * scale;
+                canvas.height = baseHeight * scale;
                 const ctx = canvas.getContext('2d')!;
+                ctx.scale(scale, scale);
                 
                 // Background
                 ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillRect(0, 0, baseWidth, baseHeight);
                 
                 // Title
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 24px sans-serif';
+                ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillText('Top Products', 40, 45);
                 
@@ -972,23 +978,27 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={async () => {
-              // Export as visual stacked bar chart PNG with thumbnails
-              const canvas = document.createElement('canvas');
+              // Export as high-quality visual stacked bar chart PNG with thumbnails (2x scale)
+              const scale = 2;
               const itemsToShow = stockValues.slice(0, 10);
-              canvas.width = 850;
-              canvas.height = 120 + itemsToShow.length * 55;
+              const baseWidth = 850;
+              const baseHeight = 120 + itemsToShow.length * 55;
+              const canvas = document.createElement('canvas');
+              canvas.width = baseWidth * scale;
+              canvas.height = baseHeight * scale;
               const ctx = canvas.getContext('2d')!;
+              ctx.scale(scale, scale);
               
               // Background
               ctx.fillStyle = '#1a1a2e';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.fillRect(0, 0, baseWidth, baseHeight);
               
               // Title
               ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 24px sans-serif';
+              ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
               ctx.textAlign = 'left';
               ctx.fillText('Stock Inventory Value', 40, 45);
-              ctx.font = '16px sans-serif';
+              ctx.font = '16px system-ui, -apple-system, sans-serif';
               ctx.fillStyle = 'rgba(255,255,255,0.7)';
               ctx.fillText(`Total: $${totalStockValue.toFixed(2)}`, 40, 75);
               
