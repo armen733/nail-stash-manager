@@ -709,37 +709,37 @@ const Orders = () => {
   // Status tracker component
   const OrderStatusTracker = ({ order }: { order: Order }) => {
     const currentIndex = getStatusIndex(order.status);
+    const displayStatuses = ['Confirmed', 'Shipped', 'Delivered'] as const;
     
     return (
-      <div className="flex items-center gap-1 py-2">
-        {ORDER_STATUSES.slice(0, -1).map((status, idx) => {
-          const isCompleted = idx < currentIndex;
-          const isCurrent = idx === currentIndex;
-          const isClickable = idx <= currentIndex + 1;
+      <div className="flex items-center gap-0.5 py-2 flex-wrap">
+        {displayStatuses.map((status, idx) => {
+          const statusIndex = ORDER_STATUSES.indexOf(status);
+          const isCompleted = statusIndex <= currentIndex;
+          const isCurrent = status === order.status;
           
           return (
-            <div key={status} className="flex items-center">
+            <div key={status} className="flex items-center shrink-0">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (isClickable && status !== order.status) {
+                  if (status !== order.status) {
                     handleUpdateOrderStatus(order.id, status);
                   }
                 }}
-                disabled={!isClickable}
                 className={`
-                  flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all
-                  ${isCompleted ? 'bg-primary/20 text-primary' : ''}
+                  flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all whitespace-nowrap
+                  ${isCompleted && !isCurrent ? 'bg-primary/20 text-primary' : ''}
                   ${isCurrent ? 'bg-primary text-primary-foreground' : ''}
-                  ${!isCompleted && !isCurrent ? 'bg-muted text-muted-foreground' : ''}
-                  ${isClickable && status !== order.status ? 'hover:scale-105 cursor-pointer' : 'cursor-default'}
+                  ${!isCompleted ? 'bg-muted text-muted-foreground hover:bg-muted/80' : ''}
+                  hover:scale-105 cursor-pointer
                 `}
               >
-                {isCompleted && <CheckCircle className="h-3 w-3" />}
-                {status}
+                {isCompleted && !isCurrent && <CheckCircle className="h-3 w-3 shrink-0" />}
+                <span>{status}</span>
               </button>
-              {idx < ORDER_STATUSES.length - 2 && (
-                <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
+              {idx < displayStatuses.length - 1 && (
+                <ChevronRight className="h-3 w-3 text-muted-foreground mx-0.5 shrink-0" />
               )}
             </div>
           );
