@@ -453,8 +453,8 @@ const Index = () => {
                     </span>
                   </div>
                 </div>
-                {/* Donut Chart */}
-                <div className="flex-1 h-[250px]">
+                {/* Donut Chart with outside labels */}
+                <div className="flex-1 h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -463,28 +463,32 @@ const Index = () => {
                         nameKey="category"
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={90}
-                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percentage }) => {
+                        innerRadius={45}
+                        outerRadius={75}
+                        label={({ cx, cy, midAngle, outerRadius, category, percentage }) => {
                           const RADIAN = Math.PI / 180;
-                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const radius = outerRadius + 25;
                           const x = cx + radius * Math.cos(-midAngle * RADIAN);
                           const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                          return percentage >= 5 ? (
+                          const textAnchor = x > cx ? 'start' : 'end';
+                          return (
                             <text
                               x={x}
                               y={y}
-                              fill="white"
-                              textAnchor="middle"
+                              textAnchor={textAnchor}
                               dominantBaseline="central"
-                              className="text-xs font-bold"
-                              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+                              className="text-xs"
+                              fill="hsl(var(--foreground))"
                             >
-                              {`${percentage}%`}
+                              <tspan fontWeight="600">{category}</tspan>
+                              <tspan x={x} dy="1.2em" fill="hsl(var(--muted-foreground))">{percentage}%</tspan>
                             </text>
-                          ) : null;
+                          );
                         }}
-                        labelLine={false}
+                        labelLine={{
+                          stroke: 'hsl(var(--muted-foreground))',
+                          strokeWidth: 1,
+                        }}
                       >
                         {categorySalesData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -492,6 +496,14 @@ const Index = () => {
                       </Pie>
                       <ChartTooltip 
                         formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                      />
+                      <Legend 
+                        layout="horizontal"
+                        verticalAlign="bottom"
+                        align="center"
+                        iconType="circle"
+                        iconSize={8}
+                        formatter={(value) => <span className="text-xs text-foreground">{value}</span>}
                       />
                     </PieChart>
                   </ResponsiveContainer>
