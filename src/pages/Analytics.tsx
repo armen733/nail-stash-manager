@@ -10,7 +10,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
-  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon
+  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare
 } from "lucide-react";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface DailyRevenue {
   date: string;
@@ -62,6 +64,7 @@ const Analytics = () => {
     to: new Date()
   });
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
+  const [showComparison, setShowComparison] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -238,16 +241,51 @@ const Analytics = () => {
     }
   };
 
+  // More vibrant distinct colors for pie chart
   const COLORS = [
-    "hsl(var(--primary))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
-    "#8884d8",
-    "#82ca9d",
-    "#ffc658"
+    "#10B981", // emerald
+    "#3B82F6", // blue
+    "#F59E0B", // amber
+    "#EF4444", // red
+    "#8B5CF6", // violet
+    "#EC4899", // pink
+    "#06B6D4", // cyan
+    "#F97316", // orange
+    "#84CC16", // lime
+    "#6366F1", // indigo
   ];
+
+  // Export analytics to CSV
+  const exportToCSV = () => {
+    const headers = ["Product", "Units Sold", "Revenue", "Profit", "Margin %"];
+    const rows = topProducts.map(p => {
+      const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
+      return [p.name, p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
+    });
+    
+    const csvContent = [
+      `Analytics Report - ${period === "custom" && dateRange?.from ? format(dateRange.from, "MMM dd, yyyy") + " to " + format(dateRange.to || new Date(), "MMM dd, yyyy") : period}`,
+      "",
+      `Total Revenue,$${totalRevenue.toFixed(2)}`,
+      `Total Orders,${totalOrders}`,
+      `Total Profit,$${totalProfit.toFixed(2)}`,
+      `Avg Order Value,$${avgOrderValue.toFixed(2)}`,
+      "",
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `analytics_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    
+    toast({
+      title: "Report Exported",
+      description: "Analytics report has been downloaded as CSV",
+    });
+  };
 
   const totalRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
   const totalOrders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
@@ -263,12 +301,13 @@ const Analytics = () => {
     ? ((totalOrders - previousPeriodStats.orders) / previousPeriodStats.orders) * 100 
     : 0;
 
-  const StatCard = ({ title, value, icon: Icon, change, prefix = "" }: { 
+  const StatCard = ({ title, value, icon: Icon, change, prefix = "", previousValue }: { 
     title: string; 
     value: string | number; 
     icon: any; 
     change?: number;
     prefix?: string;
+    previousValue?: number;
   }) => (
     <Card className="shadow-[var(--shadow-card)]">
       <CardContent className="p-4 sm:p-6">
@@ -276,11 +315,16 @@ const Analytics = () => {
           <div>
             <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
             <p className="text-xl sm:text-2xl font-bold mt-1">{prefix}{value}</p>
-            {change !== undefined && (
+            {showComparison && change !== undefined && (
               <div className={`flex items-center gap-1 mt-1 text-xs ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 <span>{Math.abs(change).toFixed(1)}% vs last period</span>
               </div>
+            )}
+            {showComparison && previousValue !== undefined && (
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Previous: {prefix}{typeof previousValue === 'number' ? previousValue.toFixed(2) : previousValue}
+              </p>
             )}
           </div>
           <div className="p-3 rounded-full bg-primary/10">
@@ -355,6 +399,25 @@ const Analytics = () => {
         </div>
       </div>
 
+      {/* Controls Row */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="comparison"
+            checked={showComparison}
+            onCheckedChange={setShowComparison}
+          />
+          <Label htmlFor="comparison" className="text-sm flex items-center gap-2">
+            <GitCompare className="h-4 w-4" />
+            Period Comparison
+          </Label>
+        </div>
+        <Button variant="outline" onClick={exportToCSV} className="h-10">
+          <Download className="mr-2 h-4 w-4" />
+          Export Report
+        </Button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard 
@@ -363,12 +426,14 @@ const Analytics = () => {
           icon={DollarSign} 
           change={revenueChange}
           prefix="$"
+          previousValue={previousPeriodStats.revenue}
         />
         <StatCard 
           title="Total Orders" 
           value={totalOrders} 
           icon={ShoppingCart} 
           change={ordersChange}
+          previousValue={previousPeriodStats.orders}
         />
         <StatCard 
           title="Avg Order Value" 
@@ -522,7 +587,7 @@ const Analytics = () => {
             </Card>
           </div>
 
-          {/* Product Performance Table */}
+          {/* Product Performance Cards */}
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg">Product Performance</CardTitle>
@@ -533,36 +598,37 @@ const Analytics = () => {
                   {loading ? "Loading..." : "No data available"}
                 </div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <table className="w-full min-w-[500px]">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-3 text-xs font-medium text-muted-foreground">Product</th>
-                        <th className="text-right py-3 px-3 text-xs font-medium text-muted-foreground">Units Sold</th>
-                        <th className="text-right py-3 px-3 text-xs font-medium text-muted-foreground">Revenue</th>
-                        <th className="text-right py-3 px-3 text-xs font-medium text-muted-foreground">Profit</th>
-                        <th className="text-right py-3 px-3 text-xs font-medium text-muted-foreground">Margin</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topProducts.map((product, index) => {
-                        const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
-                        return (
-                          <tr key={index} className="border-b hover:bg-muted/50">
-                            <td className="py-3 px-3 text-sm font-medium max-w-[150px] truncate">{product.name}</td>
-                            <td className="text-right py-3 px-3 text-sm">{product.quantity}</td>
-                            <td className="text-right py-3 px-3 text-sm font-medium">${product.revenue.toFixed(2)}</td>
-                            <td className="text-right py-3 px-3 text-sm text-green-500">${product.profit.toFixed(2)}</td>
-                            <td className="text-right py-3 px-3">
-                              <Badge variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}>
-                                {margin.toFixed(1)}%
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {topProducts.map((product, index) => {
+                    const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+                    return (
+                      <div key={index} className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <p className="font-medium text-sm truncate flex-1">{product.name}</p>
+                          <Badge 
+                            variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}
+                            className="shrink-0"
+                          >
+                            {margin.toFixed(0)}%
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <p className="text-lg font-bold">{product.quantity}</p>
+                            <p className="text-[10px] text-muted-foreground">Units</p>
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold text-primary">${product.revenue.toFixed(0)}</p>
+                            <p className="text-[10px] text-muted-foreground">Revenue</p>
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold text-green-500">${product.profit.toFixed(0)}</p>
+                            <p className="text-[10px] text-muted-foreground">Profit</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
