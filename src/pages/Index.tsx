@@ -466,22 +466,22 @@ const Index = () => {
             onClick={() => {
               // Export as visual donut chart PNG
               const canvas = document.createElement('canvas');
-              const size = 900;
-              const chartRadius = 140;
-              const innerRadius = 80;
+              const size = 800;
+              const chartRadius = 120;
+              const innerRadius = 70;
               canvas.width = size;
-              canvas.height = size + 200; // Extra space for legend
+              canvas.height = size + 250; // Extra space for legend
               const ctx = canvas.getContext('2d')!;
               
               // Background
               ctx.fillStyle = '#1a1a2e';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               
-              const centerX = size / 2 + 100; // Offset chart to right to make room for left labels
-              const centerY = 280;
+              const centerX = size / 2;
+              const centerY = 260;
               const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
               
-              // First pass: draw all slices and collect data
+              // First pass: draw all slices and collect label positions
               let startAngle = -Math.PI / 2;
               const sliceData: { cat: typeof categorySalesData[0]; midAngle: number; edgeX: number; edgeY: number }[] = [];
               
@@ -498,7 +498,7 @@ const Index = () => {
                 ctx.fillStyle = cat.color;
                 ctx.fill();
                 
-                // Calculate edge point for leader line
+                // Calculate edge point for leader line (at the middle of the arc edge)
                 const edgeX = centerX + Math.cos(midAngle) * chartRadius;
                 const edgeY = centerY + Math.sin(midAngle) * chartRadius;
                 
@@ -512,38 +512,64 @@ const Index = () => {
               ctx.fillStyle = '#1a1a2e';
               ctx.fill();
               
-              // Draw labels on left side with horizontal leader lines
-              const labelStartY = 80;
-              const labelSpacing = 55;
-              const labelX = 40;
+              // Calculate label positions with collision avoidance
+              const labelRadius = chartRadius + 60;
+              const minVerticalSpacing = 45;
+              const placedLabels: { x: number; y: number; isRight: boolean }[] = [];
               
-              sliceData.forEach(({ cat, edgeX, edgeY }, idx) => {
-                const labelY = labelStartY + idx * labelSpacing;
+              sliceData.forEach(({ cat, midAngle, edgeX, edgeY }) => {
+                const isRight = Math.cos(midAngle) >= 0;
                 
-                // Measure text width first
-                ctx.font = 'bold 18px sans-serif';
-                const textWidth = ctx.measureText(cat.category).width;
+                // Initial position based on angle
+                let labelX = centerX + Math.cos(midAngle) * labelRadius;
+                let labelY = centerY + Math.sin(midAngle) * labelRadius;
                 
-                // Draw label text
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'left';
-                ctx.fillText(cat.category, labelX, labelY);
-                ctx.font = '16px sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(`${cat.percentage}%`, labelX, labelY + 22);
+                // Collision avoidance: check against already placed labels
+                let collisionFound = true;
+                let attempts = 0;
+                while (collisionFound && attempts < 10) {
+                  collisionFound = false;
+                  for (const placed of placedLabels) {
+                    // Only check labels on same side
+                    if (placed.isRight === isRight) {
+                      const verticalDist = Math.abs(labelY - placed.y);
+                      if (verticalDist < minVerticalSpacing) {
+                        // Push this label down or up to avoid collision
+                        if (labelY >= placed.y) {
+                          labelY = placed.y + minVerticalSpacing;
+                        } else {
+                          labelY = placed.y - minVerticalSpacing;
+                        }
+                        collisionFound = true;
+                      }
+                    }
+                  }
+                  attempts++;
+                }
                 
-                // Draw leader line with proper connection to each slice
-                // Line goes: end of label text -> horizontal to elbow -> angled to slice
-                const lineStartX = labelX + textWidth + 10;
-                const elbowX = lineStartX + 30;
+                placedLabels.push({ x: labelX, y: labelY, isRight });
+                
+                // Draw leader line with elbow
+                const elbowX = isRight 
+                  ? centerX + chartRadius + 25
+                  : centerX - chartRadius - 25;
                 
                 ctx.beginPath();
-                ctx.moveTo(lineStartX, labelY - 5);
-                ctx.lineTo(elbowX, labelY - 5);
-                ctx.lineTo(edgeX, edgeY);
+                ctx.moveTo(edgeX, edgeY);
+                ctx.lineTo(elbowX, labelY);
+                ctx.lineTo(labelX + (isRight ? -5 : 5), labelY);
                 ctx.strokeStyle = 'rgba(255,255,255,0.5)';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
+                
+                // Draw label text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = isRight ? 'left' : 'right';
+                ctx.fillText(cat.category, labelX + (isRight ? 5 : -5), labelY - 5);
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(`${cat.percentage}%`, labelX + (isRight ? 5 : -5), labelY + 14);
               });
               
               // Draw inner circle (donut hole)
