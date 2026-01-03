@@ -10,11 +10,16 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
-  BarChart3, ArrowUpRight, ArrowDownRight, Boxes
+  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon
 } from "lucide-react";
-import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO } from "date-fns";
+import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 interface DailyRevenue {
   date: string;
@@ -51,21 +56,32 @@ const Analytics = () => {
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<"week" | "month" | "quarter">("month");
+  const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom">("month");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: new Date()
+  });
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchAnalytics();
-  }, [period]);
+  }, [period, dateRange]);
 
   const getPeriodDates = () => {
     const now = new Date();
     let periodStart: Date;
+    let periodEnd: Date = now;
     let previousStart: Date;
     let previousEnd: Date;
 
-    if (period === "week") {
+    if (period === "custom" && dateRange?.from) {
+      periodStart = dateRange.from;
+      periodEnd = dateRange.to || now;
+      const daysDiff = differenceInDays(periodEnd, periodStart);
+      previousEnd = subDays(periodStart, 1);
+      previousStart = subDays(previousEnd, daysDiff);
+    } else if (period === "week") {
       periodStart = subDays(now, 7);
       previousEnd = subDays(periodStart, 1);
       previousStart = subDays(previousEnd, 7);
@@ -79,13 +95,13 @@ const Analytics = () => {
       previousStart = subDays(previousEnd, 90);
     }
 
-    return { periodStart, previousStart, previousEnd, now };
+    return { periodStart, periodEnd, previousStart, previousEnd };
   };
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const { periodStart, previousStart, previousEnd, now } = getPeriodDates();
+      const { periodStart, periodEnd, previousStart, previousEnd } = getPeriodDates();
 
       // Fetch current period orders
       const { data: orders, error: ordersError } = await supabase
@@ -98,6 +114,7 @@ const Analytics = () => {
           )
         `)
         .gte("created_at", periodStart.toISOString())
+        .lte("created_at", periodEnd.toISOString())
         .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
 
       if (ordersError) throw ordersError;
@@ -117,7 +134,7 @@ const Analytics = () => {
       setPreviousPeriodStats({ revenue: prevRevenue, orders: prevOrderCount, customers: prevCustomers });
 
       // Calculate daily revenue
-      const days = eachDayOfInterval({ start: periodStart, end: now });
+      const days = eachDayOfInterval({ start: periodStart, end: periodEnd });
       const dailyMap: Record<string, DailyRevenue> = {};
       days.forEach(day => {
         const dateStr = format(day, "MMM dd");
@@ -285,16 +302,57 @@ const Analytics = () => {
             <p className="text-sm text-muted-foreground">Comprehensive business insights</p>
           </div>
         </div>
-        <Select value={period} onValueChange={(value: "week" | "month" | "quarter") => setPeriod(value)}>
-          <SelectTrigger className="w-full sm:w-[180px] h-11">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Last 7 Days</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="quarter">Last Quarter</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select value={period} onValueChange={(value: "week" | "month" | "quarter" | "custom") => setPeriod(value)}>
+            <SelectTrigger className="w-full sm:w-[160px] h-11">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Last 7 Days</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="quarter">Last Quarter</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {period === "custom" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full sm:w-[280px] justify-start text-left font-normal h-11",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
