@@ -456,155 +456,187 @@ const Index = () => {
         ))}
       </div>
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
-        <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Revenue Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
-            ) : (
-              <ChartContainer
-                config={{
-                  revenue: {
-                    label: "Revenue",
-                    color: "hsl(var(--primary))",
-                  },
-                }}
-                className="h-[300px] w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueData}>
-                    <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                    />
-                    <YAxis 
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickFormatter={(value) => `$${value}`}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
+      {/* Sales by Category - FIRST */}
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              const exportData = categorySalesData.map(cat => ({
+                Category: cat.category,
+                Revenue: `$${cat.revenue.toFixed(2)}`,
+                Percentage: `${cat.percentage}%`,
+              }));
+              downloadCSV(exportData, 'sales-by-category');
+              toast({ title: "Success", description: "Sales by category exported" });
+            }}
+            disabled={categorySalesData.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : categorySalesData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                No sales data yet. Complete orders to see category breakdown.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Donut Chart with outside labels */}
+              <div className="w-full min-h-[350px]">
+                <ResponsiveContainer width="100%" height={350}>
+                  <PieChart margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
+                    <Pie
+                      data={categorySalesData}
                       dataKey="revenue"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      fill="url(#revenueGradient)"
-                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 3 }}
-                      activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                      nameKey="category"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      label={({ cx, cy, midAngle, outerRadius, category, percentage }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = outerRadius + 30;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        const textAnchor = x > cx ? 'start' : 'end';
+                        return (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={textAnchor}
+                            dominantBaseline="central"
+                            fontSize={12}
+                            fill="currentColor"
+                          >
+                            <tspan fontWeight="600">{category}</tspan>
+                            <tspan x={x} dy="1.2em" opacity={0.7}>{percentage}%</tspan>
+                          </text>
+                        );
+                      }}
+                      labelLine={{
+                        stroke: 'currentColor',
+                        strokeWidth: 1,
+                        strokeOpacity: 0.3,
+                      }}
+                    >
+                      {categorySalesData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                     />
-                  </AreaChart>
+                  </PieChart>
                 </ResponsiveContainer>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
-            ) : categorySalesData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  No sales data yet. Complete orders to see category breakdown.
-                </p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Donut Chart with outside labels */}
-                <div className="w-full min-h-[350px]">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <PieChart margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
-                      <Pie
-                        data={categorySalesData}
-                        dataKey="revenue"
-                        nameKey="category"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={85}
-                        label={({ cx, cy, midAngle, outerRadius, category, percentage }) => {
-                          const RADIAN = Math.PI / 180;
-                          const radius = outerRadius + 30;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                          const textAnchor = x > cx ? 'start' : 'end';
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              textAnchor={textAnchor}
-                              dominantBaseline="central"
-                              fontSize={12}
-                              fill="currentColor"
-                            >
-                              <tspan fontWeight="600">{category}</tspan>
-                              <tspan x={x} dy="1.2em" opacity={0.7}>{percentage}%</tspan>
-                            </text>
-                          );
-                        }}
-                        labelLine={{
-                          stroke: 'currentColor',
-                          strokeWidth: 1,
-                          strokeOpacity: 0.3,
-                        }}
-                      >
-                        {categorySalesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip 
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+              {/* Table */}
+              <div className="space-y-2">
+                <div className="text-sm font-semibold text-muted-foreground mb-3">Revenue Breakdown</div>
+                {categorySalesData.map((cat, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: cat.color }}
                       />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Table */}
-                <div className="space-y-2">
-                  <div className="text-sm font-semibold text-muted-foreground mb-3">Revenue Breakdown</div>
-                  {categorySalesData.map((cat, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <span className="text-sm font-medium">{cat.category}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{cat.percentage}%</span>
-                        <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
-                      </div>
+                      <span className="text-sm font-medium">{cat.category}</span>
                     </div>
-                  ))}
-                  <div className="flex items-center justify-between py-3 border-t-2 mt-2">
-                    <span className="text-sm font-bold">Total Revenue</span>
-                    <span className="text-sm font-bold text-primary">
-                      ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{cat.percentage}%</span>
+                      <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
+                    </div>
                   </div>
+                ))}
+                <div className="flex items-center justify-between py-3 border-t-2 mt-2">
+                  <span className="text-sm font-bold">Total Revenue</span>
+                  <span className="text-sm font-bold text-primary">
+                    ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
+                  </span>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Revenue Trend - SECOND */}
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base sm:text-lg">Revenue Trend</CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              const exportData = revenueData.map(d => ({
+                Date: d.date,
+                Revenue: `$${d.revenue.toFixed(2)}`,
+              }));
+              downloadCSV(exportData, 'revenue-trend');
+              toast({ title: "Success", description: "Revenue trend exported" });
+            }}
+            disabled={revenueData.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : (
+            <ChartContainer
+              config={{
+                revenue: {
+                  label: "Revenue",
+                  color: "hsl(var(--primary))",
+                },
+              }}
+              className="h-[300px] w-full"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#revenueGradient)"
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
@@ -638,8 +670,25 @@ const Index = () => {
         </Card>
 
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                const exportData = topProducts.map(p => ({
+                  Product: p.product_name,
+                  'Quantity Sold': p.quantity_sold,
+                  Revenue: `$${p.revenue.toFixed(2)}`,
+                }));
+                downloadCSV(exportData, 'top-products');
+                toast({ title: "Success", description: "Top products exported" });
+              }}
+              disabled={topProducts.length === 0}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {loading ? (
@@ -670,13 +719,28 @@ const Index = () => {
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
-          <div className="text-left sm:text-right">
-            <p className="text-sm text-muted-foreground">Total Expected Profit</p>
-            <p className="text-2xl font-bold text-primary">
-              ${loading ? "..." : totalStockValue.toFixed(2)}
-            </p>
+          <div>
+            <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">Total: ${loading ? "..." : totalStockValue.toFixed(2)}</p>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              const exportData = stockValues.map(item => ({
+                Product: item.product_name,
+                'Stock Qty': item.stock,
+                'Unit Price': `$${item.price.toFixed(2)}`,
+                'Total Value': `$${item.value.toFixed(2)}`,
+              }));
+              downloadCSV(exportData, 'stock-inventory');
+              toast({ title: "Success", description: "Stock inventory exported" });
+            }}
+            disabled={stockValues.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {loading ? (
