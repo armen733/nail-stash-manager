@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -451,6 +452,31 @@ const Orders = () => {
   const activeOrders = orders.filter((order) => order.status !== "Delivered" && order.status !== "Paid");
   const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
 
+  // Order status breakdown data for chart
+  const orderStatusData = useMemo(() => {
+    const statusCounts = orders.reduce((acc: Record<string, number>, order) => {
+      const status = order.status || 'Draft';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusConfig: Record<string, { color: string; icon: any }> = {
+      'Draft': { color: 'hsl(45, 85%, 55%)', icon: Clock },
+      'Confirmed': { color: 'hsl(210, 70%, 50%)', icon: Package },
+      'Sent': { color: 'hsl(280, 60%, 55%)', icon: TruckIcon },
+      'Delivered': { color: 'hsl(145, 60%, 45%)', icon: CheckCircle },
+      'Paid': { color: 'hsl(145, 70%, 40%)', icon: CreditCard },
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      status,
+      count,
+      color: statusConfig[status]?.color || 'hsl(var(--muted))',
+      icon: statusConfig[status]?.icon || Package,
+      percentage: orders.length > 0 ? Math.round((count / orders.length) * 100) : 0,
+    }));
+  }, [orders]);
+
   const normalizedSearch = searchTerm.toLowerCase();
   const filterBySalonName = (order: Order) => {
     const name = order.salons?.name || order.customer_name || '';
@@ -882,6 +908,105 @@ const Orders = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Order Status Breakdown */}
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base sm:text-lg">Order Status Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground">No orders yet. Create your first order to see status breakdown.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Status Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
+                {orderStatusData.map((status) => {
+                  const IconComponent = status.icon;
+                  return (
+                    <div 
+                      key={status.status}
+                      className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    >
+                      <div 
+                        className="p-2 rounded-full" 
+                        style={{ backgroundColor: `${status.color}20` }}
+                      >
+                        <IconComponent className="h-4 w-4" style={{ color: status.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xl font-bold">{status.count}</div>
+                        <div className="text-xs text-muted-foreground truncate">{status.status}</div>
+                      </div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {status.percentage}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Donut Chart */}
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={orderStatusData}
+                      dataKey="count"
+                      nameKey="status"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      label={({ cx, cy, midAngle, outerRadius, status, percentage }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = outerRadius + 25;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        return percentage >= 5 ? (
+                          <text
+                            x={x}
+                            y={y}
+                            textAnchor={x > cx ? 'start' : 'end'}
+                            dominantBaseline="central"
+                            fontSize={11}
+                            fill="currentColor"
+                          >
+                            <tspan fontWeight="600">{status}</tspan>
+                            <tspan x={x} dy="1.2em" opacity={0.7}>{percentage}%</tspan>
+                          </text>
+                        ) : null;
+                      }}
+                      labelLine={{
+                        stroke: 'currentColor',
+                        strokeWidth: 1,
+                        strokeOpacity: 0.3,
+                      }}
+                    >
+                      {orderStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [value, name]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
