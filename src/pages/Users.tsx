@@ -243,70 +243,36 @@ export default function Users() {
               ))}
             </div>
           ) : users && users.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[150px]">Name</TableHead>
-                    <TableHead className="min-w-[180px]">Email</TableHead>
-                    <TableHead className="min-w-[100px] hidden sm:table-cell">Phone</TableHead>
-                    <TableHead className="min-w-[80px] text-center">Points</TableHead>
-                    <TableHead className="min-w-[80px] text-center">Tier</TableHead>
-                    <TableHead className="min-w-[100px] hidden md:table-cell">Registered</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => {
-                    const tier = user.user_tiers?.[0];
-                    return (
-                      <TableRow 
-                        key={user.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setSelectedUser(user)}
-                      >
-                        <TableCell className="font-medium py-3">{user.full_name}</TableCell>
-                        <TableCell className="py-3">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate max-w-[130px] sm:max-w-none">{user.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 hidden sm:table-cell">
-                          {user.phone ? (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                              {user.phone}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
+            <div className="space-y-2 p-4 sm:p-0">
+              {users.map((user) => {
+                const tier = user.user_tiers?.[0];
+                return (
+                  <div
+                    key={user.id}
+                    className="p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{user.full_name}</p>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                        <div className="text-center">
+                          <div className="flex items-center gap-1">
                             <Star className="h-3 w-3 text-yellow-500" />
-                            <span className="font-medium">{user.loyalty_points || 0}</span>
+                            <span className="text-sm font-medium">{user.loyalty_points || 0}</span>
                           </div>
-                        </TableCell>
-                        <TableCell className="py-3 text-center">
-                          <Badge variant="secondary" className={getTierColor(tier?.current_tier)}>
-                            {getTierLabel(tier?.current_tier)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 hidden md:table-cell">
-                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <Calendar className="h-4 w-4 flex-shrink-0" />
-                            {format(new Date(user.created_at), "MMM d, yyyy")}
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                        <Badge variant="secondary" className={`text-xs ${getTierColor(tier?.current_tier)}`}>
+                          {getTierLabel(tier?.current_tier)}
+                        </Badge>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
