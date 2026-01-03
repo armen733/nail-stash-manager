@@ -464,13 +464,112 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              const exportData = categorySalesData.map(cat => ({
-                Category: cat.category,
-                Revenue: `$${cat.revenue.toFixed(2)}`,
-                Percentage: `${cat.percentage}%`,
-              }));
-              downloadCSV(exportData, 'sales-by-category');
-              toast({ title: "Success", description: "Sales by category exported" });
+              // Export as visual donut chart PNG
+              const canvas = document.createElement('canvas');
+              const size = 800;
+              const chartRadius = 160;
+              const innerRadius = 90;
+              canvas.width = size;
+              canvas.height = size + 200; // Extra space for legend
+              const ctx = canvas.getContext('2d')!;
+              
+              // Background
+              ctx.fillStyle = '#1a1a2e';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              const centerX = size / 2;
+              const centerY = 280;
+              const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
+              
+              // Draw donut slices with labels
+              let startAngle = -Math.PI / 2;
+              categorySalesData.forEach((cat) => {
+                const sliceAngle = (cat.revenue / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, chartRadius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = cat.color;
+                ctx.fill();
+                
+                // Draw label outside
+                const midAngle = startAngle + sliceAngle / 2;
+                const labelRadius = chartRadius + 50;
+                const labelX = centerX + Math.cos(midAngle) * labelRadius;
+                const labelY = centerY + Math.sin(midAngle) * labelRadius;
+                
+                // Label line
+                const lineStartX = centerX + Math.cos(midAngle) * (chartRadius + 5);
+                const lineStartY = centerY + Math.sin(midAngle) * (chartRadius + 5);
+                ctx.beginPath();
+                ctx.moveTo(lineStartX, lineStartY);
+                ctx.lineTo(labelX, labelY);
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Label text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = labelX > centerX ? 'left' : 'right';
+                ctx.fillText(cat.category, labelX + (labelX > centerX ? 8 : -8), labelY - 8);
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.fillText(`${cat.percentage}%`, labelX + (labelX > centerX ? 8 : -8), labelY + 12);
+                
+                startAngle = endAngle;
+              });
+              
+              // Draw inner circle (donut hole)
+              ctx.beginPath();
+              ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+              ctx.fillStyle = '#1a1a2e';
+              ctx.fill();
+              
+              // Draw legend below chart
+              const legendY = centerY + chartRadius + 100;
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 18px sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Revenue Breakdown', 60, legendY);
+              
+              categorySalesData.forEach((cat, idx) => {
+                const rowY = legendY + 40 + idx * 45;
+                
+                // Color dot
+                ctx.beginPath();
+                ctx.arc(70, rowY - 5, 10, 0, 2 * Math.PI);
+                ctx.fillStyle = cat.color;
+                ctx.fill();
+                
+                // Category name
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(cat.category, 95, rowY);
+                
+                // Percentage
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${cat.percentage}%`, size - 140, rowY);
+                
+                // Revenue
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText(`$${cat.revenue.toFixed(0)}`, size - 60, rowY);
+              });
+              
+              // Download
+              const link = document.createElement('a');
+              link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              
+              toast({ title: "Success", description: "Sales by category chart exported as image" });
             }}
             disabled={categorySalesData.length === 0}
           >
