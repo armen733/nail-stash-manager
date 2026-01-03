@@ -122,12 +122,13 @@ const Index = () => {
         : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
       // Fetch all stats in parallel
-      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes] = await Promise.all([
+      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes] = await Promise.all([
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("product_id, quantity, line_total, products(name, category, image_url)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
+        supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -135,6 +136,14 @@ const Index = () => {
       if (productsRes.error) throw productsRes.error;
       if (orderItemsRes.error) throw orderItemsRes.error;
       if (stockRes.error) throw stockRes.error;
+      
+      // Create a map of product_id -> first image from product_images table
+      const productImagesMap: Record<string, string> = {};
+      (productImagesRes.data || []).forEach((img: any) => {
+        if (!productImagesMap[img.product_id]) {
+          productImagesMap[img.product_id] = img.image_url;
+        }
+      });
 
       const orders = ordersRes.data || [];
       const periodOrders = orders.filter(o => new Date(o.created_at) >= new Date(periodStart));
@@ -173,12 +182,13 @@ const Index = () => {
       setTopSalons(topSalonsData);
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { quantity: number; revenue: number; name: string; image_url?: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
-        const productImage = item.products?.image_url;
+        // Use products.image_url first, fallback to product_images table
+        const productImage = item.products?.image_url || productImagesMap[productId];
         if (!acc[productId]) {
-          acc[productId] = { quantity: 0, revenue: 0, name: productName, image_url: productImage };
+          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
         acc[productId].revenue += item.line_total || 0;
@@ -204,7 +214,8 @@ const Index = () => {
           stock: p.stock_on_hand,
           price: p.price_usd,
           value: p.stock_on_hand * p.price_usd,
-          image_url: p.image_url,
+          // Use products.image_url first, fallback to product_images table
+          image_url: p.image_url || productImagesMap[p.id],
         }))
         .sort((a, b) => b.value - a.value);
       
