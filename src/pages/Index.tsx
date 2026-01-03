@@ -859,23 +859,34 @@ const Index = () => {
                 const chartStartX = 260;
                 const thumbSize = 40;
                 
-                // Load all product images using Image with crossOrigin (Supabase storage supports CORS)
+                // Load image with timeout to ensure it loads
                 const loadImage = (url: string): Promise<HTMLImageElement | null> => {
                   return new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img);
-                    img.onerror = () => resolve(null);
-                    // Add cache buster to avoid stale responses
-                    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
+                    img.onload = () => {
+                      clearTimeout(timeout);
+                      resolve(img);
+                    };
+                    img.onerror = () => {
+                      clearTimeout(timeout);
+                      resolve(null);
+                    };
+                    img.src = url;
                   });
                 };
                 
-                const images = await Promise.all(
-                  topProducts.map(product => 
-                    product.image_url ? loadImage(product.image_url) : Promise.resolve(null)
-                  )
-                );
+                // Load all images with a small delay between each to avoid race conditions
+                const images: (HTMLImageElement | null)[] = [];
+                for (const product of topProducts) {
+                  if (product.image_url) {
+                    const img = await loadImage(product.image_url);
+                    images.push(img);
+                  } else {
+                    images.push(null);
+                  }
+                }
                 
                 
                 topProducts.forEach((product, idx) => {
@@ -1011,23 +1022,34 @@ const Index = () => {
               const chartStartX = 280;
               const thumbSize = 34;
               
-              // Load all product images using Image with crossOrigin (Supabase storage supports CORS)
+              // Load image with timeout to ensure it loads
               const loadImage = (url: string): Promise<HTMLImageElement | null> => {
                 return new Promise((resolve) => {
                   const img = new Image();
                   img.crossOrigin = 'anonymous';
-                  img.onload = () => resolve(img);
-                  img.onerror = () => resolve(null);
-                  // Add cache buster to avoid stale responses
-                  img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                  const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
+                  img.onload = () => {
+                    clearTimeout(timeout);
+                    resolve(img);
+                  };
+                  img.onerror = () => {
+                    clearTimeout(timeout);
+                    resolve(null);
+                  };
+                  img.src = url;
                 });
               };
               
-              const images = await Promise.all(
-                itemsToShow.map(item => 
-                  item.image_url ? loadImage(item.image_url) : Promise.resolve(null)
-                )
-              );
+              // Load all images sequentially to avoid race conditions
+              const images: (HTMLImageElement | null)[] = [];
+              for (const item of itemsToShow) {
+                if (item.image_url) {
+                  const img = await loadImage(item.image_url);
+                  images.push(img);
+                } else {
+                  images.push(null);
+                }
+              }
               
               itemsToShow.forEach((item, idx) => {
                 const y = chartStartY + idx * (barHeight + barGap);
