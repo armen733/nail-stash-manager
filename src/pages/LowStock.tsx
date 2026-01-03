@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Package, Edit, RefreshCw } from "lucide-react";
+import { AlertTriangle, Package, Edit, RefreshCw, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LazyImage } from "@/components/ui/lazy-image";
 
 interface LowStockProduct {
   id: string;
@@ -26,6 +34,10 @@ interface LowStockProduct {
   price_usd: number;
   supplier: string | null;
   variant_name: string | null;
+  image_url: string | null;
+  grit: string | null;
+  material: string | null;
+  shape: string | null;
 }
 
 const LowStock = () => {
@@ -33,6 +45,8 @@ const LowStock = () => {
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<LowStockProduct | null>(null);
   const [newStock, setNewStock] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [variantFilter, setVariantFilter] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,7 +58,7 @@ const LowStock = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name")
+        .select("id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape")
         .order("stock_on_hand", { ascending: true });
 
       if (error) throw error;
@@ -100,6 +114,23 @@ const LowStock = () => {
     return { label: "Low", variant: "secondary" as const };
   };
 
+  // Get unique categories and variant types
+  const categories = [...new Set(products.map(p => p.category))].sort();
+  const variantTypes = [...new Set(products.flatMap(p => 
+    [p.grit, p.material, p.shape, p.variant_name].filter(Boolean)
+  ))].sort();
+
+  // Filter products
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+    const matchesVariant = variantFilter === "all" || 
+      product.grit === variantFilter || 
+      product.material === variantFilter || 
+      product.shape === variantFilter ||
+      product.variant_name === variantFilter;
+    return matchesCategory && matchesVariant;
+  });
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -109,7 +140,7 @@ const LowStock = () => {
             <span className="truncate">Low Stock Management</span>
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Products that need reordering ({products.length})
+            Products that need reordering ({filteredProducts.length} of {products.length})
           </p>
         </div>
         <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto">
@@ -117,6 +148,48 @@ const LowStock = () => {
           Refresh
         </Button>
       </div>
+
+      {/* Filters */}
+      {products.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Filter:</span>
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] h-10">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={variantFilter} onValueChange={setVariantFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] h-10">
+              <SelectValue placeholder="Variant Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Variants</SelectItem>
+              {variantTypes.map(v => (
+                <SelectItem key={v} value={v as string}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(categoryFilter !== "all" || variantFilter !== "all") && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { setCategoryFilter("all"); setVariantFilter("all"); }}
+              className="h-10"
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <Card>
@@ -136,29 +209,53 @@ const LowStock = () => {
             </div>
           </CardContent>
         </Card>
+      ) : filteredProducts.length === 0 ? (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-muted-foreground">
+              No products match the selected filters.
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4">
-          {products.map((product) => {
+          {filteredProducts.map((product) => {
             const status = getStockStatus(product.stock_on_hand);
             return (
               <Card key={product.id} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
                 <CardHeader className="pb-3 p-4 sm:p-6 sm:pb-3">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">
-                        <span className="truncate">{product.name}</span>
-                        {product.variant_name && (
-                          <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                            ({product.variant_name})
-                          </span>
+                    <div className="flex gap-3 flex-1 min-w-0">
+                      {/* Product Thumbnail */}
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {product.image_url ? (
+                          <LazyImage
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground/50" />
+                          </div>
                         )}
-                      </CardTitle>
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">{product.category}</Badge>
-                        <Badge variant="outline" className="text-xs">SKU: {product.sku}</Badge>
-                        {product.supplier && (
-                          <Badge variant="outline" className="text-xs">{product.supplier}</Badge>
-                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">
+                          <span className="truncate">{product.name}</span>
+                          {product.variant_name && (
+                            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+                              ({product.variant_name})
+                            </span>
+                          )}
+                        </CardTitle>
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">{product.category}</Badge>
+                          <Badge variant="outline" className="text-xs">SKU: {product.sku}</Badge>
+                          {product.supplier && (
+                            <Badge variant="outline" className="text-xs">{product.supplier}</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Badge variant={status.variant} className="self-start flex-shrink-0">{status.label}</Badge>
