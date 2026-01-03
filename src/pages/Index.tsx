@@ -513,53 +513,35 @@ const Index = () => {
               ctx.fill();
               
               // Calculate label positions with collision avoidance
-              const labelRadius = chartRadius + 60;
-              const minVerticalSpacing = 45;
-              const placedLabels: { x: number; y: number; isRight: boolean }[] = [];
+              const labelRadius = chartRadius + 80;
+              const minVerticalSpacing = 50;
+              const placedLabels: { y: number; isRight: boolean }[] = [];
               
               sliceData.forEach(({ cat, midAngle, edgeX, edgeY }) => {
                 const isRight = Math.cos(midAngle) >= 0;
                 
-                // Initial position based on angle
-                let labelX = centerX + Math.cos(midAngle) * labelRadius;
-                let labelY = centerY + Math.sin(midAngle) * labelRadius;
+                // Position label further out from the slice
+                let labelX = isRight ? centerX + labelRadius + 60 : centerX - labelRadius - 60;
+                let labelY = centerY + Math.sin(midAngle) * (chartRadius + 40);
                 
-                // Collision avoidance: check against already placed labels
-                let collisionFound = true;
-                let attempts = 0;
-                while (collisionFound && attempts < 10) {
-                  collisionFound = false;
-                  for (const placed of placedLabels) {
-                    // Only check labels on same side
-                    if (placed.isRight === isRight) {
-                      const verticalDist = Math.abs(labelY - placed.y);
-                      if (verticalDist < minVerticalSpacing) {
-                        // Push this label down or up to avoid collision
-                        if (labelY >= placed.y) {
-                          labelY = placed.y + minVerticalSpacing;
-                        } else {
-                          labelY = placed.y - minVerticalSpacing;
-                        }
-                        collisionFound = true;
-                      }
+                // Collision avoidance: push labels apart vertically on same side
+                for (const placed of placedLabels) {
+                  if (placed.isRight === isRight) {
+                    const verticalDist = Math.abs(labelY - placed.y);
+                    if (verticalDist < minVerticalSpacing) {
+                      labelY = placed.y + (labelY >= placed.y ? minVerticalSpacing : -minVerticalSpacing);
                     }
                   }
-                  attempts++;
                 }
                 
-                placedLabels.push({ x: labelX, y: labelY, isRight });
+                placedLabels.push({ y: labelY, isRight });
                 
-                // Draw leader line with elbow
-                const elbowX = isRight 
-                  ? centerX + chartRadius + 25
-                  : centerX - chartRadius - 25;
-                
+                // Simple straight line from slice edge to label
                 ctx.beginPath();
                 ctx.moveTo(edgeX, edgeY);
-                ctx.lineTo(elbowX, labelY);
                 ctx.lineTo(labelX + (isRight ? -5 : 5), labelY);
-                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1;
                 ctx.stroke();
                 
                 // Draw label text
