@@ -755,20 +755,15 @@ const Orders = () => {
 
   return (
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Track and manage orders</p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-11 min-h-[44px] px-4 text-sm">
-                <Plus className="mr-2 h-4 w-4" />
-                <span className="hidden xs:inline">Create </span>Order
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Order</DialogTitle>
             </DialogHeader>
@@ -1013,9 +1008,7 @@ const Orders = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+      </Dialog>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1263,6 +1256,10 @@ const Orders = () => {
                 className="pl-10 h-11 min-h-[44px]"
               />
             </div>
+            <Button className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Order
+            </Button>
             {selectedOrders.size > 0 && (
               <Button 
                 variant="default" 
