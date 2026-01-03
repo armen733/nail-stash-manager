@@ -464,13 +464,13 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Export as visual donut chart PNG
+              // Export as visual donut chart PNG - matching app style
               const canvas = document.createElement('canvas');
               const size = 800;
-              const chartRadius = 120;
-              const innerRadius = 70;
+              const chartRadius = 130;
+              const innerRadius = 75;
               canvas.width = size;
-              canvas.height = size + 250; // Extra space for legend
+              canvas.height = size + 250;
               const ctx = canvas.getContext('2d')!;
               
               // Background
@@ -478,19 +478,18 @@ const Index = () => {
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               
               const centerX = size / 2;
-              const centerY = 260;
+              const centerY = 240;
               const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
               
-              // First pass: draw all slices and collect label positions
+              // Draw all slices
               let startAngle = -Math.PI / 2;
-              const sliceData: { cat: typeof categorySalesData[0]; midAngle: number; edgeX: number; edgeY: number }[] = [];
+              const sliceData: { cat: typeof categorySalesData[0]; midAngle: number }[] = [];
               
               categorySalesData.forEach((cat) => {
                 const sliceAngle = (cat.revenue / total) * 2 * Math.PI;
                 const endAngle = startAngle + sliceAngle;
                 const midAngle = startAngle + sliceAngle / 2;
                 
-                // Draw slice
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
                 ctx.arc(centerX, centerY, chartRadius, startAngle, endAngle);
@@ -498,11 +497,7 @@ const Index = () => {
                 ctx.fillStyle = cat.color;
                 ctx.fill();
                 
-                // Calculate edge point for leader line (at the middle of the arc edge)
-                const edgeX = centerX + Math.cos(midAngle) * chartRadius;
-                const edgeY = centerY + Math.sin(midAngle) * chartRadius;
-                
-                sliceData.push({ cat, midAngle, edgeX, edgeY });
+                sliceData.push({ cat, midAngle });
                 startAngle = endAngle;
               });
               
@@ -512,46 +507,34 @@ const Index = () => {
               ctx.fillStyle = '#1a1a2e';
               ctx.fill();
               
-              // Calculate label positions with collision avoidance
-              const labelRadius = chartRadius + 80;
-              const minVerticalSpacing = 50;
-              const placedLabels: { y: number; isRight: boolean }[] = [];
+              // Draw labels radially around chart (matching app style)
+              const labelRadius = chartRadius + 35;
               
-              sliceData.forEach(({ cat, midAngle, edgeX, edgeY }) => {
-                const isRight = Math.cos(midAngle) >= 0;
+              sliceData.forEach(({ cat, midAngle }) => {
+                const labelX = centerX + Math.cos(midAngle) * labelRadius;
+                const labelY = centerY + Math.sin(midAngle) * labelRadius;
+                const edgeX = centerX + Math.cos(midAngle) * (chartRadius + 5);
+                const edgeY = centerY + Math.sin(midAngle) * (chartRadius + 5);
+                const isRight = labelX > centerX;
                 
-                // Position label further out from the slice
-                let labelX = isRight ? centerX + labelRadius + 60 : centerX - labelRadius - 60;
-                let labelY = centerY + Math.sin(midAngle) * (chartRadius + 40);
-                
-                // Collision avoidance: push labels apart vertically on same side
-                for (const placed of placedLabels) {
-                  if (placed.isRight === isRight) {
-                    const verticalDist = Math.abs(labelY - placed.y);
-                    if (verticalDist < minVerticalSpacing) {
-                      labelY = placed.y + (labelY >= placed.y ? minVerticalSpacing : -minVerticalSpacing);
-                    }
-                  }
-                }
-                
-                placedLabels.push({ y: labelY, isRight });
-                
-                // Simple straight line from slice edge to label
+                // Short connector line
                 ctx.beginPath();
                 ctx.moveTo(edgeX, edgeY);
-                ctx.lineTo(labelX + (isRight ? -5 : 5), labelY);
-                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineTo(labelX, labelY);
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 
-                // Draw label text
+                // Label text positioned at end of line
+                const textX = labelX + (isRight ? 8 : -8);
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 16px sans-serif';
+                ctx.font = 'bold 14px sans-serif';
                 ctx.textAlign = isRight ? 'left' : 'right';
-                ctx.fillText(cat.category, labelX + (isRight ? 5 : -5), labelY - 5);
-                ctx.font = '14px sans-serif';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(cat.category, textX, labelY - 8);
+                ctx.font = '12px sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(`${cat.percentage}%`, labelX + (isRight ? 5 : -5), labelY + 14);
+                ctx.fillText(`${cat.percentage}%`, textX, labelY + 8);
               });
               
               // Draw inner circle (donut hole)
