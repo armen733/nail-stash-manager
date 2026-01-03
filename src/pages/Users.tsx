@@ -45,6 +45,12 @@ interface Order {
   status: string;
   total: number;
   customer_name: string | null;
+  order_items?: {
+    id: string;
+    quantity: number;
+    unit_price: number;
+    products: { name: string } | null;
+  }[];
 }
 
 export default function Users() {
@@ -89,17 +95,19 @@ export default function Users() {
   });
 
   const { data: userOrders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["user-orders", selectedUser?.id],
+    queryKey: ["user-orders", selectedUser?.id, selectedUser?.email],
     queryFn: async () => {
       if (!selectedUser) return [];
+      
+      // Fetch orders by profile_id OR by customer_email (for guest orders)
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_date, status, total, customer_name")
-        .eq("profile_id", selectedUser.id)
+        .select("id, order_date, status, total, customer_name, order_items(id, quantity, unit_price, products(name))")
+        .or(`profile_id.eq.${selectedUser.id},customer_email.eq.${selectedUser.email}`)
         .order("order_date", { ascending: false });
       
       if (error) throw error;
-      return data as Order[];
+      return data || [];
     },
     enabled: !!selectedUser,
   });
@@ -378,35 +386,50 @@ export default function Users() {
                     ))}
                   </div>
                 ) : userOrders && userOrders.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                     {userOrders.map((order) => (
                       <div 
                         key={order.id} 
-                        className="p-3 rounded-lg border bg-card flex justify-between items-center"
+                        className="p-3 rounded-lg border bg-card"
                       >
-                        <div>
-                          <p className="font-medium text-sm">
-                            #{order.id.slice(0, 8).toUpperCase()}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(order.order_date), "MMM d, yyyy")}
-                          </p>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-sm">
+                              #{order.id.slice(0, 8).toUpperCase()}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(order.order_date), "MMM d, yyyy")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-primary">${order.total.toFixed(2)}</p>
+                            <Badge 
+                              variant="secondary" 
+                              className={
+                                order.status === 'Delivered' || order.status === 'Paid' 
+                                  ? 'bg-green-500/20 text-green-600' 
+                                  : order.status === 'Shipped'
+                                    ? 'bg-purple-500/20 text-purple-600'
+                                    : 'bg-blue-500/20 text-blue-600'
+                              }
+                            >
+                              {order.status}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-primary">${order.total.toFixed(2)}</p>
-                          <Badge 
-                            variant="secondary" 
-                            className={
-                              order.status === 'Delivered' || order.status === 'Paid' 
-                                ? 'bg-green-500/20 text-green-600' 
-                                : order.status === 'Shipped'
-                                  ? 'bg-purple-500/20 text-purple-600'
-                                  : 'bg-blue-500/20 text-blue-600'
-                            }
-                          >
-                            {order.status}
-                          </Badge>
-                        </div>
+                        {order.order_items && order.order_items.length > 0 && (
+                          <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                            {order.order_items.slice(0, 3).map((item, idx) => (
+                              <span key={item.id}>
+                                {item.products?.name} ×{item.quantity}
+                                {idx < Math.min(order.order_items!.length, 3) - 1 && ", "}
+                              </span>
+                            ))}
+                            {order.order_items.length > 3 && (
+                              <span> +{order.order_items.length - 3} more</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
