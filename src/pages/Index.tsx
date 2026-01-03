@@ -469,22 +469,29 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Export as visual donut chart PNG - matching app style
+              // Export as visual donut chart PNG - matching app layout (chart + table side by side)
               const canvas = document.createElement('canvas');
-              const size = 800;
-              const chartRadius = 130;
-              const innerRadius = 75;
-              canvas.width = size;
-              canvas.height = size + 250;
+              canvas.width = 900;
+              canvas.height = 450;
               const ctx = canvas.getContext('2d')!;
               
               // Background
               ctx.fillStyle = '#1a1a2e';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
               
-              const centerX = size / 2;
-              const centerY = 240;
+              // Title
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 24px sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Sales by Category', 40, 45);
+              
               const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
+              
+              // === LEFT SIDE: Donut Chart ===
+              const chartCenterX = 220;
+              const chartCenterY = 250;
+              const chartRadius = 120;
+              const innerRadius = 60;
               
               // Draw all slices
               let startAngle = -Math.PI / 2;
@@ -496,8 +503,8 @@ const Index = () => {
                 const midAngle = startAngle + sliceAngle / 2;
                 
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, chartRadius, startAngle, endAngle);
+                ctx.moveTo(chartCenterX, chartCenterY);
+                ctx.arc(chartCenterX, chartCenterY, chartRadius, startAngle, endAngle);
                 ctx.closePath();
                 ctx.fillStyle = cat.color;
                 ctx.fill();
@@ -508,19 +515,19 @@ const Index = () => {
               
               // Draw inner circle (donut hole)
               ctx.beginPath();
-              ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+              ctx.arc(chartCenterX, chartCenterY, innerRadius, 0, 2 * Math.PI);
               ctx.fillStyle = '#1a1a2e';
               ctx.fill();
               
-              // Draw labels radially around chart (matching app style)
-              const labelRadius = chartRadius + 35;
+              // Draw labels radially around chart
+              const labelRadius = chartRadius + 30;
               
               sliceData.forEach(({ cat, midAngle }) => {
-                const labelX = centerX + Math.cos(midAngle) * labelRadius;
-                const labelY = centerY + Math.sin(midAngle) * labelRadius;
-                const edgeX = centerX + Math.cos(midAngle) * (chartRadius + 5);
-                const edgeY = centerY + Math.sin(midAngle) * (chartRadius + 5);
-                const isRight = labelX > centerX;
+                const labelX = chartCenterX + Math.cos(midAngle) * labelRadius;
+                const labelY = chartCenterY + Math.sin(midAngle) * labelRadius;
+                const edgeX = chartCenterX + Math.cos(midAngle) * (chartRadius + 5);
+                const edgeY = chartCenterY + Math.sin(midAngle) * (chartRadius + 5);
+                const isRight = labelX > chartCenterX;
                 
                 // Short connector line
                 ctx.beginPath();
@@ -530,57 +537,84 @@ const Index = () => {
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 
-                // Label text positioned at end of line
+                // Label text
                 const textX = labelX + (isRight ? 8 : -8);
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.textAlign = isRight ? 'left' : 'right';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(cat.category, textX, labelY - 8);
-                ctx.font = '12px sans-serif';
+                ctx.fillText(cat.category, textX, labelY - 7);
+                ctx.font = '11px sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(`${cat.percentage}%`, textX, labelY + 8);
+                ctx.fillText(`${cat.percentage}%`, textX, labelY + 7);
               });
               
-              // Draw inner circle (donut hole)
-              ctx.beginPath();
-              ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
-              ctx.fillStyle = '#1a1a2e';
-              ctx.fill();
+              // === RIGHT SIDE: Table ===
+              const tableX = 460;
+              const tableY = 90;
+              const rowHeight = 42;
               
-              // Draw legend below chart
-              const legendY = centerY + chartRadius + 100;
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 18px sans-serif';
+              // Table header
+              ctx.fillStyle = 'rgba(255,255,255,0.5)';
+              ctx.font = 'bold 13px sans-serif';
               ctx.textAlign = 'left';
-              ctx.fillText('Revenue Breakdown', 60, legendY);
+              ctx.fillText('Revenue Breakdown', tableX, tableY);
               
+              // Table rows
               categorySalesData.forEach((cat, idx) => {
-                const rowY = legendY + 40 + idx * 45;
+                const rowY = tableY + 35 + idx * rowHeight;
                 
                 // Color dot
                 ctx.beginPath();
-                ctx.arc(70, rowY - 5, 10, 0, 2 * Math.PI);
+                ctx.arc(tableX + 8, rowY, 6, 0, 2 * Math.PI);
                 ctx.fillStyle = cat.color;
                 ctx.fill();
                 
                 // Category name
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 16px sans-serif';
+                ctx.font = '14px sans-serif';
                 ctx.textAlign = 'left';
-                ctx.fillText(cat.category, 95, rowY);
+                ctx.fillText(cat.category, tableX + 25, rowY + 4);
                 
                 // Percentage
-                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                ctx.font = '14px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.font = '12px sans-serif';
                 ctx.textAlign = 'right';
-                ctx.fillText(`${cat.percentage}%`, size - 140, rowY);
+                ctx.fillText(`${cat.percentage}%`, tableX + 300, rowY + 4);
                 
                 // Revenue
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 16px sans-serif';
-                ctx.fillText(`$${cat.revenue.toFixed(0)}`, size - 60, rowY);
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(`$${cat.revenue.toFixed(0)}`, tableX + 380, rowY + 4);
+                
+                // Divider line
+                if (idx < categorySalesData.length - 1) {
+                  ctx.beginPath();
+                  ctx.moveTo(tableX, rowY + rowHeight / 2 + 5);
+                  ctx.lineTo(tableX + 390, rowY + rowHeight / 2 + 5);
+                  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                  ctx.lineWidth = 1;
+                  ctx.stroke();
+                }
               });
+              
+              // Total row
+              const totalRowY = tableY + 35 + categorySalesData.length * rowHeight + 10;
+              ctx.beginPath();
+              ctx.moveTo(tableX, totalRowY - 15);
+              ctx.lineTo(tableX + 390, totalRowY - 15);
+              ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+              
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 14px sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Total Revenue', tableX, totalRowY + 5);
+              ctx.fillStyle = 'hsl(210, 70%, 60%)';
+              ctx.font = 'bold 16px sans-serif';
+              ctx.textAlign = 'right';
+              ctx.fillText(`$${total.toFixed(0)}`, tableX + 380, totalRowY + 5);
               
               // Download
               const link = document.createElement('a');
