@@ -120,7 +120,46 @@ const Index = () => {
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const { toast } = useToast();
+
+  // Custom active shape for pie chart hover effect
+  const renderActiveShape = (props: any) => {
+    const {
+      cx, cy, innerRadius, outerRadius, startAngle, endAngle,
+      fill, payload, percent, value
+    } = props;
+    
+    return (
+      <g>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius - 4}
+          outerRadius={outerRadius + 10}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+          style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))', transition: 'all 0.3s ease' }}
+        />
+        <Sector
+          cx={cx}
+          cy={cy}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          innerRadius={outerRadius + 14}
+          outerRadius={outerRadius + 18}
+          fill={fill}
+        />
+        <text x={cx} y={cy - 8} textAnchor="middle" fill="currentColor" className="text-sm font-semibold">
+          {payload.category}
+        </text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill="currentColor" className="text-xs opacity-70">
+          ${value.toFixed(0)} ({(percent * 100).toFixed(0)}%)
+        </text>
+      </g>
+    );
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -582,13 +621,23 @@ const Index = () => {
                       innerRadius={60}
                       outerRadius={100}
                       paddingAngle={2}
-                      label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
+                      activeIndex={activeIndex}
+                      activeShape={renderActiveShape}
+                      onMouseEnter={(_, index) => setActiveIndex(index)}
+                      onMouseLeave={() => setActiveIndex(undefined)}
                       onClick={(data) => handleCategoryClick(data.category)}
                       style={{ cursor: 'pointer' }}
                     >
                       {categorySalesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} style={{ cursor: 'pointer' }} />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color} 
+                          style={{ 
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            opacity: activeIndex !== undefined && activeIndex !== index ? 0.6 : 1
+                          }} 
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
