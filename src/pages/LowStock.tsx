@@ -70,15 +70,25 @@ const LowStock = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape")
+        .select(`
+          id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape,
+          product_images(image_url, display_order)
+        `)
         .order("stock_on_hand", { ascending: true });
 
       if (error) throw error;
 
-      // Filter products where stock is at or below reorder level
-      const lowStock = (data || []).filter(
-        (p) => p.stock_on_hand <= p.reorder_level
-      );
+      // Filter products where stock is at or below reorder level and get first image
+      const lowStock = (data || [])
+        .filter((p) => p.stock_on_hand <= p.reorder_level)
+        .map((p) => {
+          // Use product.image_url first, fallback to first product_image
+          const firstImage = p.product_images?.sort((a: any, b: any) => a.display_order - b.display_order)[0];
+          return {
+            ...p,
+            image_url: p.image_url || firstImage?.image_url || null
+          };
+        });
 
       setProducts(lowStock);
     } catch (error: any) {
