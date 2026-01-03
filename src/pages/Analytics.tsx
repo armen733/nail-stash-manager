@@ -10,7 +10,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
-  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText
+  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight
 } from "lucide-react";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,18 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
+interface CategoryProduct {
+  id: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+  image_url?: string;
+}
 
 interface DailyRevenue {
   date: string;
@@ -72,6 +82,9 @@ const Analytics = () => {
   });
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const [showComparison, setShowComparison] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -287,6 +300,53 @@ const Analytics = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle category click for drill-down
+  const handleCategoryClick = async (category: string) => {
+    setSelectedCategory(category);
+    setLoadingProducts(true);
+    
+    try {
+      const { data: orderItems, error } = await supabase
+        .from("order_items")
+        .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+        .eq("products.category", category);
+      
+      if (error) throw error;
+      
+      const productMap: Record<string, CategoryProduct> = {};
+      
+      (orderItems || []).forEach((item: any) => {
+        if (!item.products || item.products.category !== category) return;
+        
+        const productId = item.product_id;
+        if (!productMap[productId]) {
+          productMap[productId] = {
+            id: productId,
+            name: item.products.name,
+            quantity: 0,
+            revenue: 0,
+            image_url: item.products.image_url,
+          };
+        }
+        productMap[productId].quantity += item.quantity || 0;
+        productMap[productId].revenue += item.line_total || 0;
+      });
+      
+      const products = Object.values(productMap)
+        .sort((a, b) => b.revenue - a.revenue);
+      
+      setCategoryProducts(products);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
@@ -866,10 +926,13 @@ const Analytics = () => {
         {/* Sales Tab */}
         <TabsContent value="sales" className="mt-4 space-y-4">
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-            {/* Category Sales Pie */}
+            {/* Category Sales Pie - Clickable */}
             <Card className="shadow-[var(--shadow-card)]">
               <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
+                <CardTitle className="text-base sm:text-lg">
+                  Sales by Category
+                  <span className="text-xs font-normal text-muted-foreground ml-2">(Click to drill down)</span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                 {loading || categorySales.length === 0 ? (
@@ -891,9 +954,11 @@ const Analytics = () => {
                           paddingAngle={2}
                           label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
                           labelLine={false}
+                          onClick={(data) => handleCategoryClick(data.category)}
+                          style={{ cursor: 'pointer' }}
                         >
                           {categorySales.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ cursor: 'pointer' }} />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
@@ -1174,6 +1239,68 @@ const Analytics = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* Category Drill-Down Sheet */}
+      <Sheet open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {selectedCategory} Products
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-120px)] mt-4">
+            {loadingProducts ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : categoryProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No products found in this category</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground pb-2 border-b">
+                  <span>{categoryProducts.length} products</span>
+                  <span>
+                    Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}
+                  </span>
+                </div>
+                {categoryProducts.map((product, index) => (
+                  <div 
+                    key={product.id} 
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center">
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.quantity} units sold
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        #{index + 1}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
