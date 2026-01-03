@@ -29,6 +29,7 @@ interface TopProduct {
   product_name: string;
   quantity_sold: number;
   revenue: number;
+  image_url?: string;
 }
 
 interface StockValue {
@@ -36,6 +37,7 @@ interface StockValue {
   stock: number;
   price: number;
   value: number;
+  image_url?: string;
 }
 
 interface LowStockProduct {
@@ -124,8 +126,8 @@ const Index = () => {
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("product_id, quantity, line_total, products(name, category)"),
-        supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level"),
+        supabase.from("order_items").select("product_id, quantity, line_total, products(name, category, image_url)"),
+        supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -171,11 +173,12 @@ const Index = () => {
       setTopSalons(topSalonsData);
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { quantity: number; revenue: number; name: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { quantity: number; revenue: number; name: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
+        const productImage = item.products?.image_url;
         if (!acc[productId]) {
-          acc[productId] = { quantity: 0, revenue: 0, name: productName };
+          acc[productId] = { quantity: 0, revenue: 0, name: productName, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
         acc[productId].revenue += item.line_total || 0;
@@ -189,6 +192,7 @@ const Index = () => {
           product_name: p.name,
           quantity_sold: p.quantity,
           revenue: p.revenue,
+          image_url: p.image_url,
         }));
       setTopProducts(topProductsData);
 
@@ -200,6 +204,7 @@ const Index = () => {
           stock: p.stock_on_hand,
           price: p.price_usd,
           value: p.stock_on_hand * p.price_usd,
+          image_url: p.image_url,
         }))
         .sort((a, b) => b.value - a.value);
       
@@ -788,10 +793,10 @@ const Index = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => {
-                // Export as visual bar chart PNG
+              onClick={async () => {
+                // Export as visual bar chart PNG with thumbnails
                 const canvas = document.createElement('canvas');
-                canvas.width = 700;
+                canvas.width = 750;
                 canvas.height = 500;
                 const ctx = canvas.getContext('2d')!;
                 
@@ -810,18 +815,59 @@ const Index = () => {
                 const barHeight = 50;
                 const barGap = 20;
                 const chartStartY = 80;
-                const chartWidth = 500;
-                const chartStartX = 180;
+                const chartWidth = 420;
+                const chartStartX = 260;
+                const thumbSize = 40;
+                
+                // Load all product images first
+                const imagePromises = topProducts.map(product => {
+                  return new Promise<HTMLImageElement | null>((resolve) => {
+                    if (product.image_url) {
+                      const img = new Image();
+                      img.crossOrigin = 'anonymous';
+                      img.onload = () => resolve(img);
+                      img.onerror = () => resolve(null);
+                      img.src = product.image_url;
+                    } else {
+                      resolve(null);
+                    }
+                  });
+                });
+                
+                const images = await Promise.all(imagePromises);
                 
                 topProducts.forEach((product, idx) => {
                   const y = chartStartY + idx * (barHeight + barGap);
                   const barWidth = (product.quantity_sold / maxQty) * chartWidth;
                   
+                  // Draw thumbnail
+                  const thumbX = 40;
+                  const thumbY = y + (barHeight - thumbSize) / 2;
+                  ctx.fillStyle = '#2a2a4a';
+                  ctx.beginPath();
+                  ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
+                  ctx.fill();
+                  
+                  if (images[idx]) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
+                    ctx.clip();
+                    ctx.drawImage(images[idx]!, thumbX, thumbY, thumbSize, thumbSize);
+                    ctx.restore();
+                  } else {
+                    // Placeholder icon
+                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    ctx.font = '16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 5);
+                  }
+                  
                   // Product name
                   ctx.fillStyle = '#ffffff';
                   ctx.font = '14px sans-serif';
                   ctx.textAlign = 'right';
-                  ctx.fillText(product.product_name.substring(0, 20), chartStartX - 15, y + barHeight / 2 + 5);
+                  ctx.fillText(product.product_name.substring(0, 22), chartStartX - 15, y + barHeight / 2 + 5);
                   
                   // Bar
                   ctx.fillStyle = barColors[idx % barColors.length];
@@ -889,11 +935,11 @@ const Index = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => {
-              // Export as visual stacked bar chart PNG
+            onClick={async () => {
+              // Export as visual stacked bar chart PNG with thumbnails
               const canvas = document.createElement('canvas');
               const itemsToShow = stockValues.slice(0, 10);
-              canvas.width = 800;
+              canvas.width = 850;
               canvas.height = 120 + itemsToShow.length * 55;
               const ctx = canvas.getContext('2d')!;
               
@@ -915,18 +961,59 @@ const Index = () => {
               const barHeight = 40;
               const barGap = 15;
               const chartStartY = 100;
-              const chartWidth = 450;
-              const chartStartX = 220;
+              const chartWidth = 380;
+              const chartStartX = 280;
+              const thumbSize = 34;
+              
+              // Load all product images first
+              const imagePromises = itemsToShow.map(item => {
+                return new Promise<HTMLImageElement | null>((resolve) => {
+                  if (item.image_url) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    img.src = item.image_url;
+                  } else {
+                    resolve(null);
+                  }
+                });
+              });
+              
+              const images = await Promise.all(imagePromises);
               
               itemsToShow.forEach((item, idx) => {
                 const y = chartStartY + idx * (barHeight + barGap);
                 const barWidth = (item.value / maxValue) * chartWidth;
                 
+                // Draw thumbnail
+                const thumbX = 40;
+                const thumbY = y + (barHeight - thumbSize) / 2;
+                ctx.fillStyle = '#2a2a4a';
+                ctx.beginPath();
+                ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 5);
+                ctx.fill();
+                
+                if (images[idx]) {
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 5);
+                  ctx.clip();
+                  ctx.drawImage(images[idx]!, thumbX, thumbY, thumbSize, thumbSize);
+                  ctx.restore();
+                } else {
+                  // Placeholder icon
+                  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                  ctx.font = '14px sans-serif';
+                  ctx.textAlign = 'center';
+                  ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 5);
+                }
+                
                 // Product name (truncated)
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '13px sans-serif';
                 ctx.textAlign = 'right';
-                const displayName = item.product_name.length > 25 ? item.product_name.substring(0, 25) + '...' : item.product_name;
+                const displayName = item.product_name.length > 22 ? item.product_name.substring(0, 22) + '...' : item.product_name;
                 ctx.fillText(displayName, chartStartX - 15, y + barHeight / 2 + 4);
                 
                 // Bar
