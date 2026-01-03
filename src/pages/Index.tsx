@@ -520,18 +520,22 @@ const Index = () => {
               sliceData.forEach(({ cat, edgeX, edgeY }, idx) => {
                 const labelY = labelStartY + idx * labelSpacing;
                 
-                // Draw label text first
-                ctx.fillStyle = '#ffffff';
+                // Measure text width first
                 ctx.font = 'bold 18px sans-serif';
+                const textWidth = ctx.measureText(cat.category).width;
+                
+                // Draw label text
+                ctx.fillStyle = '#ffffff';
                 ctx.textAlign = 'left';
                 ctx.fillText(cat.category, labelX, labelY);
                 ctx.font = '16px sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
                 ctx.fillText(`${cat.percentage}%`, labelX, labelY + 22);
                 
-                // Draw leader line: horizontal from label, then angled to slice edge
-                const lineStartX = labelX + ctx.measureText(cat.category).width + 15;
-                const elbowX = 200; // Fixed elbow point
+                // Draw leader line with proper connection to each slice
+                // Line goes: end of label text -> horizontal to elbow -> angled to slice
+                const lineStartX = labelX + textWidth + 10;
+                const elbowX = lineStartX + 30;
                 
                 ctx.beginPath();
                 ctx.moveTo(lineStartX, labelY - 5);
