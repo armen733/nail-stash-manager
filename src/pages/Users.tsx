@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -16,38 +17,90 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+
+interface UserWithTier {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  loyalty_points: number | null;
+  created_at: string;
+  user_tiers?: {
+    current_tier: string | null;
+    tier_discount_percent: number | null;
+    monthly_spend: number | null;
+  }[];
+}
+
+interface Order {
+  id: string;
+  order_date: string;
+  status: string;
+  total: number;
+  customer_name: string | null;
+}
 
 export default function Users() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
     phone: "",
-    role: "Customer" as "Owner" | "Sales Rep" | "Customer",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: users, isLoading: usersLoading } = useQuery({
-    queryKey: ["users"],
+    queryKey: ["users-with-tiers"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name, email, phone, loyalty_points, created_at")
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (profilesError) throw profilesError;
+      
+      // Fetch user tiers
+      const { data: tiers, error: tiersError } = await supabase
+        .from("user_tiers")
+        .select("user_id, current_tier, tier_discount_percent, monthly_spend");
+      
+      if (tiersError) throw tiersError;
+      
+      // Combine data
+      const usersWithTiers = profiles.map(profile => ({
+        ...profile,
+        user_tiers: tiers?.filter(t => t.user_id === profile.id) || []
+      }));
+      
+      return usersWithTiers as UserWithTier[];
     },
+  });
+
+  const { data: userOrders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["user-orders", selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return [];
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, order_date, status, total, customer_name")
+        .eq("profile_id", selectedUser.id)
+        .order("order_date", { ascending: false });
+      
+      if (error) throw error;
+      return data as Order[];
+    },
+    enabled: !!selectedUser,
   });
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -69,7 +122,7 @@ export default function Users() {
           email: formData.email,
           full_name: formData.full_name,
           phone: formData.phone || null,
-          role: formData.role,
+          role: "Customer",
         },
       });
 
@@ -78,12 +131,12 @@ export default function Users() {
 
       toast({
         title: "Success",
-        description: "User created successfully",
+        description: "Customer created successfully",
       });
 
       setIsDialogOpen(false);
-      setFormData({ full_name: "", email: "", phone: "", role: "Customer" });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setFormData({ full_name: "", email: "", phone: "" });
+      queryClient.invalidateQueries({ queryKey: ["users-with-tiers"] });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -95,23 +148,40 @@ export default function Users() {
     }
   };
 
+  const getTierColor = (tier: string | null | undefined) => {
+    switch (tier?.toLowerCase()) {
+      case 'gold': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
+      case 'silver': return 'bg-gray-400/20 text-gray-600 dark:text-gray-300';
+      case 'bronze': return 'bg-orange-500/20 text-orange-600 dark:text-orange-400';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getTierLabel = (tier: string | null | undefined) => {
+    if (!tier || tier === 'none') return 'Standard';
+    return tier.charAt(0).toUpperCase() + tier.slice(1);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <UsersIcon className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Users</h1>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Customers</h1>
+            <p className="text-sm text-muted-foreground">Manage customer profiles and view order history</p>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="min-h-[44px] w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Add User
+              Add Customer
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
+              <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="space-y-2">
@@ -148,30 +218,12 @@ export default function Users() {
                   className="min-h-[44px]"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value: "Owner" | "Sales Rep" | "Customer") => 
-                    setFormData({ ...formData, role: value })
-                  }
-                >
-                  <SelectTrigger className="min-h-[44px]">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border">
-                    <SelectItem value="Customer">Customer</SelectItem>
-                    <SelectItem value="Sales Rep">Sales Rep</SelectItem>
-                    <SelectItem value="Owner">Owner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading} className="min-h-[44px]">
-                  {isLoading ? "Creating..." : "Create User"}
+                  {isLoading ? "Creating..." : "Create Customer"}
                 </Button>
               </div>
             </form>
@@ -181,7 +233,7 @@ export default function Users() {
 
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-lg sm:text-xl">Registered Users</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">Customer List</CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
           {usersLoading ? (
@@ -196,55 +248,192 @@ export default function Users() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[150px]">Name</TableHead>
-                    <TableHead className="min-w-[200px]">Email</TableHead>
-                    <TableHead className="min-w-[130px] hidden sm:table-cell">Phone</TableHead>
-                    <TableHead className="min-w-[100px]">Role</TableHead>
-                    <TableHead className="min-w-[120px] hidden md:table-cell">Registered</TableHead>
+                    <TableHead className="min-w-[180px]">Email</TableHead>
+                    <TableHead className="min-w-[100px] hidden sm:table-cell">Phone</TableHead>
+                    <TableHead className="min-w-[80px] text-center">Points</TableHead>
+                    <TableHead className="min-w-[80px] text-center">Tier</TableHead>
+                    <TableHead className="min-w-[100px] hidden md:table-cell">Registered</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium py-3">{user.full_name}</TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="truncate max-w-[150px] sm:max-w-none">{user.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 hidden sm:table-cell">
-                        {user.phone ? (
+                  {users.map((user) => {
+                    const tier = user.user_tiers?.[0];
+                    return (
+                      <TableRow 
+                        key={user.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <TableCell className="font-medium py-3">{user.full_name}</TableCell>
+                        <TableCell className="py-3">
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            {user.phone}
+                            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate max-w-[130px] sm:max-w-none">{user.email}</span>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                          {user.role}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-3 hidden md:table-cell">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="h-4 w-4 flex-shrink-0" />
-                          {format(new Date(user.created_at), "MMM d, yyyy")}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="py-3 hidden sm:table-cell">
+                          {user.phone ? (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              {user.phone}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Star className="h-3 w-3 text-yellow-500" />
+                            <span className="font-medium">{user.loyalty_points || 0}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 text-center">
+                          <Badge variant="secondary" className={getTierColor(tier?.current_tier)}>
+                            {getTierLabel(tier?.current_tier)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3 hidden md:table-cell">
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <Calendar className="h-4 w-4 flex-shrink-0" />
+                            {format(new Date(user.created_at), "MMM d, yyyy")}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              No registered users yet.
+              No customers yet.
             </p>
           )}
         </CardContent>
       </Card>
+
+      {/* Customer Details Sheet */}
+      <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Customer Profile</SheetTitle>
+          </SheetHeader>
+          
+          {selectedUser && (
+            <div className="mt-6 space-y-6">
+              {/* Customer Info */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-semibold">{selectedUser.full_name}</h3>
+                  <p className="text-muted-foreground">{selectedUser.email}</p>
+                  {selectedUser.phone && (
+                    <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
+                  )}
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <Star className="h-5 w-5 text-yellow-500" />
+                        <span className="text-2xl font-bold">{selectedUser.loyalty_points || 0}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Loyalty Points</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <Award className="h-5 w-5 text-primary" />
+                        <Badge variant="secondary" className={getTierColor(selectedUser.user_tiers?.[0]?.current_tier)}>
+                          {getTierLabel(selectedUser.user_tiers?.[0]?.current_tier)}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedUser.user_tiers?.[0]?.tier_discount_percent 
+                          ? `${selectedUser.user_tiers[0].tier_discount_percent}% discount`
+                          : 'No discount'
+                        }
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {selectedUser.user_tiers?.[0]?.monthly_spend !== undefined && (
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Monthly Spend: </span>
+                      <span className="font-semibold">${(selectedUser.user_tiers[0].monthly_spend || 0).toFixed(2)}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Order History */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <ShoppingBag className="h-4 w-4" />
+                  Order History
+                </h4>
+                
+                {ordersLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : userOrders && userOrders.length > 0 ? (
+                  <div className="space-y-2">
+                    {userOrders.map((order) => (
+                      <div 
+                        key={order.id} 
+                        className="p-3 rounded-lg border bg-card flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-medium text-sm">
+                            #{order.id.slice(0, 8).toUpperCase()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(order.order_date), "MMM d, yyyy")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-primary">${order.total.toFixed(2)}</p>
+                          <Badge 
+                            variant="secondary" 
+                            className={
+                              order.status === 'Delivered' || order.status === 'Paid' 
+                                ? 'bg-green-500/20 text-green-600' 
+                                : order.status === 'Shipped'
+                                  ? 'bg-purple-500/20 text-purple-600'
+                                  : 'bg-blue-500/20 text-blue-600'
+                            }
+                          >
+                            {order.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No orders yet
+                  </p>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Customer since {format(new Date(selectedUser.created_at), "MMMM yyyy")}
+              </p>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
