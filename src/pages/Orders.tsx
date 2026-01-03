@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +121,9 @@ const Orders = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [bulkStatusDialogOpen, setBulkStatusDialogOpen] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<string>("");
   const [formData, setFormData] = useState({
     salon_id: "",
     profile_id: "",
@@ -525,15 +528,224 @@ const Orders = () => {
     }
   };
 
+  const ORDER_STATUSES = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Paid'] as const;
+  
+  const getStatusIndex = (status: string) => ORDER_STATUSES.indexOf(status as typeof ORDER_STATUSES[number]);
+  
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus as any })
+        .eq("id", orderId);
+      
+      if (error) throw error;
+      toast({ title: "Success", description: `Order status updated to ${newStatus}` });
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkStatus || selectedOrders.size === 0) return;
+    
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: bulkStatus as any })
+        .in("id", Array.from(selectedOrders));
+      
+      if (error) throw error;
+      
+      toast({ 
+        title: "Success", 
+        description: `${selectedOrders.size} orders updated to ${bulkStatus}` 
+      });
+      setSelectedOrders(new Set());
+      setBulkStatusDialogOpen(false);
+      setBulkStatus("");
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    const newSelection = new Set(selectedOrders);
+    if (newSelection.has(orderId)) {
+      newSelection.delete(orderId);
+    } else {
+      newSelection.add(orderId);
+    }
+    setSelectedOrders(newSelection);
+  };
+
+  const toggleSelectAll = (ordersList: Order[]) => {
+    if (ordersList.every(o => selectedOrders.has(o.id))) {
+      // Deselect all
+      const newSelection = new Set(selectedOrders);
+      ordersList.forEach(o => newSelection.delete(o.id));
+      setSelectedOrders(newSelection);
+    } else {
+      // Select all
+      const newSelection = new Set(selectedOrders);
+      ordersList.forEach(o => newSelection.add(o.id));
+      setSelectedOrders(newSelection);
+    }
+  };
+
+  const printPackingSlip = (order: Order) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ title: "Error", description: "Please allow popups to print", variant: "destructive" });
+      return;
+    }
+
+    const itemsHtml = (order.order_items || []).map(item => `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.products?.name || 'Unknown'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${item.unit_price.toFixed(2)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${(item.quantity * item.unit_price).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Packing Slip - Order ${order.id.slice(0, 8)}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; }
+          .logo { font-size: 24px; font-weight: bold; }
+          .order-info { text-align: right; }
+          .order-id { font-size: 14px; color: #666; }
+          .date { font-size: 14px; margin-top: 5px; }
+          .addresses { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .address-block { flex: 1; }
+          .address-block h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+          .address-block p { margin: 4px 0; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th { background: #f5f5f5; padding: 12px 8px; text-align: left; font-weight: 600; }
+          th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: center; }
+          th:last-child { text-align: right; }
+          .totals { margin-left: auto; width: 250px; }
+          .totals-row { display: flex; justify-content: space-between; padding: 8px 0; }
+          .totals-row.total { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 12px; }
+          .notes { margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+          .notes h3 { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+          .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+          .status-Draft { background: #fef3c7; color: #92400e; }
+          .status-Confirmed { background: #dbeafe; color: #1e40af; }
+          .status-Shipped { background: #e9d5ff; color: #7c3aed; }
+          .status-Delivered { background: #d1fae5; color: #065f46; }
+          .status-Paid { background: #d1fae5; color: #065f46; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">NERA</div>
+          <div class="order-info">
+            <div class="order-id">Order #${order.id.slice(0, 8).toUpperCase()}</div>
+            <div class="date">${new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div style="margin-top: 8px;"><span class="status-badge status-${order.status}">${order.status}</span></div>
+          </div>
+        </div>
+        
+        <div class="addresses">
+          <div class="address-block">
+            <h3>Ship To</h3>
+            <p><strong>${order.customer_name || order.salons?.name || '—'}</strong></p>
+            ${order.customer_address ? `<p>${order.customer_address}</p>` : ''}
+            ${order.customer_phone ? `<p>${order.customer_phone}</p>` : ''}
+            ${order.customer_email ? `<p>${order.customer_email}</p>` : ''}
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Price</th>
+              <th style="text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
+          <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
+          <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
+        </div>
+
+        ${order.notes ? `<div class="notes"><h3>Notes</h3><p>${order.notes}</p></div>` : ''}
+        
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
       Draft: "outline",
       Confirmed: "default",
+      Shipped: "default",
       Delivered: "secondary",
       Paid: "secondary",
     };
 
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+  };
+
+  // Status tracker component
+  const OrderStatusTracker = ({ order }: { order: Order }) => {
+    const currentIndex = getStatusIndex(order.status);
+    
+    return (
+      <div className="flex items-center gap-1 py-2">
+        {ORDER_STATUSES.slice(0, -1).map((status, idx) => {
+          const isCompleted = idx < currentIndex;
+          const isCurrent = idx === currentIndex;
+          const isClickable = idx <= currentIndex + 1;
+          
+          return (
+            <div key={status} className="flex items-center">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isClickable && status !== order.status) {
+                    handleUpdateOrderStatus(order.id, status);
+                  }
+                }}
+                disabled={!isClickable}
+                className={`
+                  flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all
+                  ${isCompleted ? 'bg-primary/20 text-primary' : ''}
+                  ${isCurrent ? 'bg-primary text-primary-foreground' : ''}
+                  ${!isCompleted && !isCurrent ? 'bg-muted text-muted-foreground' : ''}
+                  ${isClickable && status !== order.status ? 'hover:scale-105 cursor-pointer' : 'cursor-default'}
+                `}
+              >
+                {isCompleted && <CheckCircle className="h-3 w-3" />}
+                {status}
+              </button>
+              {idx < ORDER_STATUSES.length - 2 && (
+                <ChevronRight className="h-3 w-3 text-muted-foreground mx-1" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -904,6 +1116,14 @@ const Orders = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => printPackingSlip(viewOrder)}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print Packing Slip
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -1020,6 +1240,16 @@ const Orders = () => {
                 className="pl-10 h-11 min-h-[44px]"
               />
             </div>
+            {selectedOrders.size > 0 && (
+              <Button 
+                variant="default" 
+                className="h-11 min-h-[44px] w-full sm:w-auto"
+                onClick={() => setBulkStatusDialogOpen(true)}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Update {selectedOrders.size} Orders
+              </Button>
+            )}
             <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -1047,21 +1277,56 @@ const Orders = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Select All */}
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <button
+                      onClick={() => toggleSelectAll(filteredActiveOrders)}
+                      className="p-1 hover:bg-muted rounded"
+                    >
+                      {filteredActiveOrders.every(o => selectedOrders.has(o.id)) ? (
+                        <CheckSquare className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Square className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </button>
+                    <span className="text-sm text-muted-foreground">Select all</span>
+                  </div>
+                  
                   {filteredActiveOrders.map((order) => (
                     <Card 
                       key={order.id} 
-                      className="shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={`shadow-sm cursor-pointer hover:bg-muted/50 transition-colors ${selectedOrders.has(order.id) ? 'ring-2 ring-primary' : ''}`}
                       onClick={() => setViewOrder(order)}
                     >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                            {getStatusBadge(order.status)}
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleOrderSelection(order.id);
+                              }}
+                              className="p-1 hover:bg-muted rounded flex-shrink-0"
+                            >
+                              {selectedOrders.has(order.id) ? (
+                                <CheckSquare className="h-5 w-5 text-primary" />
+                              ) : (
+                                <Square className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </button>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(order.order_date).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(order.order_date).toLocaleDateString()}
-                          </div>
+                          
+                          {/* Status Tracker */}
+                          <OrderStatusTracker order={order} />
+                          
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
                               <div className="space-y-1">
@@ -1080,7 +1345,7 @@ const Orders = () => {
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center justify-between pt-2 border-t">
                             <div className="text-lg font-semibold text-primary">
                               ${order.total.toFixed(2)}
                             </div>
@@ -1091,11 +1356,11 @@ const Orders = () => {
                                 className="h-9"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleMarkDelivered(order.id);
+                                  printPackingSlip(order);
                                 }}
                               >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Delivered
+                                <Printer className="h-4 w-4 mr-1" />
+                                Print
                               </Button>
                               <Button
                                 size="sm"
@@ -1165,17 +1430,31 @@ const Orders = () => {
                             <div className="text-lg font-semibold text-primary">
                               ${order.total.toFixed(2)}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-9"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteOrderId(order.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-9"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  printPackingSlip(order);
+                                }}
+                              >
+                                <Printer className="h-4 w-4 mr-1" />
+                                Print
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-9"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteOrderId(order.id);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -1205,6 +1484,43 @@ const Orders = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Status Update Dialog */}
+      <Dialog open={bulkStatusDialogOpen} onOpenChange={setBulkStatusDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Order Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Update status for {selectedOrders.size} selected order{selectedOrders.size > 1 ? 's' : ''}.
+            </p>
+            <div className="space-y-2">
+              <Label>New Status</Label>
+              <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDER_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setBulkStatusDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkStatusUpdate} disabled={!bulkStatus}>
+              Update {selectedOrders.size} Order{selectedOrders.size > 1 ? 's' : ''}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
