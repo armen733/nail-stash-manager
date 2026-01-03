@@ -1,13 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -127,6 +131,8 @@ const Orders = () => {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatusDialogOpen, setBulkStatusDialogOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [formData, setFormData] = useState({
     salon_id: "",
     profile_id: "",
@@ -484,15 +490,21 @@ const Orders = () => {
   }, [orders]);
 
   const normalizedSearch = searchTerm.toLowerCase();
-  const filterBySalonName = (order: Order) => {
+  const filterOrders = (order: Order) => {
     const name = order.salons?.name || order.customer_name || '';
     const matchesSearch = name.toLowerCase().includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    // Date range filter
+    const orderDate = new Date(order.order_date);
+    const matchesDateFrom = !dateFrom || orderDate >= dateFrom;
+    const matchesDateTo = !dateTo || orderDate <= dateTo;
+    
+    return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
   };
 
-  const filteredActiveOrders = activeOrders.filter(filterBySalonName);
-  const filteredCompletedOrders = completedOrders.filter(filterBySalonName);
+  const filteredActiveOrders = activeOrders.filter(filterOrders);
+  const filteredCompletedOrders = completedOrders.filter(filterOrders);
   const allFilteredOrders = [...filteredActiveOrders, ...filteredCompletedOrders];
 
   const exportOrders = () => {
@@ -1246,34 +1258,102 @@ const Orders = () => {
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-11 min-h-[44px]"
-              />
-            </div>
-            <Button className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Order
-            </Button>
-            {selectedOrders.size > 0 && (
-              <Button 
-                variant="default" 
-                className="h-11 min-h-[44px] w-full sm:w-auto"
-                onClick={() => setBulkStatusDialogOpen(true)}
-              >
-                <CheckSquare className="h-4 w-4 mr-2" />
-                Update {selectedOrders.size} Orders
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-11 min-h-[44px]"
+                />
+              </div>
+              <Button className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Order
               </Button>
-            )}
-            <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+              {selectedOrders.size > 0 && (
+                <Button 
+                  variant="default" 
+                  className="h-11 min-h-[44px] w-full sm:w-auto"
+                  onClick={() => setBulkStatusDialogOpen(true)}
+                >
+                  <CheckSquare className="h-4 w-4 mr-2" />
+                  Update {selectedOrders.size} Orders
+                </Button>
+              )}
+              <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Date:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-9 justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <span className="text-muted-foreground">—</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "h-9 justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "MMM d, yyyy") : "To"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-2"
+                  onClick={() => {
+                    setDateFrom(undefined);
+                    setDateTo(undefined);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
