@@ -229,10 +229,11 @@ const LowStock = () => {
                       {/* Product Thumbnail */}
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                         {product.image_url ? (
-                          <LazyImage
+                          <img
                             src={product.image_url}
                             alt={product.name}
                             className="w-full h-full object-cover"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
