@@ -481,11 +481,14 @@ const Index = () => {
               const centerY = 280;
               const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
               
-              // Draw donut slices with labels
+              // First pass: draw all slices
               let startAngle = -Math.PI / 2;
+              const sliceData: { cat: typeof categorySalesData[0]; startAngle: number; endAngle: number; midAngle: number }[] = [];
+              
               categorySalesData.forEach((cat) => {
                 const sliceAngle = (cat.revenue / total) * 2 * Math.PI;
                 const endAngle = startAngle + sliceAngle;
+                const midAngle = startAngle + sliceAngle / 2;
                 
                 // Draw slice
                 ctx.beginPath();
@@ -495,17 +498,46 @@ const Index = () => {
                 ctx.fillStyle = cat.color;
                 ctx.fill();
                 
-                // Draw label outside
-                const midAngle = startAngle + sliceAngle / 2;
-                const labelRadius = chartRadius + 50;
-                const labelX = centerX + Math.cos(midAngle) * labelRadius;
-                const labelY = centerY + Math.sin(midAngle) * labelRadius;
+                sliceData.push({ cat, startAngle, endAngle, midAngle });
+                startAngle = endAngle;
+              });
+              
+              // Second pass: calculate label positions with collision avoidance
+              const labelPositions: { x: number; y: number; cat: typeof categorySalesData[0]; lineStartX: number; lineStartY: number }[] = [];
+              const minLabelSpacing = 45;
+              
+              sliceData.forEach(({ cat, midAngle }) => {
+                const labelRadius = chartRadius + 60;
+                let labelX = centerX + Math.cos(midAngle) * labelRadius;
+                let labelY = centerY + Math.sin(midAngle) * labelRadius;
                 
-                // Label line
+                // Check for collisions and offset if needed
+                for (const existing of labelPositions) {
+                  const dx = labelX - existing.x;
+                  const dy = labelY - existing.y;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+                  
+                  if (distance < minLabelSpacing) {
+                    // Move label further out and offset vertically
+                    const offsetDirection = labelY > existing.y ? 1 : -1;
+                    labelY = existing.y + offsetDirection * minLabelSpacing;
+                  }
+                }
+                
                 const lineStartX = centerX + Math.cos(midAngle) * (chartRadius + 5);
                 const lineStartY = centerY + Math.sin(midAngle) * (chartRadius + 5);
+                
+                labelPositions.push({ x: labelX, y: labelY, cat, lineStartX, lineStartY });
+              });
+              
+              // Draw labels and lines
+              labelPositions.forEach(({ x: labelX, y: labelY, cat, lineStartX, lineStartY }) => {
+                // Label line with elbow
                 ctx.beginPath();
                 ctx.moveTo(lineStartX, lineStartY);
+                const elbowX = centerX + Math.cos(Math.atan2(lineStartY - centerY, lineStartX - centerX)) * (chartRadius + 35);
+                const elbowY = centerY + Math.sin(Math.atan2(lineStartY - centerY, lineStartX - centerX)) * (chartRadius + 35);
+                ctx.lineTo(elbowX, elbowY);
                 ctx.lineTo(labelX, labelY);
                 ctx.strokeStyle = 'rgba(255,255,255,0.4)';
                 ctx.lineWidth = 1;
@@ -519,8 +551,6 @@ const Index = () => {
                 ctx.font = '14px sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.7)';
                 ctx.fillText(`${cat.percentage}%`, labelX + (labelX > centerX ? 8 : -8), labelY + 12);
-                
-                startAngle = endAngle;
               });
               
               // Draw inner circle (donut hole)
