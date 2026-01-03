@@ -1345,52 +1345,41 @@ const Orders = () => {
                 </Button>
               </div>
               
-              {/* Custom Range Calendar */}
+              {/* Single Calendar for Custom Range */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className={cn(
-                      "h-7 text-xs px-2",
-                      (dateFrom || dateTo) && "text-foreground"
-                    )}
+                    className="h-7 px-2"
                   >
                     <CalendarIcon className="h-3 w-3" />
-                    {(dateFrom || dateTo) && (
-                      <span className="ml-1">
-                        {dateFrom && dateTo 
-                          ? `${format(dateFrom, "M/d")} - ${format(dateTo, "M/d")}`
-                          : dateFrom 
-                            ? `From ${format(dateFrom, "M/d")}`
-                            : `To ${format(dateTo!, "M/d")}`
-                        }
-                      </span>
-                    )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-3" align="start">
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs font-medium mb-1">From</p>
-                        <Calendar
-                          mode="single"
-                          selected={dateFrom}
-                          onSelect={setDateFrom}
-                          className={cn("p-0 pointer-events-auto")}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium mb-1">To</p>
-                        <Calendar
-                          mode="single"
-                          selected={dateTo}
-                          onSelect={setDateTo}
-                          className={cn("p-0 pointer-events-auto")}
-                        />
-                      </div>
-                    </div>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={(date) => {
+                      if (!dateFrom || dateTo) {
+                        setDateFrom(date);
+                        setDateTo(undefined);
+                      } else {
+                        if (date && date < dateFrom) {
+                          setDateTo(dateFrom);
+                          setDateFrom(date);
+                        } else {
+                          setDateTo(date);
+                        }
+                      }
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                  <div className="p-3 pt-0 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {!dateFrom ? "Select start date" : !dateTo ? "Select end date" : `${format(dateFrom, "MMM d")} - ${format(dateTo, "MMM d")}`}
+                    </p>
                     {(dateFrom || dateTo) && (
                       <Button
                         variant="outline"
@@ -1402,12 +1391,21 @@ const Orders = () => {
                         }}
                       >
                         <X className="h-3 w-3 mr-1" />
-                        Clear dates
+                        Clear
                       </Button>
                     )}
                   </div>
                 </PopoverContent>
               </Popover>
+              
+              {(dateFrom || dateTo) && (
+                <span className="text-xs text-muted-foreground">
+                  {dateFrom && dateTo 
+                    ? `${format(dateFrom, "M/d")} - ${format(dateTo, "M/d")}`
+                    : dateFrom ? `From ${format(dateFrom, "M/d")}` : ""
+                  }
+                </span>
+              )}
               
               <div className="hidden sm:block h-6 w-px bg-border mx-1" />
               
