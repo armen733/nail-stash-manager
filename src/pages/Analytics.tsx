@@ -31,6 +31,9 @@ interface DailyRevenue {
   orders: number;
   avgOrderValue: number;
   cumulativeRevenue: number;
+  prevRevenue?: number;
+  prevOrders?: number;
+  prevCumulativeRevenue?: number;
 }
 
 interface CategorySales {
@@ -126,10 +129,10 @@ const Analytics = () => {
 
       if (ordersError) throw ordersError;
 
-      // Fetch previous period for comparison
+      // Fetch previous period for comparison (with created_at for daily breakdown)
       const { data: previousOrders } = await supabase
         .from("orders")
-        .select("id, total, profile_id, customer_email")
+        .select("id, total, profile_id, customer_email, created_at")
         .gte("created_at", previousStart.toISOString())
         .lte("created_at", previousEnd.toISOString())
         .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
@@ -140,12 +143,21 @@ const Analytics = () => {
       const prevCustomers = new Set(previousOrders?.map(o => o.profile_id || o.customer_email)).size;
       setPreviousPeriodStats({ revenue: prevRevenue, orders: prevOrderCount, customers: prevCustomers });
 
-      // Calculate daily revenue
+      // Calculate daily revenue for current period
       const days = eachDayOfInterval({ start: periodStart, end: periodEnd });
       const dailyMap: Record<string, DailyRevenue> = {};
-      days.forEach(day => {
+      days.forEach((day, index) => {
         const dateStr = format(day, "MMM dd");
-        dailyMap[dateStr] = { date: dateStr, revenue: 0, orders: 0, avgOrderValue: 0, cumulativeRevenue: 0 };
+        dailyMap[dateStr] = { 
+          date: dateStr, 
+          revenue: 0, 
+          orders: 0, 
+          avgOrderValue: 0, 
+          cumulativeRevenue: 0,
+          prevRevenue: 0,
+          prevOrders: 0,
+          prevCumulativeRevenue: 0
+        };
       });
 
       orders?.forEach(order => {
@@ -156,14 +168,36 @@ const Analytics = () => {
         }
       });
 
-      // Calculate avg order value and cumulative revenue
+      // Calculate previous period daily data and map to same day indices
+      const prevDays = eachDayOfInterval({ start: previousStart, end: previousEnd });
+      const prevDailyMap: Record<number, { revenue: number; orders: number }> = {};
+      prevDays.forEach((_, index) => {
+        prevDailyMap[index] = { revenue: 0, orders: 0 };
+      });
+
+      previousOrders?.forEach(order => {
+        const orderDate = parseISO(order.created_at);
+        const dayIndex = differenceInDays(orderDate, previousStart);
+        if (prevDailyMap[dayIndex]) {
+          prevDailyMap[dayIndex].revenue += order.total || 0;
+          prevDailyMap[dayIndex].orders += 1;
+        }
+      });
+
+      // Calculate avg order value and cumulative revenue, merge with previous period
       let cumulative = 0;
-      const dailyData = Object.values(dailyMap).map(day => {
+      let prevCumulative = 0;
+      const dailyData = Object.values(dailyMap).map((day, index) => {
         cumulative += day.revenue;
+        const prevDay = prevDailyMap[index] || { revenue: 0, orders: 0 };
+        prevCumulative += prevDay.revenue;
         return {
           ...day,
           avgOrderValue: day.orders > 0 ? day.revenue / day.orders : 0,
-          cumulativeRevenue: cumulative
+          cumulativeRevenue: cumulative,
+          prevRevenue: prevDay.revenue,
+          prevOrders: prevDay.orders,
+          prevCumulativeRevenue: prevCumulative
         };
       });
       setDailyRevenue(dailyData);
@@ -618,48 +652,67 @@ const Analytics = () => {
           {loading ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">Loading...</div>
           ) : (
-            <ChartContainer config={{}} className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailyRevenue}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }} 
-                  />
-                  <Legend />
-                  <Area 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="hsl(var(--primary))" 
-                    fillOpacity={1} 
-                    fill="url(#colorRevenue)" 
-                    name="Revenue ($)"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="orders" 
-                    stroke="hsl(var(--chart-2))" 
-                    strokeWidth={2}
-                    dot={false}
-                    name="Orders"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
+              <ChartContainer config={{}} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dailyRevenue}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorPrevRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#94A3B8" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        `$${value.toFixed(2)}`,
+                        name
+                      ]}
+                    />
+                    <Legend />
+                    {showComparison && (
+                      <Area 
+                        type="monotone" 
+                        dataKey="prevRevenue" 
+                        stroke="#94A3B8" 
+                        strokeDasharray="5 5"
+                        fillOpacity={1} 
+                        fill="url(#colorPrevRevenue)" 
+                        name="Previous Period"
+                      />
+                    )}
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="hsl(var(--primary))" 
+                      fillOpacity={1} 
+                      fill="url(#colorRevenue)" 
+                      name="Current Revenue"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="orders" 
+                      stroke="hsl(var(--chart-2))" 
+                      strokeWidth={2}
+                      dot={false}
+                      name="Orders"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Additional Charts Row */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
@@ -678,12 +731,6 @@ const Analytics = () => {
               <ChartContainer config={{}} className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dailyRevenue}>
-                    <defs>
-                      <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
@@ -693,15 +740,27 @@ const Analytics = () => {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cumulative']}
+                      formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name]}
                     />
+                    <Legend />
+                    {showComparison && (
+                      <Line 
+                        type="monotone" 
+                        dataKey="prevCumulativeRevenue" 
+                        stroke="#94A3B8" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name="Previous Period"
+                      />
+                    )}
                     <Line 
                       type="monotone" 
                       dataKey="cumulativeRevenue" 
                       stroke="#10B981" 
                       strokeWidth={3}
                       dot={false}
-                      name="Cumulative Revenue"
+                      name="Current Period"
                     />
                   </LineChart>
                 </ResponsiveContainer>
