@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,8 @@ interface UserWithTier {
   phone: string | null;
   loyalty_points: number | null;
   created_at: string;
+  total_spent?: number;
+  order_count?: number;
   user_tiers?: {
     current_tier: string | null;
     tier_discount_percent: number | null;
@@ -83,12 +85,30 @@ export default function Users() {
         .select("user_id, current_tier, tier_discount_percent, monthly_spend");
       
       if (tiersError) throw tiersError;
+
+      // Fetch all orders for total spent calculation
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("profile_id, customer_email, total, status")
+        .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
       
-      // Combine data
-      const usersWithTiers = profiles.map(profile => ({
-        ...profile,
-        user_tiers: tiers?.filter(t => t.user_id === profile.id) || []
-      }));
+      if (ordersError) throw ordersError;
+      
+      // Combine data with total spent
+      const usersWithTiers = profiles.map(profile => {
+        const userOrders = orders?.filter(o => 
+          o.profile_id === profile.id || o.customer_email === profile.email
+        ) || [];
+        const totalSpent = userOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+        const orderCount = userOrders.length;
+        
+        return {
+          ...profile,
+          user_tiers: tiers?.filter(t => t.user_id === profile.id) || [],
+          total_spent: totalSpent,
+          order_count: orderCount
+        };
+      });
       
       return usersWithTiers as UserWithTier[];
     },
@@ -274,29 +294,36 @@ export default function Users() {
                     const tier = user.user_tiers?.[0];
                     return (
                       <div
-                    key={user.id}
-                    className="p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setSelectedUser(user)}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{user.full_name}</p>
-                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      </div>
-                      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                        <div className="text-center">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-yellow-500" />
-                            <span className="text-sm font-medium">{user.loyalty_points || 0}</span>
+                        key={user.id}
+                        className="p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{user.full_name}</p>
+                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                          </div>
+                          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                            <div className="text-center hidden sm:block">
+                              <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                                <DollarSign className="h-3 w-3" />
+                                <span className="text-sm font-medium">{(user.total_spent || 0).toFixed(0)}</span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">{user.order_count || 0} orders</p>
+                            </div>
+                            <div className="text-center">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-yellow-500" />
+                                <span className="text-sm font-medium">{user.loyalty_points || 0}</span>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className={`text-xs ${getTierColor(tier?.current_tier)}`}>
+                              {getTierLabel(tier?.current_tier)}
+                            </Badge>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
                           </div>
                         </div>
-                        <Badge variant="secondary" className={`text-xs ${getTierColor(tier?.current_tier)}`}>
-                          {getTierLabel(tier?.current_tier)}
-                        </Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
                       </div>
-                    </div>
-                  </div>
                     );
                   })}
                 </div>
@@ -329,12 +356,37 @@ export default function Users() {
                   <h3 className="text-xl font-semibold">{selectedUser.full_name}</h3>
                   <p className="text-muted-foreground">{selectedUser.email}</p>
                   {selectedUser.phone && (
-                    <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                      <Phone className="h-3 w-3" />
+                      {selectedUser.phone}
+                    </div>
                   )}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Calendar className="h-3 w-3" />
+                    Member since {format(new Date(selectedUser.created_at), "MMM d, yyyy")}
+                  </div>
                 </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <DollarSign className="h-5 w-5 text-green-500" />
+                        <span className="text-2xl font-bold">${(selectedUser.total_spent || 0).toFixed(0)}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Total Spent</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <ShoppingBag className="h-5 w-5 text-blue-500" />
+                        <span className="text-2xl font-bold">{selectedUser.order_count || 0}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Total Orders</p>
+                    </CardContent>
+                  </Card>
                   <Card>
                     <CardContent className="p-4 text-center">
                       <div className="flex items-center justify-center gap-2 mb-1">
@@ -362,10 +414,10 @@ export default function Users() {
                   </Card>
                 </div>
 
-                {selectedUser.user_tiers?.[0]?.monthly_spend !== undefined && (
+                {selectedUser.user_tiers?.[0]?.monthly_spend !== undefined && selectedUser.user_tiers[0].monthly_spend > 0 && (
                   <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-sm">
-                      <span className="text-muted-foreground">Monthly Spend: </span>
+                      <span className="text-muted-foreground">This Month's Spend: </span>
                       <span className="font-semibold">${(selectedUser.user_tiers[0].monthly_spend || 0).toFixed(2)}</span>
                     </p>
                   </div>
