@@ -853,31 +853,24 @@ const Index = () => {
                 const chartStartX = 260;
                 const thumbSize = 40;
                 
-                // Load all product images first using fetch for better CORS handling
-                const imagePromises = topProducts.map(async (product) => {
-                  if (!product.image_url) return null;
-                  try {
-                    const response = await fetch(product.image_url);
-                    const blob = await response.blob();
-                    const objectUrl = URL.createObjectURL(blob);
-                    return new Promise<HTMLImageElement | null>((resolve) => {
-                      const img = new Image();
-                      img.onload = () => {
-                        URL.revokeObjectURL(objectUrl);
-                        resolve(img);
-                      };
-                      img.onerror = () => {
-                        URL.revokeObjectURL(objectUrl);
-                        resolve(null);
-                      };
-                      img.src = objectUrl;
-                    });
-                  } catch {
-                    return null;
-                  }
-                });
+                // Load all product images using Image with crossOrigin (Supabase storage supports CORS)
+                const loadImage = (url: string): Promise<HTMLImageElement | null> => {
+                  return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    // Add cache buster to avoid stale responses
+                    img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                  });
+                };
                 
-                const images = await Promise.all(imagePromises);
+                const images = await Promise.all(
+                  topProducts.map(product => 
+                    product.image_url ? loadImage(product.image_url) : Promise.resolve(null)
+                  )
+                );
+                
                 
                 topProducts.forEach((product, idx) => {
                   const y = chartStartY + idx * (barHeight + barGap);
@@ -1008,31 +1001,23 @@ const Index = () => {
               const chartStartX = 280;
               const thumbSize = 34;
               
-              // Load all product images first using fetch for better CORS handling
-              const imagePromises = itemsToShow.map(async (item) => {
-                if (!item.image_url) return null;
-                try {
-                  const response = await fetch(item.image_url);
-                  const blob = await response.blob();
-                  const objectUrl = URL.createObjectURL(blob);
-                  return new Promise<HTMLImageElement | null>((resolve) => {
-                    const img = new Image();
-                    img.onload = () => {
-                      URL.revokeObjectURL(objectUrl);
-                      resolve(img);
-                    };
-                    img.onerror = () => {
-                      URL.revokeObjectURL(objectUrl);
-                      resolve(null);
-                    };
-                    img.src = objectUrl;
-                  });
-                } catch {
-                  return null;
-                }
-              });
+              // Load all product images using Image with crossOrigin (Supabase storage supports CORS)
+              const loadImage = (url: string): Promise<HTMLImageElement | null> => {
+                return new Promise((resolve) => {
+                  const img = new Image();
+                  img.crossOrigin = 'anonymous';
+                  img.onload = () => resolve(img);
+                  img.onerror = () => resolve(null);
+                  // Add cache buster to avoid stale responses
+                  img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                });
+              };
               
-              const images = await Promise.all(imagePromises);
+              const images = await Promise.all(
+                itemsToShow.map(item => 
+                  item.image_url ? loadImage(item.image_url) : Promise.resolve(null)
+                )
+              );
               
               itemsToShow.forEach((item, idx) => {
                 const y = chartStartY + idx * (barHeight + barGap);
