@@ -10,7 +10,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
-  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare
+  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText
 } from "lucide-react";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface DailyRevenue {
   date: string;
@@ -287,6 +289,142 @@ const Analytics = () => {
     });
   };
 
+  // Export analytics to PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Title
+    const periodText = period === "custom" && dateRange?.from 
+      ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to || new Date(), "MMM dd, yyyy")}`
+      : period === "week" ? "Last 7 Days" : period === "month" ? "This Month" : "Last Quarter";
+    
+    doc.setFontSize(20);
+    doc.setTextColor(40);
+    doc.text("Analytics Report", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(periodText, pageWidth / 2, 28, { align: "center" });
+    doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`, pageWidth / 2, 35, { align: "center" });
+
+    // Summary Section
+    doc.setFontSize(14);
+    doc.setTextColor(40);
+    doc.text("Summary", 14, 50);
+    
+    const summaryData = [
+      ["Total Revenue", `$${totalRevenue.toFixed(2)}`],
+      ["Total Orders", totalOrders.toString()],
+      ["Average Order Value", `$${avgOrderValue.toFixed(2)}`],
+      ["Total Profit", `$${totalProfit.toFixed(2)}`],
+      ["Active Customers", uniqueCustomers.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: 55,
+      head: [["Metric", "Value"]],
+      body: summaryData,
+      theme: "striped",
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { left: 14, right: 14 },
+    });
+
+    // Category Sales
+    const categoryY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.text("Sales by Category", 14, categoryY);
+
+    const categoryData = categorySales.map(cat => [
+      cat.category,
+      cat.quantity.toString(),
+      `$${cat.revenue.toFixed(2)}`
+    ]);
+
+    autoTable(doc, {
+      startY: categoryY + 5,
+      head: [["Category", "Units Sold", "Revenue"]],
+      body: categoryData,
+      theme: "striped",
+      headStyles: { fillColor: [16, 185, 129] },
+      margin: { left: 14, right: 14 },
+    });
+
+    // Top Products
+    const productsY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (productsY > 250) {
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Top Products Performance", 14, 20);
+    } else {
+      doc.setFontSize(14);
+      doc.text("Top Products Performance", 14, productsY);
+    }
+
+    const productData = topProducts.slice(0, 10).map(prod => {
+      const margin = prod.revenue > 0 ? (prod.profit / prod.revenue) * 100 : 0;
+      return [
+        prod.name.length > 25 ? prod.name.slice(0, 25) + "..." : prod.name,
+        prod.quantity.toString(),
+        `$${prod.revenue.toFixed(2)}`,
+        `$${prod.profit.toFixed(2)}`,
+        `${margin.toFixed(1)}%`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: productsY > 250 ? 25 : productsY + 5,
+      head: [["Product", "Units", "Revenue", "Profit", "Margin"]],
+      body: productData,
+      theme: "striped",
+      headStyles: { fillColor: [139, 92, 246] },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 60 },
+      },
+    });
+
+    // Top Customers
+    if (topCustomers.length > 0) {
+      const customersY = (doc as any).lastAutoTable.finalY + 15;
+      
+      if (customersY > 250) {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text("Top Customers", 14, 20);
+      } else {
+        doc.setFontSize(14);
+        doc.text("Top Customers", 14, customersY);
+      }
+
+      const customerData = topCustomers.map(cust => [
+        cust.name,
+        cust.email || "-",
+        cust.orderCount.toString(),
+        `$${cust.totalSpent.toFixed(2)}`
+      ]);
+
+      autoTable(doc, {
+        startY: customersY > 250 ? 25 : customersY + 5,
+        head: [["Customer", "Email", "Orders", "Total Spent"]],
+        body: customerData,
+        theme: "striped",
+        headStyles: { fillColor: [236, 72, 153] },
+        margin: { left: 14, right: 14 },
+      });
+    }
+
+    // Save the PDF
+    doc.save(`analytics_report_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    
+    toast({
+      title: "PDF Exported",
+      description: "Analytics report has been downloaded as PDF",
+    });
+  };
+
   const totalRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
   const totalOrders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -412,10 +550,16 @@ const Analytics = () => {
             Period Comparison
           </Label>
         </div>
-        <Button variant="outline" onClick={exportToCSV} className="h-10">
-          <Download className="mr-2 h-4 w-4" />
-          Export Report
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportToCSV} className="h-10">
+            <Download className="mr-2 h-4 w-4" />
+            CSV
+          </Button>
+          <Button variant="outline" onClick={exportToPDF} className="h-10">
+            <FileText className="mr-2 h-4 w-4" />
+            PDF
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
