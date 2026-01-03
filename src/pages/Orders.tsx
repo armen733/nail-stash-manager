@@ -70,8 +70,11 @@ interface OrderItemWithProduct {
   id: string;
   quantity: number;
   unit_price: number;
+  product_id: string;
   products: {
     name: string;
+    image_url?: string | null;
+    product_images?: { image_url: string }[];
   };
 }
 
@@ -199,7 +202,7 @@ const Orders = () => {
   const fetchData = async () => {
     try {
       const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, products(name))").order("order_date", { ascending: false }),
+        supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, product_id, products(name, image_url, product_images(image_url)))").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name, phone, email, address").order("name"),
         supabase.from("products").select("id, name, price_usd, sku, stock_on_hand, image_url, product_images(image_url)").order("name"),
         supabase.from("profiles").select("id, full_name, email, phone").order("full_name"),
@@ -729,8 +732,10 @@ const Orders = () => {
                 }}
                 className={`
                   flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all whitespace-nowrap
-                  ${isCompleted && !isCurrent ? 'bg-primary/20 text-primary' : ''}
-                  ${isCurrent ? 'bg-primary text-primary-foreground' : ''}
+                  ${isCurrent && status === 'Confirmed' ? 'bg-blue-500 text-white' : ''}
+                  ${isCurrent && status === 'Shipped' ? 'bg-purple-500 text-white' : ''}
+                  ${isCurrent && status === 'Delivered' ? 'bg-green-500 text-white' : ''}
+                  ${isCompleted && !isCurrent ? 'bg-green-500/20 text-green-600 dark:text-green-400' : ''}
                   ${!isCompleted ? 'bg-muted text-muted-foreground hover:bg-muted/80' : ''}
                   hover:scale-105 cursor-pointer
                 `}
@@ -1076,15 +1081,33 @@ const Orders = () => {
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Order Items</h3>
                 <div className="space-y-2">
-                  {(viewOrder.order_items || []).map((it) => (
-                    <div key={it.id} className="flex justify-between items-center bg-muted/50 rounded-lg p-3">
-                      <div>
-                        <span className="font-medium">{it.products?.name}</span>
-                        <span className="text-muted-foreground ml-2">× {it.quantity}</span>
+                  {(viewOrder.order_items || []).map((it) => {
+                    const productImage = it.products?.image_url || 
+                      (it.products?.product_images && it.products.product_images[0]?.image_url) || 
+                      null;
+                    return (
+                      <div key={it.id} className="flex justify-between items-center bg-muted/50 rounded-lg p-3">
+                        <div className="flex items-center gap-3">
+                          {productImage ? (
+                            <img 
+                              src={productImage} 
+                              alt={it.products?.name || 'Product'} 
+                              className="w-10 h-10 rounded-md object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-medium">{it.products?.name}</span>
+                            <span className="text-muted-foreground ml-2">× {it.quantity}</span>
+                          </div>
+                        </div>
+                        <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
                       </div>
-                      <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!viewOrder.order_items || viewOrder.order_items.length === 0) && (
                     <div className="text-muted-foreground text-center py-4">No items in this order</div>
                   )}
