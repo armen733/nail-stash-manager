@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download } from "lucide-react";
+import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart, BarChart, Bar, Tooltip } from "recharts";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart, BarChart, Bar, Tooltip, Sector } from "recharts";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/csv-export";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
@@ -65,6 +67,14 @@ interface CategorySalesData {
   color: string;
 }
 
+interface CategoryProduct {
+  id: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+  image_url?: string;
+}
+
 interface DayOfWeekData {
   day: string;
   revenue: number;
@@ -106,6 +116,10 @@ const Index = () => {
   const [dayOfWeekData, setDayOfWeekData] = useState<DayOfWeekData[]>([]);
   const [aovData, setAovData] = useState<AOVData[]>([]);
   const [profitData, setProfitData] = useState<ProfitData[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -384,6 +398,55 @@ const Index = () => {
     }
   };
 
+  // Handle category click for drill-down
+  const handleCategoryClick = async (category: string) => {
+    setSelectedCategory(category);
+    setLoadingProducts(true);
+    
+    try {
+      // Fetch products for this category with their sales data
+      const { data: orderItems, error } = await supabase
+        .from("order_items")
+        .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+        .eq("products.category", category);
+      
+      if (error) throw error;
+      
+      // Aggregate by product
+      const productMap: Record<string, CategoryProduct> = {};
+      
+      (orderItems || []).forEach((item: any) => {
+        if (!item.products || item.products.category !== category) return;
+        
+        const productId = item.product_id;
+        if (!productMap[productId]) {
+          productMap[productId] = {
+            id: productId,
+            name: item.products.name,
+            quantity: 0,
+            revenue: 0,
+            image_url: item.products.image_url,
+          };
+        }
+        productMap[productId].quantity += item.quantity || 0;
+        productMap[productId].revenue += item.line_total || 0;
+      });
+      
+      const products = Object.values(productMap)
+        .sort((a, b) => b.revenue - a.revenue);
+      
+      setCategoryProducts(products);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
   const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : "Monthly";
 
   const exportDashboardData = () => {
@@ -506,7 +569,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Donut Chart */}
+              {/* Donut Chart - Clickable */}
               <ChartContainer config={{}} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -521,9 +584,11 @@ const Index = () => {
                       paddingAngle={2}
                       label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
+                      onClick={(data) => handleCategoryClick(data.category)}
+                      style={{ cursor: 'pointer' }}
                     >
                       {categorySalesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={entry.color} style={{ cursor: 'pointer' }} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
@@ -531,11 +596,18 @@ const Index = () => {
                 </ResponsiveContainer>
               </ChartContainer>
               
-              {/* Legend Table */}
+              {/* Legend Table - Clickable */}
               <div className="space-y-2">
-                <div className="text-sm font-semibold text-muted-foreground mb-3">Revenue Breakdown</div>
+                <div className="text-sm font-semibold text-muted-foreground mb-3">
+                  Revenue Breakdown
+                  <span className="text-xs font-normal ml-2">(Click to drill down)</span>
+                </div>
                 {categorySalesData.map((cat, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors group"
+                    onClick={() => handleCategoryClick(cat.category)}
+                  >
                     <div className="flex items-center gap-3">
                       <div 
                         className="w-3 h-3 rounded-full flex-shrink-0" 
@@ -543,9 +615,10 @@ const Index = () => {
                       />
                       <span className="text-sm font-medium">{cat.category}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{cat.percentage}%</span>
                       <span className="text-sm font-semibold min-w-[70px] text-right">${cat.revenue.toFixed(0)}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 ))}
@@ -560,6 +633,69 @@ const Index = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Category Drill-Down Sheet */}
+      <Sheet open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {selectedCategory} Products
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-120px)] mt-4">
+            {loadingProducts ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : categoryProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No products found in this category</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground pb-2 border-b">
+                  <span>{categoryProducts.length} products</span>
+                  <span>
+                    Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}
+                  </span>
+                </div>
+                {categoryProducts.map((product, index) => (
+                  <div 
+                    key={product.id} 
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    {product.image_url ? (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-md"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center">
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.quantity} units sold
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        #{index + 1}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
       {/* Revenue Trend - SECOND */}
       <Card className="shadow-[var(--shadow-card)]">
