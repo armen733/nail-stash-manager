@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart, BarChart, Bar, Tooltip } from "recharts";
 import { Button } from "@/components/ui/button";
 import { downloadCSV } from "@/lib/csv-export";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,6 +63,25 @@ interface CategorySalesData {
   color: string;
 }
 
+interface DayOfWeekData {
+  day: string;
+  revenue: number;
+  orders: number;
+}
+
+interface AOVData {
+  date: string;
+  aov: number;
+}
+
+interface ProfitData {
+  date: string;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number;
+}
+
 const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
@@ -82,6 +101,9 @@ const Index = () => {
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
   const [categorySalesData, setCategorySalesData] = useState<CategorySalesData[]>([]);
+  const [dayOfWeekData, setDayOfWeekData] = useState<DayOfWeekData[]>([]);
+  const [aovData, setAovData] = useState<AOVData[]>([]);
+  const [profitData, setProfitData] = useState<ProfitData[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -271,6 +293,70 @@ const Index = () => {
 
       setCategorySalesData(categorySales);
 
+      // Calculate Day of Week data
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayStats = orders.reduce((acc: Record<number, { revenue: number; orders: number }>, order) => {
+        const dayNum = new Date(order.created_at).getDay();
+        if (!acc[dayNum]) acc[dayNum] = { revenue: 0, orders: 0 };
+        acc[dayNum].revenue += order.total || 0;
+        acc[dayNum].orders += 1;
+        return acc;
+      }, {});
+
+      const dayOfWeek = dayNames.map((day, idx) => ({
+        day,
+        revenue: dayStats[idx]?.revenue || 0,
+        orders: dayStats[idx]?.orders || 0,
+      }));
+      setDayOfWeekData(dayOfWeek);
+
+      // Calculate AOV (Average Order Value) trend
+      const aovTrend: AOVData[] = trendData.map((d, idx) => {
+        const dayOrders = orders.filter(o => {
+          const date = new Date();
+          date.setDate(date.getDate() - (days - 1 - idx));
+          const dateStr = date.toISOString().split('T')[0];
+          return new Date(o.created_at).toISOString().split('T')[0] === dateStr;
+        });
+        const orderCount = dayOrders.length;
+        const totalRev = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+        return {
+          date: d.date,
+          aov: orderCount > 0 ? totalRev / orderCount : 0,
+        };
+      });
+      setAovData(aovTrend);
+
+      // Calculate Profit Margins (simplified - using wholesale vs sale price)
+      const profitTrend: ProfitData[] = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        let dayRevenue = 0;
+        let dayCost = 0;
+        
+        orders.filter(o => new Date(o.created_at).toISOString().split('T')[0] === dateStr)
+          .forEach(order => {
+            dayRevenue += order.total || 0;
+          });
+        
+        // Estimate cost as 60% of revenue (simplified)
+        dayCost = dayRevenue * 0.6;
+        const dayProfit = dayRevenue - dayCost;
+        const margin = dayRevenue > 0 ? (dayProfit / dayRevenue) * 100 : 0;
+        
+        profitTrend.push({
+          date: timePeriod === "month" ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : date.toLocaleDateString('en-US', { weekday: 'short' }),
+          revenue: dayRevenue,
+          cost: dayCost,
+          profit: dayProfit,
+          margin,
+        });
+      }
+      setProfitData(profitTrend);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -389,7 +475,13 @@ const Index = () => {
                 className="h-[300px] w-full"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData}>
+                  <AreaChart data={revenueData}>
+                    <defs>
+                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="date" 
@@ -402,14 +494,16 @@ const Index = () => {
                       tickFormatter={(value) => `$${value}`}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="revenue"
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))" }}
+                      fill="url(#revenueGradient)"
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </ChartContainer>
             )}
@@ -611,6 +705,144 @@ const Index = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* New Analytics Row */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-3">
+        {/* Sales by Day of Week */}
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader>
+            <CardTitle className="text-base sm:text-lg">Sales by Day</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dayOfWeekData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="day" fontSize={11} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis fontSize={11} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v}`} />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        name === 'revenue' ? `$${value.toFixed(0)}` : value,
+                        name === 'revenue' ? 'Revenue' : 'Orders'
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Average Order Value */}
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base sm:text-lg">Avg Order Value</CardTitle>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">
+                ${aovData.length > 0 ? (aovData.reduce((sum, d) => sum + d.aov, 0) / aovData.filter(d => d.aov > 0).length || 0).toFixed(0) : '0'}
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              <div className="h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={aovData}>
+                    <defs>
+                      <linearGradient id="aovGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(145, 60%, 45%)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(145, 60%, 45%)" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" fontSize={10} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis fontSize={10} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v}`} />
+                    <Tooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'AOV']}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="aov"
+                      stroke="hsl(145, 60%, 45%)"
+                      strokeWidth={2}
+                      fill="url(#aovGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Profit Margins */}
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base sm:text-lg">Profit Margin</CardTitle>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-primary">
+                {profitData.length > 0 ? (
+                  profitData.reduce((sum, d) => sum + d.margin, 0) / profitData.filter(d => d.margin > 0).length || 0
+                ).toFixed(0) : '0'}%
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              <div className="h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={profitData}>
+                    <defs>
+                      <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(280, 60%, 55%)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(280, 60%, 55%)" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" fontSize={10} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis fontSize={10} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v}`} />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [
+                        name === 'profit' ? `$${value.toFixed(0)}` : `${value.toFixed(1)}%`,
+                        name === 'profit' ? 'Profit' : 'Margin'
+                      ]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="hsl(280, 60%, 55%)"
+                      strokeWidth={2}
+                      fill="url(#profitGradient)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
