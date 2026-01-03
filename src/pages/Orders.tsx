@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -1292,17 +1292,73 @@ const Orders = () => {
             {/* Date Range Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted-foreground">Date:</span>
+              
+              {/* Quick Presets */}
+              <div className="flex gap-1">
+                <Button
+                  variant={dateFrom && dateTo && format(dateFrom, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') && format(dateTo, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfDay(today));
+                    setDateTo(endOfDay(today));
+                  }}
+                >
+                  Today
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(subDays(today, 6));
+                    setDateTo(endOfDay(today));
+                  }}
+                >
+                  Last 7 Days
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
+                    setDateTo(endOfWeek(today, { weekStartsOn: 1 }));
+                  }}
+                >
+                  This Week
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateFrom(startOfMonth(today));
+                    setDateTo(endOfMonth(today));
+                  }}
+                >
+                  This Month
+                </Button>
+              </div>
+              
+              <div className="hidden sm:block h-6 w-px bg-border mx-1" />
+              
+              {/* Custom Range */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "h-9 justify-start text-left font-normal",
+                      "h-8 text-xs justify-start text-left font-normal",
                       !dateFrom && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From"}
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {dateFrom ? format(dateFrom, "MMM d") : "From"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1315,18 +1371,18 @@ const Orders = () => {
                   />
                 </PopoverContent>
               </Popover>
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground text-xs">to</span>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "h-9 justify-start text-left font-normal",
+                      "h-8 text-xs justify-start text-left font-normal",
                       !dateTo && "text-muted-foreground"
                     )}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateTo ? format(dateTo, "MMM d, yyyy") : "To"}
+                    <CalendarIcon className="mr-1 h-3 w-3" />
+                    {dateTo ? format(dateTo, "MMM d") : "To"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1343,13 +1399,13 @@ const Orders = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 px-2"
+                  className="h-8 px-2 text-xs"
                   onClick={() => {
                     setDateFrom(undefined);
                     setDateTo(undefined);
                   }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3 mr-1" />
                   Clear
                 </Button>
               )}
