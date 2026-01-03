@@ -56,6 +56,13 @@ interface OrderStatusData {
   color: string;
 }
 
+interface CategorySalesData {
+  category: string;
+  revenue: number;
+  percentage: number;
+  color: string;
+}
+
 const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
@@ -74,6 +81,7 @@ const Index = () => {
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
+  const [categorySalesData, setCategorySalesData] = useState<CategorySalesData[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -94,7 +102,7 @@ const Index = () => {
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("product_id, quantity, line_total, products(name)"),
+        supabase.from("order_items").select("product_id, quantity, line_total, products(name, category)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level"),
       ]);
 
@@ -234,6 +242,35 @@ const Index = () => {
 
       setOrderStatusData(statusBreakdown);
 
+      // Calculate category sales breakdown
+      const categoryColors: string[] = [
+        'hsl(210, 70%, 50%)',  // Blue
+        'hsl(145, 60%, 45%)',  // Green
+        'hsl(45, 85%, 55%)',   // Yellow/Gold
+        'hsl(0, 70%, 55%)',    // Red
+        'hsl(280, 60%, 55%)',  // Purple
+        'hsl(180, 50%, 45%)',  // Teal
+      ];
+
+      const categoryStats = (orderItemsRes.data || []).reduce((acc: Record<string, number>, item) => {
+        const category = item.products?.category || "Other";
+        acc[category] = (acc[category] || 0) + (item.line_total || 0);
+        return acc;
+      }, {});
+
+      const totalCategoryRevenue = Object.values(categoryStats).reduce((sum, val) => sum + val, 0);
+      
+      const categorySales = Object.entries(categoryStats)
+        .map(([category, revenue], index) => ({
+          category,
+          revenue,
+          percentage: totalCategoryRevenue > 0 ? Math.round((revenue / totalCategoryRevenue) * 100) : 0,
+          color: categoryColors[index % categoryColors.length],
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+
+      setCategorySalesData(categorySales);
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -314,31 +351,6 @@ const Index = () => {
       </div>
 
 
-      {/* Low Stock Alert */}
-      {!loading && lowStockProducts.length > 0 && (
-        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <span>
-              <strong>{lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''}</strong> running low on stock
-              {lowStockProducts.length <= 3 && (
-                <span className="text-muted-foreground ml-1">
-                  ({lowStockProducts.map(p => p.name).join(', ')})
-                </span>
-              )}
-            </span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-fit border-destructive/50 hover:bg-destructive/20"
-              onClick={() => window.location.href = '/low-stock'}
-            >
-              View All
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
@@ -406,47 +418,67 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">Order Status Breakdown</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
-            ) : orderStatusData.length === 0 ? (
+            ) : categorySalesData.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  No orders yet. Create your first order to see analytics.
+                  No sales data yet. Complete orders to see category breakdown.
                 </p>
               </div>
             ) : (
-              <ChartContainer
-                config={{
-                  count: {
-                    label: "Orders",
-                  },
-                }}
-                className="h-[300px] w-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={orderStatusData}
-                      dataKey="count"
-                      nameKey="status"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={(entry) => `${entry.status}: ${entry.count}`}
-                    >
-                      {orderStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+              <div className="flex flex-col lg:flex-row gap-4">
+                {/* Table */}
+                <div className="flex-1 space-y-2">
+                  {categorySalesData.map((cat, index) => (
+                    <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span className="text-sm font-medium">{cat.category}</span>
+                      </div>
+                      <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between py-2 border-t-2 mt-2">
+                    <span className="text-sm font-bold">Total</span>
+                    <span className="text-sm font-bold text-primary">
+                      ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
+                    </span>
+                  </div>
+                </div>
+                {/* Donut Chart */}
+                <div className="flex-1 h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categorySalesData}
+                        dataKey="revenue"
+                        nameKey="category"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        label={({ percentage }) => `${percentage}%`}
+                        labelLine={false}
+                      >
+                        {categorySalesData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip 
+                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
