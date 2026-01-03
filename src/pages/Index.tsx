@@ -472,7 +472,7 @@ const Index = () => {
         ))}
       </div>
 
-      {/* Sales by Category - FIRST */}
+      {/* Sales by Category - Pie Chart */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
@@ -480,162 +480,13 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              // Export as high-quality visual donut chart PNG (2x scale for better quality)
-              const scale = 2;
-              const canvas = document.createElement('canvas');
-              canvas.width = 900 * scale;
-              canvas.height = 450 * scale;
-              const ctx = canvas.getContext('2d')!;
-              ctx.scale(scale, scale);
-              
-              // Background
-              ctx.fillStyle = '#1a1a2e';
-              ctx.fillRect(0, 0, 900, 450);
-              
-              // Title
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText('Sales by Category', 40, 45);
-              
-              const total = categorySalesData.reduce((sum, d) => sum + d.revenue, 0);
-              
-              // === LEFT SIDE: Donut Chart ===
-              const chartCenterX = 220;
-              const chartCenterY = 250;
-              const chartRadius = 120;
-              const innerRadius = 60;
-              
-              // Draw all slices with anti-aliasing
-              let startAngle = -Math.PI / 2;
-              const sliceData: { cat: typeof categorySalesData[0]; midAngle: number }[] = [];
-              
-              categorySalesData.forEach((cat) => {
-                const sliceAngle = (cat.revenue / total) * 2 * Math.PI;
-                const endAngle = startAngle + sliceAngle;
-                const midAngle = startAngle + sliceAngle / 2;
-                
-                ctx.beginPath();
-                ctx.moveTo(chartCenterX, chartCenterY);
-                ctx.arc(chartCenterX, chartCenterY, chartRadius, startAngle, endAngle);
-                ctx.closePath();
-                ctx.fillStyle = cat.color;
-                ctx.fill();
-                
-                sliceData.push({ cat, midAngle });
-                startAngle = endAngle;
-              });
-              
-              // Draw inner circle (donut hole)
-              ctx.beginPath();
-              ctx.arc(chartCenterX, chartCenterY, innerRadius, 0, 2 * Math.PI);
-              ctx.fillStyle = '#1a1a2e';
-              ctx.fill();
-              
-              // Draw labels radially around chart
-              const labelRadius = chartRadius + 30;
-              
-              sliceData.forEach(({ cat, midAngle }) => {
-                const labelX = chartCenterX + Math.cos(midAngle) * labelRadius;
-                const labelY = chartCenterY + Math.sin(midAngle) * labelRadius;
-                const edgeX = chartCenterX + Math.cos(midAngle) * (chartRadius + 5);
-                const edgeY = chartCenterY + Math.sin(midAngle) * (chartRadius + 5);
-                const isRight = labelX > chartCenterX;
-                
-                // Short connector line
-                ctx.beginPath();
-                ctx.moveTo(edgeX, edgeY);
-                ctx.lineTo(labelX, labelY);
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                
-                // Label text
-                const textX = labelX + (isRight ? 8 : -8);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
-                ctx.textAlign = isRight ? 'left' : 'right';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(cat.category, textX, labelY - 7);
-                ctx.font = '11px system-ui, -apple-system, sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                ctx.fillText(`${cat.percentage}%`, textX, labelY + 7);
-              });
-              
-              // === RIGHT SIDE: Table ===
-              const tableX = 460;
-              const tableY = 90;
-              const rowHeight = 42;
-              
-              // Table header
-              ctx.fillStyle = 'rgba(255,255,255,0.5)';
-              ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText('Revenue Breakdown', tableX, tableY);
-              
-              // Table rows
-              categorySalesData.forEach((cat, idx) => {
-                const rowY = tableY + 35 + idx * rowHeight;
-                
-                // Color dot
-                ctx.beginPath();
-                ctx.arc(tableX + 8, rowY, 6, 0, 2 * Math.PI);
-                ctx.fillStyle = cat.color;
-                ctx.fill();
-                
-                // Category name
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '14px system-ui, -apple-system, sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText(cat.category, tableX + 25, rowY + 4);
-                
-                // Percentage
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.font = '12px system-ui, -apple-system, sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText(`${cat.percentage}%`, tableX + 300, rowY + 4);
-                
-                // Revenue
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-                ctx.fillText(`$${cat.revenue.toFixed(0)}`, tableX + 380, rowY + 4);
-                
-                // Divider line
-                if (idx < categorySalesData.length - 1) {
-                  ctx.beginPath();
-                  ctx.moveTo(tableX, rowY + rowHeight / 2 + 5);
-                  ctx.lineTo(tableX + 390, rowY + rowHeight / 2 + 5);
-                  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                  ctx.lineWidth = 1;
-                  ctx.stroke();
-                }
-              });
-              
-              // Total row
-              const totalRowY = tableY + 35 + categorySalesData.length * rowHeight + 10;
-              ctx.beginPath();
-              ctx.moveTo(tableX, totalRowY - 15);
-              ctx.lineTo(tableX + 390, totalRowY - 15);
-              ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-              ctx.lineWidth = 2;
-              ctx.stroke();
-              
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText('Total Revenue', tableX, totalRowY + 5);
-              ctx.fillStyle = 'hsl(210, 70%, 60%)';
-              ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
-              ctx.textAlign = 'right';
-              ctx.fillText(`$${total.toFixed(0)}`, tableX + 380, totalRowY + 5);
-              
-              // Download
-              const link = document.createElement('a');
-              link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-              
-              toast({ title: "Success", description: "Sales by category chart exported as image" });
+              const exportData = categorySalesData.map(d => ({
+                Category: d.category,
+                Revenue: `$${d.revenue.toFixed(2)}`,
+                Percentage: `${d.percentage}%`,
+              }));
+              downloadCSV(exportData, 'sales-by-category');
+              toast({ title: "Success", description: "Sales by category exported" });
             }}
             disabled={categorySalesData.length === 0}
           >
@@ -654,74 +505,51 @@ const Index = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Donut Chart with outside labels */}
-              <div className="w-full min-h-[350px]">
-                <ResponsiveContainer width="100%" height={350}>
-                  <PieChart margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Donut Chart */}
+              <ChartContainer config={{}} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
                     <Pie
                       data={categorySalesData}
                       dataKey="revenue"
                       nameKey="category"
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={85}
-                      label={({ cx, cy, midAngle, outerRadius, category, percentage }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = outerRadius + 30;
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        const textAnchor = x > cx ? 'start' : 'end';
-                        return (
-                          <text
-                            x={x}
-                            y={y}
-                            textAnchor={textAnchor}
-                            dominantBaseline="central"
-                            fontSize={12}
-                            fill="currentColor"
-                          >
-                            <tspan fontWeight="600">{category}</tspan>
-                            <tspan x={x} dy="1.2em" opacity={0.7}>{percentage}%</tspan>
-                          </text>
-                        );
-                      }}
-                      labelLine={{
-                        stroke: 'currentColor',
-                        strokeWidth: 1,
-                        strokeOpacity: 0.3,
-                      }}
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
                     >
                       {categorySalesData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <ChartTooltip 
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
-                    />
+                    <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
                   </PieChart>
                 </ResponsiveContainer>
-              </div>
-              {/* Table */}
+              </ChartContainer>
+              
+              {/* Legend Table */}
               <div className="space-y-2">
                 <div className="text-sm font-semibold text-muted-foreground mb-3">Revenue Breakdown</div>
                 {categorySalesData.map((cat, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div className="flex items-center gap-2">
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div className="flex items-center gap-3">
                       <div 
                         className="w-3 h-3 rounded-full flex-shrink-0" 
                         style={{ backgroundColor: cat.color }}
                       />
                       <span className="text-sm font-medium">{cat.category}</span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <span className="text-xs text-muted-foreground">{cat.percentage}%</span>
-                      <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
+                      <span className="text-sm font-semibold min-w-[70px] text-right">${cat.revenue.toFixed(0)}</span>
                     </div>
                   </div>
                 ))}
-                <div className="flex items-center justify-between py-3 border-t-2 mt-2">
+                <div className="flex items-center justify-between pt-3 mt-2 border-t-2 border-border">
                   <span className="text-sm font-bold">Total Revenue</span>
                   <span className="text-sm font-bold text-primary">
                     ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
