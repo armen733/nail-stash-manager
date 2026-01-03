@@ -29,6 +29,8 @@ interface DailyRevenue {
   date: string;
   revenue: number;
   orders: number;
+  avgOrderValue: number;
+  cumulativeRevenue: number;
 }
 
 interface CategorySales {
@@ -143,7 +145,7 @@ const Analytics = () => {
       const dailyMap: Record<string, DailyRevenue> = {};
       days.forEach(day => {
         const dateStr = format(day, "MMM dd");
-        dailyMap[dateStr] = { date: dateStr, revenue: 0, orders: 0 };
+        dailyMap[dateStr] = { date: dateStr, revenue: 0, orders: 0, avgOrderValue: 0, cumulativeRevenue: 0 };
       });
 
       orders?.forEach(order => {
@@ -153,7 +155,18 @@ const Analytics = () => {
           dailyMap[dateStr].orders += 1;
         }
       });
-      setDailyRevenue(Object.values(dailyMap));
+
+      // Calculate avg order value and cumulative revenue
+      let cumulative = 0;
+      const dailyData = Object.values(dailyMap).map(day => {
+        cumulative += day.revenue;
+        return {
+          ...day,
+          avgOrderValue: day.orders > 0 ? day.revenue / day.orders : 0,
+          cumulativeRevenue: cumulative
+        };
+      });
+      setDailyRevenue(dailyData);
 
       // Calculate category sales & product performance
       const categoryMap: Record<string, CategorySales> = {};
@@ -639,6 +652,141 @@ const Analytics = () => {
                     stroke="hsl(var(--chart-2))" 
                     strokeWidth={2}
                     dot={false}
+                    name="Orders"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Additional Charts Row */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Cumulative Revenue Line Chart */}
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              Cumulative Revenue
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            {loading ? (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">Loading...</div>
+            ) : (
+              <ChartContainer config={{}} className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={dailyRevenue}>
+                    <defs>
+                      <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Cumulative']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cumulativeRevenue" 
+                      stroke="#10B981" 
+                      strokeWidth={3}
+                      dot={false}
+                      name="Cumulative Revenue"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Average Order Value Trend */}
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-purple-500" />
+              Avg Order Value Trend
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            {loading ? (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">Loading...</div>
+            ) : (
+              <ChartContainer config={{}} className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dailyRevenue.filter(d => d.orders > 0)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, 'Avg Order']}
+                    />
+                    <Bar 
+                      dataKey="avgOrderValue" 
+                      fill="#8B5CF6" 
+                      radius={[4, 4, 0, 0]}
+                      name="Avg Order Value"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Orders Volume Chart */}
+      <Card className="shadow-[var(--shadow-card)]">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-blue-500" />
+            Daily Orders Volume
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          {loading ? (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">Loading...</div>
+          ) : (
+            <ChartContainer config={{}} className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailyRevenue}>
+                  <defs>
+                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Area 
+                    type="stepAfter" 
+                    dataKey="orders" 
+                    stroke="#3B82F6" 
+                    fillOpacity={1} 
+                    fill="url(#colorOrders)" 
                     name="Orders"
                   />
                 </AreaChart>
