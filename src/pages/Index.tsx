@@ -431,43 +431,22 @@ const Index = () => {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Table */}
-                <div className="flex-1 space-y-2">
-                  {categorySalesData.map((cat, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <span className="text-sm font-medium">{cat.category}</span>
-                      </div>
-                      <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between py-2 border-t-2 mt-2">
-                    <span className="text-sm font-bold">Total</span>
-                    <span className="text-sm font-bold text-primary">
-                      ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
-                    </span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Donut Chart with outside labels */}
-                <div className="flex-1 h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                <div className="w-full min-h-[350px]">
+                  <ResponsiveContainer width="100%" height={350}>
+                    <PieChart margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
                       <Pie
                         data={categorySalesData}
                         dataKey="revenue"
                         nameKey="category"
                         cx="50%"
                         cy="50%"
-                        innerRadius={45}
-                        outerRadius={75}
+                        innerRadius={50}
+                        outerRadius={85}
                         label={({ cx, cy, midAngle, outerRadius, category, percentage }) => {
                           const RADIAN = Math.PI / 180;
-                          const radius = outerRadius + 25;
+                          const radius = outerRadius + 30;
                           const x = cx + radius * Math.cos(-midAngle * RADIAN);
                           const y = cy + radius * Math.sin(-midAngle * RADIAN);
                           const textAnchor = x > cx ? 'start' : 'end';
@@ -477,17 +456,18 @@ const Index = () => {
                               y={y}
                               textAnchor={textAnchor}
                               dominantBaseline="central"
-                              className="text-xs"
-                              fill="hsl(var(--foreground))"
+                              fontSize={12}
+                              fill="currentColor"
                             >
                               <tspan fontWeight="600">{category}</tspan>
-                              <tspan x={x} dy="1.2em" fill="hsl(var(--muted-foreground))">{percentage}%</tspan>
+                              <tspan x={x} dy="1.2em" opacity={0.7}>{percentage}%</tspan>
                             </text>
                           );
                         }}
                         labelLine={{
-                          stroke: 'hsl(var(--muted-foreground))',
+                          stroke: 'currentColor',
                           strokeWidth: 1,
+                          strokeOpacity: 0.3,
                         }}
                       >
                         {categorySalesData.map((entry, index) => (
@@ -497,16 +477,33 @@ const Index = () => {
                       <ChartTooltip 
                         formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                       />
-                      <Legend 
-                        layout="horizontal"
-                        verticalAlign="bottom"
-                        align="center"
-                        iconType="circle"
-                        iconSize={8}
-                        formatter={(value) => <span className="text-xs text-foreground">{value}</span>}
-                      />
                     </PieChart>
                   </ResponsiveContainer>
+                </div>
+                {/* Table */}
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-muted-foreground mb-3">Revenue Breakdown</div>
+                  {categorySalesData.map((cat, index) => (
+                    <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span className="text-sm font-medium">{cat.category}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">{cat.percentage}%</span>
+                        <span className="text-sm font-semibold">${cat.revenue.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between py-3 border-t-2 mt-2">
+                    <span className="text-sm font-bold">Total Revenue</span>
+                    <span className="text-sm font-bold text-primary">
+                      ${categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(0)}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
