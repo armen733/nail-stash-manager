@@ -819,19 +819,28 @@ const Index = () => {
                 const chartStartX = 260;
                 const thumbSize = 40;
                 
-                // Load all product images first
-                const imagePromises = topProducts.map(product => {
-                  return new Promise<HTMLImageElement | null>((resolve) => {
-                    if (product.image_url) {
+                // Load all product images first using fetch for better CORS handling
+                const imagePromises = topProducts.map(async (product) => {
+                  if (!product.image_url) return null;
+                  try {
+                    const response = await fetch(product.image_url);
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    return new Promise<HTMLImageElement | null>((resolve) => {
                       const img = new Image();
-                      img.crossOrigin = 'anonymous';
-                      img.onload = () => resolve(img);
-                      img.onerror = () => resolve(null);
-                      img.src = product.image_url;
-                    } else {
-                      resolve(null);
-                    }
-                  });
+                      img.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(img);
+                      };
+                      img.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(null);
+                      };
+                      img.src = objectUrl;
+                    });
+                  } catch {
+                    return null;
+                  }
                 });
                 
                 const images = await Promise.all(imagePromises);
@@ -965,19 +974,28 @@ const Index = () => {
               const chartStartX = 280;
               const thumbSize = 34;
               
-              // Load all product images first
-              const imagePromises = itemsToShow.map(item => {
-                return new Promise<HTMLImageElement | null>((resolve) => {
-                  if (item.image_url) {
+              // Load all product images first using fetch for better CORS handling
+              const imagePromises = itemsToShow.map(async (item) => {
+                if (!item.image_url) return null;
+                try {
+                  const response = await fetch(item.image_url);
+                  const blob = await response.blob();
+                  const objectUrl = URL.createObjectURL(blob);
+                  return new Promise<HTMLImageElement | null>((resolve) => {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img);
-                    img.onerror = () => resolve(null);
-                    img.src = item.image_url;
-                  } else {
-                    resolve(null);
-                  }
-                });
+                    img.onload = () => {
+                      URL.revokeObjectURL(objectUrl);
+                      resolve(img);
+                    };
+                    img.onerror = () => {
+                      URL.revokeObjectURL(objectUrl);
+                      resolve(null);
+                    };
+                    img.src = objectUrl;
+                  });
+                } catch {
+                  return null;
+                }
               });
               
               const images = await Promise.all(imagePromises);
