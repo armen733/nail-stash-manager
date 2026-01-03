@@ -789,13 +789,63 @@ const Index = () => {
               variant="outline" 
               size="sm" 
               onClick={() => {
-                const exportData = topProducts.map(p => ({
-                  Product: p.product_name,
-                  'Quantity Sold': p.quantity_sold,
-                  Revenue: `$${p.revenue.toFixed(2)}`,
-                }));
-                downloadCSV(exportData, 'top-products');
-                toast({ title: "Success", description: "Top products exported" });
+                // Export as visual bar chart PNG
+                const canvas = document.createElement('canvas');
+                canvas.width = 700;
+                canvas.height = 500;
+                const ctx = canvas.getContext('2d')!;
+                
+                // Background
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Title
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Top Products', 40, 45);
+                
+                const barColors = ['hsl(145, 60%, 45%)', 'hsl(210, 70%, 50%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)'];
+                const maxQty = Math.max(...topProducts.map(p => p.quantity_sold));
+                const barHeight = 50;
+                const barGap = 20;
+                const chartStartY = 80;
+                const chartWidth = 500;
+                const chartStartX = 180;
+                
+                topProducts.forEach((product, idx) => {
+                  const y = chartStartY + idx * (barHeight + barGap);
+                  const barWidth = (product.quantity_sold / maxQty) * chartWidth;
+                  
+                  // Product name
+                  ctx.fillStyle = '#ffffff';
+                  ctx.font = '14px sans-serif';
+                  ctx.textAlign = 'right';
+                  ctx.fillText(product.product_name.substring(0, 20), chartStartX - 15, y + barHeight / 2 + 5);
+                  
+                  // Bar
+                  ctx.fillStyle = barColors[idx % barColors.length];
+                  ctx.beginPath();
+                  ctx.roundRect(chartStartX, y, barWidth, barHeight, 4);
+                  ctx.fill();
+                  
+                  // Quantity and revenue on bar
+                  ctx.fillStyle = '#ffffff';
+                  ctx.font = 'bold 14px sans-serif';
+                  ctx.textAlign = 'left';
+                  ctx.fillText(`${product.quantity_sold} sold`, chartStartX + barWidth + 10, y + barHeight / 2 - 5);
+                  ctx.font = '12px sans-serif';
+                  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                  ctx.fillText(`$${product.revenue.toFixed(0)}`, chartStartX + barWidth + 10, y + barHeight / 2 + 12);
+                });
+                
+                // Download
+                const link = document.createElement('a');
+                link.download = `top-products-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                toast({ title: "Success", description: "Top products chart exported as image" });
               }}
               disabled={topProducts.length === 0}
             >
@@ -840,14 +890,68 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={() => {
-              const exportData = stockValues.map(item => ({
-                Product: item.product_name,
-                'Stock Qty': item.stock,
-                'Unit Price': `$${item.price.toFixed(2)}`,
-                'Total Value': `$${item.value.toFixed(2)}`,
-              }));
-              downloadCSV(exportData, 'stock-inventory');
-              toast({ title: "Success", description: "Stock inventory exported" });
+              // Export as visual stacked bar chart PNG
+              const canvas = document.createElement('canvas');
+              const itemsToShow = stockValues.slice(0, 10);
+              canvas.width = 800;
+              canvas.height = 120 + itemsToShow.length * 55;
+              const ctx = canvas.getContext('2d')!;
+              
+              // Background
+              ctx.fillStyle = '#1a1a2e';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              
+              // Title
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 24px sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Stock Inventory Value', 40, 45);
+              ctx.font = '16px sans-serif';
+              ctx.fillStyle = 'rgba(255,255,255,0.7)';
+              ctx.fillText(`Total: $${totalStockValue.toFixed(2)}`, 40, 75);
+              
+              const barColors = ['hsl(210, 70%, 50%)', 'hsl(145, 60%, 45%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)', 'hsl(180, 50%, 45%)', 'hsl(320, 60%, 50%)', 'hsl(90, 50%, 45%)', 'hsl(30, 70%, 50%)', 'hsl(250, 50%, 55%)'];
+              const maxValue = Math.max(...itemsToShow.map(i => i.value));
+              const barHeight = 40;
+              const barGap = 15;
+              const chartStartY = 100;
+              const chartWidth = 450;
+              const chartStartX = 220;
+              
+              itemsToShow.forEach((item, idx) => {
+                const y = chartStartY + idx * (barHeight + barGap);
+                const barWidth = (item.value / maxValue) * chartWidth;
+                
+                // Product name (truncated)
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '13px sans-serif';
+                ctx.textAlign = 'right';
+                const displayName = item.product_name.length > 25 ? item.product_name.substring(0, 25) + '...' : item.product_name;
+                ctx.fillText(displayName, chartStartX - 15, y + barHeight / 2 + 4);
+                
+                // Bar
+                ctx.fillStyle = barColors[idx % barColors.length];
+                ctx.beginPath();
+                ctx.roundRect(chartStartX, y, Math.max(barWidth, 5), barHeight, 4);
+                ctx.fill();
+                
+                // Value on right
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(`$${item.value.toFixed(0)}`, chartStartX + barWidth + 12, y + barHeight / 2 - 3);
+                ctx.font = '11px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillText(`${item.stock} × $${item.price.toFixed(2)}`, chartStartX + barWidth + 12, y + barHeight / 2 + 12);
+              });
+              
+              // Download
+              const link = document.createElement('a');
+              link.download = `stock-inventory-${new Date().toISOString().split('T')[0]}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              
+              toast({ title: "Success", description: "Stock inventory chart exported as image" });
             }}
             disabled={stockValues.length === 0}
           >
