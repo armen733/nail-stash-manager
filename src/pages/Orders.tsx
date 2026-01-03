@@ -495,10 +495,10 @@ const Orders = () => {
     const matchesSearch = name.toLowerCase().includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     
-    // Date range filter
-    const orderDate = new Date(order.order_date);
-    const matchesDateFrom = !dateFrom || orderDate >= dateFrom;
-    const matchesDateTo = !dateTo || orderDate <= dateTo;
+    // Date range filter - compare date strings to avoid timezone issues
+    const orderDateStr = order.order_date; // "YYYY-MM-DD" format
+    const matchesDateFrom = !dateFrom || orderDateStr >= format(dateFrom, 'yyyy-MM-dd');
+    const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
     
     return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
   };
@@ -1291,14 +1291,14 @@ const Orders = () => {
             
             {/* Date Range Filter */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">Date:</span>
+              <span className="text-sm text-muted-foreground shrink-0">Date:</span>
               
               {/* Quick Presets */}
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 <Button
                   variant={dateFrom && dateTo && format(dateFrom, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') && format(dateTo, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "default" : "outline"}
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                   onClick={() => {
                     const today = new Date();
                     setDateFrom(startOfDay(today));
@@ -1310,38 +1310,38 @@ const Orders = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                   onClick={() => {
                     const today = new Date();
                     setDateFrom(subDays(today, 6));
                     setDateTo(endOfDay(today));
                   }}
                 >
-                  Last 7 Days
+                  7 Days
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                   onClick={() => {
                     const today = new Date();
                     setDateFrom(startOfWeek(today, { weekStartsOn: 1 }));
                     setDateTo(endOfWeek(today, { weekStartsOn: 1 }));
                   }}
                 >
-                  This Week
+                  Week
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-7 text-xs px-2"
                   onClick={() => {
                     const today = new Date();
                     setDateFrom(startOfMonth(today));
                     setDateTo(endOfMonth(today));
                   }}
                 >
-                  This Month
+                  Month
                 </Button>
               </div>
               
