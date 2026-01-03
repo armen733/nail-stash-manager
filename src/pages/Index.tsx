@@ -314,6 +314,31 @@ const Index = () => {
       </div>
 
 
+      {/* Low Stock Alert */}
+      {!loading && lowStockProducts.length > 0 && (
+        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span>
+              <strong>{lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''}</strong> running low on stock
+              {lowStockProducts.length <= 3 && (
+                <span className="text-muted-foreground ml-1">
+                  ({lowStockProducts.map(p => p.name).join(', ')})
+                </span>
+              )}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-fit border-destructive/50 hover:bg-destructive/20"
+              onClick={() => window.location.href = '/low-stock'}
+            >
+              View All
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
