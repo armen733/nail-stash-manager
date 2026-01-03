@@ -647,7 +647,7 @@ const Orders = () => {
       </head>
       <body>
         <div class="header">
-          <div class="logo">NERA</div>
+          <div class="logo"><img src="/images/nera-logo-packing.png" alt="NERA Beauty" style="height: 60px; width: auto;" /></div>
           <div class="order-info">
             <div class="order-id">Order #${order.id.slice(0, 8).toUpperCase()}</div>
             <div class="date">${new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
