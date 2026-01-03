@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LazyImage } from "@/components/ui/lazy-image";
+
 
 interface LowStockProduct {
   id: string;
@@ -40,8 +40,14 @@ interface LowStockProduct {
   shape: string | null;
 }
 
+interface CategoryVariantType {
+  category: string;
+  variant_type: string;
+}
+
 const LowStock = () => {
   const [products, setProducts] = useState<LowStockProduct[]>([]);
+  const [categoryVariantTypes, setCategoryVariantTypes] = useState<CategoryVariantType[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<LowStockProduct | null>(null);
   const [newStock, setNewStock] = useState("");
@@ -51,7 +57,13 @@ const LowStock = () => {
 
   useEffect(() => {
     fetchLowStockProducts();
+    fetchCategoryVariantTypes();
   }, []);
+
+  // Reset variant filter when category changes
+  useEffect(() => {
+    setVariantFilter("all");
+  }, [categoryFilter]);
 
   const fetchLowStockProducts = async () => {
     try {
@@ -77,6 +89,21 @@ const LowStock = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategoryVariantTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("category_variant_types")
+        .select("category, variant_type")
+        .order("category")
+        .order("display_order");
+      
+      if (error) throw error;
+      setCategoryVariantTypes(data || []);
+    } catch (error: any) {
+      console.error("Error fetching category variant types:", error);
     }
   };
 
@@ -114,20 +141,20 @@ const LowStock = () => {
     return { label: "Low", variant: "secondary" as const };
   };
 
-  // Get unique categories and variant types
+  // Get unique categories from low stock products
   const categories = [...new Set(products.map(p => p.category))].sort();
-  const variantTypes = [...new Set(products.flatMap(p => 
-    [p.grit, p.material, p.shape, p.variant_name].filter(Boolean)
-  ))].sort();
+  
+  // Get variant types for selected category from category_variant_types table
+  const variantTypesForCategory = categoryFilter === "all" 
+    ? [...new Set(categoryVariantTypes.map(cvt => cvt.variant_type))].sort()
+    : categoryVariantTypes
+        .filter(cvt => cvt.category === categoryFilter)
+        .map(cvt => cvt.variant_type);
 
   // Filter products
   const filteredProducts = products.filter(product => {
     const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
-    const matchesVariant = variantFilter === "all" || 
-      product.grit === variantFilter || 
-      product.material === variantFilter || 
-      product.shape === variantFilter ||
-      product.variant_name === variantFilter;
+    const matchesVariant = variantFilter === "all" || product.variant_name === variantFilter;
     return matchesCategory && matchesVariant;
   });
 
@@ -167,14 +194,18 @@ const LowStock = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={variantFilter} onValueChange={setVariantFilter}>
+          <Select 
+            value={variantFilter} 
+            onValueChange={setVariantFilter}
+            disabled={variantTypesForCategory.length === 0}
+          >
             <SelectTrigger className="w-full sm:w-[180px] h-10">
               <SelectValue placeholder="Variant Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Variants</SelectItem>
-              {variantTypes.map(v => (
-                <SelectItem key={v} value={v as string}>{v}</SelectItem>
+              {variantTypesForCategory.map(v => (
+                <SelectItem key={v} value={v}>{v}</SelectItem>
               ))}
             </SelectContent>
           </Select>
