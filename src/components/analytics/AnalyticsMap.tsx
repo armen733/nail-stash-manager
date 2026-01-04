@@ -37,8 +37,8 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const [loading, setLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
-  const [showStats, setShowStats] = useState(true);
-  const [showControls, setShowControls] = useState(true);
+  const [showStats, setShowStats] = useState(false);
+  const [showControls, setShowControls] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const { toast } = useToast();
 
