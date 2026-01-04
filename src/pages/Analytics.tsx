@@ -373,7 +373,7 @@ const Analytics = () => {
     setLoadingProducts(true);
     
     try {
-      // Fetch order items with product details including parent product for image fallback
+      // Fetch order items with product details including parent product and product_images for fallback
       const { data: orderItems, error } = await supabase
         .from("order_items")
         .select(`
@@ -386,7 +386,8 @@ const Analytics = () => {
             category, 
             image_url,
             parent_product_id,
-            parent:parent_product_id(image_url)
+            parent:parent_product_id(image_url),
+            product_images(image_url, display_order)
           )
         `)
         .eq("products.category", category);
@@ -400,9 +401,23 @@ const Analytics = () => {
         
         const productId = item.product_id;
         if (!productMap[productId]) {
-          // Use product image, fallback to parent product image
-          const imageUrl = item.products.image_url || 
-            (item.products.parent && item.products.parent.image_url);
+          // Get image with multiple fallbacks:
+          // 1. Product's own image_url
+          // 2. Parent product's image_url
+          // 3. First image from product_images table (sorted by display_order)
+          let imageUrl = item.products.image_url;
+          
+          if (!imageUrl && item.products.parent) {
+            imageUrl = item.products.parent.image_url;
+          }
+          
+          if (!imageUrl && item.products.product_images?.length > 0) {
+            // Sort by display_order and take the first one
+            const sortedImages = [...item.products.product_images].sort(
+              (a: any, b: any) => (a.display_order || 0) - (b.display_order || 0)
+            );
+            imageUrl = sortedImages[0]?.image_url;
+          }
           
           productMap[productId] = {
             id: productId,
