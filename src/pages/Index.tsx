@@ -444,17 +444,31 @@ const Index = () => {
     
     try {
       // Fetch products for this category with their sales data
-      const { data: orderItems, error } = await supabase
-        .from("order_items")
-        .select("product_id, quantity, line_total, products(id, name, category, image_url)")
-        .eq("products.category", category);
+      const [orderItemsRes, productImagesRes] = await Promise.all([
+        supabase
+          .from("order_items")
+          .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+          .eq("products.category", category),
+        supabase
+          .from("product_images")
+          .select("product_id, image_url, display_order")
+          .order("display_order"),
+      ]);
       
-      if (error) throw error;
+      if (orderItemsRes.error) throw orderItemsRes.error;
+      
+      // Create a map of product_id -> first image from product_images table
+      const productImagesMap: Record<string, string> = {};
+      (productImagesRes.data || []).forEach((img: any) => {
+        if (!productImagesMap[img.product_id]) {
+          productImagesMap[img.product_id] = img.image_url;
+        }
+      });
       
       // Aggregate by product
       const productMap: Record<string, CategoryProduct> = {};
       
-      (orderItems || []).forEach((item: any) => {
+      (orderItemsRes.data || []).forEach((item: any) => {
         if (!item.products || item.products.category !== category) return;
         
         const productId = item.product_id;
@@ -464,7 +478,8 @@ const Index = () => {
             name: item.products.name,
             quantity: 0,
             revenue: 0,
-            image_url: item.products.image_url,
+            // Use products.image_url first, fallback to product_images table
+            image_url: item.products.image_url || productImagesMap[productId],
           };
         }
         productMap[productId].quantity += item.quantity || 0;
