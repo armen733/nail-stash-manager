@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
-  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin
 } from "lucide-react";
+import AnalyticsMap from "@/components/analytics/AnalyticsMap";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,6 +93,7 @@ const Analytics = () => {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
@@ -814,6 +816,10 @@ const Analytics = () => {
           >
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
           </Button>
+          <Button variant="outline" onClick={() => setShowMap(true)} className="h-10">
+            <MapPin className="mr-2 h-4 w-4" />
+            Map
+          </Button>
           <Button variant="outline" onClick={exportToCSV} className="h-10">
             <Download className="mr-2 h-4 w-4" />
             CSV
@@ -824,6 +830,13 @@ const Analytics = () => {
           </Button>
         </div>
       </div>
+
+      {/* Analytics Map Dialog */}
+      <AnalyticsMap 
+        open={showMap} 
+        onOpenChange={setShowMap}
+        dateRange={dateRange?.from && dateRange?.to ? { from: dateRange.from, to: dateRange.to } : undefined}
+      />
 
       {/* KPI Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
