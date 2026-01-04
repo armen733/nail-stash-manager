@@ -193,12 +193,10 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     fetchOrders();
   }, [open, mapboxToken, dateRange, toast]);
 
-  // Initialize map - separate from data loading
+  // Initialize map immediately when token is available
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || !open) return;
     if (map.current || mapInitialized.current) return;
-    // Don't wait for loading to complete - initialize map immediately when token is ready
-    if (loading) return;
 
     mapInitialized.current = true;
     mapboxgl.accessToken = mapboxToken;
@@ -211,36 +209,28 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    map.current.on("load", () => {
-      // Add heatmap layer if we have data
-      if (geocodedOrders.length > 0) {
-        addHeatmapLayer();
-        
-        // Fit bounds to orders
-        const bounds = new mapboxgl.LngLatBounds();
-        geocodedOrders.forEach((order) => {
-          bounds.extend([order.lng, order.lat]);
-        });
-        map.current?.fitBounds(bounds, { padding: 60, maxZoom: 12 });
-      }
-    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapboxToken, open, loading]);
+  }, [mapboxToken, open]);
 
-  // Update heatmap when orders change
+  // Update heatmap when orders change (after map and data are ready)
   useEffect(() => {
     if (!map.current || geocodedOrders.length === 0) return;
     
-    // Wait for map to be loaded before adding layer
-    if (map.current.isStyleLoaded()) {
+    const updateMap = () => {
       addHeatmapLayer();
       
       const bounds = new mapboxgl.LngLatBounds();
       geocodedOrders.forEach((order) => {
         bounds.extend([order.lng, order.lat]);
       });
-      map.current.fitBounds(bounds, { padding: 60, maxZoom: 12 });
+      map.current?.fitBounds(bounds, { padding: 60, maxZoom: 12 });
+    };
+    
+    // Wait for map to be loaded before adding layer
+    if (map.current.isStyleLoaded()) {
+      updateMap();
+    } else {
+      map.current.once("load", updateMap);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geocodedOrders]);
@@ -286,8 +276,12 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
         </DialogHeader>
 
         <div className="relative flex-1 min-h-0">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
+          {/* Map container - always render so map can initialize */}
+          <div ref={mapContainer} className="absolute inset-0" />
+          
+          {/* Loading overlay */}
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
               <div className="text-center space-y-3">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                 <p className="text-sm text-muted-foreground">
@@ -295,9 +289,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
                 </p>
               </div>
             </div>
-          ) : (
-            <>
-              <div ref={mapContainer} className="absolute inset-0" />
+          )}
 
               {/* Stats overlay - collapsible */}
               <div className="absolute top-4 left-4">
@@ -377,17 +369,15 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
               </div>
 
 
-              {geocodedOrders.length === 0 && !loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-                  <div className="text-center space-y-2">
-                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                    <p className="text-muted-foreground">
-                      No orders with addresses found for this period
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
+          {geocodedOrders.length === 0 && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+              <div className="text-center space-y-2">
+                <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                <p className="text-muted-foreground">
+                  No orders with addresses found for this period
+                </p>
+              </div>
+            </div>
           )}
         </div>
       </DialogContent>
