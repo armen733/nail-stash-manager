@@ -581,14 +581,145 @@ const Index = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => {
-              const exportData = categorySalesData.map(d => ({
-                Category: d.category,
-                Revenue: `$${d.revenue.toFixed(2)}`,
-                Percentage: `${d.percentage}%`,
-              }));
-              downloadCSV(exportData, 'sales-by-category');
-              toast({ title: "Success", description: "Sales by category exported" });
+            onClick={async () => {
+              // Export as visual PNG with donut chart and legend (2x scale)
+              const scale = 2;
+              const baseWidth = 800;
+              const baseHeight = 450;
+              const canvas = document.createElement('canvas');
+              canvas.width = baseWidth * scale;
+              canvas.height = baseHeight * scale;
+              const ctx = canvas.getContext('2d')!;
+              ctx.scale(scale, scale);
+              
+              // Background gradient
+              const bgGradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
+              bgGradient.addColorStop(0, '#1a1a2e');
+              bgGradient.addColorStop(1, '#16213e');
+              ctx.fillStyle = bgGradient;
+              ctx.fillRect(0, 0, baseWidth, baseHeight);
+              
+              // Title
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Sales by Category', 40, 45);
+              
+              // Date subtitle
+              ctx.fillStyle = '#8b8ba3';
+              ctx.font = '14px system-ui, -apple-system, sans-serif';
+              ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 40, 70);
+              
+              // Draw donut chart
+              const centerX = 180;
+              const centerY = 260;
+              const outerRadius = 120;
+              const innerRadius = 70;
+              const totalRevenue = categorySalesData.reduce((sum, cat) => sum + cat.revenue, 0);
+              
+              let startAngle = -Math.PI / 2; // Start from top
+              
+              categorySalesData.forEach((cat) => {
+                const sliceAngle = (cat.revenue / totalRevenue) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+                ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+                ctx.closePath();
+                ctx.fillStyle = cat.color;
+                ctx.fill();
+                
+                // Add subtle shadow between slices
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                startAngle = endAngle;
+              });
+              
+              // Center text
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(`$${totalRevenue.toFixed(0)}`, centerX, centerY - 5);
+              ctx.fillStyle = '#8b8ba3';
+              ctx.font = '12px system-ui, -apple-system, sans-serif';
+              ctx.fillText('Total Revenue', centerX, centerY + 15);
+              
+              // Legend section
+              const legendX = 350;
+              const legendStartY = 100;
+              const rowHeight = 45;
+              
+              // Legend header
+              ctx.fillStyle = '#8b8ba3';
+              ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('REVENUE BREAKDOWN', legendX, legendStartY);
+              
+              // Draw legend items
+              categorySalesData.forEach((cat, idx) => {
+                const y = legendStartY + 30 + idx * rowHeight;
+                
+                // Color dot
+                ctx.beginPath();
+                ctx.arc(legendX + 8, y + 8, 8, 0, Math.PI * 2);
+                ctx.fillStyle = cat.color;
+                ctx.fill();
+                
+                // Category name
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '15px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(cat.category, legendX + 28, y + 13);
+                
+                // Percentage badge
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                const percentText = `${cat.percentage}%`;
+                const percentWidth = ctx.measureText(percentText).width + 16;
+                ctx.beginPath();
+                ctx.roundRect(legendX + 200, y - 2, percentWidth, 24, 12);
+                ctx.fill();
+                ctx.fillStyle = '#8b8ba3';
+                ctx.font = '13px system-ui, -apple-system, sans-serif';
+                ctx.fillText(percentText, legendX + 208, y + 13);
+                
+                // Revenue amount
+                ctx.fillStyle = '#10B981';
+                ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(`$${cat.revenue.toFixed(0)}`, baseWidth - 50, y + 13);
+                ctx.textAlign = 'left';
+              });
+              
+              // Total row with separator
+              const totalY = legendStartY + 30 + categorySalesData.length * rowHeight + 15;
+              ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(legendX, totalY - 10);
+              ctx.lineTo(baseWidth - 40, totalY - 10);
+              ctx.stroke();
+              
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'left';
+              ctx.fillText('Total Revenue', legendX, totalY + 10);
+              
+              ctx.fillStyle = '#10B981';
+              ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+              ctx.textAlign = 'right';
+              ctx.fillText(`$${totalRevenue.toFixed(0)}`, baseWidth - 50, totalY + 10);
+              
+              // Download
+              const link = document.createElement('a');
+              link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              
+              toast({ title: "Success", description: "Sales by category exported as image" });
             }}
             disabled={categorySalesData.length === 0}
           >
