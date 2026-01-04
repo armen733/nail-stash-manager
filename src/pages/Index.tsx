@@ -713,13 +713,34 @@ const Index = () => {
               ctx.textAlign = 'right';
               ctx.fillText(`$${totalRevenue.toFixed(0)}`, baseWidth - 50, totalY + 10);
               
-              // Download
-              const link = document.createElement('a');
-              link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-              
-              toast({ title: "Success", description: "Sales by category exported as image" });
+              // Add watermark logo (light version for dark background)
+              const logo = new Image();
+              logo.crossOrigin = 'anonymous';
+              logo.onload = () => {
+                const logoWidth = 100;
+                const logoHeight = logoWidth * (logo.height / logo.width);
+                ctx.globalAlpha = 0.6;
+                ctx.drawImage(logo, baseWidth - logoWidth - 30, baseHeight - logoHeight - 20, logoWidth, logoHeight);
+                ctx.globalAlpha = 1.0;
+                
+                // Download after logo loads
+                const link = document.createElement('a');
+                link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                toast({ title: "Success", description: "Sales by category exported as image" });
+              };
+              logo.onerror = () => {
+                // Download without logo if loading fails
+                const link = document.createElement('a');
+                link.download = `sales-by-category-${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                toast({ title: "Success", description: "Sales by category exported as image" });
+              };
+              logo.src = '/images/nera-logo-light.png';
             }}
             disabled={categorySalesData.length === 0}
           >
