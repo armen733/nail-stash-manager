@@ -13,7 +13,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
   RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin
 } from "lucide-react";
-import AnalyticsMap from "@/components/analytics/AnalyticsMap";
+import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -831,8 +831,8 @@ const Analytics = () => {
         </div>
       </div>
 
-      {/* Analytics Map Dialog */}
-      <AnalyticsMap 
+      {/* Analytics Map Dialog - Lazy loaded */}
+      <LazyAnalyticsMap 
         open={showMap} 
         onOpenChange={setShowMap}
         dateRange={dateRange?.from && dateRange?.to ? { from: dateRange.from, to: dateRange.to } : undefined}
