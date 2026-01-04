@@ -728,7 +728,42 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background">
+                <DropdownMenuContent align="end" className="w-64 bg-background max-h-[70vh] overflow-y-auto">
+                  {/* Search inside settings */}
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        placeholder="Search orders..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8 h-8 text-xs"
+                      />
+                    </div>
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 border rounded-lg overflow-hidden">
+                        {searchResults.map((order) => (
+                          <button
+                            key={order.id}
+                            className="w-full text-left p-2 hover:bg-muted/50 text-sm border-b last:border-b-0"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setSearchTerm("");
+                              if (map.current) {
+                                map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
+                              }
+                            }}
+                          >
+                            <p className="font-medium truncate">{order.customer_name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground truncate">{order.customer_address}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <DropdownMenuSeparator />
+
                   {/* Heatmap Toggle */}
                   <DropdownMenuItem 
                     onClick={() => {
@@ -844,42 +879,9 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           
           <div ref={mapContainer} className="w-full h-full" />
 
-          {/* Search Bar - positioned below header, between filter and route panels */}
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search orders..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 h-8 text-xs bg-background/90 backdrop-blur border shadow-lg"
-              />
-              {searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg overflow-hidden z-30">
-                  {searchResults.map((order) => (
-                    <button
-                      key={order.id}
-                      className="w-full text-left p-2 hover:bg-muted/50 text-sm border-b last:border-b-0"
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setSearchTerm("");
-                        if (map.current) {
-                          map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
-                        }
-                      }}
-                    >
-                      <p className="font-medium truncate">{order.customer_name || 'Unknown'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{order.customer_address}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Detailed Order Info Panel */}
           {selectedOrder && (
-            <div className="absolute bottom-4 left-4 bg-background border rounded-lg shadow-lg max-w-sm max-h-[60vh] overflow-hidden flex flex-col">
+            <div className="absolute bottom-4 left-4 right-4 md:right-auto bg-background border rounded-lg shadow-lg md:max-w-sm max-h-[75vh] overflow-hidden flex flex-col z-20">
               <div className="p-4 border-b flex items-start justify-between gap-2 shrink-0">
                 <div>
                   <h3 className="font-semibold">{selectedOrder.customer_name || 'Unknown'}</h3>

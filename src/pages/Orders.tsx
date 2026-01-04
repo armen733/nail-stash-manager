@@ -1721,7 +1721,9 @@ const Orders = () => {
             unit_price: item.unit_price,
             products: item.products ? {
               name: item.products.name,
-              image_url: item.products.image_url || null,
+              image_url: item.products.image_url || 
+                (item.products.product_images && item.products.product_images[0]?.image_url) || 
+                null,
             } : null,
           })),
         }))}
