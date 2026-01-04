@@ -1542,16 +1542,32 @@ const Analytics = () => {
                 <ChartContainer config={{}} className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={categorySales}>
+                      <defs>
+                        {categorySales.map((_, index) => (
+                          <linearGradient key={`gradient-${index}`} id={`colorGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"][index % 8]} stopOpacity={1} />
+                            <stop offset="100%" stopColor={["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"][index % 8]} stopOpacity={0.6} />
+                          </linearGradient>
+                        ))}
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis 
                         dataKey="category" 
                         stroke="hsl(var(--muted-foreground))" 
                         fontSize={10}
-                        tickFormatter={(value) => value.length > 10 ? value.slice(0, 10) + '...' : value}
+                        tickFormatter={(value) => value.length > 10 ? value.slice(0, 10) + "..." : value}
                       />
                       <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
                       <Tooltip />
-                      <Bar dataKey="quantity" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} name="Units Sold" />
+                      <Bar 
+                        dataKey="quantity" 
+                        radius={[4, 4, 0, 0]} 
+                        name="Units Sold"
+                      >
+                        {categorySales.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={`url(#colorGradient-${index})`} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
