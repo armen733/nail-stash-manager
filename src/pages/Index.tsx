@@ -1166,11 +1166,14 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={async () => {
-              // Export as high-quality visual stacked bar chart PNG with thumbnails (2x scale)
+              // Export as high-quality visual stacked bar chart PNG with ALL products (2x scale)
               const scale = 2;
-              const itemsToShow = stockValues.slice(0, 10);
+              const itemsToShow = stockValues; // Show ALL products, not just top 10
               const baseWidth = 850;
-              const baseHeight = 120 + itemsToShow.length * 55;
+              const itemHeight = 55;
+              const headerHeight = 100;
+              const footerHeight = 20;
+              const baseHeight = headerHeight + itemsToShow.length * itemHeight + footerHeight;
               const canvas = document.createElement('canvas');
               canvas.width = baseWidth * scale;
               canvas.height = baseHeight * scale;
@@ -1188,13 +1191,13 @@ const Index = () => {
               ctx.fillText('Stock Inventory Value', 40, 45);
               ctx.font = '16px system-ui, -apple-system, sans-serif';
               ctx.fillStyle = 'rgba(255,255,255,0.7)';
-              ctx.fillText(`Total: $${totalStockValue.toFixed(2)}`, 40, 75);
+              ctx.fillText(`Total: $${totalStockValue.toFixed(2)} (${itemsToShow.length} products)`, 40, 75);
               
               const barColors = ['hsl(210, 70%, 50%)', 'hsl(145, 60%, 45%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)', 'hsl(180, 50%, 45%)', 'hsl(320, 60%, 50%)', 'hsl(90, 50%, 45%)', 'hsl(30, 70%, 50%)', 'hsl(250, 50%, 55%)'];
               const maxValue = Math.max(...itemsToShow.map(i => i.value));
               const barHeight = 40;
               const barGap = 15;
-              const chartStartY = 100;
+              const chartStartY = headerHeight;
               const chartWidth = 380;
               const chartStartX = 280;
               const thumbSize = 34;
@@ -1284,7 +1287,7 @@ const Index = () => {
               link.href = canvas.toDataURL('image/png');
               link.click();
               
-              toast({ title: "Success", description: "Stock inventory chart exported as image" });
+              toast({ title: "Success", description: `Stock inventory chart exported (${itemsToShow.length} products)` });
             }}
             disabled={stockValues.length === 0}
           >
