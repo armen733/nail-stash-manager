@@ -310,8 +310,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-w-none w-screen h-screen flex flex-col p-0 rounded-none">
+        <DialogHeader className="p-4 pb-0 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-background/90 to-transparent">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
             Orders Map
