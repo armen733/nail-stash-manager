@@ -4,7 +4,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrdersMap } from "@/components/orders/OrdersMap";
 
 interface Order {
   id: string;
@@ -133,6 +134,7 @@ const Orders = () => {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [formData, setFormData] = useState({
     salon_id: "",
     profile_id: "",
@@ -1283,6 +1285,10 @@ const Orders = () => {
                   Update {selectedOrders.size} Orders
                 </Button>
               )}
+              <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsMapOpen(true)}>
+                <Map className="h-4 w-4 mr-2" />
+                View Map
+              </Button>
               <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -1694,6 +1700,20 @@ const Orders = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Orders Map */}
+      <OrdersMap 
+        orders={orders.map(o => ({
+          id: o.id,
+          customer_name: o.customer_name || null,
+          customer_address: o.customer_address || null,
+          total: o.total,
+          status: o.status,
+          order_date: o.order_date,
+        }))}
+        open={isMapOpen}
+        onOpenChange={setIsMapOpen}
+      />
     </div>
   );
 };
