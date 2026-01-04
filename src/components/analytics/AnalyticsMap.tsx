@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite } from "lucide-react";
+import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Maximize2, Minimize2, Settings2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -11,8 +11,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 type MapStyle = "dark" | "light" | "satellite";
 
 const MAP_STYLES: Record<MapStyle, string> = {
-  dark: "mapbox://styles/mapbox/dark-v11",
-  light: "mapbox://styles/mapbox/light-v11",
+  dark: "mapbox://styles/mapbox/navigation-night-v1",
+  light: "mapbox://styles/mapbox/standard",
   satellite: "mapbox://styles/mapbox/satellite-streets-v12",
 };
 
@@ -38,6 +38,8 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
   const [showStats, setShowStats] = useState(true);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const { toast } = useToast();
 
@@ -253,7 +255,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] p-0 gap-0">
+      <DialogContent className={`p-0 gap-0 ${isFullscreen ? "max-w-[100vw] w-[100vw] h-[100vh] rounded-none" : "max-w-5xl h-[85vh]"}`}>
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
@@ -318,23 +320,50 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
                 )}
               </div>
 
-              {/* Style switcher */}
-              <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-1 border">
-                <ToggleGroup 
-                  type="single" 
-                  value={mapStyle} 
-                  onValueChange={(value) => value && handleStyleChange(value as MapStyle)}
+              {/* Bottom controls */}
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
+                {/* Toggle controls visibility */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowControls(!showControls)}
+                  className="shadow-lg h-8 w-8 p-0"
                 >
-                  <ToggleGroupItem value="dark" aria-label="Dark mode" className="h-8 w-8 p-0">
-                    <Moon className="h-4 w-4" />
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="light" aria-label="Light mode" className="h-8 w-8 p-0">
-                    <Sun className="h-4 w-4" />
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="satellite" aria-label="Satellite view" className="h-8 w-8 p-0">
-                    <Satellite className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </ToggleGroup>
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+
+                {/* Style switcher */}
+                {showControls && (
+                  <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-1 border animate-in slide-in-from-left-2">
+                    <ToggleGroup 
+                      type="single" 
+                      value={mapStyle} 
+                      onValueChange={(value) => value && handleStyleChange(value as MapStyle)}
+                    >
+                      <ToggleGroupItem value="dark" aria-label="Dusk mode" className="h-8 w-8 p-0">
+                        <Moon className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="light" aria-label="Light mode" className="h-8 w-8 p-0">
+                        <Sun className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="satellite" aria-label="Satellite view" className="h-8 w-8 p-0">
+                        <Satellite className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                )}
+              </div>
+
+              {/* Fullscreen toggle */}
+              <div className="absolute bottom-4 right-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="shadow-lg h-8 w-8 p-0"
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
               </div>
 
               {geocodedOrders.length === 0 && !loading && (
