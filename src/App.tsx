@@ -8,6 +8,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ManagerRoute } from "@/components/ManagerRoute";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoLight from "@/assets/nera-logo-transparent.png";
@@ -131,46 +132,79 @@ const App = () => (
                 <Auth />
               </Suspense>
             } />
+            {/* Manager-only routes */}
             <Route
               path="/"
               element={
-                <ProtectedRoute>
+                <ManagerRoute>
                   <AppLayout>
                     <Index />
                   </AppLayout>
-                </ProtectedRoute>
+                </ManagerRoute>
               }
             />
             <Route
               path="/products"
               element={
-                <ProtectedRoute>
+                <ManagerRoute>
                   <AppLayout>
                     <Products />
                   </AppLayout>
-                </ProtectedRoute>
+                </ManagerRoute>
               }
             />
             <Route
               path="/low-stock"
               element={
-                <ProtectedRoute>
+                <ManagerRoute>
                   <AppLayout>
                     <LowStock />
                   </AppLayout>
-                </ProtectedRoute>
+                </ManagerRoute>
               }
             />
             <Route
               path="/salons"
               element={
-                <ProtectedRoute>
+                <ManagerRoute>
                   <AppLayout>
                     <Salons />
                   </AppLayout>
-                </ProtectedRoute>
+                </ManagerRoute>
               }
             />
+            <Route
+              path="/users"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <Users />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <Analytics />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/promotions"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <Promotions />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            
+            {/* Routes accessible by all users */}
             <Route
               path="/orders"
               element={
@@ -182,41 +216,11 @@ const App = () => (
               }
             />
             <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Users />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/profile"
               element={
                 <ProtectedRoute>
                   <AppLayout>
                     <Profile />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Analytics />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/promotions"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Promotions />
                   </AppLayout>
                 </ProtectedRoute>
               }

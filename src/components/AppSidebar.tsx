@@ -14,28 +14,33 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import neraLogoDark from "@/assets/nera-logo-dark.png";
 import { prefetchRoute } from "@/lib/prefetch";
 
+// Manager-only routes
+const MANAGER_ONLY_ROUTES = ["/", "/products", "/low-stock", "/salons", "/users", "/promotions", "/analytics"];
+
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Products", url: "/products", icon: Package },
-  { title: "Low Stock", url: "/low-stock", icon: AlertTriangle },
-  { title: "Salons", url: "/salons", icon: Building2 },
-  { title: "Orders", url: "/orders", icon: ShoppingCart },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Promotions", url: "/promotions", icon: Percent },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Profile", url: "/profile", icon: User },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, managerOnly: true },
+  { title: "Products", url: "/products", icon: Package, managerOnly: true },
+  { title: "Low Stock", url: "/low-stock", icon: AlertTriangle, managerOnly: true },
+  { title: "Salons", url: "/salons", icon: Building2, managerOnly: true },
+  { title: "Orders", url: "/orders", icon: ShoppingCart, managerOnly: false },
+  { title: "Users", url: "/users", icon: Users, managerOnly: true },
+  { title: "Promotions", url: "/promotions", icon: Percent, managerOnly: true },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, managerOnly: true },
+  { title: "Profile", url: "/profile", icon: User, managerOnly: false },
 ];
 
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile, openMobile } = useSidebar();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { isManager, loading: roleLoading } = useUserRole();
   const collapsed = state === "collapsed";
 
   const handleNavClick = () => {
@@ -54,6 +59,13 @@ export function AppSidebar() {
     }
   };
 
+  // Filter menu items based on role
+  const visibleMenuItems = menuItems.filter(item => {
+    if (roleLoading) return true; // Show all while loading
+    if (item.managerOnly && !isManager) return false;
+    return true;
+  });
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
@@ -65,7 +77,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
