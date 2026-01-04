@@ -714,13 +714,14 @@ const Index = () => {
               ctx.fillText(`$${totalRevenue.toFixed(0)}`, baseWidth - 50, totalY + 10);
               
               // Add watermark logo (light version for dark background)
+              // Position in bottom-left under the donut chart to avoid overlapping with legend/values
               const logo = new Image();
               logo.crossOrigin = 'anonymous';
               logo.onload = () => {
-                const logoWidth = 100;
+                const logoWidth = 80;
                 const logoHeight = logoWidth * (logo.height / logo.width);
-                ctx.globalAlpha = 0.6;
-                ctx.drawImage(logo, baseWidth - logoWidth - 30, baseHeight - logoHeight - 20, logoWidth, logoHeight);
+                ctx.globalAlpha = 0.5;
+                ctx.drawImage(logo, 30, baseHeight - logoHeight - 20, logoWidth, logoHeight);
                 ctx.globalAlpha = 1.0;
                 
                 // Download after logo loads
