@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OrdersMap } from "@/components/orders/OrdersMap";
+import { LazyOrdersMap } from "@/components/lazy";
 
 interface Order {
   id: string;
@@ -1704,8 +1704,8 @@ const Orders = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Orders Map */}
-      <OrdersMap 
+      {/* Orders Map - Lazy loaded */}
+      <LazyOrdersMap 
         orders={orders.map(o => ({
           id: o.id,
           customer_name: o.customer_name || null,
