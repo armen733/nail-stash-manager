@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Maximize2, Minimize2, Settings2 } from "lucide-react";
+import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -39,7 +39,6 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
   const [showStats, setShowStats] = useState(true);
   const [showControls, setShowControls] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const { toast } = useToast();
 
@@ -255,7 +254,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`p-0 gap-0 ${isFullscreen ? "max-w-[100vw] w-[100vw] h-[100vh] rounded-none" : "max-w-5xl h-[85vh]"}`}>
+      <DialogContent className="max-w-[100vw] w-[100vw] h-[100vh] p-0 gap-0 rounded-none">
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
@@ -354,17 +353,6 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
                 )}
               </div>
 
-              {/* Fullscreen toggle */}
-              <div className="absolute bottom-4 right-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="shadow-lg h-8 w-8 p-0"
-                >
-                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </div>
 
               {geocodedOrders.length === 0 && !loading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80">
