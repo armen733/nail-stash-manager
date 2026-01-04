@@ -1707,9 +1707,23 @@ const Orders = () => {
           id: o.id,
           customer_name: o.customer_name || null,
           customer_address: o.customer_address || null,
+          customer_email: o.customer_email || null,
+          customer_phone: o.customer_phone || null,
           total: o.total,
+          subtotal: o.subtotal,
+          tax: o.tax,
           status: o.status,
           order_date: o.order_date,
+          notes: o.notes || null,
+          order_items: o.order_items?.map(item => ({
+            id: item.id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            products: item.products ? {
+              name: item.products.name,
+              image_url: item.products.image_url || null,
+            } : null,
+          })),
         }))}
         open={isMapOpen}
         onOpenChange={setIsMapOpen}
