@@ -1729,6 +1729,7 @@ const Orders = () => {
         }))}
         open={isMapOpen}
         onOpenChange={setIsMapOpen}
+        onStatusChange={() => fetchData()}
       />
     </div>
   );

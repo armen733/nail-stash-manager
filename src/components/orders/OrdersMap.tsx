@@ -3,7 +3,14 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings, CheckCircle, Truck } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -47,6 +54,7 @@ interface OrdersMapProps {
   orders: OrderForMap[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStatusChange?: (orderId: string, newStatus: string) => void;
 }
 
 interface GeocodedOrder extends OrderForMap {
@@ -62,7 +70,7 @@ const statusColors: Record<string, string> = {
   'Cancelled': '#ef4444',
 };
 
-export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
+export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: OrdersMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
@@ -79,9 +87,12 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { toast } = useToast();
 
-  // Filter by status and search term
+  const orderStatuses = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Paid'];
+
+  // Filter by status and search term - exclude Delivered orders by default for active deliveries view
   const filteredGeocodedOrders = geocodedOrders.filter(o => {
     const matchesStatus = statusFilters.has(o.status);
     const matchesSearch = !searchTerm || 
@@ -89,8 +100,58 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
       o.customer_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
+    // Always exclude Delivered and Paid orders from the map (they're in history)
+    const isActiveOrder = o.status !== 'Delivered' && o.status !== 'Paid';
+    return matchesStatus && matchesSearch && isActiveOrder;
   });
+
+  // Handle status update
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    setIsUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus as "Draft" | "Confirmed" | "Shipped" | "Delivered" | "Paid" })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      // Update local state
+      setGeocodedOrders(prev => 
+        prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
+      );
+
+      // If marked as delivered, close the panel
+      if (newStatus === 'Delivered') {
+        setSelectedOrder(null);
+        toast({
+          title: "Order delivered!",
+          description: "Order has been marked as delivered and moved to history.",
+        });
+      } else {
+        // Update selected order status
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+        }
+        toast({
+          title: "Status updated",
+          description: `Order status changed to ${newStatus}`,
+        });
+      }
+
+      // Notify parent component
+      onStatusChange?.(orderId, newStatus);
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+      toast({
+        title: "Update failed",
+        description: "Could not update order status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   // Search results for dropdown
   const searchResults = searchTerm.length >= 2 
@@ -989,18 +1050,74 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  {selectedOrder.customer_address && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => openInAppleMaps(selectedOrder.customer_address!)}
+                  {/* Status Change */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase">Change Status</h4>
+                    <Select
+                      value={selectedOrder.status}
+                      onValueChange={(value) => handleStatusUpdate(selectedOrder.id, value)}
+                      disabled={isUpdatingStatus}
                     >
-                      <Navigation className="h-4 w-4 mr-2" />
-                      Open in Apple Maps
-                    </Button>
-                  )}
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background">
+                        {orderStatuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-2.5 h-2.5 rounded-full" 
+                                style={{ backgroundColor: statusColors[status] }}
+                              />
+                              {status}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="space-y-2">
+                    {selectedOrder.status !== 'Delivered' && (
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-green-600 hover:bg-green-700"
+                        onClick={() => handleStatusUpdate(selectedOrder.id, 'Delivered')}
+                        disabled={isUpdatingStatus}
+                      >
+                        {isUpdatingStatus ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                        )}
+                        Mark as Delivered
+                      </Button>
+                    )}
+                    {selectedOrder.status === 'Confirmed' && (
+                      <Button 
+                        variant="outline"
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => handleStatusUpdate(selectedOrder.id, 'Shipped')}
+                        disabled={isUpdatingStatus}
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        Mark as Shipped
+                      </Button>
+                    )}
+                    {selectedOrder.customer_address && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => openInAppleMaps(selectedOrder.customer_address!)}
+                      >
+                        <Navigation className="h-4 w-4 mr-2" />
+                        Open in Apple Maps
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </ScrollArea>
             </div>
