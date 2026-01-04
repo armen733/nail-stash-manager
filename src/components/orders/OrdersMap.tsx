@@ -393,13 +393,11 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
     geocodeOrders();
   }, [orders, mapboxToken, open]);
 
-  // Initialize map with clustering
+  // Initialize map ONCE when opened (not when filters change)
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || !open || loading) return;
 
-    if (map.current) {
-      map.current.remove();
-    }
+    if (map.current) return; // Don't reinitialize if map exists
 
     mapboxgl.accessToken = mapboxToken;
 
@@ -407,8 +405,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       zoom: 10,
-      center: filteredGeocodedOrders.length > 0 
-        ? [filteredGeocodedOrders[0].lng, filteredGeocodedOrders[0].lat] 
+      center: geocodedOrders.length > 0 
+        ? [geocodedOrders[0].lng, geocodedOrders[0].lat] 
         : [-118.2437, 34.0522],
     });
 
@@ -417,10 +415,10 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
     map.current.on('load', () => {
       if (!map.current) return;
 
-      // Create GeoJSON from filtered orders with all properties
+      // Create GeoJSON from ALL orders
       const geojsonData: GeoJSON.FeatureCollection = {
         type: 'FeatureCollection',
-        features: filteredGeocodedOrders.map((order) => ({
+        features: geocodedOrders.map((order) => ({
           type: 'Feature',
           properties: {
             id: order.id,
@@ -473,7 +471,7 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           'heatmap-opacity': 0.7,
         },
         layout: {
-          visibility: showHeatmap ? 'visible' : 'none',
+          visibility: 'none',
         },
       });
 
@@ -629,17 +627,16 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
       map.current.on('mouseleave', 'unclustered-point', () => {
         if (map.current) map.current.getCanvas().style.cursor = '';
       });
-    });
 
-    // Fit bounds to show all markers with comfortable padding
-    if (filteredGeocodedOrders.length >= 1) {
-      const bounds = new mapboxgl.LngLatBounds();
-      filteredGeocodedOrders.forEach(order => {
-        bounds.extend([order.lng, order.lat]);
-      });
-      // Use larger padding for better overview, max zoom of 12 to prevent over-zooming
-      map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
-    }
+      // Fit bounds to show all markers
+      if (geocodedOrders.length >= 1) {
+        const bounds = new mapboxgl.LngLatBounds();
+        geocodedOrders.forEach(order => {
+          bounds.extend([order.lng, order.lat]);
+        });
+        map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
+      }
+    });
 
     return () => {
       if (map.current) {
@@ -647,7 +644,44 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
         map.current = null;
       }
     };
-  }, [mapboxToken, open, loading, filteredGeocodedOrders]);
+  }, [mapboxToken, open, loading, geocodedOrders]);
+
+  // Update map data when filters change (without re-initializing map)
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    const geojsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: filteredGeocodedOrders.map((order) => ({
+        type: 'Feature',
+        properties: {
+          id: order.id,
+          customer_name: order.customer_name,
+          customer_address: order.customer_address,
+          customer_email: order.customer_email,
+          customer_phone: order.customer_phone,
+          total: order.total,
+          subtotal: order.subtotal,
+          tax: order.tax,
+          status: order.status,
+          order_date: order.order_date,
+          notes: order.notes,
+          order_items: JSON.stringify(order.order_items || []),
+          statusColor: statusColors[order.status] || '#6b7280',
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [order.lng, order.lat],
+        },
+      })),
+    };
+
+    const ordersSource = map.current.getSource('orders') as mapboxgl.GeoJSONSource;
+    const heatSource = map.current.getSource('orders-heat') as mapboxgl.GeoJSONSource;
+    
+    if (ordersSource) ordersSource.setData(geojsonData);
+    if (heatSource) heatSource.setData(geojsonData);
+  }, [filteredGeocodedOrders]);
 
   const openInAppleMaps = (address: string) => {
     const encoded = encodeURIComponent(address);
@@ -750,18 +784,18 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           
           <div ref={mapContainer} className="w-full h-full" />
 
-          {/* Search Bar */}
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 w-full max-w-xs">
+          {/* Search Bar - positioned below header, between filter and route panels */}
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10 w-full max-w-[200px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Search orders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-9 bg-background/90 backdrop-blur border shadow-lg"
+                className="pl-8 h-8 text-xs bg-background/90 backdrop-blur border shadow-lg"
               />
               {searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg overflow-hidden z-30">
                   {searchResults.map((order) => (
                     <button
                       key={order.id}
