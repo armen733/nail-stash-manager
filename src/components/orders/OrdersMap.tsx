@@ -44,6 +44,30 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [legendVisible, setLegendVisible] = useState(true);
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(Object.keys(statusColors)));
+
+  // Get filtered orders based on selected statuses
+  const filteredGeocodedOrders = geocodedOrders.filter(o => statusFilters.has(o.status));
+
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(status)) {
+        next.delete(status);
+      } else {
+        next.add(status);
+      }
+      return next;
+    });
+  };
+
+  const selectAllStatuses = () => {
+    setStatusFilters(new Set(Object.keys(statusColors)));
+  };
+
+  const clearAllStatuses = () => {
+    setStatusFilters(new Set());
+  };
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -105,8 +129,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       zoom: 10,
-      center: geocodedOrders.length > 0 
-        ? [geocodedOrders[0].lng, geocodedOrders[0].lat] 
+      center: filteredGeocodedOrders.length > 0 
+        ? [filteredGeocodedOrders[0].lng, filteredGeocodedOrders[0].lat] 
         : [-118.2437, 34.0522],
     });
 
@@ -115,10 +139,10 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
     map.current.on('load', () => {
       if (!map.current) return;
 
-      // Create GeoJSON from orders
+      // Create GeoJSON from filtered orders
       const geojsonData: GeoJSON.FeatureCollection = {
         type: 'FeatureCollection',
-        features: geocodedOrders.map((order) => ({
+        features: filteredGeocodedOrders.map((order) => ({
           type: 'Feature',
           properties: {
             id: order.id,
@@ -279,9 +303,9 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
     });
 
     // Fit bounds to show all markers
-    if (geocodedOrders.length > 1) {
+    if (filteredGeocodedOrders.length > 1) {
       const bounds = new mapboxgl.LngLatBounds();
-      geocodedOrders.forEach(order => {
+      filteredGeocodedOrders.forEach(order => {
         bounds.extend([order.lng, order.lat]);
       });
       map.current.fitBounds(bounds, { padding: 50 });
@@ -293,7 +317,7 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
         map.current = null;
       }
     };
-  }, [mapboxToken, open, loading, geocodedOrders]);
+  }, [mapboxToken, open, loading, filteredGeocodedOrders]);
 
   const openInAppleMaps = (address: string) => {
     const encoded = encodeURIComponent(address);
@@ -435,13 +459,13 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             </div>
           )}
 
-          {/* Legend */}
-          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden">
+          {/* Filter Legend */}
+          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden min-w-[160px]">
             <button 
               onClick={() => setLegendVisible(!legendVisible)}
               className="w-full flex items-center justify-between gap-2 p-3 hover:bg-muted/50 transition-colors"
             >
-              <span className="font-medium">Status Legend</span>
+              <span className="font-medium">Filter by Status</span>
               {legendVisible ? (
                 <ChevronUp className="h-3 w-3" />
               ) : (
@@ -450,19 +474,42 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             </button>
             {legendVisible && (
               <div className="px-3 pb-3">
+                <div className="flex gap-1 mb-2">
+                  <button
+                    onClick={selectAllStatuses}
+                    className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={clearAllStatuses}
+                    className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
+                  >
+                    None
+                  </button>
+                </div>
                 <div className="space-y-1">
                   {Object.entries(statusColors).map(([status, color]) => (
-                    <div key={status} className="flex items-center gap-2">
+                    <label 
+                      key={status} 
+                      className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={statusFilters.has(status)}
+                        onChange={() => toggleStatusFilter(status)}
+                        className="rounded border-muted-foreground/50"
+                      />
                       <div 
                         className="w-3 h-3 rounded-full" 
                         style={{ backgroundColor: color }}
                       />
-                      <span>{status}</span>
-                    </div>
+                      <span className={statusFilters.has(status) ? '' : 'text-muted-foreground'}>{status}</span>
+                    </label>
                   ))}
                 </div>
-                <div className="border-t mt-2 pt-2">
-                  <p className="text-muted-foreground">Click clusters to zoom or view orders</p>
+                <div className="border-t mt-2 pt-2 text-muted-foreground">
+                  <p>Showing {filteredGeocodedOrders.length} of {geocodedOrders.length} orders</p>
                 </div>
               </div>
             )}
