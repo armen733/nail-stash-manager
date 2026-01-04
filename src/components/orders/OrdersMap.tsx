@@ -462,8 +462,9 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
         type: 'heatmap',
         source: 'orders-heat',
         paint: {
-          'heatmap-weight': ['interpolate', ['linear'], ['get', 'total'], 0, 0, 100, 1],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+          // Use a constant weight of 1 per order (density-based, not value-based)
+          'heatmap-weight': 1,
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 15, 3],
           'heatmap-color': [
             'interpolate',
             ['linear'],
@@ -475,8 +476,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             0.8, 'rgb(239,138,98)',
             1, 'rgb(178,24,43)'
           ],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 2, 9, 20],
-          'heatmap-opacity': 0.7,
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 10, 15, 40],
+          'heatmap-opacity': 0.8,
         },
         layout: {
           visibility: 'none',
@@ -904,8 +905,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
                 </div>
               </div>
               
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+              <ScrollArea className="flex-1 overflow-y-auto">
+                <div className="space-y-4 p-4 pb-6">
                   {/* Customer Info */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-medium text-muted-foreground uppercase">Customer</h4>
