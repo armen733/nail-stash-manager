@@ -257,15 +257,15 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[100vw] w-[100vw] h-[100vh] p-0 gap-0 rounded-none">
-        <DialogHeader className="p-4 pb-2 border-b">
+      <DialogContent className="max-w-none w-screen h-screen p-0 gap-0 rounded-none flex flex-col [&>button]:top-[max(1rem,env(safe-area-inset-top))] [&>button]:right-4 [&>button]:z-50">
+        <DialogHeader className="p-4 pb-2 border-b pt-[max(1rem,env(safe-area-inset-top))] flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
             Geographic Sales Analysis
           </DialogTitle>
         </DialogHeader>
 
-        <div className="relative flex-1 h-full">
+        <div className="relative flex-1 min-h-0">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-3">
@@ -277,7 +277,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
             </div>
           ) : (
             <>
-              <div ref={mapContainer} className="w-full h-full min-h-[500px]" />
+              <div ref={mapContainer} className="absolute inset-0" />
 
               {/* Stats overlay - collapsible */}
               <div className="absolute top-4 left-4">
