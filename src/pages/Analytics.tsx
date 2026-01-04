@@ -373,9 +373,22 @@ const Analytics = () => {
     setLoadingProducts(true);
     
     try {
+      // Fetch order items with product details including parent product for image fallback
       const { data: orderItems, error } = await supabase
         .from("order_items")
-        .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+        .select(`
+          product_id, 
+          quantity, 
+          line_total, 
+          products(
+            id, 
+            name, 
+            category, 
+            image_url,
+            parent_product_id,
+            parent:parent_product_id(image_url)
+          )
+        `)
         .eq("products.category", category);
       
       if (error) throw error;
@@ -387,12 +400,16 @@ const Analytics = () => {
         
         const productId = item.product_id;
         if (!productMap[productId]) {
+          // Use product image, fallback to parent product image
+          const imageUrl = item.products.image_url || 
+            (item.products.parent && item.products.parent.image_url);
+          
           productMap[productId] = {
             id: productId,
             name: item.products.name,
             quantity: 0,
             revenue: 0,
-            image_url: item.products.image_url,
+            image_url: imageUrl,
           };
         }
         productMap[productId].quantity += item.quantity || 0;
@@ -1171,41 +1188,76 @@ const Analytics = () => {
                     {loading ? "Loading..." : "No data available"}
                   </div>
                 ) : (
-                  <ChartContainer config={{}} className="h-[280px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categorySales}
-                          dataKey="revenue"
-                          nameKey="category"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={2}
-                          activeIndex={activeIndex}
-                          activeShape={renderActiveShape}
-                          onMouseEnter={(_, index) => setActiveIndex(index)}
-                          onMouseLeave={() => setActiveIndex(undefined)}
-                          onClick={(data) => handleCategoryClick(data.category)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {categorySales.map((_, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={COLORS[index % COLORS.length]} 
-                              style={{ 
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                opacity: activeIndex !== undefined && activeIndex !== index ? 0.6 : 1
-                              }} 
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
+                  <div className="flex flex-col lg:flex-row items-center gap-4">
+                    <ChartContainer config={{}} className="h-[220px] w-full lg:w-1/2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={categorySales}
+                            dataKey="revenue"
+                            nameKey="category"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={45}
+                            outerRadius={75}
+                            paddingAngle={2}
+                            activeIndex={activeIndex}
+                            activeShape={renderActiveShape}
+                            onMouseEnter={(_, index) => setActiveIndex(index)}
+                            onMouseLeave={() => setActiveIndex(undefined)}
+                            onClick={(data) => handleCategoryClick(data.category)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {categorySales.map((_, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={COLORS[index % COLORS.length]} 
+                                style={{ 
+                                  cursor: 'pointer',
+                                  transition: 'all 0.3s ease',
+                                  opacity: activeIndex !== undefined && activeIndex !== index ? 0.6 : 1
+                                }} 
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                    {/* Legend with percentages */}
+                    <div className="w-full lg:w-1/2 space-y-2">
+                      {(() => {
+                        const totalCategoryRevenue = categorySales.reduce((sum, cat) => sum + cat.revenue, 0);
+                        return categorySales.map((cat, index) => {
+                          const percent = totalCategoryRevenue > 0 ? (cat.revenue / totalCategoryRevenue) * 100 : 0;
+                          return (
+                            <div 
+                              key={cat.category}
+                              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                              onClick={() => handleCategoryClick(cat.category)}
+                              onMouseEnter={() => setActiveIndex(index)}
+                              onMouseLeave={() => setActiveIndex(undefined)}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="text-sm font-medium">{cat.category}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm text-muted-foreground">${cat.revenue.toFixed(0)}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {percent.toFixed(1)}%
+                                </Badge>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
