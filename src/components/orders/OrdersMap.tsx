@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2, GripVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +49,8 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [optimizedRoute, setOptimizedRoute] = useState<GeocodedOrder[] | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showRoute, setShowRoute] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Get filtered orders based on selected statuses
@@ -257,11 +259,55 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const clearRoute = () => {
     setOptimizedRoute(null);
     setShowRoute(false);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
     
     if (map.current && map.current.getSource('route')) {
       map.current.removeLayer('route-line');
       map.current.removeSource('route');
     }
+  };
+
+  // Drag and drop handlers for manual reordering
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || !optimizedRoute) return;
+
+    const newRoute = [...optimizedRoute];
+    const [draggedItem] = newRoute.splice(draggedIndex, 1);
+    newRoute.splice(dropIndex, 0, draggedItem);
+
+    setOptimizedRoute(newRoute);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+
+    // Redraw the route line
+    drawSimpleRoute(newRoute);
+
+    toast({
+      title: "Route updated",
+      description: "Stop order has been changed.",
+    });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   // Fetch Mapbox token
@@ -741,31 +787,50 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
 
           {/* Optimized Route Panel */}
           {showRoute && optimizedRoute && (
-            <div className="absolute top-16 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[200px] max-h-[60vh]">
+            <div className="absolute top-16 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[220px] max-h-[60vh]">
               <div className="p-3 border-b bg-primary/10">
                 <div className="flex items-center gap-2">
                   <Route className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Optimized Route</span>
+                  <span className="font-medium">Delivery Route</span>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">{optimizedRoute.length} stops</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {optimizedRoute.length} stops • Drag to reorder
+                </p>
               </div>
               <div className="overflow-y-auto max-h-[calc(60vh-60px)]">
                 {optimizedRoute.map((order, index) => (
                   <div 
                     key={order.id}
-                    className="p-2 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      if (map.current) {
-                        map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
-                      }
-                    }}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`p-2 border-b last:border-b-0 transition-all cursor-grab active:cursor-grabbing ${
+                      draggedIndex === index 
+                        ? 'opacity-50 bg-muted' 
+                        : dragOverIndex === index 
+                          ? 'bg-primary/20 border-primary' 
+                          : 'hover:bg-muted/50'
+                    }`}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
-                        {index + 1}
+                      <div className="flex items-center gap-1">
+                        <GripVertical className="h-3 w-3 text-muted-foreground" />
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+                          {index + 1}
+                        </div>
                       </div>
-                      <div className="min-w-0">
+                      <div 
+                        className="min-w-0 flex-1 cursor-pointer"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          if (map.current) {
+                            map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
+                          }
+                        }}
+                      >
                         <p className="font-medium truncate">{order.customer_name || 'Unknown'}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{order.customer_address}</p>
                       </div>
