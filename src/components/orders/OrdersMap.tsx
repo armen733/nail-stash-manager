@@ -3,10 +3,18 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -707,56 +715,108 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
               Orders Map
             </DialogTitle>
             <div className="flex items-center gap-1">
-              {/* Heatmap Toggle */}
-              <Button 
-                variant={showHeatmap ? "default" : "outline"}
-                size="sm" 
-                className="h-7 text-xs px-2 bg-background/80 backdrop-blur"
-                onClick={() => {
-                  setShowHeatmap(!showHeatmap);
-                  if (map.current && map.current.getLayer('orders-heatmap')) {
-                    map.current.setLayoutProperty(
-                      'orders-heatmap',
-                      'visibility',
-                      !showHeatmap ? 'visible' : 'none'
-                    );
-                  }
-                }}
-              >
-                <Flame className="h-3 w-3 mr-1" />
-                Heatmap
-              </Button>
-              {/* Route Optimization Button */}
-              {!showRoute ? (
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="h-7 text-xs px-2 bg-primary/90 backdrop-blur"
-                  onClick={optimizeRoute}
-                  disabled={isOptimizing || filteredGeocodedOrders.length < 2}
-                >
-                  {isOptimizing ? (
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              {/* Settings Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs px-2 bg-background/80 backdrop-blur"
+                  >
+                    <Settings className="h-3.5 w-3.5 mr-1" />
+                    Settings
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background">
+                  {/* Heatmap Toggle */}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setShowHeatmap(!showHeatmap);
+                      if (map.current && map.current.getLayer('orders-heatmap')) {
+                        map.current.setLayoutProperty(
+                          'orders-heatmap',
+                          'visibility',
+                          !showHeatmap ? 'visible' : 'none'
+                        );
+                      }
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Flame className="h-4 w-4 mr-2" />
+                    <span>{showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}</span>
+                  </DropdownMenuItem>
+
+                  {/* Route Optimization */}
+                  {!showRoute ? (
+                    <DropdownMenuItem 
+                      onClick={optimizeRoute}
+                      disabled={isOptimizing || filteredGeocodedOrders.length < 2}
+                      className="cursor-pointer"
+                    >
+                      {isOptimizing ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Route className="h-4 w-4 mr-2" />
+                      )}
+                      <span>{isOptimizing ? 'Optimizing...' : 'Optimize Route'}</span>
+                    </DropdownMenuItem>
                   ) : (
-                    <Route className="h-3 w-3 mr-1" />
+                    <DropdownMenuItem onClick={clearRoute} className="cursor-pointer">
+                      <X className="h-4 w-4 mr-2" />
+                      <span>Clear Route</span>
+                    </DropdownMenuItem>
                   )}
-                  {isOptimizing ? 'Working...' : 'Route'}
-                </Button>
-              ) : (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 text-xs px-2 bg-background/80 backdrop-blur"
-                  onClick={clearRoute}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear
-                </Button>
-              )}
+
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">Filter by Status</DropdownMenuLabel>
+                  
+                  <div className="px-2 py-1 flex gap-1">
+                    <button
+                      onClick={selectAllStatuses}
+                      className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={clearAllStatuses}
+                      className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
+                    >
+                      None
+                    </button>
+                  </div>
+
+                  {Object.entries(statusColors).map(([status, color]) => (
+                    <DropdownMenuItem 
+                      key={status}
+                      onClick={() => toggleStatusFilter(status)}
+                      className="cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={statusFilters.has(status)}
+                        readOnly
+                        className="rounded border-muted-foreground/50 mr-2"
+                      />
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: color }}
+                      />
+                      <span>{status}</span>
+                    </DropdownMenuItem>
+                  ))}
+
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1 text-[10px] text-muted-foreground">
+                    Showing {filteredGeocodedOrders.length} of {geocodedOrders.length} orders
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-9 w-9 bg-background/80 backdrop-blur"
+                className="h-8 w-8 bg-background/80 backdrop-blur"
                 onClick={() => onOpenChange(false)}
               >
                 <X className="h-4 w-4" />
@@ -984,69 +1044,21 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             </div>
           )}
 
-          {/* Filter Legend */}
-          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden min-w-[160px] z-20">
-            <button 
-              onClick={() => setLegendVisible(!legendVisible)}
-              className="w-full flex items-center justify-between gap-2 p-3 hover:bg-muted/50 transition-colors"
-            >
-              <span className="font-medium">Filter by Status</span>
-              {legendVisible ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )}
-            </button>
-            {legendVisible && (
-              <div className="px-3 pb-3">
-                <div className="flex gap-1 mb-2">
-                  <button
-                    onClick={selectAllStatuses}
-                    className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={clearAllStatuses}
-                    className="text-[10px] px-2 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors"
-                  >
-                    None
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  {Object.entries(statusColors).map(([status, color]) => (
-                    <label 
-                      key={status} 
-                      className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={statusFilters.has(status)}
-                        onChange={() => toggleStatusFilter(status)}
-                        className="rounded border-muted-foreground/50"
-                      />
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className={statusFilters.has(status) ? '' : 'text-muted-foreground'}>{status}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="border-t mt-2 pt-2 text-muted-foreground">
-                  <p>Showing {filteredGeocodedOrders.length} of {geocodedOrders.length} orders</p>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Optimized Route Panel - positioned on the right side */}
           {showRoute && optimizedRoute && (
-            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[220px] max-h-[60vh] z-10">
+            <div className="absolute top-16 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[220px] max-h-[60vh] z-10">
               <div className="p-3 border-b bg-primary/10">
-                <div className="flex items-center gap-2">
-                  <Route className="h-4 w-4 text-primary" />
-                  <span className="font-medium">Delivery Route</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Route className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Delivery Route</span>
+                  </div>
+                  <button 
+                    onClick={clearRoute}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {optimizedRoute.length} stops • Drag to reorder
