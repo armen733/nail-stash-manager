@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2 } from "lucide-react";
+import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -33,7 +32,6 @@ interface GeocodedOrder {
 const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const mapInitialized = useRef(false);
   const [loading, setLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
@@ -97,7 +95,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     });
   };
 
-  // Fetch mapbox token
+  // Fetch mapbox token on mount
   useEffect(() => {
     const fetchToken = async () => {
       try {
@@ -193,12 +191,11 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     fetchOrders();
   }, [open, mapboxToken, dateRange, toast]);
 
-  // Initialize map immediately when token is available
+  // Initialize map when open and token available
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !open) return;
-    if (map.current || mapInitialized.current) return;
+    if (!open || !mapboxToken || !mapContainer.current) return;
+    if (map.current) return; // Already initialized
 
-    mapInitialized.current = true;
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -209,10 +206,9 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapboxToken, open]);
+  }, [open, mapboxToken, mapStyle]);
 
-  // Update heatmap when orders change (after map and data are ready)
+  // Update heatmap when orders change
   useEffect(() => {
     if (!map.current || geocodedOrders.length === 0) return;
     
@@ -226,7 +222,6 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       map.current?.fitBounds(bounds, { padding: 60, maxZoom: 12 });
     };
     
-    // Wait for map to be loaded before adding layer
     if (map.current.isStyleLoaded()) {
       updateMap();
     } else {
@@ -242,20 +237,16 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     setMapStyle(newStyle);
     map.current.setStyle(MAP_STYLES[newStyle]);
     
-    // Re-add heatmap after style loads
     map.current.once("style.load", () => {
       addHeatmapLayer();
     });
   };
 
-  // Reset map when dialog closes
+  // Cleanup map when closing
   useEffect(() => {
-    if (!open) {
-      mapInitialized.current = false;
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+    if (!open && map.current) {
+      map.current.remove();
+      map.current = null;
     }
   }, [open]);
 
@@ -265,123 +256,126 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     totalRevenue: geocodedOrders.reduce((sum, o) => sum + o.total, 0),
   }), [geocodedOrders]);
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-none w-screen h-screen p-0 gap-0 rounded-none flex flex-col [&>button]:top-[max(1rem,env(safe-area-inset-top))] [&>button]:right-4 [&>button]:z-50">
-        <DialogHeader className="p-4 pb-2 border-b pt-[max(1rem,env(safe-area-inset-top))] flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Geographic Sales Analysis
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="relative flex-1 min-h-0">
-          {/* Map container - always render so map can initialize */}
-          <div ref={mapContainer} className="absolute inset-0" />
-          
-          {/* Loading overlay */}
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-              <div className="text-center space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                <p className="text-sm text-muted-foreground">
-                  Loading order locations...
-                </p>
-              </div>
-            </div>
-          )}
-
-              {/* Stats overlay - collapsible */}
-              <div className="absolute top-4 left-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowStats(!showStats)}
-                  className="shadow-lg"
-                >
-                  {showStats ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-                  Stats
-                </Button>
-                
-                {showStats && (
-                  <div className="mt-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-2 border animate-in slide-in-from-top-2">
-                    <h4 className="font-semibold text-sm">Heatmap Stats</h4>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Orders: </span>
-                        <span className="font-medium">{totalOrders}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Revenue: </span>
-                        <span className="font-medium">${totalRevenue.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Legend */}
-                    <div className="pt-2 border-t">
-                      <p className="text-xs text-muted-foreground mb-1">Order Density</p>
-                      <div className="flex items-center gap-1">
-                        <div className="h-3 flex-1 rounded" style={{
-                          background: "linear-gradient(to right, rgba(147, 197, 253, 0.3), rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 1))"
-                        }} />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>Low</span>
-                        <span>High</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom controls */}
-              <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                {/* Toggle controls visibility */}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowControls(!showControls)}
-                  className="shadow-lg h-8 w-8 p-0"
-                >
-                  <Settings2 className="h-4 w-4" />
-                </Button>
-
-                {/* Style switcher */}
-                {showControls && (
-                  <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-1 border animate-in slide-in-from-left-2">
-                    <ToggleGroup 
-                      type="single" 
-                      value={mapStyle} 
-                      onValueChange={(value) => value && handleStyleChange(value as MapStyle)}
-                    >
-                      <ToggleGroupItem value="dark" aria-label="Dusk mode" className="h-8 w-8 p-0">
-                        <Moon className="h-4 w-4" />
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="light" aria-label="Light mode" className="h-8 w-8 p-0">
-                        <Sun className="h-4 w-4" />
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="satellite" aria-label="Satellite view" className="h-8 w-8 p-0">
-                        <Satellite className="h-4 w-4" />
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  </div>
-                )}
-              </div>
-
-
-          {geocodedOrders.length === 0 && !loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-              <div className="text-center space-y-2">
-                <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                <p className="text-muted-foreground">
-                  No orders with addresses found for this period
-                </p>
-              </div>
-            </div>
-          )}
+    <div className="fixed inset-0 z-50 bg-background">
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-background/90 to-transparent">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          <h2 className="text-lg font-semibold">Geographic Sales Analysis</h2>
         </div>
-      </DialogContent>
-    </Dialog>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onOpenChange(false)}
+          className="rounded-full"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Map container - fullscreen */}
+      <div ref={mapContainer} className="absolute inset-0" />
+      
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
+          <div className="text-center space-y-3">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Loading order locations...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Stats overlay - collapsible */}
+      <div className="absolute top-20 left-4 z-20">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowStats(!showStats)}
+          className="shadow-lg"
+        >
+          {showStats ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+          Stats
+        </Button>
+        
+        {showStats && (
+          <div className="mt-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-2 border animate-in slide-in-from-top-2">
+            <h4 className="font-semibold text-sm">Heatmap Stats</h4>
+            <div className="flex items-center gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Orders: </span>
+                <span className="font-medium">{totalOrders}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Revenue: </span>
+                <span className="font-medium">${totalRevenue.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Legend */}
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-1">Order Density</p>
+              <div className="flex items-center gap-1">
+                <div className="h-3 flex-1 rounded" style={{
+                  background: "linear-gradient(to right, rgba(147, 197, 253, 0.3), rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 1))"
+                }} />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Low</span>
+                <span>High</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom controls */}
+      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowControls(!showControls)}
+          className="shadow-lg h-8 w-8 p-0"
+        >
+          <Settings2 className="h-4 w-4" />
+        </Button>
+
+        {showControls && (
+          <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-1 border animate-in slide-in-from-left-2">
+            <ToggleGroup 
+              type="single" 
+              value={mapStyle} 
+              onValueChange={(value) => value && handleStyleChange(value as MapStyle)}
+            >
+              <ToggleGroupItem value="dark" aria-label="Dusk mode" className="h-8 w-8 p-0">
+                <Moon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="light" aria-label="Light mode" className="h-8 w-8 p-0">
+                <Sun className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="satellite" aria-label="Satellite view" className="h-8 w-8 p-0">
+                <Satellite className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        )}
+      </div>
+
+      {/* No data message - doesn't block the map */}
+      {geocodedOrders.length === 0 && !loading && (
+        <div className="absolute bottom-4 right-4 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>No orders with addresses for this period</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
