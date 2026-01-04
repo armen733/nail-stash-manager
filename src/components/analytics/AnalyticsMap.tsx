@@ -193,10 +193,12 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     fetchOrders();
   }, [open, mapboxToken, dateRange, toast]);
 
-  // Initialize map
+  // Initialize map - separate from data loading
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !open || loading) return;
+    if (!mapContainer.current || !mapboxToken || !open) return;
     if (map.current || mapInitialized.current) return;
+    // Don't wait for loading to complete - initialize map immediately when token is ready
+    if (loading) return;
 
     mapInitialized.current = true;
     mapboxgl.accessToken = mapboxToken;
@@ -211,10 +213,11 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
     map.current.on("load", () => {
-      addHeatmapLayer();
-      
-      // Fit bounds to orders
+      // Add heatmap layer if we have data
       if (geocodedOrders.length > 0) {
+        addHeatmapLayer();
+        
+        // Fit bounds to orders
         const bounds = new mapboxgl.LngLatBounds();
         geocodedOrders.forEach((order) => {
           bounds.extend([order.lng, order.lat]);
@@ -223,7 +226,24 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapboxToken, open, loading, geocodedOrders]);
+  }, [mapboxToken, open, loading]);
+
+  // Update heatmap when orders change
+  useEffect(() => {
+    if (!map.current || geocodedOrders.length === 0) return;
+    
+    // Wait for map to be loaded before adding layer
+    if (map.current.isStyleLoaded()) {
+      addHeatmapLayer();
+      
+      const bounds = new mapboxgl.LngLatBounds();
+      geocodedOrders.forEach((order) => {
+        bounds.extend([order.lng, order.lat]);
+      });
+      map.current.fitBounds(bounds, { padding: 60, maxZoom: 12 });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geocodedOrders]);
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyle) => {
