@@ -413,7 +413,8 @@ const Products = () => {
   }, [categoryFilter]);
 
   const exportProducts = () => {
-    const exportData = filteredProducts.map(p => ({
+    // Export ALL products (allProducts), not just filtered ones
+    const exportData = allProducts.map(p => ({
       Name: p.name,
       SKU: p.sku,
       Category: p.category,
@@ -426,9 +427,11 @@ const Products = () => {
       Material: p.material || '',
       'Bit Type': p.bit_type || '',
       Grit: p.grit || '',
+      'Variant Name': p.variant_name || '',
+      'Is Parent': p.is_parent ? 'Yes' : 'No',
     }));
     downloadCSV(exportData, 'products');
-    toast({ title: "Success", description: "Products exported successfully" });
+    toast({ title: "Success", description: `${exportData.length} products exported successfully` });
   };
 
   // Bulk stock update handler

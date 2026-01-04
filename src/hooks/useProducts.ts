@@ -12,30 +12,62 @@ export interface ProductsData {
 }
 
 const fetchProductsData = async (): Promise<ProductsData> => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("name");
+  // Fetch all products with pagination to bypass 1000 row limit
+  const PAGE_SIZE = 1000;
+  let allProductsData: any[] = [];
+  let page = 0;
+  let hasMore = true;
 
-  if (error) throw error;
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("name")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-  const allProducts = (data || []) as Product[];
+    if (error) throw error;
 
-  // Fetch all product images
-  const { data: imagesData, error: imagesError } = await (supabase as any)
-    .from("product_images")
-    .select("*")
-    .order("display_order");
+    if (data && data.length > 0) {
+      allProductsData = [...allProductsData, ...data];
+      hasMore = data.length === PAGE_SIZE;
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
 
-  if (imagesError) throw imagesError;
+  const allProducts = allProductsData as Product[];
+
+  // Fetch all product images with pagination
+  let allImagesData: any[] = [];
+  page = 0;
+  hasMore = true;
+
+  while (hasMore) {
+    const { data: imagesData, error: imagesError } = await (supabase as any)
+      .from("product_images")
+      .select("*")
+      .order("display_order")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    if (imagesError) throw imagesError;
+
+    if (imagesData && imagesData.length > 0) {
+      allImagesData = [...allImagesData, ...imagesData];
+      hasMore = imagesData.length === PAGE_SIZE;
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
 
   // Group variants under their parent products and attach images
-  const parentProducts = (data || []).filter(p => p.is_parent || !p.parent_product_id);
-  const variantProducts = (data || []).filter(p => p.parent_product_id && !p.is_parent);
+  const parentProducts = allProductsData.filter(p => p.is_parent || !p.parent_product_id);
+  const variantProducts = allProductsData.filter(p => p.parent_product_id && !p.is_parent);
 
   // Attach variants and images to their parents
   const productsWithVariants = parentProducts.map(parent => {
-    const productImages = (imagesData || []).filter((img: any) => img.product_id === parent.id) as ProductImage[];
+    const productImages = allImagesData.filter((img: any) => img.product_id === parent.id) as ProductImage[];
     if (parent.is_parent) {
       const variants = variantProducts.filter(v => v.parent_product_id === parent.id);
       return { ...parent, variants, images: productImages };
@@ -44,7 +76,7 @@ const fetchProductsData = async (): Promise<ProductsData> => {
   });
 
   // Calculate max price for range filter
-  const prices = (data || []).map(p => p.price_usd);
+  const prices = allProductsData.map(p => p.price_usd);
   const maxPrice = prices.length > 0 ? Math.ceil(Math.max(...prices) / 100) * 100 : 1000;
 
   return {
