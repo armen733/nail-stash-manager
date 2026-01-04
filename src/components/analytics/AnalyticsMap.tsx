@@ -224,7 +224,14 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     
     map.current.on("load", () => {
       console.log("Map loaded successfully");
+      // Force resize after load to ensure proper rendering
+      map.current?.resize();
     });
+    
+    // Also trigger resize after a short delay for safety
+    setTimeout(() => {
+      map.current?.resize();
+    }, 100);
 
     // Cleanup on unmount or when dependencies change
     return () => {
@@ -296,8 +303,8 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
         </Button>
       </div>
 
-      {/* Map container - fullscreen */}
-      <div ref={mapContainer} className="absolute inset-0" />
+      {/* Map container - fullscreen with explicit dimensions */}
+      <div ref={mapContainer} className="absolute inset-0 w-full h-full" style={{ width: '100%', height: '100%' }} />
       
       {/* Loading overlay */}
       {loading && (
