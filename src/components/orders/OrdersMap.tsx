@@ -730,7 +730,7 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           )}
 
           {/* Filter Legend */}
-          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden min-w-[160px]">
+          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden min-w-[160px] z-20">
             <button 
               onClick={() => setLegendVisible(!legendVisible)}
               className="w-full flex items-center justify-between gap-2 p-3 hover:bg-muted/50 transition-colors"
@@ -785,9 +785,9 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             )}
           </div>
 
-          {/* Optimized Route Panel */}
+          {/* Optimized Route Panel - positioned on the right side */}
           {showRoute && optimizedRoute && (
-            <div className="absolute top-16 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[220px] max-h-[60vh]">
+            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[220px] max-h-[60vh] z-10">
               <div className="p-3 border-b bg-primary/10">
                 <div className="flex items-center gap-2">
                   <Route className="h-4 w-4 text-primary" />
