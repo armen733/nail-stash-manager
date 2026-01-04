@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, ChevronUp, ChevronDown } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -27,6 +28,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const [loading, setLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
+  const [showStats, setShowStats] = useState(true);
   const { toast } = useToast();
 
   // Fetch mapbox token
@@ -135,7 +137,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/dark-v11",
       center: [-98.5795, 39.8283], // Center of USA
       zoom: 3,
     });
@@ -241,33 +243,47 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
             <>
               <div ref={mapContainer} className="w-full h-full min-h-[500px]" />
 
-              {/* Stats overlay */}
-              <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-2 border">
-                <h4 className="font-semibold text-sm">Heatmap Stats</h4>
-                <div className="flex items-center gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Orders: </span>
-                    <span className="font-medium">{totalOrders}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Revenue: </span>
-                    <span className="font-medium">${totalRevenue.toFixed(2)}</span>
-                  </div>
-                </div>
+              {/* Stats overlay - collapsible */}
+              <div className="absolute top-4 left-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowStats(!showStats)}
+                  className="shadow-lg"
+                >
+                  {showStats ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+                  Stats
+                </Button>
                 
-                {/* Legend */}
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground mb-1">Order Density</p>
-                  <div className="flex items-center gap-1">
-                    <div className="h-3 flex-1 rounded" style={{
-                      background: "linear-gradient(to right, rgba(147, 197, 253, 0.3), rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 1))"
-                    }} />
+                {showStats && (
+                  <div className="mt-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-2 border animate-in slide-in-from-top-2">
+                    <h4 className="font-semibold text-sm">Heatmap Stats</h4>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Orders: </span>
+                        <span className="font-medium">{totalOrders}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Revenue: </span>
+                        <span className="font-medium">${totalRevenue.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-1">Order Density</p>
+                      <div className="flex items-center gap-1">
+                        <div className="h-3 flex-1 rounded" style={{
+                          background: "linear-gradient(to right, rgba(147, 197, 253, 0.3), rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 1))"
+                        }} />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>Low</span>
+                        <span>High</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>Low</span>
-                    <span>High</span>
-                  </div>
-                </div>
+                )}
               </div>
 
               {geocodedOrders.length === 0 && !loading && (
