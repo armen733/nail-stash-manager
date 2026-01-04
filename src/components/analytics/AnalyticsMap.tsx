@@ -95,19 +95,28 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     });
   };
 
-  // Fetch mapbox token on mount
+  // Fetch mapbox token when opened
   useEffect(() => {
+    if (!open) return;
+    
     const fetchToken = async () => {
       try {
+        console.log("Fetching Mapbox token...");
         const { data, error } = await supabase.functions.invoke("get-mapbox-token");
         if (error) throw error;
+        console.log("Mapbox token received:", data?.token ? "yes" : "no");
         setMapboxToken(data.token);
       } catch (error: any) {
         console.error("Failed to fetch Mapbox token:", error);
+        toast({
+          title: "Map Error",
+          description: "Failed to load map configuration",
+          variant: "destructive",
+        });
       }
     };
     fetchToken();
-  }, []);
+  }, [open, toast]);
 
   // Fetch and geocode orders when dialog opens
   useEffect(() => {
@@ -194,8 +203,14 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   // Initialize map when open and token available
   useEffect(() => {
     if (!open || !mapboxToken || !mapContainer.current) return;
-    if (map.current) return; // Already initialized
+    
+    // Clean up any existing map instance first
+    if (map.current) {
+      map.current.remove();
+      map.current = null;
+    }
 
+    console.log("Initializing Mapbox map...");
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -206,6 +221,19 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+    
+    map.current.on("load", () => {
+      console.log("Map loaded successfully");
+    });
+
+    // Cleanup on unmount or when dependencies change
+    return () => {
+      if (map.current) {
+        console.log("Cleaning up map...");
+        map.current.remove();
+        map.current = null;
+      }
+    };
   }, [open, mapboxToken, mapStyle]);
 
   // Update heatmap when orders change
@@ -241,14 +269,6 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       addHeatmapLayer();
     });
   };
-
-  // Cleanup map when closing
-  useEffect(() => {
-    if (!open && map.current) {
-      map.current.remove();
-      map.current = null;
-    }
-  }, [open]);
 
   // Memoize stats calculations
   const { totalOrders, totalRevenue } = useMemo(() => ({
