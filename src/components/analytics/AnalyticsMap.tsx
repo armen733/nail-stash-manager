@@ -3,9 +3,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, ChevronUp, ChevronDown } from "lucide-react";
+import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+
+type MapStyle = "dark" | "light" | "satellite";
+
+const MAP_STYLES: Record<MapStyle, string> = {
+  dark: "mapbox://styles/mapbox/dark-v11",
+  light: "mapbox://styles/mapbox/light-v11",
+  satellite: "mapbox://styles/mapbox/satellite-streets-v12",
+};
 
 interface AnalyticsMapProps {
   open: boolean;
@@ -29,7 +38,63 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
   const [showStats, setShowStats] = useState(true);
+  const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const { toast } = useToast();
+
+  // Add heatmap layer helper
+  const addHeatmapLayer = () => {
+    if (!map.current || geocodedOrders.length === 0) return;
+
+    // Remove existing layers/sources if they exist
+    if (map.current.getLayer("orders-heatmap")) {
+      map.current.removeLayer("orders-heatmap");
+    }
+    if (map.current.getSource("orders-heat")) {
+      map.current.removeSource("orders-heat");
+    }
+
+    // Add heatmap source
+    map.current.addSource("orders-heat", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: geocodedOrders.map((order) => ({
+          type: "Feature" as const,
+          properties: {
+            total: order.total,
+          },
+          geometry: {
+            type: "Point" as const,
+            coordinates: [order.lng, order.lat],
+          },
+        })),
+      },
+    });
+
+    // Add heatmap layer with blue color scheme
+    map.current.addLayer({
+      id: "orders-heatmap",
+      type: "heatmap",
+      source: "orders-heat",
+      paint: {
+        "heatmap-weight": 1,
+        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
+        "heatmap-color": [
+          "interpolate",
+          ["linear"],
+          ["heatmap-density"],
+          0, "rgba(147, 197, 253, 0)",
+          0.1, "rgba(147, 197, 253, 0.2)",
+          0.3, "rgba(96, 165, 250, 0.4)",
+          0.5, "rgba(59, 130, 246, 0.6)",
+          0.7, "rgba(37, 99, 235, 0.8)",
+          1, "rgba(29, 78, 216, 1)",
+        ],
+        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 15, 40],
+        "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.9, 15, 0.6],
+      },
+    });
+  };
 
   // Fetch mapbox token
   useEffect(() => {
@@ -137,7 +202,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: MAP_STYLES[mapStyle],
       center: [-98.5795, 39.8283], // Center of USA
       zoom: 3,
     });
@@ -145,65 +210,32 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
     map.current.on("load", () => {
-      if (!map.current || geocodedOrders.length === 0) return;
-
-      // Add heatmap source
-      map.current.addSource("orders-heat", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: geocodedOrders.map((order) => ({
-            type: "Feature" as const,
-            properties: {
-              total: order.total,
-            },
-            geometry: {
-              type: "Point" as const,
-              coordinates: [order.lng, order.lat],
-            },
-          })),
-        },
-      });
-
-      // Add heatmap layer with blue color scheme
-      map.current.addLayer({
-        id: "orders-heatmap",
-        type: "heatmap",
-        source: "orders-heat",
-        paint: {
-          // Increase weight based on order density
-          "heatmap-weight": 1,
-          // Increase intensity as zoom level increases
-          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
-          // Color gradient from transparent to sky blue
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0, "rgba(147, 197, 253, 0)",      // transparent
-            0.1, "rgba(147, 197, 253, 0.2)",  // very light blue
-            0.3, "rgba(96, 165, 250, 0.4)",   // light blue
-            0.5, "rgba(59, 130, 246, 0.6)",   // blue
-            0.7, "rgba(37, 99, 235, 0.8)",    // darker blue
-            1, "rgba(29, 78, 216, 1)",        // sky blue / deep blue
-          ],
-          // Increase radius as zoom increases
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 15, 40],
-          // Decrease opacity as zoom increases
-          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.9, 15, 0.6],
-        },
-      });
-
+      addHeatmapLayer();
+      
       // Fit bounds to orders
       if (geocodedOrders.length > 0) {
         const bounds = new mapboxgl.LngLatBounds();
         geocodedOrders.forEach((order) => {
           bounds.extend([order.lng, order.lat]);
         });
-        map.current.fitBounds(bounds, { padding: 60, maxZoom: 12 });
+        map.current?.fitBounds(bounds, { padding: 60, maxZoom: 12 });
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapboxToken, open, loading, geocodedOrders]);
+
+  // Handle style change
+  const handleStyleChange = (newStyle: MapStyle) => {
+    if (!map.current || newStyle === mapStyle) return;
+    
+    setMapStyle(newStyle);
+    map.current.setStyle(MAP_STYLES[newStyle]);
+    
+    // Re-add heatmap after style loads
+    map.current.once("style.load", () => {
+      addHeatmapLayer();
+    });
+  };
 
   // Reset map when dialog closes
   useEffect(() => {
@@ -284,6 +316,25 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Style switcher */}
+              <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-1 border">
+                <ToggleGroup 
+                  type="single" 
+                  value={mapStyle} 
+                  onValueChange={(value) => value && handleStyleChange(value as MapStyle)}
+                >
+                  <ToggleGroupItem value="dark" aria-label="Dark mode" className="h-8 w-8 p-0">
+                    <Moon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="light" aria-label="Light mode" className="h-8 w-8 p-0">
+                    <Sun className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="satellite" aria-label="Satellite view" className="h-8 w-8 p-0">
+                    <Satellite className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
 
               {geocodedOrders.length === 0 && !loading && (
