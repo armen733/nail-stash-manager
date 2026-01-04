@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -463,8 +463,11 @@ const Orders = () => {
 
 
 
-  const activeOrders = orders.filter((order) => order.status !== "Delivered" && order.status !== "Paid");
-  const completedOrders = orders.filter((order) => order.status === "Delivered" || order.status === "Paid");
+  // Memoize active and completed orders partition
+  const { activeOrders, completedOrders } = useMemo(() => ({
+    activeOrders: orders.filter((order) => order.status !== "Delivered" && order.status !== "Paid"),
+    completedOrders: orders.filter((order) => order.status === "Delivered" || order.status === "Paid"),
+  }), [orders]);
 
   // Order status breakdown data for chart
   const orderStatusData = useMemo(() => {
@@ -491,8 +494,9 @@ const Orders = () => {
     }));
   }, [orders]);
 
-  const normalizedSearch = searchTerm.toLowerCase();
-  const filterOrders = (order: Order) => {
+  // Memoize filter function to avoid recreating on every render
+  const filterOrders = useCallback((order: Order) => {
+    const normalizedSearch = searchTerm.toLowerCase();
     const name = order.salons?.name || order.customer_name || '';
     const matchesSearch = name.toLowerCase().includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
@@ -503,11 +507,18 @@ const Orders = () => {
     const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
     
     return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
-  };
+  }, [searchTerm, statusFilter, dateFrom, dateTo]);
 
-  const filteredActiveOrders = activeOrders.filter(filterOrders);
-  const filteredCompletedOrders = completedOrders.filter(filterOrders);
-  const allFilteredOrders = [...filteredActiveOrders, ...filteredCompletedOrders];
+  // Memoize filtered orders
+  const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
+    const filteredActive = activeOrders.filter(filterOrders);
+    const filteredCompleted = completedOrders.filter(filterOrders);
+    return {
+      filteredActiveOrders: filteredActive,
+      filteredCompletedOrders: filteredCompleted,
+      allFilteredOrders: [...filteredActive, ...filteredCompleted],
+    };
+  }, [activeOrders, completedOrders, filterOrders]);
 
   const exportOrders = () => {
     const exportData = allFilteredOrders.map(o => ({

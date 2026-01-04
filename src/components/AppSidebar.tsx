@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle, Users, Percent } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import neraLogoDark from "@/assets/nera-logo-dark.png";
+import { prefetchRoute } from "@/lib/prefetch";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -70,6 +72,8 @@ export function AppSidebar() {
                       to={item.url}
                       end={item.url === "/"}
                       onClick={handleNavClick}
+                      onMouseEnter={() => prefetchRoute(item.url)}
+                      onTouchStart={() => prefetchRoute(item.url)}
                       className={({ isActive }) =>
                         isActive
                           ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold min-h-[44px] px-3 py-2 flex items-center gap-3 touch-manipulation"

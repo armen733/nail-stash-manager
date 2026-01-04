@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -249,8 +249,11 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     }
   }, [open]);
 
-  const totalOrders = geocodedOrders.length;
-  const totalRevenue = geocodedOrders.reduce((sum, o) => sum + o.total, 0);
+  // Memoize stats calculations
+  const { totalOrders, totalRevenue } = useMemo(() => ({
+    totalOrders: geocodedOrders.length,
+    totalRevenue: geocodedOrders.reduce((sum, o) => sum + o.total, 0),
+  }), [geocodedOrders]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

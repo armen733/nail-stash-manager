@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -630,19 +630,28 @@ const Analytics = () => {
     });
   };
 
-  const totalRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
-  const totalOrders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-  const totalProfit = topProducts.reduce((sum, prod) => sum + prod.profit, 0);
-  const uniqueCustomers = topCustomers.length;
+  // Memoize expensive KPI calculations
+  const { totalRevenue, totalOrders, avgOrderValue, totalProfit, uniqueCustomers } = useMemo(() => {
+    const revenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+    const orders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
+    return {
+      totalRevenue: revenue,
+      totalOrders: orders,
+      avgOrderValue: orders > 0 ? revenue / orders : 0,
+      totalProfit: topProducts.reduce((sum, prod) => sum + prod.profit, 0),
+      uniqueCustomers: topCustomers.length,
+    };
+  }, [dailyRevenue, topProducts, topCustomers]);
 
-  // Calculate percentage changes
-  const revenueChange = previousPeriodStats.revenue > 0 
-    ? ((totalRevenue - previousPeriodStats.revenue) / previousPeriodStats.revenue) * 100 
-    : 0;
-  const ordersChange = previousPeriodStats.orders > 0 
-    ? ((totalOrders - previousPeriodStats.orders) / previousPeriodStats.orders) * 100 
-    : 0;
+  // Memoize percentage change calculations
+  const { revenueChange, ordersChange } = useMemo(() => ({
+    revenueChange: previousPeriodStats.revenue > 0 
+      ? ((totalRevenue - previousPeriodStats.revenue) / previousPeriodStats.revenue) * 100 
+      : 0,
+    ordersChange: previousPeriodStats.orders > 0 
+      ? ((totalOrders - previousPeriodStats.orders) / previousPeriodStats.orders) * 100 
+      : 0,
+  }), [totalRevenue, totalOrders, previousPeriodStats]);
 
   // Mini sparkline component for KPI cards
   const Sparkline = ({ data, dataKey, color }: { data: any[]; dataKey: string; color: string }) => (
