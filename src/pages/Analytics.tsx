@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +10,8 @@ import { ChartContainer } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
-  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight
+  BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2
 } from "lucide-react";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -86,6 +88,10 @@ const Analytics = () => {
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [chartType, setChartType] = useState<"area" | "line" | "bar">("area");
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
@@ -126,9 +132,28 @@ const Analytics = () => {
     );
   };
 
+  // Memoized fetch function for auto-refresh
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchAnalytics();
+    setLastRefresh(new Date());
+    setIsRefreshing(false);
+  }, [period, dateRange]);
+
   useEffect(() => {
     fetchAnalytics();
   }, [period, dateRange]);
+
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      handleRefresh();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [autoRefresh, handleRefresh]);
 
   const getPeriodDates = () => {
     const now = new Date();
@@ -585,18 +610,45 @@ const Analytics = () => {
     ? ((totalOrders - previousPeriodStats.orders) / previousPeriodStats.orders) * 100 
     : 0;
 
-  const StatCard = ({ title, value, icon: Icon, change, prefix = "", previousValue }: { 
+  // Mini sparkline component for KPI cards
+  const Sparkline = ({ data, dataKey, color }: { data: any[]; dataKey: string; color: string }) => (
+    <div className="h-8 w-20">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={data.slice(-7)}>
+          <defs>
+            <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <Area 
+            type="monotone" 
+            dataKey={dataKey} 
+            stroke={color} 
+            strokeWidth={1.5}
+            fill={`url(#spark-${dataKey})`}
+            dot={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
+  const StatCard = ({ title, value, icon: Icon, change, prefix = "", previousValue, sparkData, sparkKey, sparkColor }: { 
     title: string; 
     value: string | number; 
     icon: any; 
     change?: number;
     prefix?: string;
     previousValue?: number;
+    sparkData?: any[];
+    sparkKey?: string;
+    sparkColor?: string;
   }) => (
-    <Card className="shadow-[var(--shadow-card)]">
+    <Card className="shadow-[var(--shadow-card)] overflow-hidden">
       <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
             <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
             <p className="text-xl sm:text-2xl font-bold mt-1">{prefix}{value}</p>
             {showComparison && change !== undefined && (
@@ -611,8 +663,13 @@ const Analytics = () => {
               </p>
             )}
           </div>
-          <div className="p-3 rounded-full bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className="flex flex-col items-end gap-2">
+            <div className="p-2.5 rounded-full bg-primary/10">
+              <Icon className="h-4 w-4 text-primary" />
+            </div>
+            {sparkData && sparkKey && sparkColor && (
+              <Sparkline data={sparkData} dataKey={sparkKey} color={sparkColor} />
+            )}
           </div>
         </div>
       </CardContent>
@@ -685,18 +742,46 @@ const Analytics = () => {
 
       {/* Controls Row */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Switch
-            id="comparison"
-            checked={showComparison}
-            onCheckedChange={setShowComparison}
-          />
-          <Label htmlFor="comparison" className="text-sm flex items-center gap-2">
-            <GitCompare className="h-4 w-4" />
-            Period Comparison
-          </Label>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="comparison"
+              checked={showComparison}
+              onCheckedChange={setShowComparison}
+            />
+            <Label htmlFor="comparison" className="text-sm flex items-center gap-2">
+              <GitCompare className="h-4 w-4" />
+              Period Comparison
+            </Label>
+          </div>
+          <div className="h-6 w-px bg-border hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <Switch
+              id="autoRefresh"
+              checked={autoRefresh}
+              onCheckedChange={setAutoRefresh}
+            />
+            <Label htmlFor="autoRefresh" className="text-sm flex items-center gap-2">
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              Auto-refresh
+            </Label>
+          </div>
+          {autoRefresh && (
+            <span className="text-xs text-muted-foreground">
+              Last: {format(lastRefresh, "HH:mm:ss")}
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleRefresh} 
+            disabled={isRefreshing}
+            className="h-10 w-10"
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+          </Button>
           <Button variant="outline" onClick={exportToCSV} className="h-10">
             <Download className="mr-2 h-4 w-4" />
             CSV
@@ -717,6 +802,9 @@ const Analytics = () => {
           change={revenueChange}
           prefix="$"
           previousValue={previousPeriodStats.revenue}
+          sparkData={dailyRevenue}
+          sparkKey="revenue"
+          sparkColor="#10B981"
         />
         <StatCard 
           title="Total Orders" 
@@ -724,12 +812,18 @@ const Analytics = () => {
           icon={ShoppingCart} 
           change={ordersChange}
           previousValue={previousPeriodStats.orders}
+          sparkData={dailyRevenue}
+          sparkKey="orders"
+          sparkColor="#3B82F6"
         />
         <StatCard 
           title="Avg Order Value" 
           value={avgOrderValue.toFixed(2)} 
           icon={TrendingUp}
           prefix="$"
+          sparkData={dailyRevenue.filter(d => d.orders > 0)}
+          sparkKey="avgOrderValue"
+          sparkColor="#8B5CF6"
         />
         <StatCard 
           title="Total Profit" 
@@ -742,17 +836,114 @@ const Analytics = () => {
       {/* Revenue Trend Chart */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Revenue & Orders Trend
-          </CardTitle>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Revenue & Orders Trend
+            </CardTitle>
+            <ToggleGroup 
+              type="single" 
+              value={chartType} 
+              onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
+              className="bg-muted/50 rounded-lg p-1"
+            >
+              <ToggleGroupItem value="area" aria-label="Area chart" className="h-8 w-8 p-0">
+                <AreaChartIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="line" aria-label="Line chart" className="h-8 w-8 p-0">
+                <LineChartIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="bar" aria-label="Bar chart" className="h-8 w-8 p-0">
+                <BarChart2 className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">Loading...</div>
           ) : (
-              <ChartContainer config={{}} className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer config={{}} className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === "bar" ? (
+                  <BarChart data={dailyRevenue}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        name === "orders" ? value : `$${value.toFixed(2)}`,
+                        name
+                      ]}
+                    />
+                    <Legend />
+                    {showComparison && (
+                      <Bar 
+                        dataKey="prevRevenue" 
+                        fill="#94A3B8"
+                        radius={[4, 4, 0, 0]}
+                        name="Previous Period"
+                      />
+                    )}
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                      name="Current Revenue"
+                    />
+                  </BarChart>
+                ) : chartType === "line" ? (
+                  <LineChart data={dailyRevenue}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number, name: string) => [
+                        name === "orders" ? value : `$${value.toFixed(2)}`,
+                        name
+                      ]}
+                    />
+                    <Legend />
+                    {showComparison && (
+                      <Line 
+                        type="monotone" 
+                        dataKey="prevRevenue" 
+                        stroke="#94A3B8" 
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name="Previous Period"
+                      />
+                    )}
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
+                      activeDot={{ r: 5 }}
+                      name="Current Revenue"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="orders" 
+                      stroke="hsl(var(--chart-2))" 
+                      strokeWidth={2}
+                      dot={false}
+                      name="Orders"
+                    />
+                  </LineChart>
+                ) : (
                   <AreaChart data={dailyRevenue}>
                     <defs>
                       <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -774,7 +965,7 @@ const Analytics = () => {
                         borderRadius: '8px'
                       }}
                       formatter={(value: number, name: string) => [
-                        `$${value.toFixed(2)}`,
+                        name === "orders" ? value : `$${value.toFixed(2)}`,
                         name
                       ]}
                     />
@@ -807,11 +998,12 @@ const Analytics = () => {
                       name="Orders"
                     />
                   </AreaChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </ResponsiveContainer>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Additional Charts Row */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
