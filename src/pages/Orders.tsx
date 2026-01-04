@@ -155,7 +155,7 @@ const Orders = () => {
 
     // Notifications disabled
 
-    // Real-time subscription for new orders
+    // Real-time subscription for order changes (new orders + status updates)
     const channel = supabase
       .channel('orders-changes')
       .on(
@@ -174,8 +174,28 @@ const Orders = () => {
             description: "A new customer order has been placed.",
           });
           
-          // Push notifications disabled
-
+          fetchData(); // Refresh orders list
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders'
+        },
+        async (payload) => {
+          console.log('Order updated:', payload);
+          const newStatus = (payload.new as any)?.status;
+          const oldStatus = (payload.old as any)?.status;
+          
+          // Only show notification if status changed
+          if (newStatus && newStatus !== oldStatus) {
+            toast({
+              title: "📦 Order Status Updated",
+              description: `Order status changed to: ${newStatus}`,
+            });
+          }
           
           fetchData(); // Refresh orders list
         }
