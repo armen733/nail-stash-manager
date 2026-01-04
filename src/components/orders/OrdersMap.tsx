@@ -3,18 +3,36 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2, GripVertical } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface OrderItemForMap {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  products: {
+    name: string;
+    image_url?: string | null;
+  } | null;
+}
 
 interface OrderForMap {
   id: string;
   customer_name: string | null;
   customer_address: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
   total: number;
+  subtotal: number;
+  tax: number;
   status: string;
   order_date: string;
+  notes: string | null;
+  order_items?: OrderItemForMap[];
 }
 
 interface OrdersMapProps {
@@ -51,10 +69,29 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [showRoute, setShowRoute] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const { toast } = useToast();
 
-  // Get filtered orders based on selected statuses
-  const filteredGeocodedOrders = geocodedOrders.filter(o => statusFilters.has(o.status));
+  // Filter by status and search term
+  const filteredGeocodedOrders = geocodedOrders.filter(o => {
+    const matchesStatus = statusFilters.has(o.status);
+    const matchesSearch = !searchTerm || 
+      o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customer_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  // Search results for dropdown
+  const searchResults = searchTerm.length >= 2 
+    ? geocodedOrders.filter(o => 
+        o.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customer_address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.id.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 5)
+    : [];
 
   const toggleStatusFilter = (status: string) => {
     setStatusFilters(prev => {
@@ -380,7 +417,7 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
     map.current.on('load', () => {
       if (!map.current) return;
 
-      // Create GeoJSON from filtered orders
+      // Create GeoJSON from filtered orders with all properties
       const geojsonData: GeoJSON.FeatureCollection = {
         type: 'FeatureCollection',
         features: filteredGeocodedOrders.map((order) => ({
@@ -389,9 +426,15 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
             id: order.id,
             customer_name: order.customer_name,
             customer_address: order.customer_address,
+            customer_email: order.customer_email,
+            customer_phone: order.customer_phone,
             total: order.total,
+            subtotal: order.subtotal,
+            tax: order.tax,
             status: order.status,
             order_date: order.order_date,
+            notes: order.notes,
+            order_items: JSON.stringify(order.order_items || []),
             statusColor: statusColors[order.status] || '#6b7280',
           },
           geometry: {
@@ -400,6 +443,39 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           },
         })),
       };
+
+      // Add heatmap source (separate from clustered source)
+      map.current.addSource('orders-heat', {
+        type: 'geojson',
+        data: geojsonData,
+      });
+
+      // Heatmap layer (initially hidden)
+      map.current.addLayer({
+        id: 'orders-heatmap',
+        type: 'heatmap',
+        source: 'orders-heat',
+        paint: {
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'total'], 0, 0, 100, 1],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 9, 3],
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0, 'rgba(33,102,172,0)',
+            0.2, 'rgb(103,169,207)',
+            0.4, 'rgb(209,229,240)',
+            0.6, 'rgb(253,219,199)',
+            0.8, 'rgb(239,138,98)',
+            1, 'rgb(178,24,43)'
+          ],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 0, 2, 9, 20],
+          'heatmap-opacity': 0.7,
+        },
+        layout: {
+          visibility: showHeatmap ? 'visible' : 'none',
+        },
+      });
 
       // Add clustered source
       map.current.addSource('orders', {
@@ -489,9 +565,15 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
                 id: leaf.properties.id,
                 customer_name: leaf.properties.customer_name,
                 customer_address: leaf.properties.customer_address,
+                customer_email: leaf.properties.customer_email || null,
+                customer_phone: leaf.properties.customer_phone || null,
                 total: leaf.properties.total,
+                subtotal: leaf.properties.subtotal || 0,
+                tax: leaf.properties.tax || 0,
                 status: leaf.properties.status,
                 order_date: leaf.properties.order_date,
+                notes: leaf.properties.notes || null,
+                order_items: leaf.properties.order_items ? JSON.parse(leaf.properties.order_items) : [],
                 lng: (leaf.geometry as GeoJSON.Point).coordinates[0],
                 lat: (leaf.geometry as GeoJSON.Point).coordinates[1],
               }));
@@ -519,9 +601,15 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           id: props?.id,
           customer_name: props?.customer_name,
           customer_address: props?.customer_address,
+          customer_email: props?.customer_email || null,
+          customer_phone: props?.customer_phone || null,
           total: props?.total,
+          subtotal: props?.subtotal || 0,
+          tax: props?.tax || 0,
           status: props?.status,
           order_date: props?.order_date,
+          notes: props?.notes || null,
+          order_items: props?.order_items ? JSON.parse(props.order_items) : [],
           lng: coords[0],
           lat: coords[1],
         });
@@ -585,6 +673,25 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
               Orders Map
             </DialogTitle>
             <div className="flex items-center gap-1">
+              {/* Heatmap Toggle */}
+              <Button 
+                variant={showHeatmap ? "default" : "outline"}
+                size="sm" 
+                className="h-7 text-xs px-2 bg-background/80 backdrop-blur"
+                onClick={() => {
+                  setShowHeatmap(!showHeatmap);
+                  if (map.current && map.current.getLayer('orders-heatmap')) {
+                    map.current.setLayoutProperty(
+                      'orders-heatmap',
+                      'visibility',
+                      !showHeatmap ? 'visible' : 'none'
+                    );
+                  }
+                }}
+              >
+                <Flame className="h-3 w-3 mr-1" />
+                Heatmap
+              </Button>
               {/* Route Optimization Button */}
               {!showRoute ? (
                 <Button 
@@ -643,49 +750,162 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           
           <div ref={mapContainer} className="w-full h-full" />
 
-          {/* Single Order Info Panel */}
+          {/* Search Bar */}
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 w-full max-w-xs">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-9 bg-background/90 backdrop-blur border shadow-lg"
+              />
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-lg shadow-lg overflow-hidden">
+                  {searchResults.map((order) => (
+                    <button
+                      key={order.id}
+                      className="w-full text-left p-2 hover:bg-muted/50 text-sm border-b last:border-b-0"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setSearchTerm("");
+                        if (map.current) {
+                          map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
+                        }
+                      }}
+                    >
+                      <p className="font-medium truncate">{order.customer_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{order.customer_address}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Detailed Order Info Panel */}
           {selectedOrder && (
-            <div className="absolute bottom-4 left-4 right-4 bg-background border rounded-lg shadow-lg p-4 max-w-sm">
-              <button 
-                onClick={() => setSelectedOrder(null)}
-                className="absolute top-2 right-2 p-1 hover:bg-muted rounded"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-semibold">{selectedOrder.customer_name || 'Unknown'}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Order #{selectedOrder.id.slice(0, 8)}
-                    </p>
-                  </div>
+            <div className="absolute bottom-4 left-4 bg-background border rounded-lg shadow-lg max-w-sm max-h-[60vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b flex items-start justify-between gap-2 shrink-0">
+                <div>
+                  <h3 className="font-semibold">{selectedOrder.customer_name || 'Unknown'}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Order #{selectedOrder.id.slice(0, 8)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
                   <Badge 
-                    variant={getStatusBadgeVariant(selectedOrder.status)}
                     style={{ backgroundColor: statusColors[selectedOrder.status], color: 'white' }}
                   >
                     {selectedOrder.status}
                   </Badge>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">${selectedOrder.total.toFixed(2)}</span>
-                </div>
-
-                {selectedOrder.customer_address && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => openInAppleMaps(selectedOrder.customer_address!)}
+                  <button 
+                    onClick={() => setSelectedOrder(null)}
+                    className="p-1 hover:bg-muted rounded"
                   >
-                    <Navigation className="h-4 w-4 mr-2" />
-                    Open in Apple Maps
-                  </Button>
-                )}
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
+              
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {/* Customer Info */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase">Customer</h4>
+                    <div className="space-y-1 text-sm">
+                      {selectedOrder.customer_email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <span className="truncate">{selectedOrder.customer_email}</span>
+                        </div>
+                      )}
+                      {selectedOrder.customer_phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span>{selectedOrder.customer_phone}</span>
+                        </div>
+                      )}
+                      {selectedOrder.customer_address && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-xs">{selectedOrder.customer_address}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span>{new Date(selectedOrder.order_date).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Order Items */}
+                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase">Items ({selectedOrder.order_items.length})</h4>
+                      <div className="space-y-2">
+                        {selectedOrder.order_items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-2 bg-muted/50 rounded p-2">
+                            {item.products?.image_url ? (
+                              <img 
+                                src={item.products.image_url} 
+                                alt={item.products?.name || ''} 
+                                className="w-8 h-8 rounded object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{item.products?.name || 'Product'}</p>
+                              <p className="text-xs text-muted-foreground">× {item.quantity}</p>
+                            </div>
+                            <span className="text-sm font-medium">${(item.quantity * item.unit_price).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {selectedOrder.notes && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase">Notes</h4>
+                      <p className="text-sm bg-muted/50 rounded p-2">{selectedOrder.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Totals */}
+                  <div className="space-y-1 pt-2 border-t">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax</span>
+                      <span>${selectedOrder.tax.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <span>Total</span>
+                      <span className="text-primary">${selectedOrder.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  {selectedOrder.customer_address && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => openInAppleMaps(selectedOrder.customer_address!)}
+                    >
+                      <Navigation className="h-4 w-4 mr-2" />
+                      Open in Apple Maps
+                    </Button>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           )}
 
