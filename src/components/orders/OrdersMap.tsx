@@ -3,7 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,6 +43,7 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [selectedClusterOrders, setSelectedClusterOrders] = useState<GeocodedOrder[]>([]);
   const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [legendVisible, setLegendVisible] = useState(true);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -425,22 +426,36 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
           )}
 
           {/* Legend */}
-          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg p-3 text-xs">
-            <p className="font-medium mb-2">Status Legend</p>
-            <div className="space-y-1">
-              {Object.entries(statusColors).map(([status, color]) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: color }}
-                  />
-                  <span>{status}</span>
+          <div className="absolute top-4 left-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden">
+            <button 
+              onClick={() => setLegendVisible(!legendVisible)}
+              className="w-full flex items-center justify-between gap-2 p-3 hover:bg-muted/50 transition-colors"
+            >
+              <span className="font-medium">Status Legend</span>
+              {legendVisible ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </button>
+            {legendVisible && (
+              <div className="px-3 pb-3">
+                <div className="space-y-1">
+                  {Object.entries(statusColors).map(([status, color]) => (
+                    <div key={status} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: color }}
+                      />
+                      <span>{status}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="border-t mt-2 pt-2">
-              <p className="text-muted-foreground">Click clusters to zoom or view orders</p>
-            </div>
+                <div className="border-t mt-2 pt-2">
+                  <p className="text-muted-foreground">Click clusters to zoom or view orders</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
