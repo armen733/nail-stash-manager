@@ -463,11 +463,14 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
   }, [orders, mapboxToken, open]);
 
   // Initialize map ONCE when opened (not when filters change)
+  const mapInitialized = useRef(false);
+  
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || !open || loading) return;
 
-    if (map.current) return; // Don't reinitialize if map exists
+    if (map.current || mapInitialized.current) return; // Don't reinitialize if map exists
 
+    mapInitialized.current = true;
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -707,14 +710,19 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
         map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapboxToken, open, loading]);
 
-    return () => {
+  // Reset map when dialog closes
+  useEffect(() => {
+    if (!open) {
+      mapInitialized.current = false;
       if (map.current) {
         map.current.remove();
         map.current = null;
       }
-    };
-  }, [mapboxToken, open, loading, geocodedOrders]);
+    }
+  }, [open]);
 
   // Update map data when filters change (without re-initializing map)
   useEffect(() => {
