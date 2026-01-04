@@ -3,9 +3,10 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, ChevronUp, Route, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface OrderForMap {
   id: string;
@@ -45,6 +46,10 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
   const [loading, setLoading] = useState(true);
   const [legendVisible, setLegendVisible] = useState(true);
   const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(Object.keys(statusColors)));
+  const [optimizedRoute, setOptimizedRoute] = useState<GeocodedOrder[] | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [showRoute, setShowRoute] = useState(false);
+  const { toast } = useToast();
 
   // Get filtered orders based on selected statuses
   const filteredGeocodedOrders = geocodedOrders.filter(o => statusFilters.has(o.status));
@@ -67,6 +72,196 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
 
   const clearAllStatuses = () => {
     setStatusFilters(new Set());
+  };
+
+  // Optimize route using Mapbox Optimization API (or nearest neighbor algorithm)
+  const optimizeRoute = async () => {
+    if (filteredGeocodedOrders.length < 2) {
+      toast({
+        title: "Not enough orders",
+        description: "Need at least 2 orders with addresses to optimize a route.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (filteredGeocodedOrders.length > 12) {
+      toast({
+        title: "Too many orders",
+        description: "Route optimization works best with 12 or fewer stops. Using nearest neighbor algorithm.",
+      });
+    }
+
+    setIsOptimizing(true);
+
+    try {
+      // Use Mapbox Optimization API for up to 12 waypoints
+      if (filteredGeocodedOrders.length <= 12 && mapboxToken) {
+        const coordinates = filteredGeocodedOrders.map(o => `${o.lng},${o.lat}`).join(';');
+        const response = await fetch(
+          `https://api.mapbox.com/optimized-trips/v1/mapbox/driving/${coordinates}?access_token=${mapboxToken}&roundtrip=false&source=first&destination=last&geometries=geojson`
+        );
+        const data = await response.json();
+
+        if (data.trips && data.trips[0]) {
+          const waypoints = data.waypoints;
+          const orderedOrders = waypoints
+            .sort((a: any, b: any) => a.waypoint_index - b.waypoint_index)
+            .map((wp: any) => filteredGeocodedOrders[wp.waypoint_index]);
+          
+          setOptimizedRoute(orderedOrders);
+          setShowRoute(true);
+          
+          // Draw the route on the map
+          drawRoute(data.trips[0].geometry);
+          
+          toast({
+            title: "Route optimized!",
+            description: `Optimized route for ${orderedOrders.length} stops. Total distance: ${(data.trips[0].distance / 1609.34).toFixed(1)} miles`,
+          });
+        }
+      } else {
+        // Fallback: Simple nearest neighbor algorithm
+        const optimized = nearestNeighborRoute(filteredGeocodedOrders);
+        setOptimizedRoute(optimized);
+        setShowRoute(true);
+        
+        // Draw simple polyline
+        drawSimpleRoute(optimized);
+        
+        toast({
+          title: "Route calculated",
+          description: `Created route for ${optimized.length} stops using nearest neighbor algorithm.`,
+        });
+      }
+    } catch (err) {
+      console.error('Route optimization failed:', err);
+      toast({
+        title: "Optimization failed",
+        description: "Could not optimize route. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  // Simple nearest neighbor algorithm
+  const nearestNeighborRoute = (orders: GeocodedOrder[]): GeocodedOrder[] => {
+    if (orders.length <= 1) return orders;
+    
+    const result: GeocodedOrder[] = [];
+    const remaining = [...orders];
+    
+    // Start with the first order
+    result.push(remaining.shift()!);
+    
+    while (remaining.length > 0) {
+      const last = result[result.length - 1];
+      let nearestIdx = 0;
+      let nearestDist = Infinity;
+      
+      remaining.forEach((order, idx) => {
+        const dist = Math.sqrt(
+          Math.pow(order.lng - last.lng, 2) + Math.pow(order.lat - last.lat, 2)
+        );
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestIdx = idx;
+        }
+      });
+      
+      result.push(remaining.splice(nearestIdx, 1)[0]);
+    }
+    
+    return result;
+  };
+
+  // Draw optimized route on map
+  const drawRoute = (geometry: GeoJSON.Geometry) => {
+    if (!map.current) return;
+
+    // Remove existing route layer
+    if (map.current.getSource('route')) {
+      map.current.removeLayer('route-line');
+      map.current.removeSource('route');
+    }
+
+    map.current.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry,
+      },
+    });
+
+    map.current.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 4,
+        'line-opacity': 0.8,
+      },
+    });
+  };
+
+  // Draw simple polyline for fallback
+  const drawSimpleRoute = (orders: GeocodedOrder[]) => {
+    if (!map.current || orders.length < 2) return;
+
+    const coordinates = orders.map(o => [o.lng, o.lat]);
+
+    // Remove existing route layer
+    if (map.current.getSource('route')) {
+      map.current.removeLayer('route-line');
+      map.current.removeSource('route');
+    }
+
+    map.current.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      },
+    });
+
+    map.current.addLayer({
+      id: 'route-line',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+      },
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 4,
+        'line-opacity': 0.8,
+        'line-dasharray': [2, 1],
+      },
+    });
+  };
+
+  // Clear route
+  const clearRoute = () => {
+    setOptimizedRoute(null);
+    setShowRoute(false);
+    
+    if (map.current && map.current.getSource('route')) {
+      map.current.removeLayer('route-line');
+      map.current.removeSource('route');
+    }
   };
 
   // Fetch Mapbox token
@@ -342,14 +537,43 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
               <MapPin className="h-5 w-5" />
               Orders Map
             </DialogTitle>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="h-9 w-9 bg-background/80 backdrop-blur"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Route Optimization Button */}
+              {!showRoute ? (
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="bg-primary/90 backdrop-blur"
+                  onClick={optimizeRoute}
+                  disabled={isOptimizing || filteredGeocodedOrders.length < 2}
+                >
+                  {isOptimizing ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Route className="h-4 w-4 mr-2" />
+                  )}
+                  {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-background/80 backdrop-blur"
+                  onClick={clearRoute}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Route
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9 bg-background/80 backdrop-blur"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
         
@@ -514,6 +738,43 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
               </div>
             )}
           </div>
+
+          {/* Optimized Route Panel */}
+          {showRoute && optimizedRoute && (
+            <div className="absolute top-16 right-4 bg-background/90 backdrop-blur border rounded-lg text-xs overflow-hidden max-w-[200px] max-h-[60vh]">
+              <div className="p-3 border-b bg-primary/10">
+                <div className="flex items-center gap-2">
+                  <Route className="h-4 w-4 text-primary" />
+                  <span className="font-medium">Optimized Route</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{optimizedRoute.length} stops</p>
+              </div>
+              <div className="overflow-y-auto max-h-[calc(60vh-60px)]">
+                {optimizedRoute.map((order, index) => (
+                  <div 
+                    key={order.id}
+                    className="p-2 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      if (map.current) {
+                        map.current.flyTo({ center: [order.lng, order.lat], zoom: 14 });
+                      }
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{order.customer_name || 'Unknown'}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{order.customer_address}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
