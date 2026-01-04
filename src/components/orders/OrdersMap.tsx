@@ -777,8 +777,8 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-none w-screen h-screen flex flex-col p-0 rounded-none [&>button]:hidden">
-        <DialogHeader className="p-4 pb-0 pt-[max(1rem,env(safe-area-inset-top))] absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-background/90 to-transparent">
+      <DialogContent className="max-w-none w-screen h-screen flex flex-col p-0 rounded-none [&>button]:top-[max(1rem,env(safe-area-inset-top))] [&>button]:right-4 [&>button]:z-50">
+        <DialogHeader className="p-4 pb-0 pt-[max(1rem,env(safe-area-inset-top))] absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-background/90 to-transparent pr-12">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />

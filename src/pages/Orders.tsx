@@ -624,12 +624,6 @@ const Orders = () => {
   };
 
   const printPackingSlip = (order: Order) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({ title: "Error", description: "Please allow popups to print", variant: "destructive" });
-      return;
-    }
-
     const itemsHtml = (order.order_items || []).map(item => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.products?.name || 'Unknown'}</td>
@@ -639,7 +633,24 @@ const Orders = () => {
       </tr>
     `).join('');
 
-    printWindow.document.write(`
+    // Create an iframe for printing (better mobile support)
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = 'none';
+    document.body.appendChild(printFrame);
+
+    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (!printDocument) {
+      toast({ title: "Error", description: "Unable to print", variant: "destructive" });
+      document.body.removeChild(printFrame);
+      return;
+    }
+
+    printDocument.write(`
       <!DOCTYPE html>
       <html>
       <head>
@@ -714,12 +725,21 @@ const Orders = () => {
         </div>
 
         ${order.notes ? `<div class="notes"><h3>Notes</h3><p>${order.notes}</p></div>` : ''}
-        
-        <script>window.onload = function() { window.print(); }</script>
       </body>
       </html>
     `);
-    printWindow.document.close();
+    printDocument.close();
+
+    // Wait for content to load then print
+    printFrame.onload = () => {
+      setTimeout(() => {
+        printFrame.contentWindow?.print();
+        // Remove iframe after print dialog closes
+        setTimeout(() => {
+          document.body.removeChild(printFrame);
+        }, 1000);
+      }, 250);
+    };
   };
 
   const getStatusBadge = (status: string) => {
