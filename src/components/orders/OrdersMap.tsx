@@ -543,13 +543,14 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
       });
     });
 
-    // Fit bounds to show all markers
-    if (filteredGeocodedOrders.length > 1) {
+    // Fit bounds to show all markers with comfortable padding
+    if (filteredGeocodedOrders.length >= 1) {
       const bounds = new mapboxgl.LngLatBounds();
       filteredGeocodedOrders.forEach(order => {
         bounds.extend([order.lng, order.lat]);
       });
-      map.current.fitBounds(bounds, { padding: 50 });
+      // Use larger padding for better overview, max zoom of 12 to prevent over-zooming
+      map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
     }
 
     return () => {
@@ -583,32 +584,32 @@ export function OrdersMap({ orders, open, onOpenChange }: OrdersMapProps) {
               <MapPin className="h-5 w-5" />
               Orders Map
             </DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* Route Optimization Button */}
               {!showRoute ? (
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="bg-primary/90 backdrop-blur"
+                  className="h-7 text-xs px-2 bg-primary/90 backdrop-blur"
                   onClick={optimizeRoute}
                   disabled={isOptimizing || filteredGeocodedOrders.length < 2}
                 >
                   {isOptimizing ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                   ) : (
-                    <Route className="h-4 w-4 mr-2" />
+                    <Route className="h-3 w-3 mr-1" />
                   )}
-                  {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
+                  {isOptimizing ? 'Working...' : 'Route'}
                 </Button>
               ) : (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="bg-background/80 backdrop-blur"
+                  className="h-7 text-xs px-2 bg-background/80 backdrop-blur"
                   onClick={clearRoute}
                 >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Route
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
                 </Button>
               )}
               <Button 
