@@ -1335,6 +1335,41 @@ const Products = () => {
                   </div>
                 </div>
 
+                {/* Variant Type - Right under Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="variant_name">Variant Type (Optional)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="variant_name"
+                      placeholder="Type or select variant type"
+                      value={formData.variant_name}
+                      onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
+                      className="flex-1"
+                    />
+                    {formData.category && getVariantTypesForFormCategory(formData.category).length > 0 && (
+                      <Select
+                        value=""
+                        onValueChange={(value) => setFormData({ ...formData, variant_name: value })}
+                      >
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Existing" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getVariantTypesForFormCategory(formData.category).map(variant => (
+                            <SelectItem key={variant} value={variant}>{variant}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.category 
+                      ? `Type new or select existing variant type for ${formData.category}`
+                      : "Specify the type or variation of this product"
+                    }
+                  </p>
+                </div>
+
                 {/* SKUs */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1453,41 +1488,7 @@ const Products = () => {
 
               {/* Variant Management Section */}
               <div className="border-t pt-4 mt-4 space-y-4">
-                <h3 className="font-semibold text-sm">Product Variants & Type</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="variant_name">Variant Type (Optional)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="variant_name"
-                      placeholder="Type or select variant type"
-                      value={formData.variant_name}
-                      onChange={(e) => setFormData({ ...formData, variant_name: e.target.value })}
-                      className="flex-1"
-                    />
-                    {formData.category && getVariantTypesForFormCategory(formData.category).length > 0 && (
-                      <Select
-                        value=""
-                        onValueChange={(value) => setFormData({ ...formData, variant_name: value })}
-                      >
-                        <SelectTrigger className="w-[120px]">
-                          <SelectValue placeholder="Existing" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getVariantTypesForFormCategory(formData.category).map(variant => (
-                            <SelectItem key={variant} value={variant}>{variant}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {formData.category 
-                      ? `Type new or select existing variant type for ${formData.category}`
-                      : "Specify the type or variation of this product"
-                    }
-                  </p>
-                </div>
+                <h3 className="font-semibold text-sm">Parent/Child Variants</h3>
 
                 <div className="flex items-center space-x-2">
                   <Checkbox
