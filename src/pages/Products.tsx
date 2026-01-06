@@ -132,6 +132,21 @@ const Products = () => {
   // Sibling groups
   const [siblingGroups, setSiblingGroups] = useState<SiblingGroup[]>([]);
   const [siblingAction, setSiblingAction] = useState<"none" | "existing" | "new">("none");
+  const [siblingSearchTerm, setSiblingSearchTerm] = useState("");
+  
+  // Get products that have sibling groups (for joining existing groups)
+  const productsWithSiblings = useMemo(() => {
+    return allProducts.filter((p: any) => p.sibling_group_id);
+  }, [allProducts]);
+  
+  // Get siblings of the currently quick-viewed product
+  const getSiblingsForProduct = useCallback((product: Product) => {
+    const siblingGroupId = (product as any).sibling_group_id;
+    if (!siblingGroupId) return [];
+    return allProducts.filter((p: any) => 
+      p.sibling_group_id === siblingGroupId && p.id !== product.id
+    );
+  }, [allProducts]);
   
   // Fetch sibling groups
   useEffect(() => {
@@ -299,11 +314,11 @@ const Products = () => {
       let siblingGroupId: string | null = null;
 
       // Handle sibling group creation/assignment
-      if (siblingAction === "new" && formData.sibling_group_name.trim()) {
-        // Create new sibling group
+      if (siblingAction === "new") {
+        // Create new sibling group (name is optional)
         const { data: newGroup, error: groupError } = await supabase
           .from("product_sibling_groups")
-          .insert({ name: formData.sibling_group_name.trim() })
+          .insert({ name: formData.sibling_group_name.trim() || null })
           .select()
           .single();
         
@@ -414,6 +429,7 @@ const Products = () => {
     setImagePreviews([]);
     setExistingImages([]);
     setSiblingAction("none");
+    setSiblingSearchTerm("");
   };
 
   // Helper to convert product to form data
@@ -1561,6 +1577,7 @@ const Products = () => {
                       onCheckedChange={() => {
                         setSiblingAction("none");
                         setFormData({ ...formData, sibling_group_id: "", sibling_group_name: "" });
+                        setSiblingSearchTerm("");
                       }}
                     />
                     <Label htmlFor="sibling_none" className="text-sm font-normal cursor-pointer">
@@ -1578,25 +1595,63 @@ const Products = () => {
                       }}
                     />
                     <Label htmlFor="sibling_existing" className="text-sm font-normal cursor-pointer">
-                      Add to existing sibling group
+                      Join an existing product's sibling group
                     </Label>
                   </div>
 
                   {siblingAction === "existing" && (
-                    <Select 
-                      value={formData.sibling_group_id || "select"} 
-                      onValueChange={(value) => setFormData({ ...formData, sibling_group_id: value === "select" ? "" : value })}
-                    >
-                      <SelectTrigger className="ml-6">
-                        <SelectValue placeholder="Select sibling group" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="select" disabled>Select a group...</SelectItem>
-                        {siblingGroups.map(group => (
-                          <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="ml-6 space-y-2">
+                      <Input
+                        placeholder="Search products with siblings..."
+                        value={siblingSearchTerm}
+                        onChange={(e) => setSiblingSearchTerm(e.target.value)}
+                      />
+                      <div className="max-h-40 overflow-y-auto border rounded-md">
+                        {productsWithSiblings
+                          .filter(p => 
+                            p.id !== editingProduct?.id &&
+                            (p.name.toLowerCase().includes(siblingSearchTerm.toLowerCase()) ||
+                             p.sku.toLowerCase().includes(siblingSearchTerm.toLowerCase()))
+                          )
+                          .slice(0, 10)
+                          .map(product => {
+                            const isSelected = formData.sibling_group_id === (product as any).sibling_group_id;
+                            return (
+                              <div
+                                key={product.id}
+                                className={cn(
+                                  "flex items-center gap-2 p-2 cursor-pointer hover:bg-muted transition-colors",
+                                  isSelected && "bg-primary/10"
+                                )}
+                                onClick={() => setFormData({ 
+                                  ...formData, 
+                                  sibling_group_id: (product as any).sibling_group_id 
+                                })}
+                              >
+                                <Checkbox checked={isSelected} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{product.name}</p>
+                                  <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        {productsWithSiblings.filter(p => 
+                          p.id !== editingProduct?.id &&
+                          (p.name.toLowerCase().includes(siblingSearchTerm.toLowerCase()) ||
+                           p.sku.toLowerCase().includes(siblingSearchTerm.toLowerCase()))
+                        ).length === 0 && (
+                          <p className="p-3 text-sm text-muted-foreground text-center">
+                            No products with sibling groups found
+                          </p>
+                        )}
+                      </div>
+                      {formData.sibling_group_id && (
+                        <p className="text-xs text-green-600">
+                          ✓ Will join the same sibling group
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   <div className="flex items-center space-x-2">
@@ -1606,6 +1661,7 @@ const Products = () => {
                       onCheckedChange={() => {
                         setSiblingAction("new");
                         setFormData({ ...formData, sibling_group_id: "" });
+                        setSiblingSearchTerm("");
                       }}
                     />
                     <Label htmlFor="sibling_new" className="text-sm font-normal cursor-pointer">
@@ -1615,7 +1671,7 @@ const Products = () => {
 
                   {siblingAction === "new" && (
                     <Input
-                      placeholder="Enter group name (e.g., 'Diamond Drill Bit Series')"
+                      placeholder="Group name (optional, e.g., 'Diamond Drill Bit Series')"
                       value={formData.sibling_group_name}
                       onChange={(e) => setFormData({ ...formData, sibling_group_name: e.target.value })}
                       className="ml-6"
@@ -2261,6 +2317,42 @@ const Products = () => {
                     </div>
                   )}
 
+                  {/* Sibling Products (Other Options) */}
+                  {getSiblingsForProduct(quickViewProduct).length > 0 && (
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-semibold text-sm mb-3">Other Options</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {getSiblingsForProduct(quickViewProduct).map((sibling) => (
+                          <Card 
+                            key={sibling.id} 
+                            className="hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={() => setQuickViewProduct(sibling)}
+                          >
+                            <CardContent className="p-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                  {sibling.images?.[0]?.image_url || sibling.image_url ? (
+                                    <img 
+                                      src={sibling.images?.[0]?.image_url || sibling.image_url || ''} 
+                                      alt={sibling.name} 
+                                      className="w-full h-full object-cover rounded" 
+                                    />
+                                  ) : (
+                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-xs truncate">{sibling.variant_name || sibling.name}</p>
+                                  <p className="text-xs text-muted-foreground">${sibling.price_usd}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pt-4 pb-4">
                     {getCartQuantity(quickViewProduct.id) === 0 ? (
                       <Button className="flex-1" onClick={() => addToCart(quickViewProduct)}>
@@ -2396,6 +2488,42 @@ const Products = () => {
                               >
                                 <X className="h-4 w-4" />
                               </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sibling Products (Other Options) - Desktop Dialog */}
+                {getSiblingsForProduct(quickViewProduct).length > 0 && (
+                  <div className="border-t pt-4 space-y-3">
+                    <h4 className="font-semibold text-sm">Other Options</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {getSiblingsForProduct(quickViewProduct).map((sibling) => (
+                        <Card 
+                          key={sibling.id} 
+                          className="hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => setQuickViewProduct(sibling)}
+                        >
+                          <CardContent className="p-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                                {sibling.images?.[0]?.image_url || sibling.image_url ? (
+                                  <img 
+                                    src={sibling.images?.[0]?.image_url || sibling.image_url || ''} 
+                                    alt={sibling.name} 
+                                    className="w-full h-full object-cover rounded" 
+                                  />
+                                ) : (
+                                  <Package className="h-5 w-5 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-xs truncate">{sibling.variant_name || sibling.name}</p>
+                                <p className="text-xs text-muted-foreground">${sibling.price_usd}</p>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
