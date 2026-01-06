@@ -1642,11 +1642,12 @@ const Products = () => {
                           .map((product: any) => {
                             const isSelected = formData.sibling_group_id === product.id;
                             const hasSiblingGroup = !!product.sibling_group_id;
+                            const productImage = product.images?.[0]?.image_url || product.image_url;
                             return (
                               <div
                                 key={product.id}
                                 className={cn(
-                                  "flex items-center gap-2 p-2 cursor-pointer hover:bg-muted transition-colors",
+                                  "flex items-center gap-3 p-2 cursor-pointer hover:bg-muted transition-colors",
                                   isSelected && "bg-primary/10"
                                 )}
                                 onClick={() => setFormData({ 
@@ -1655,6 +1656,19 @@ const Products = () => {
                                 })}
                               >
                                 <Checkbox checked={isSelected} />
+                                <div className="w-10 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
+                                  {productImage ? (
+                                    <img 
+                                      src={productImage} 
+                                      alt={product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <Package className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <p className="text-sm font-medium truncate">{product.name}</p>
