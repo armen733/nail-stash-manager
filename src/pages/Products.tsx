@@ -1630,7 +1630,7 @@ const Products = () => {
                         onChange={(e) => setSiblingSearchTerm(e.target.value)}
                       />
                       <div className="max-h-40 overflow-y-auto border rounded-md">
-                        {allProducts
+                        {(productsData?.products || [])
                           .filter((p: any) => 
                             p.id !== editingProduct?.id &&
                             !p.is_parent &&
@@ -1681,7 +1681,7 @@ const Products = () => {
                               </div>
                             );
                           })}
-                        {siblingSearchTerm && allProducts.filter((p: any) => 
+                        {siblingSearchTerm && (productsData?.products || []).filter((p: any) => 
                           p.id !== editingProduct?.id &&
                           !p.is_parent &&
                           !p.parent_product_id &&
