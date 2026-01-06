@@ -332,7 +332,30 @@ const Products = () => {
           .order("name");
         if (groups) setSiblingGroups(groups as SiblingGroup[]);
       } else if (siblingAction === "existing" && formData.sibling_group_id) {
-        siblingGroupId = formData.sibling_group_id;
+        // formData.sibling_group_id contains the selected product's ID
+        const selectedProductId = formData.sibling_group_id;
+        const selectedProduct = allProducts.find((p: any) => p.id === selectedProductId);
+        
+        if (selectedProduct && (selectedProduct as any).sibling_group_id) {
+          // Join the existing sibling group
+          siblingGroupId = (selectedProduct as any).sibling_group_id;
+        } else {
+          // Create a new sibling group and assign the selected product to it
+          const { data: newGroup, error: groupError } = await supabase
+            .from("product_sibling_groups")
+            .insert({ name: null })
+            .select()
+            .single();
+          
+          if (groupError) throw groupError;
+          siblingGroupId = newGroup.id;
+          
+          // Update the selected product to join this new group
+          await supabase
+            .from("products")
+            .update({ sibling_group_id: siblingGroupId })
+            .eq("id", selectedProductId);
+        }
       }
 
       const productData = {
@@ -1602,20 +1625,23 @@ const Products = () => {
                   {siblingAction === "existing" && (
                     <div className="ml-6 space-y-2">
                       <Input
-                        placeholder="Search products with siblings..."
+                        placeholder="Search products to link as sibling..."
                         value={siblingSearchTerm}
                         onChange={(e) => setSiblingSearchTerm(e.target.value)}
                       />
                       <div className="max-h-40 overflow-y-auto border rounded-md">
-                        {productsWithSiblings
-                          .filter(p => 
+                        {allProducts
+                          .filter((p: any) => 
                             p.id !== editingProduct?.id &&
+                            !p.is_parent &&
+                            !p.parent_product_id &&
                             (p.name.toLowerCase().includes(siblingSearchTerm.toLowerCase()) ||
                              p.sku.toLowerCase().includes(siblingSearchTerm.toLowerCase()))
                           )
                           .slice(0, 10)
-                          .map(product => {
-                            const isSelected = formData.sibling_group_id === (product as any).sibling_group_id;
+                          .map((product: any) => {
+                            const isSelected = formData.sibling_group_id === product.id;
+                            const hasSiblingGroup = !!product.sibling_group_id;
                             return (
                               <div
                                 key={product.id}
@@ -1625,30 +1651,42 @@ const Products = () => {
                                 )}
                                 onClick={() => setFormData({ 
                                   ...formData, 
-                                  sibling_group_id: (product as any).sibling_group_id 
+                                  sibling_group_id: product.id 
                                 })}
                               >
                                 <Checkbox checked={isSelected} />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{product.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium truncate">{product.name}</p>
+                                    {hasSiblingGroup && (
+                                      <Badge variant="secondary" className="text-xs">Has siblings</Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
                                 </div>
                               </div>
                             );
                           })}
-                        {productsWithSiblings.filter(p => 
+                        {siblingSearchTerm && allProducts.filter((p: any) => 
                           p.id !== editingProduct?.id &&
+                          !p.is_parent &&
+                          !p.parent_product_id &&
                           (p.name.toLowerCase().includes(siblingSearchTerm.toLowerCase()) ||
                            p.sku.toLowerCase().includes(siblingSearchTerm.toLowerCase()))
                         ).length === 0 && (
                           <p className="p-3 text-sm text-muted-foreground text-center">
-                            No products with sibling groups found
+                            No products found
+                          </p>
+                        )}
+                        {!siblingSearchTerm && (
+                          <p className="p-3 text-sm text-muted-foreground text-center">
+                            Type to search products...
                           </p>
                         )}
                       </div>
                       {formData.sibling_group_id && (
                         <p className="text-xs text-green-600">
-                          ✓ Will join the same sibling group
+                          ✓ Will create/join sibling group with selected product
                         </p>
                       )}
                     </div>
