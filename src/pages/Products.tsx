@@ -139,14 +139,14 @@ const Products = () => {
     return allProducts.filter((p: any) => p.sibling_group_id);
   }, [allProducts]);
   
-  // Get siblings of the currently quick-viewed product
+  // Get siblings of the currently quick-viewed product (use products with images attached)
   const getSiblingsForProduct = useCallback((product: Product) => {
     const siblingGroupId = (product as any).sibling_group_id;
     if (!siblingGroupId) return [];
-    return allProducts.filter((p: any) => 
+    return (productsData?.products || []).filter((p: any) => 
       p.sibling_group_id === siblingGroupId && p.id !== product.id
     );
-  }, [allProducts]);
+  }, [productsData?.products]);
   
   // Fetch sibling groups
   useEffect(() => {
