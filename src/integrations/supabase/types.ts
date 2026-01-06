@@ -61,6 +61,48 @@ export type Database = {
           },
         ]
       }
+      category_field_configs: {
+        Row: {
+          category: string
+          created_at: string | null
+          display_order: number | null
+          field_label: string
+          field_name: string
+          field_type: string
+          id: string
+          is_required: boolean | null
+          options: Json | null
+          placeholder: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          display_order?: number | null
+          field_label: string
+          field_name: string
+          field_type?: string
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          placeholder?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          display_order?: number | null
+          field_label?: string
+          field_name?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean | null
+          options?: Json | null
+          placeholder?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       category_variant_types: {
         Row: {
           category: string
@@ -421,6 +463,7 @@ export type Database = {
         Row: {
           bit_type: string | null
           category: string
+          category_attributes: Json | null
           created_at: string
           direction: string | null
           grit: string | null
@@ -438,6 +481,7 @@ export type Database = {
           stock_on_hand: number | null
           stock_reserved: number | null
           supplier: string | null
+          supplier_sku: string | null
           unit: string | null
           updated_at: string
           variant_name: string | null
@@ -446,6 +490,7 @@ export type Database = {
         Insert: {
           bit_type?: string | null
           category: string
+          category_attributes?: Json | null
           created_at?: string
           direction?: string | null
           grit?: string | null
@@ -463,6 +508,7 @@ export type Database = {
           stock_on_hand?: number | null
           stock_reserved?: number | null
           supplier?: string | null
+          supplier_sku?: string | null
           unit?: string | null
           updated_at?: string
           variant_name?: string | null
@@ -471,6 +517,7 @@ export type Database = {
         Update: {
           bit_type?: string | null
           category?: string
+          category_attributes?: Json | null
           created_at?: string
           direction?: string | null
           grit?: string | null
@@ -488,6 +535,7 @@ export type Database = {
           stock_on_hand?: number | null
           stock_reserved?: number | null
           supplier?: string | null
+          supplier_sku?: string | null
           unit?: string | null
           updated_at?: string
           variant_name?: string | null
