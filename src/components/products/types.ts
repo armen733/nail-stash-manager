@@ -17,6 +17,7 @@ export interface Product {
   grit: string | null;
   unit: string | null;
   sku: string;
+  supplier_sku: string | null;
   price_usd: number;
   salon_price_usd: number | null;
   wholesale_price_usd: number | null;
@@ -28,6 +29,7 @@ export interface Product {
   is_parent: boolean | null;
   parent_product_id: string | null;
   variant_name: string | null;
+  category_attributes: Record<string, string | number | null> | null;
   variants?: Product[];
   images?: ProductImage[];
 }
@@ -47,6 +49,7 @@ export interface ProductFormData {
   grit: string;
   unit: string;
   sku: string;
+  supplier_sku: string;
   price_usd: string;
   salon_price_usd: string;
   wholesale_price_usd: string;
@@ -57,6 +60,7 @@ export interface ProductFormData {
   is_parent: boolean;
   parent_product_id: string;
   variant_name: string;
+  category_attributes: Record<string, string>;
 }
 
 export const defaultFormData: ProductFormData = {
@@ -69,6 +73,7 @@ export const defaultFormData: ProductFormData = {
   grit: "",
   unit: "piece",
   sku: "",
+  supplier_sku: "",
   price_usd: "",
   salon_price_usd: "",
   wholesale_price_usd: "",
@@ -79,4 +84,5 @@ export const defaultFormData: ProductFormData = {
   is_parent: false,
   parent_product_id: "",
   variant_name: "",
+  category_attributes: {},
 };

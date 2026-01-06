@@ -65,6 +65,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { CartPanel } from "@/components/products/CartPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
+import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
 import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
@@ -265,6 +266,18 @@ const Products = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Convert category_attributes string values to proper types for DB
+    const categoryAttrsForDb: Record<string, string | number | null> = {};
+    Object.entries(formData.category_attributes).forEach(([key, value]) => {
+      if (value === "") {
+        categoryAttrsForDb[key] = null;
+      } else if (!isNaN(Number(value))) {
+        categoryAttrsForDb[key] = Number(value);
+      } else {
+        categoryAttrsForDb[key] = value;
+      }
+    });
+
     const productData = {
       name: formData.name,
       category: formData.category,
@@ -275,6 +288,7 @@ const Products = () => {
       grit: formData.grit || null,
       unit: formData.unit || null,
       sku: formData.sku,
+      supplier_sku: formData.supplier_sku || null,
       price_usd: parseFloat(formData.price_usd),
       salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
       wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
@@ -286,6 +300,7 @@ const Products = () => {
       is_parent: formData.is_parent || false,
       parent_product_id: formData.parent_product_id || null,
       variant_name: formData.variant_name || null,
+      category_attributes: Object.keys(categoryAttrsForDb).length > 0 ? categoryAttrsForDb : null,
     };
 
     try {
@@ -356,6 +371,41 @@ const Products = () => {
     setImageFiles([]);
     setImagePreviews([]);
     setExistingImages([]);
+  };
+
+  // Helper to convert product to form data
+  const productToFormData = (product: Product): ProductFormData => {
+    // Convert category_attributes to string values for form
+    const categoryAttrs: Record<string, string> = {};
+    if (product.category_attributes) {
+      Object.entries(product.category_attributes).forEach(([key, value]) => {
+        categoryAttrs[key] = value?.toString() || "";
+      });
+    }
+    
+    return {
+      name: product.name,
+      category: product.category,
+      material: product.material || "",
+      shape: product.shape || "",
+      direction: product.direction || "",
+      bit_type: product.bit_type || "",
+      grit: product.grit || "",
+      unit: product.unit || "piece",
+      sku: product.sku,
+      supplier_sku: product.supplier_sku || "",
+      price_usd: product.price_usd.toString(),
+      salon_price_usd: product.salon_price_usd?.toString() || "",
+      wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+      stock_on_hand: product.stock_on_hand?.toString() || "0",
+      stock_reserved: product.stock_reserved?.toString() || "0",
+      reorder_level: product.reorder_level?.toString() || "10",
+      supplier: product.supplier || "",
+      is_parent: product.is_parent || false,
+      parent_product_id: product.parent_product_id || "",
+      variant_name: product.variant_name || "",
+      category_attributes: categoryAttrs,
+    };
   };
 
   // Memoize filtered products to avoid recalculation on every render
@@ -1242,7 +1292,11 @@ const Products = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* ===== GLOBAL FIELDS (Always Visible) ===== */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Basic Information</h4>
+                
+                {/* Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name">Product Name *</Label>
                   <Input
@@ -1252,37 +1306,27 @@ const Products = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU *</Label>
-                  <Input
-                    id="sku"
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                {/* Category - MASTER TRIGGER */}
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category">Category * <span className="text-xs text-muted-foreground">(determines available fields)</span></Label>
                   <div className="flex gap-2">
                     <Input
                       id="category"
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value, category_attributes: {} })}
                       placeholder="Type or select category"
                       required
                       className="flex-1"
                     />
                     <Select
                       value=""
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                      onValueChange={(value) => setFormData({ ...formData, category: value, category_attributes: {} })}
                     >
                       <SelectTrigger className="w-[120px]">
                         <SelectValue placeholder="Existing" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background border">
                         {getUniqueCategories().map(cat => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -1290,139 +1334,121 @@ const Products = () => {
                     </Select>
                   </div>
                 </div>
+
+                {/* SKUs */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sku">Internal SKU *</Label>
+                    <Input
+                      id="sku"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      placeholder="Your internal SKU"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="supplier_sku">Supplier SKU</Label>
+                    <Input
+                      id="supplier_sku"
+                      value={formData.supplier_sku}
+                      onChange={(e) => setFormData({ ...formData, supplier_sku: e.target.value })}
+                      placeholder="Supplier's SKU"
+                    />
+                  </div>
+                </div>
+
+                {/* Supplier */}
                 <div className="space-y-2">
-                  <Label htmlFor="material">Material</Label>
+                  <Label htmlFor="supplier">Supplier</Label>
                   <Input
-                    id="material"
-                    value={formData.material}
-                    onChange={(e) => setFormData({ ...formData, material: e.target.value })}
-                    placeholder="Enter material (e.g., Carbide, Ceramic)"
+                    id="supplier"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    placeholder="Enter supplier name"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shape">Shape</Label>
-                  <Input
-                    id="shape"
-                    value={formData.shape}
-                    onChange={(e) => setFormData({ ...formData, shape: e.target.value })}
-                    placeholder="Enter shape (e.g., Cone, Cylinder)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="direction">Direction</Label>
-                  <Input
-                    id="direction"
-                    value={formData.direction}
-                    onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
-                    placeholder="Enter direction (e.g., Left, Right)"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="unit">Unit</Label>
-                  <Input
-                    id="unit"
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bit_type">Bit Type</Label>
-                  <Input
-                    id="bit_type"
-                    value={formData.bit_type}
-                    onChange={(e) => setFormData({ ...formData, bit_type: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="grit">Grit</Label>
-                  <Input
-                    id="grit"
-                    value={formData.grit}
-                    onChange={(e) => setFormData({ ...formData, grit: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price_usd">Price (USD) *</Label>
-                  <Input
-                    id="price_usd"
-                    type="number"
-                    step="0.01"
-                    value={formData.price_usd}
-                    onChange={(e) => setFormData({ ...formData, price_usd: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="salon_price_usd">Salon Price</Label>
-                  <Input
-                    id="salon_price_usd"
-                    type="number"
-                    step="0.01"
-                    value={formData.salon_price_usd}
-                    onChange={(e) => setFormData({ ...formData, salon_price_usd: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="wholesale_price_usd">Wholesale Price</Label>
-                  <Input
-                    id="wholesale_price_usd"
-                    type="number"
-                    step="0.01"
-                    value={formData.wholesale_price_usd}
-                    onChange={(e) => setFormData({ ...formData, wholesale_price_usd: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stock_on_hand">Stock on Hand</Label>
-                  <Input
-                    id="stock_on_hand"
-                    type="number"
-                    value={formData.stock_on_hand}
-                    onChange={(e) => setFormData({ ...formData, stock_on_hand: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock_reserved">Stock Reserved</Label>
-                  <Input
-                    id="stock_reserved"
-                    type="number"
-                    value={formData.stock_reserved}
-                    onChange={(e) => setFormData({ ...formData, stock_reserved: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reorder_level">Reorder Level</Label>
-                  <Input
-                    id="reorder_level"
-                    type="number"
-                    value={formData.reorder_level}
-                    onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="supplier">Supplier</Label>
-                <Input
-                  id="supplier"
-                  value={formData.supplier}
-                  onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+              {/* ===== DYNAMIC CATEGORY FIELDS ===== */}
+              <div className="border-t pt-4 mt-4">
+                <DynamicCategoryFields
+                  category={formData.category}
+                  values={formData.category_attributes}
+                  onChange={(attrs) => setFormData({ ...formData, category_attributes: attrs })}
                 />
+              </div>
+
+              {/* ===== PRICING (Global) ===== */}
+              <div className="border-t pt-4 mt-4 space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Pricing</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price_usd">Price (USD) *</Label>
+                    <Input
+                      id="price_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.price_usd}
+                      onChange={(e) => setFormData({ ...formData, price_usd: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="salon_price_usd">Salon Price</Label>
+                    <Input
+                      id="salon_price_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.salon_price_usd}
+                      onChange={(e) => setFormData({ ...formData, salon_price_usd: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="wholesale_price_usd">Wholesale</Label>
+                    <Input
+                      id="wholesale_price_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.wholesale_price_usd}
+                      onChange={(e) => setFormData({ ...formData, wholesale_price_usd: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== INVENTORY (Global) ===== */}
+              <div className="border-t pt-4 mt-4 space-y-4">
+                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Inventory</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="stock_on_hand">Stock on Hand</Label>
+                    <Input
+                      id="stock_on_hand"
+                      type="number"
+                      value={formData.stock_on_hand}
+                      onChange={(e) => setFormData({ ...formData, stock_on_hand: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stock_reserved">Reserved</Label>
+                    <Input
+                      id="stock_reserved"
+                      type="number"
+                      value={formData.stock_reserved}
+                      onChange={(e) => setFormData({ ...formData, stock_reserved: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reorder_level">Reorder Level</Label>
+                    <Input
+                      id="reorder_level"
+                      type="number"
+                      value={formData.reorder_level}
+                      onChange={(e) => setFormData({ ...formData, reorder_level: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Variant Management Section */}
@@ -1902,27 +1928,7 @@ const Products = () => {
                             variant="outline"
                             onClick={() => {
                               setEditingProduct(product);
-                              setFormData({
-                                name: product.name,
-                                category: product.category,
-                                material: product.material || "",
-                                shape: product.shape || "",
-                                direction: product.direction || "",
-                                bit_type: product.bit_type || "",
-                                grit: product.grit || "",
-                                unit: product.unit || "piece",
-                                sku: product.sku,
-                                price_usd: product.price_usd.toString(),
-                                salon_price_usd: product.salon_price_usd?.toString() || "",
-                                wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                                stock_on_hand: product.stock_on_hand?.toString() || "0",
-                                stock_reserved: product.stock_reserved?.toString() || "0",
-                                reorder_level: product.reorder_level?.toString() || "10",
-                                supplier: product.supplier || "",
-                                is_parent: product.is_parent || false,
-                                parent_product_id: product.parent_product_id || "",
-                                variant_name: product.variant_name || "",
-                              });
+                              setFormData(productToFormData(product));
                               setExistingImages(product.images || []);
                               setIsDialogOpen(true);
                             }}
@@ -2024,27 +2030,7 @@ const Products = () => {
                                 variant="ghost"
                                 onClick={() => {
                                   setEditingProduct(product);
-                                  setFormData({
-                                    name: product.name,
-                                    category: product.category,
-                                    material: product.material || "",
-                                    shape: product.shape || "",
-                                    direction: product.direction || "",
-                                    bit_type: product.bit_type || "",
-                                    grit: product.grit || "",
-                                    unit: product.unit || "piece",
-                                    sku: product.sku,
-                                    price_usd: product.price_usd.toString(),
-                                    salon_price_usd: product.salon_price_usd?.toString() || "",
-                                    wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
-                                    stock_on_hand: product.stock_on_hand?.toString() || "0",
-                                    stock_reserved: product.stock_reserved?.toString() || "0",
-                                    reorder_level: product.reorder_level?.toString() || "10",
-                                    supplier: product.supplier || "",
-                                    is_parent: product.is_parent || false,
-                                    parent_product_id: product.parent_product_id || "",
-                                    variant_name: product.variant_name || "",
-                                  });
+                                  setFormData(productToFormData(product));
                                   setExistingImages(product.images || []);
                                   setIsDialogOpen(true);
                                 }}
@@ -2212,27 +2198,7 @@ const Products = () => {
                       variant="outline"
                       onClick={() => {
                         setEditingProduct(quickViewProduct);
-                        setFormData({
-                          name: quickViewProduct.name,
-                          category: quickViewProduct.category,
-                          material: quickViewProduct.material || "",
-                          shape: quickViewProduct.shape || "",
-                          direction: quickViewProduct.direction || "",
-                          bit_type: quickViewProduct.bit_type || "",
-                          grit: quickViewProduct.grit || "",
-                          unit: quickViewProduct.unit || "piece",
-                          sku: quickViewProduct.sku,
-                          price_usd: quickViewProduct.price_usd.toString(),
-                          salon_price_usd: quickViewProduct.salon_price_usd?.toString() || "",
-                          wholesale_price_usd: quickViewProduct.wholesale_price_usd?.toString() || "",
-                          stock_on_hand: quickViewProduct.stock_on_hand?.toString() || "0",
-                          stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
-                          reorder_level: quickViewProduct.reorder_level?.toString() || "10",
-                          supplier: quickViewProduct.supplier || "",
-                          is_parent: quickViewProduct.is_parent || false,
-                          parent_product_id: quickViewProduct.parent_product_id || "",
-                          variant_name: quickViewProduct.variant_name || "",
-                        });
+                        setFormData(productToFormData(quickViewProduct));
                         setExistingImages(quickViewProduct.images || []);
                         setQuickViewProduct(null);
                         setIsDialogOpen(true);
@@ -2378,27 +2344,7 @@ const Products = () => {
                         variant="outline"
                         onClick={() => {
                           setEditingProduct(quickViewProduct);
-                          setFormData({
-                            name: quickViewProduct.name,
-                            category: quickViewProduct.category,
-                            material: quickViewProduct.material || "",
-                            shape: quickViewProduct.shape || "",
-                            direction: quickViewProduct.direction || "",
-                            bit_type: quickViewProduct.bit_type || "",
-                            grit: quickViewProduct.grit || "",
-                            unit: quickViewProduct.unit || "piece",
-                            sku: quickViewProduct.sku,
-                            price_usd: quickViewProduct.price_usd.toString(),
-                            salon_price_usd: quickViewProduct.salon_price_usd?.toString() || "",
-                            wholesale_price_usd: quickViewProduct.wholesale_price_usd?.toString() || "",
-                            stock_on_hand: quickViewProduct.stock_on_hand?.toString() || "0",
-                            stock_reserved: quickViewProduct.stock_reserved?.toString() || "0",
-                            reorder_level: quickViewProduct.reorder_level?.toString() || "10",
-                            supplier: quickViewProduct.supplier || "",
-                            is_parent: quickViewProduct.is_parent || false,
-                            parent_product_id: quickViewProduct.parent_product_id || "",
-                            variant_name: quickViewProduct.variant_name || "",
-                          });
+                          setFormData(productToFormData(quickViewProduct));
                           setExistingImages(quickViewProduct.images || []);
                           setQuickViewProduct(null);
                           setIsDialogOpen(true);
