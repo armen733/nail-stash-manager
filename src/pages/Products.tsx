@@ -1578,7 +1578,7 @@ const Products = () => {
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-72 bg-background border p-4" align="start" sideOffset={8}>
+                <PopoverContent className="w-72 bg-background border p-4 max-h-[80vh] overflow-y-auto" align="start" side="bottom" sideOffset={8}>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-sm">Filter Products</h4>
