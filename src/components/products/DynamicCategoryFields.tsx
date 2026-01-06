@@ -68,15 +68,15 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
               {isRequired && <span className="text-destructive ml-1">*</span>}
             </Label>
             <Select
-              value={value}
-              onValueChange={(v) => handleFieldChange(field.field_name, v)}
+              value={value || "__none__"}
+              onValueChange={(v) => handleFieldChange(field.field_name, v === "__none__" ? "" : v)}
             >
               <SelectTrigger id={field.field_name} className="bg-background">
                 <SelectValue placeholder={field.placeholder || `Select ${field.field_label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent className="bg-background border">
-                <SelectItem value="">None</SelectItem>
-                {options.map((opt) => (
+                <SelectItem value="__none__">None</SelectItem>
+                {options.filter(opt => opt && opt.trim() !== "").map((opt) => (
                   <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                 ))}
               </SelectContent>
