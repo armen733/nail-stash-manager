@@ -459,6 +459,24 @@ export type Database = {
           },
         ]
       }
+      product_sibling_groups: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           bit_type: string | null
@@ -477,6 +495,7 @@ export type Database = {
           reorder_level: number | null
           salon_price_usd: number | null
           shape: string | null
+          sibling_group_id: string | null
           sku: string
           stock_on_hand: number | null
           stock_reserved: number | null
@@ -504,6 +523,7 @@ export type Database = {
           reorder_level?: number | null
           salon_price_usd?: number | null
           shape?: string | null
+          sibling_group_id?: string | null
           sku: string
           stock_on_hand?: number | null
           stock_reserved?: number | null
@@ -531,6 +551,7 @@ export type Database = {
           reorder_level?: number | null
           salon_price_usd?: number | null
           shape?: string | null
+          sibling_group_id?: string | null
           sku?: string
           stock_on_hand?: number | null
           stock_reserved?: number | null
@@ -547,6 +568,13 @@ export type Database = {
             columns: ["parent_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_sibling_group_id_fkey"
+            columns: ["sibling_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_sibling_groups"
             referencedColumns: ["id"]
           },
         ]

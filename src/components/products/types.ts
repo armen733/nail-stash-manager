@@ -6,6 +6,12 @@ export interface ProductImage {
   display_order: number;
 }
 
+export interface SiblingGroup {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -30,8 +36,10 @@ export interface Product {
   parent_product_id: string | null;
   variant_name: string | null;
   category_attributes: Record<string, string | number | null> | null;
+  sibling_group_id: string | null;
   variants?: Product[];
   images?: ProductImage[];
+  siblings?: Product[];
 }
 
 export interface CartItem {
@@ -61,6 +69,8 @@ export interface ProductFormData {
   parent_product_id: string;
   variant_name: string;
   category_attributes: Record<string, string>;
+  sibling_group_id: string;
+  sibling_group_name: string;
 }
 
 export const defaultFormData: ProductFormData = {
@@ -85,4 +95,6 @@ export const defaultFormData: ProductFormData = {
   parent_product_id: "",
   variant_name: "",
   category_attributes: {},
+  sibling_group_id: "",
+  sibling_group_name: "",
 };

@@ -59,7 +59,8 @@ import {
   ProductImage, 
   CartItem, 
   ProductFormData, 
-  defaultFormData 
+  defaultFormData,
+  SiblingGroup 
 } from "@/components/products/types";
 import { ProductCard } from "@/components/products/ProductCard";
 import { CartPanel } from "@/components/products/CartPanel";
@@ -127,6 +128,22 @@ const Products = () => {
   const [variantTypeFilter, setVariantTypeFilter] = useState("all");
 
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
+  
+  // Sibling groups
+  const [siblingGroups, setSiblingGroups] = useState<SiblingGroup[]>([]);
+  const [siblingAction, setSiblingAction] = useState<"none" | "existing" | "new">("none");
+  
+  // Fetch sibling groups
+  useEffect(() => {
+    const fetchSiblingGroups = async () => {
+      const { data } = await supabase
+        .from("product_sibling_groups")
+        .select("*")
+        .order("name");
+      if (data) setSiblingGroups(data as SiblingGroup[]);
+    };
+    fetchSiblingGroups();
+  }, []);
 
   // Update maxPrice when query data changes
   useEffect(() => {
@@ -278,32 +295,57 @@ const Products = () => {
       }
     });
 
-    const productData = {
-      name: formData.name,
-      category: formData.category,
-      material: formData.material || null,
-      shape: formData.shape || null,
-      direction: formData.direction || null,
-      bit_type: formData.bit_type || null,
-      grit: formData.grit || null,
-      unit: formData.unit || null,
-      sku: formData.sku,
-      supplier_sku: formData.supplier_sku || null,
-      price_usd: parseFloat(formData.price_usd),
-      salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
-      wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
-      image_url: null, // Deprecated, using product_images table now
-      stock_on_hand: parseInt(formData.stock_on_hand) || 0,
-      stock_reserved: parseInt(formData.stock_reserved) || 0,
-      reorder_level: parseInt(formData.reorder_level) || 10,
-      supplier: formData.supplier || null,
-      is_parent: formData.is_parent || false,
-      parent_product_id: formData.parent_product_id || null,
-      variant_name: formData.variant_name || null,
-      category_attributes: Object.keys(categoryAttrsForDb).length > 0 ? categoryAttrsForDb : null,
-    };
-
     try {
+      let siblingGroupId: string | null = null;
+
+      // Handle sibling group creation/assignment
+      if (siblingAction === "new" && formData.sibling_group_name.trim()) {
+        // Create new sibling group
+        const { data: newGroup, error: groupError } = await supabase
+          .from("product_sibling_groups")
+          .insert({ name: formData.sibling_group_name.trim() })
+          .select()
+          .single();
+        
+        if (groupError) throw groupError;
+        siblingGroupId = newGroup.id;
+        
+        // Refresh sibling groups
+        const { data: groups } = await supabase
+          .from("product_sibling_groups")
+          .select("*")
+          .order("name");
+        if (groups) setSiblingGroups(groups as SiblingGroup[]);
+      } else if (siblingAction === "existing" && formData.sibling_group_id) {
+        siblingGroupId = formData.sibling_group_id;
+      }
+
+      const productData = {
+        name: formData.name,
+        category: formData.category,
+        material: formData.material || null,
+        shape: formData.shape || null,
+        direction: formData.direction || null,
+        bit_type: formData.bit_type || null,
+        grit: formData.grit || null,
+        unit: formData.unit || null,
+        sku: formData.sku,
+        supplier_sku: formData.supplier_sku || null,
+        price_usd: parseFloat(formData.price_usd),
+        salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
+        wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
+        image_url: null, // Deprecated, using product_images table now
+        stock_on_hand: parseInt(formData.stock_on_hand) || 0,
+        stock_reserved: parseInt(formData.stock_reserved) || 0,
+        reorder_level: parseInt(formData.reorder_level) || 10,
+        supplier: formData.supplier || null,
+        is_parent: formData.is_parent || false,
+        parent_product_id: formData.parent_product_id || null,
+        variant_name: formData.variant_name || null,
+        category_attributes: Object.keys(categoryAttrsForDb).length > 0 ? categoryAttrsForDb : null,
+        sibling_group_id: siblingGroupId,
+      };
+
       let productId: string;
 
       if (editingProduct) {
@@ -371,6 +413,7 @@ const Products = () => {
     setImageFiles([]);
     setImagePreviews([]);
     setExistingImages([]);
+    setSiblingAction("none");
   };
 
   // Helper to convert product to form data
@@ -405,7 +448,24 @@ const Products = () => {
       parent_product_id: product.parent_product_id || "",
       variant_name: product.variant_name || "",
       category_attributes: categoryAttrs,
+      sibling_group_id: (product as any).sibling_group_id || "",
+      sibling_group_name: "",
     };
+  };
+
+  // Helper to open edit dialog with correct sibling action
+  const openEditDialog = (product: Product) => {
+    setEditingProduct(product);
+    setFormData(productToFormData(product));
+    setExistingImages(product.images || []);
+    // Set sibling action based on whether product has a sibling group
+    const siblingId = (product as any).sibling_group_id;
+    if (siblingId) {
+      setSiblingAction("existing");
+    } else {
+      setSiblingAction("none");
+    }
+    setIsDialogOpen(true);
   };
 
   // Memoize filtered products to avoid recalculation on every render
@@ -1486,49 +1546,82 @@ const Products = () => {
                 </div>
               </div>
 
-              {/* Variant Management Section */}
+              {/* Product Siblings Section */}
               <div className="border-t pt-4 mt-4 space-y-4">
-                <h3 className="font-semibold text-sm">Parent/Child Variants</h3>
+                <h3 className="font-semibold text-sm">Product Siblings (Other Options)</h3>
+                <p className="text-xs text-muted-foreground">
+                  Group this product with similar products (e.g., same item in different sizes/shapes). Siblings appear as "Other options" on product pages.
+                </p>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is_parent"
-                    checked={formData.is_parent}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_parent: checked as boolean, parent_product_id: "" })}
-                  />
-                  <Label htmlFor="is_parent" className="text-sm font-normal cursor-pointer">
-                    This is a parent product with variants
-                  </Label>
-                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="sibling_none"
+                      checked={siblingAction === "none"}
+                      onCheckedChange={() => {
+                        setSiblingAction("none");
+                        setFormData({ ...formData, sibling_group_id: "", sibling_group_name: "" });
+                      }}
+                    />
+                    <Label htmlFor="sibling_none" className="text-sm font-normal cursor-pointer">
+                      No siblings (standalone product)
+                    </Label>
+                  </div>
 
-                {!formData.is_parent && (
-                  <div className="space-y-2">
-                    <Label htmlFor="parent_product_id">Parent Product (Optional)</Label>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="sibling_existing"
+                      checked={siblingAction === "existing"}
+                      onCheckedChange={() => {
+                        setSiblingAction("existing");
+                        setFormData({ ...formData, sibling_group_name: "" });
+                      }}
+                    />
+                    <Label htmlFor="sibling_existing" className="text-sm font-normal cursor-pointer">
+                      Add to existing sibling group
+                    </Label>
+                  </div>
+
+                  {siblingAction === "existing" && (
                     <Select 
-                      value={formData.parent_product_id || "none"} 
-                      onValueChange={(value) => setFormData({ ...formData, parent_product_id: value === "none" ? "" : value })}
+                      value={formData.sibling_group_id || "select"} 
+                      onValueChange={(value) => setFormData({ ...formData, sibling_group_id: value === "select" ? "" : value })}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select parent product" />
+                      <SelectTrigger className="ml-6">
+                        <SelectValue placeholder="Select sibling group" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None (Standalone Product)</SelectItem>
-                        {products.filter(p => p.is_parent).map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        <SelectItem value="select" disabled>Select a group...</SelectItem>
+                        {siblingGroups.map(group => (
+                          <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Link this product as a variant of another product
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                {formData.is_parent && (
-                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
-                    This product will serve as a parent. After creating it, you can add variants by creating new products and selecting this as their parent.
-                  </p>
-                )}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="sibling_new"
+                      checked={siblingAction === "new"}
+                      onCheckedChange={() => {
+                        setSiblingAction("new");
+                        setFormData({ ...formData, sibling_group_id: "" });
+                      }}
+                    />
+                    <Label htmlFor="sibling_new" className="text-sm font-normal cursor-pointer">
+                      Create new sibling group
+                    </Label>
+                  </div>
+
+                  {siblingAction === "new" && (
+                    <Input
+                      placeholder="Enter group name (e.g., 'Diamond Drill Bit Series')"
+                      value={formData.sibling_group_name}
+                      onChange={(e) => setFormData({ ...formData, sibling_group_name: e.target.value })}
+                      className="ml-6"
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
@@ -1927,12 +2020,7 @@ const Products = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setEditingProduct(product);
-                              setFormData(productToFormData(product));
-                              setExistingImages(product.images || []);
-                              setIsDialogOpen(true);
-                            }}
+                            onClick={() => openEditDialog(product)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -2029,12 +2117,7 @@ const Products = () => {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                onClick={() => {
-                                  setEditingProduct(product);
-                                  setFormData(productToFormData(product));
-                                  setExistingImages(product.images || []);
-                                  setIsDialogOpen(true);
-                                }}
+                                onClick={() => openEditDialog(product)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -2198,11 +2281,8 @@ const Products = () => {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setEditingProduct(quickViewProduct);
-                        setFormData(productToFormData(quickViewProduct));
-                        setExistingImages(quickViewProduct.images || []);
+                        openEditDialog(quickViewProduct);
                         setQuickViewProduct(null);
-                        setIsDialogOpen(true);
                       }}
                     >
                       <Pencil className="h-4 w-4 mr-2" />
