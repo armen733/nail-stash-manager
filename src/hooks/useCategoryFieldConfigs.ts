@@ -38,7 +38,7 @@ export function useCategoryFieldConfigs() {
   return useQuery({
     queryKey: CATEGORY_FIELD_CONFIGS_QUERY_KEY,
     queryFn: fetchCategoryFieldConfigs,
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 
