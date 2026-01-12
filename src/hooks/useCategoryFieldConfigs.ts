@@ -48,11 +48,12 @@ export function getCategoriesWithConfigs(data: CategoryFieldConfig[]): string[] 
   return Array.from(new Set(categories)).sort();
 }
 
-// Helper to get field configs for a specific category
+// Helper to get field configs for a specific category (case-insensitive)
 export function getFieldsForCategory(data: CategoryFieldConfig[], category: string): CategoryFieldConfig[] {
   if (!category) return [];
   
+  const categoryLower = category.toLowerCase().trim();
   return data
-    .filter(item => item.category === category)
+    .filter(item => item.category.toLowerCase().trim() === categoryLower)
     .sort((a, b) => a.display_order - b.display_order);
 }
