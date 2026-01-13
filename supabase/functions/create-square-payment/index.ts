@@ -15,6 +15,10 @@ serve(async (req) => {
     const SQUARE_ACCESS_TOKEN = Deno.env.get('SQUARE_ACCESS_TOKEN');
     const SQUARE_LOCATION_ID = Deno.env.get('SQUARE_LOCATION_ID');
     
+    // Log token prefix for debugging (never log full token!)
+    console.log('Token prefix:', SQUARE_ACCESS_TOKEN?.substring(0, 10) + '...');
+    console.log('Location ID:', SQUARE_LOCATION_ID);
+    
     if (!SQUARE_ACCESS_TOKEN || !SQUARE_LOCATION_ID) {
       console.error('Square credentials not configured');
       return new Response(
