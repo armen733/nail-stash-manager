@@ -22,7 +22,8 @@ serve(async (req) => {
     }
 
     // Determine environment based on application ID prefix
-    const environment = applicationId.startsWith('sandbox-') || applicationId.startsWith('sq0idp-') 
+    // sandbox IDs start with 'sandbox-', production IDs start with 'sq0idp-'
+    const environment = applicationId.startsWith('sandbox-') 
       ? 'sandbox' 
       : 'production';
 
