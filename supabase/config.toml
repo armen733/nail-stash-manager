@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.create-checkout]
 verify_jwt = false
+
+[functions.get-square-config]
+verify_jwt = false
