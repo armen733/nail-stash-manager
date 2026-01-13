@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.get-square-application-id]
 verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
