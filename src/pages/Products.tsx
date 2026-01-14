@@ -980,6 +980,65 @@ const Products = () => {
     });
   };
 
+  const handleGroupAsSiblings = async () => {
+    if (selectedVariantProducts.size < 2) {
+      toast({
+        title: "Selection Required",
+        description: "Please select at least 2 products to group as siblings",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const selectedProductIds = Array.from(selectedVariantProducts);
+      const selectedProductsList = products.filter(p => selectedProductIds.includes(p.id));
+      
+      // Check if any selected product already has a sibling group
+      const existingGroupProduct = selectedProductsList.find((p: any) => p.sibling_group_id);
+      let siblingGroupId: string;
+
+      if (existingGroupProduct) {
+        // Use the existing sibling group
+        siblingGroupId = (existingGroupProduct as any).sibling_group_id;
+      } else {
+        // Create a new sibling group
+        const { data: newGroup, error: groupError } = await supabase
+          .from("product_sibling_groups")
+          .insert({ name: null })
+          .select()
+          .single();
+        
+        if (groupError) throw groupError;
+        siblingGroupId = newGroup.id;
+      }
+
+      // Update all selected products to have the same sibling_group_id
+      const { error: updateError } = await supabase
+        .from("products")
+        .update({ sibling_group_id: siblingGroupId })
+        .in("id", selectedProductIds);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Siblings Created",
+        description: `${selectedProductIds.length} products are now grouped as siblings`,
+      });
+
+      setIsConverterOpen(false);
+      setSelectedVariantProducts(new Set());
+      setSiblingSearchTerm("");
+      refreshProducts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleConvertToVariants = async () => {
     if (selectedVariantProducts.size < 2) {
       toast({
@@ -1122,48 +1181,100 @@ const Products = () => {
           <p className="text-muted-foreground mt-1">Manage your product catalog</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isConverterOpen} onOpenChange={setIsConverterOpen}>
+          <Dialog open={isConverterOpen} onOpenChange={(open) => {
+            setIsConverterOpen(open);
+            if (!open) {
+              setSelectedVariantProducts(new Set());
+              setSiblingSearchTerm("");
+            }
+          }}>
             <DialogTrigger asChild>
               <Button variant="outline">
-                <Copy className="mr-2 h-4 w-4" />
-                Convert to Variants
+                <Share2 className="mr-2 h-4 w-4" />
+                Manage Siblings
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Convert Products to Variants</DialogTitle>
+                <DialogTitle>Manage Product Siblings</DialogTitle>
                 <p className="text-sm text-muted-foreground">
-                  Manually select products to group together as variants
+                  Select products to group as siblings. Siblings appear as "Other Options" on product pages.
                 </p>
               </DialogHeader>
               <div className="space-y-4">
-                {getEligibleProducts().length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No products available to convert</p>
-                    <p className="text-sm mt-2">All products are already parents or variants</p>
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search products by name or SKU..."
+                    value={siblingSearchTerm}
+                    onChange={(e) => setSiblingSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                {/* Selected products preview */}
+                {selectedVariantProducts.size > 0 && (
+                  <div className="space-y-2">
+                    <Label>Selected Products ({selectedVariantProducts.size})</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from(selectedVariantProducts).map((productId) => {
+                        const product = products.find(p => p.id === productId);
+                        if (!product) return null;
+                        return (
+                          <Badge 
+                            key={product.id} 
+                            variant="secondary"
+                            className="flex items-center gap-1 pr-1"
+                          >
+                            <span className="truncate max-w-[150px]">{product.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 hover:bg-destructive/20"
+                              onClick={() => toggleVariantSelection(product.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Select Products ({selectedVariantProducts.size} selected)</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Check the products you want to group together. Select at least 2 products.
-                      </p>
-                      <div className="grid gap-3 max-h-[300px] overflow-y-auto border rounded-lg p-3">
-                        {getEligibleProducts().map((product) => (
+                )}
+
+                {/* Product list */}
+                <div className="space-y-2">
+                  <Label>Available Products</Label>
+                  <div className="grid gap-2 max-h-[350px] overflow-y-auto border rounded-lg p-3">
+                    {products
+                      .filter((product) => {
+                        const searchLower = siblingSearchTerm.toLowerCase();
+                        return (
+                          product.name.toLowerCase().includes(searchLower) ||
+                          product.sku.toLowerCase().includes(searchLower)
+                        );
+                      })
+                      .map((product) => {
+                        const isSelected = selectedVariantProducts.has(product.id);
+                        const existingSiblingGroup = (product as any).sibling_group_id;
+                        const siblingCount = existingSiblingGroup 
+                          ? products.filter((p: any) => p.sibling_group_id === existingSiblingGroup).length - 1
+                          : 0;
+                        
+                        return (
                           <Card
                             key={product.id}
                             className={cn(
                               "cursor-pointer transition-all hover:border-primary",
-                              selectedVariantProducts.has(product.id) && "border-primary bg-primary/5"
+                              isSelected && "border-primary bg-primary/5"
                             )}
                             onClick={() => toggleVariantSelection(product.id)}
                           >
                             <CardContent className="p-3">
                               <div className="flex items-center gap-3">
                                 <Checkbox
-                                  checked={selectedVariantProducts.has(product.id)}
+                                  checked={isSelected}
                                   onCheckedChange={() => toggleVariantSelection(product.id)}
                                   onClick={(e) => e.stopPropagation()}
                                 />
@@ -1187,117 +1298,43 @@ const Products = () => {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium text-sm truncate">{product.name}</h4>
+                                    {existingSiblingGroup && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {siblingCount} sibling{siblingCount !== 1 ? 's' : ''}
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
                                   <p className="text-xs font-medium">${product.price_usd}</p>
                                 </div>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                                )}
                               </div>
                             </CardContent>
                           </Card>
-                        ))}
-                      </div>
-                    </div>
+                        );
+                      })}
+                  </div>
+                </div>
 
-                    {selectedVariantProducts.size >= 2 && (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Select Parent Product</Label>
-                          <p className="text-xs text-muted-foreground">
-                            Choose which product should be the main product (others will become its variants)
-                          </p>
-                          <div className="grid gap-3">
-                            {Array.from(selectedVariantProducts).map((productId) => {
-                              const product = products.find(p => p.id === productId);
-                              if (!product) return null;
-                              
-                              return (
-                                <Card
-                                  key={product.id}
-                                  className={cn(
-                                    "cursor-pointer transition-all hover:border-primary",
-                                    selectedParentId === product.id && "border-primary bg-primary/5"
-                                  )}
-                                  onClick={() => setSelectedParentId(product.id)}
-                                >
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                        {(product.images && product.images.length > 0) ? (
-                                          <img 
-                                            src={product.images[0].image_url} 
-                                            alt={product.name}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : product.image_url ? (
-                                          <img 
-                                            src={product.image_url} 
-                                            alt={product.name}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center">
-                                            <Package className="h-6 w-6 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium truncate">{product.name}</h4>
-                                        <p className="text-sm text-muted-foreground">SKU: {product.sku}</p>
-                                        <p className="text-sm font-medium">${product.price_usd}</p>
-                                      </div>
-                                      {selectedParentId === product.id && (
-                                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                                      )}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        </div>
+                {/* Action button */}
+                {selectedVariantProducts.size >= 2 && (
+                  <Button 
+                    onClick={handleGroupAsSiblings}
+                    className="w-full"
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Group {selectedVariantProducts.size} Products as Siblings
+                  </Button>
+                )}
 
-                        {selectedParentId && (
-                          <div className="space-y-2">
-                            <Label>Preview</Label>
-                            <Card className="bg-muted/50">
-                              <CardContent className="p-4">
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium">Parent Product:</span>
-                                    <span>
-                                      {products.find(p => p.id === selectedParentId)?.name}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Variants ({selectedVariantProducts.size - 1}):</span>
-                                    <ul className="list-disc list-inside mt-1 text-sm text-muted-foreground">
-                                      {Array.from(selectedVariantProducts)
-                                        .filter(id => id !== selectedParentId)
-                                        .map(id => {
-                                          const product = products.find(p => p.id === id);
-                                          return product ? (
-                                            <li key={id}>{product.sku} - {product.name}</li>
-                                          ) : null;
-                                        })}
-                                    </ul>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        )}
-
-                        <Button 
-                          onClick={handleConvertToVariants}
-                          disabled={!selectedParentId}
-                          className="w-full"
-                        >
-                          <Copy className="mr-2 h-4 w-4" />
-                          Convert to Variants
-                        </Button>
-                      </div>
-                    )}
-                  </>
+                {selectedVariantProducts.size === 1 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Select at least one more product to create a sibling group
+                  </p>
                 )}
               </div>
             </DialogContent>
