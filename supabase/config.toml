@@ -35,15 +35,3 @@ verify_jwt = false
 
 [functions.get-stripe-publishable-key]
 verify_jwt = false
-
-[functions.create-square-payment]
-verify_jwt = false
-
-[functions.get-square-application-id]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.get-square-config]
-verify_jwt = false
