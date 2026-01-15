@@ -64,16 +64,36 @@ serve(async (req) => {
           const { error } = await supabase
             .from('orders')
             .update({ 
-              status: 'confirmed',
-              payment_status: 'paid',
-              payment_intent_id: paymentIntent.id
+              status: 'Confirmed'
             })
             .eq('id', orderId);
 
           if (error) {
             console.error('Failed to update order:', error);
           } else {
-            console.log('Order updated to confirmed:', orderId);
+            console.log('Order updated to Confirmed:', orderId);
+            
+            // Trigger Telegram notification
+            try {
+              const { data: order } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+              
+              if (order) {
+                await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+                  },
+                  body: JSON.stringify(order)
+                });
+              }
+            } catch (notifyError) {
+              console.error('Failed to send notification:', notifyError);
+            }
           }
         }
         break;
@@ -89,8 +109,7 @@ serve(async (req) => {
           const { error } = await supabase
             .from('orders')
             .update({ 
-              status: 'cancelled',
-              payment_status: 'failed'
+              status: 'Draft'
             })
             .eq('id', orderId);
 
