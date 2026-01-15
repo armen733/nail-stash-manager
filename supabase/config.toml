@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.get-stripe-publishable-key]
 verify_jwt = false
+
+[functions.stripe-hosted-checkout]
+verify_jwt = false
