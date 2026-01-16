@@ -34,8 +34,9 @@ serve(async (req: Request) => {
     
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     
+    // Note: shipping_details is NOT expandable - it's included automatically if shipping was collected
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items', 'line_items.data.price.product', 'customer_details', 'shipping_details']
+      expand: ['line_items', 'line_items.data.price.product', 'customer_details']
     });
     
     logStep('Session retrieved', { 
