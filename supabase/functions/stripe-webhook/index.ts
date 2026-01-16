@@ -98,30 +98,7 @@ serve(async (req) => {
               `)
               .eq('order_id', orderId);
 
-            // Send Telegram notification
-            if (order) {
-              try {
-                await fetch(`${SUPABASE_URL}/functions/v1/send-push-notification`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-                  },
-                  body: JSON.stringify({
-                    orderId: order.id,
-                    customerName: order.customer_name || customerName || 'Customer',
-                    customerPhone: order.customer_phone,
-                    customerEmail: order.customer_email || customerEmail,
-                    customerAddress: order.customer_address,
-                    total: order.total,
-                    orderDate: order.order_date
-                  })
-                });
-                console.log('Telegram notification sent');
-              } catch (notifyError) {
-                console.error('Failed to send Telegram notification:', notifyError);
-              }
-            }
+            // Telegram notification is handled by process-stripe-session with "Paid via Stripe" format
 
             // Send confirmation email with product thumbnails
             if (customerEmail && order) {
