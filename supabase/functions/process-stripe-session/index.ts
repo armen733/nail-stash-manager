@@ -135,6 +135,7 @@ serve(async (req: Request) => {
     // Use metadata items if available (with image_url), otherwise fall back to Stripe line items
     const orderItemsInfo = metadataItems.length > 0 
       ? metadataItems.map((item: any) => ({
+          product_id: item.product_id || item.id || null,
           product_name: item.name || item.product_name || 'Unknown Product',
           quantity: item.quantity || 1,
           unit_price: item.price || item.unit_price || 0,
@@ -142,6 +143,7 @@ serve(async (req: Request) => {
           image_url: item.image_url || null,
         }))
       : lineItems.map((item: any) => ({
+          product_id: null,
           product_name: item.description || (item.price?.product as any)?.name || 'Unknown Product',
           quantity: item.quantity || 1,
           unit_price: (item.price?.unit_amount || 0) / 100,
@@ -150,6 +152,41 @@ serve(async (req: Request) => {
         }));
     
     logStep('Order items prepared', { count: orderItemsInfo.length, hasImages: orderItemsInfo.some((i: any) => i.image_url) });
+
+    // Reduce stock for each product
+    for (const item of orderItemsInfo) {
+      if (item.product_id) {
+        try {
+          // First get current stock
+          const { data: product, error: fetchError } = await supabase
+            .from('products')
+            .select('stock_on_hand')
+            .eq('id', item.product_id)
+            .single();
+          
+          if (fetchError) {
+            logStep('Failed to fetch product stock', { productId: item.product_id, error: fetchError.message });
+            continue;
+          }
+          
+          const currentStock = product?.stock_on_hand ?? 0;
+          const newStock = Math.max(0, currentStock - item.quantity);
+          
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ stock_on_hand: newStock })
+            .eq('id', item.product_id);
+          
+          if (updateError) {
+            logStep('Failed to update product stock', { productId: item.product_id, error: updateError.message });
+          } else {
+            logStep('Stock reduced', { productId: item.product_id, oldStock: currentStock, newStock, quantity: item.quantity });
+          }
+        } catch (stockErr) {
+          logStep('Stock update error', { productId: item.product_id, error: stockErr });
+        }
+      }
+    }
 
     // Send Telegram notification
     try {
