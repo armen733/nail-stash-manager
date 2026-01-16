@@ -85,6 +85,17 @@ serve(async (req: Request) => {
     const lineItems = session.line_items?.data || [];
     const subtotal = (session.amount_subtotal || 0) / 100;
     
+    // Parse orderItems from metadata if available (includes image_url from customer app)
+    let metadataItems: any[] = [];
+    if (session.metadata?.orderItems) {
+      try {
+        metadataItems = JSON.parse(session.metadata.orderItems);
+        logStep('Parsed metadata items', { count: metadataItems.length });
+      } catch (e) {
+        logStep('Failed to parse metadata items', { error: e });
+      }
+    }
+    
     logStep('Creating order', { customerEmail, itemCount: lineItems.length, total, userId });
 
     const orderData: Record<string, any> = {
@@ -115,14 +126,24 @@ serve(async (req: Request) => {
 
     logStep('Order created', { orderId: order.id });
 
-    const orderItemsInfo = lineItems.map((item: any) => ({
-      product_name: item.description || (item.price?.product as any)?.name || 'Unknown Product',
-      quantity: item.quantity || 1,
-      unit_price: (item.price?.unit_amount || 0) / 100,
-      line_total: (item.amount_total || 0) / 100,
-    }));
+    // Use metadata items if available (with image_url), otherwise fall back to Stripe line items
+    const orderItemsInfo = metadataItems.length > 0 
+      ? metadataItems.map((item: any) => ({
+          product_name: item.name || item.product_name || 'Unknown Product',
+          quantity: item.quantity || 1,
+          unit_price: item.price || item.unit_price || 0,
+          line_total: (item.price || item.unit_price || 0) * (item.quantity || 1),
+          image_url: item.image_url || null,
+        }))
+      : lineItems.map((item: any) => ({
+          product_name: item.description || (item.price?.product as any)?.name || 'Unknown Product',
+          quantity: item.quantity || 1,
+          unit_price: (item.price?.unit_amount || 0) / 100,
+          line_total: (item.amount_total || 0) / 100,
+          image_url: (item.price?.product as any)?.images?.[0] || null,
+        }));
     
-    logStep('Order items prepared', { count: orderItemsInfo.length });
+    logStep('Order items prepared', { count: orderItemsInfo.length, hasImages: orderItemsInfo.some((i: any) => i.image_url) });
 
     // Send Telegram notification
     try {
@@ -189,6 +210,7 @@ ${dividerLine}`;
             name: item.product_name,
             quantity: item.quantity,
             price: item.unit_price,
+            image_url: item.image_url,
           })),
           subtotal: subtotal,
           total: total,
