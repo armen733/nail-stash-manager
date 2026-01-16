@@ -64,7 +64,7 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
-    const origin = req.headers.get("origin") || "https://nail-stash-manager.lovable.app";
+    const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
