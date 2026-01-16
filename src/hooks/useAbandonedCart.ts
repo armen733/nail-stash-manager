@@ -32,14 +32,18 @@ export function useAbandonedCart(cart: CartItem[]) {
   const debouncedCart = useDebounce(cart, 2000);
 
   const saveCart = useCallback(async (cartItems: CartItem[]) => {
-    if (!user || cartItems.length === 0) {
-      // If cart is empty and we have a cart ID, delete it
-      if (cartIdRef.current && cartItems.length === 0) {
+    if (!user) return;
+    
+    // If cart is empty, delete the cart record
+    if (cartItems.length === 0) {
+      try {
         await supabase
           .from('abandoned_carts')
           .delete()
-          .eq('id', cartIdRef.current);
+          .eq('user_id', user.id);
         cartIdRef.current = null;
+      } catch (err) {
+        console.error('Error deleting abandoned cart:', err);
       }
       return;
     }
@@ -66,29 +70,20 @@ export function useAbandonedCart(cart: CartItem[]) {
     };
 
     try {
-      if (cartIdRef.current) {
-        // Update existing cart
-        const { error } = await supabase
-          .from('abandoned_carts')
-          .update(cartData)
-          .eq('id', cartIdRef.current);
-        
-        if (error) {
-          console.error('Error updating abandoned cart:', error);
-        }
-      } else {
-        // Create new cart
-        const { data, error } = await supabase
-          .from('abandoned_carts')
-          .insert(cartData)
-          .select('id')
-          .single();
-        
-        if (error) {
-          console.error('Error creating abandoned cart:', error);
-        } else if (data) {
-          cartIdRef.current = data.id;
-        }
+      // Use upsert with user_id unique constraint - one cart per user
+      const { data, error } = await supabase
+        .from('abandoned_carts')
+        .upsert(cartData, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        })
+        .select('id')
+        .single();
+      
+      if (error) {
+        console.error('Error upserting abandoned cart:', error);
+      } else if (data) {
+        cartIdRef.current = data.id;
       }
     } catch (err) {
       console.error('Error saving abandoned cart:', err);
