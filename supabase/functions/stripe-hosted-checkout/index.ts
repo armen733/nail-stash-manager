@@ -64,6 +64,15 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
+    // Prepare order items with product_id for stock reduction
+    const orderItems = items.map((item: any) => ({
+      name: item.name,
+      product_id: item.id,
+      quantity: item.quantity,
+      price: item.price,
+      image_url: item.image || null,
+    }));
+
     const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
@@ -75,7 +84,11 @@ serve(async (req: Request) => {
       cancel_url: `${origin}/checkout`,
       billing_address_collection: "required",
       shipping_address_collection: { allowed_countries: ["US", "CA", "GB", "AU"] },
-      metadata: { ...(metadata || {}), userId: userId || "" },
+      metadata: { 
+        ...(metadata || {}), 
+        userId: userId || "",
+        orderItems: JSON.stringify(orderItems),
+      },
     });
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
