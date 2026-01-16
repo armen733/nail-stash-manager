@@ -133,6 +133,7 @@ const Products = () => {
   const [siblingGroups, setSiblingGroups] = useState<SiblingGroup[]>([]);
   const [siblingAction, setSiblingAction] = useState<"none" | "existing" | "new">("none");
   const [siblingSearchTerm, setSiblingSearchTerm] = useState("");
+  const [isSiblingSelectionMode, setIsSiblingSelectionMode] = useState(false);
   
   // Get products that have sibling groups (for joining existing groups)
   const productsWithSiblings = useMemo(() => {
@@ -1181,164 +1182,22 @@ const Products = () => {
           <p className="text-muted-foreground mt-1">Manage your product catalog</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={isConverterOpen} onOpenChange={(open) => {
-            setIsConverterOpen(open);
-            if (!open) {
-              setSelectedVariantProducts(new Set());
-              setSiblingSearchTerm("");
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Share2 className="mr-2 h-4 w-4" />
-                Manage Siblings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Manage Product Siblings</DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  Select products to group as siblings. Siblings appear as "Other Options" on product pages.
-                </p>
-              </DialogHeader>
-              <div className="space-y-4">
-                {/* Search input */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search products by name or SKU..."
-                    value={siblingSearchTerm}
-                    onChange={(e) => setSiblingSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                {/* Selected products preview */}
-                {selectedVariantProducts.size > 0 && (
-                  <div className="space-y-2">
-                    <Label>Selected Products ({selectedVariantProducts.size})</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {Array.from(selectedVariantProducts).map((productId) => {
-                        const product = products.find(p => p.id === productId);
-                        if (!product) return null;
-                        return (
-                          <Badge 
-                            key={product.id} 
-                            variant="secondary"
-                            className="flex items-center gap-1 pr-1"
-                          >
-                            <span className="truncate max-w-[150px]">{product.name}</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 hover:bg-destructive/20"
-                              onClick={() => toggleVariantSelection(product.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Product list */}
-                <div className="space-y-2">
-                  <Label>Available Products</Label>
-                  <div className="grid gap-2 max-h-[350px] overflow-y-auto border rounded-lg p-3">
-                    {products
-                      .filter((product) => {
-                        const searchLower = siblingSearchTerm.toLowerCase();
-                        return (
-                          product.name.toLowerCase().includes(searchLower) ||
-                          product.sku.toLowerCase().includes(searchLower)
-                        );
-                      })
-                      .map((product) => {
-                        const isSelected = selectedVariantProducts.has(product.id);
-                        const existingSiblingGroup = (product as any).sibling_group_id;
-                        const siblingCount = existingSiblingGroup 
-                          ? products.filter((p: any) => p.sibling_group_id === existingSiblingGroup).length - 1
-                          : 0;
-                        
-                        return (
-                          <Card
-                            key={product.id}
-                            className={cn(
-                              "cursor-pointer transition-all hover:border-primary",
-                              isSelected && "border-primary bg-primary/5"
-                            )}
-                            onClick={() => toggleVariantSelection(product.id)}
-                          >
-                            <CardContent className="p-3">
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={() => toggleVariantSelection(product.id)}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                  {(product.images && product.images.length > 0) ? (
-                                    <img 
-                                      src={product.images[0].image_url} 
-                                      alt={product.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : product.image_url ? (
-                                    <img 
-                                      src={product.image_url} 
-                                      alt={product.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <Package className="h-6 w-6 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-sm truncate">{product.name}</h4>
-                                    {existingSiblingGroup && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {siblingCount} sibling{siblingCount !== 1 ? 's' : ''}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
-                                  <p className="text-xs font-medium">${product.price_usd}</p>
-                                </div>
-                                {isSelected && (
-                                  <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                {/* Action button */}
-                {selectedVariantProducts.size >= 2 && (
-                  <Button 
-                    onClick={handleGroupAsSiblings}
-                    className="w-full"
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Group {selectedVariantProducts.size} Products as Siblings
-                  </Button>
-                )}
-
-                {selectedVariantProducts.size === 1 && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Select at least one more product to create a sibling group
-                  </p>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            variant={isSiblingSelectionMode ? "default" : "outline"}
+            onClick={() => {
+              setIsSiblingSelectionMode(!isSiblingSelectionMode);
+              if (!isSiblingSelectionMode) {
+                // Entering sibling mode - clear any existing selection
+                setSelectedVariantProducts(new Set());
+              } else {
+                // Exiting sibling mode
+                setSelectedVariantProducts(new Set());
+              }
+            }}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            {isSiblingSelectionMode ? "Cancel" : "Manage Siblings"}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -2053,19 +1912,47 @@ const Products = () => {
               )}
               {viewMode === "grid" ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {displayedItems.map((product) => (
+                  {displayedItems.map((product) => {
+                    const isSelectedForSibling = selectedVariantProducts.has(product.id);
+                    const existingSiblingGroup = (product as any).sibling_group_id;
+                    
+                    return (
                     <Card 
                       key={product.id} 
-                      className="relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-shadow hover:shadow-md" 
-                      onClick={() => setQuickViewProduct(product)}
+                      className={cn(
+                        "relative overflow-hidden flex flex-col h-full min-w-0 cursor-pointer transition-all hover:shadow-md",
+                        isSiblingSelectionMode && isSelectedForSibling && "ring-2 ring-primary bg-primary/5",
+                        isSiblingSelectionMode && "hover:ring-2 hover:ring-primary/50"
+                      )}
+                      onClick={() => {
+                        if (isSiblingSelectionMode) {
+                          toggleVariantSelection(product.id);
+                        } else {
+                          setQuickViewProduct(product);
+                        }
+                      }}
                     >
+                      {/* Sibling mode indicator */}
+                      {isSiblingSelectionMode && existingSiblingGroup && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Badge variant="secondary" className="text-[10px]">
+                            Has siblings
+                          </Badge>
+                        </div>
+                      )}
                       <div 
                         className="absolute top-2 left-2 z-10" 
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Checkbox
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={() => toggleProductSelection(product.id)}
+                          checked={isSiblingSelectionMode ? isSelectedForSibling : selectedProducts.has(product.id)}
+                          onCheckedChange={() => {
+                            if (isSiblingSelectionMode) {
+                              toggleVariantSelection(product.id);
+                            } else {
+                              toggleProductSelection(product.id);
+                            }
+                          }}
                           className="bg-background"
                         />
                       </div>
@@ -2187,7 +2074,8 @@ const Products = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 /* Table View */
@@ -2206,12 +2094,33 @@ const Products = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayedItems.map((product) => (
-                        <TableRow key={product.id} className="cursor-pointer" onClick={() => setQuickViewProduct(product)}>
+                      {displayedItems.map((product) => {
+                        const isSelectedForSibling = selectedVariantProducts.has(product.id);
+                        return (
+                        <TableRow 
+                          key={product.id} 
+                          className={cn(
+                            "cursor-pointer",
+                            isSiblingSelectionMode && isSelectedForSibling && "bg-primary/5"
+                          )}
+                          onClick={() => {
+                            if (isSiblingSelectionMode) {
+                              toggleVariantSelection(product.id);
+                            } else {
+                              setQuickViewProduct(product);
+                            }
+                          }}
+                        >
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox
-                              checked={selectedProducts.has(product.id)}
-                              onCheckedChange={() => toggleProductSelection(product.id)}
+                              checked={isSiblingSelectionMode ? isSelectedForSibling : selectedProducts.has(product.id)}
+                              onCheckedChange={() => {
+                                if (isSiblingSelectionMode) {
+                                  toggleVariantSelection(product.id);
+                                } else {
+                                  toggleProductSelection(product.id);
+                                }
+                              }}
                             />
                           </TableCell>
                           <TableCell>
@@ -2272,7 +2181,8 @@ const Products = () => {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -2725,6 +2635,64 @@ const Products = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Floating Sibling Selection Bar */}
+      {isSiblingSelectionMode && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+          <Card className="shadow-lg border-primary/20">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Share2 className="h-5 w-5 text-primary" />
+                <span className="font-medium">
+                  {selectedVariantProducts.size === 0 
+                    ? "Select products to group as siblings" 
+                    : `${selectedVariantProducts.size} product${selectedVariantProducts.size > 1 ? 's' : ''} selected`}
+                </span>
+              </div>
+              
+              {selectedVariantProducts.size > 0 && (
+                <div className="flex flex-wrap gap-1 max-w-xs">
+                  {Array.from(selectedVariantProducts).slice(0, 3).map((id) => {
+                    const product = products.find(p => p.id === id);
+                    return product ? (
+                      <Badge key={id} variant="secondary" className="text-xs truncate max-w-[80px]">
+                        {product.name}
+                      </Badge>
+                    ) : null;
+                  })}
+                  {selectedVariantProducts.size > 3 && (
+                    <Badge variant="outline" className="text-xs">+{selectedVariantProducts.size - 3}</Badge>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setIsSiblingSelectionMode(false);
+                    setSelectedVariantProducts(new Set());
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm"
+                  disabled={selectedVariantProducts.size < 2}
+                  onClick={() => {
+                    handleGroupAsSiblings();
+                    setIsSiblingSelectionMode(false);
+                  }}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Group as Siblings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
