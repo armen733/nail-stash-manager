@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.notify-new-order]
 verify_jwt = false
+
+[functions.create-stripe-payment-intent]
+verify_jwt = false
