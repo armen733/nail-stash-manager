@@ -51,10 +51,14 @@ serve(async (req: Request) => {
 
     console.log('Payment intent created:', paymentIntent.id);
 
+    // Get publishable key for frontend
+    const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+
     return new Response(
       JSON.stringify({ 
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id 
+        paymentIntentId: paymentIntent.id,
+        publishableKey: publishableKey
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
