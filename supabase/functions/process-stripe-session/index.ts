@@ -145,58 +145,7 @@ serve(async (req: Request) => {
     
     logStep('Order items prepared', { count: orderItemsInfo.length, hasImages: orderItemsInfo.some((i: any) => i.image_url) });
 
-    // Send Telegram notification
-    try {
-      const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-      const telegramChatId = Deno.env.get('TELEGRAM_CHAT_ID');
-
-      if (telegramBotToken && telegramChatId) {
-        const itemsList = orderItemsInfo.map((item: any) => 
-          `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`
-        ).join('\n');
-
-        const dividerLine = '═══════════════════════════';
-        
-        const message = `🛒 *NEW ORDER RECEIVED!*
-${dividerLine}
-
-📦 *Order ID:* \`${order.id.slice(0, 8).toUpperCase()}\`
-
-👤 *Customer:*
-• Name: ${customerName}
-• Email: ${customerEmail}
-• Phone: ${customerPhone || 'N/A'}
-
-📍 *Shipping Address:*
-${shippingAddress}
-
-🛍️ *Items:*
-${itemsList}
-
-💰 *Order Summary:*
-• Subtotal: $${subtotal.toFixed(2)}
-• *Total: $${total.toFixed(2)}*
-
-📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
-
-💳 *Paid via Stripe Checkout*
-${dividerLine}`;
-
-        const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
-        await fetch(telegramUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: telegramChatId,
-            text: message,
-            parse_mode: 'Markdown',
-          }),
-        });
-        logStep('Telegram notification sent');
-      }
-    } catch (telegramError) {
-      logStep('Telegram error', { error: telegramError });
-    }
+    // Note: Telegram notification is handled by customer app's process-stripe-session
 
     // Send confirmation email
     try {
