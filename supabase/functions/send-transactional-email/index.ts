@@ -245,7 +245,7 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                       <tr>
                         <td style="text-align: center; padding: 0 16px;">
                           <p style="margin: 0 0 4px; font-size: 11px; color: #737373; text-transform: uppercase; letter-spacing: 1px;">Order ID</p>
-                          <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">#${data.orderId || 'N/A'}</p>
+                          <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">#${data.orderId ? data.orderId.slice(0, 8).toUpperCase() : 'N/A'}</p>
                         </td>
                         <td style="width: 1px; background-color: #e6e6e6;"></td>
                         <td style="text-align: center; padding: 0 16px;">
