@@ -21,7 +21,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -64,7 +64,7 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
-    const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
+    const origin = req.headers.get("origin") || "https://nail-stash-manager.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -75,7 +75,7 @@ serve(async (req: Request) => {
       cancel_url: `${origin}/checkout`,
       billing_address_collection: "required",
       shipping_address_collection: { allowed_countries: ["US", "CA", "GB", "AU"] },
-      metadata: { ...(metadata || {}), userId: userId || "guest" },
+      metadata: { ...(metadata || {}), userId: userId || "" },
     });
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
