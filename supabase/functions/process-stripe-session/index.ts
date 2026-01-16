@@ -134,7 +134,10 @@ serve(async (req: Request) => {
           `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`
         ).join('\n');
 
+        const dividerLine = '═══════════════════════════';
+        
         const message = `🛒 *NEW ORDER RECEIVED!*
+${dividerLine}
 
 📦 *Order ID:* \`${order.id.slice(0, 8).toUpperCase()}\`
 
@@ -155,7 +158,8 @@ ${itemsList}
 
 📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
 
-💳 *Paid via Stripe Checkout*`;
+💳 *Paid via Stripe Checkout*
+${dividerLine}`;
 
         const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
         await fetch(telegramUrl, {
