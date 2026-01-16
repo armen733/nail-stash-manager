@@ -90,10 +90,16 @@ serve(async (req: Request) => {
     if (session.metadata?.orderItems) {
       try {
         metadataItems = JSON.parse(session.metadata.orderItems);
-        logStep('Parsed metadata items', { count: metadataItems.length });
+        logStep('Parsed metadata items', { 
+          count: metadataItems.length,
+          rawMetadata: session.metadata.orderItems.substring(0, 500),
+          imageUrls: metadataItems.map((item: any) => ({ name: item.name, image_url: item.image_url }))
+        });
       } catch (e) {
         logStep('Failed to parse metadata items', { error: e });
       }
+    } else {
+      logStep('No orderItems in metadata', { metadataKeys: Object.keys(session.metadata || {}) });
     }
     
     logStep('Creating order', { customerEmail, itemCount: lineItems.length, total, userId });
