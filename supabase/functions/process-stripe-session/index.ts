@@ -151,7 +151,68 @@ serve(async (req: Request) => {
     
     logStep('Order items prepared', { count: orderItemsInfo.length, hasImages: orderItemsInfo.some((i: any) => i.image_url) });
 
-    // Note: Telegram notification is handled by customer app's process-stripe-session
+    // Send Telegram notification
+    try {
+      const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
+      const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
+      
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        const orderDate = new Date();
+        const formattedDate = orderDate.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: '2-digit', 
+          day: '2-digit' 
+        });
+        const formattedTime = orderDate.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        
+        const itemsList = orderItemsInfo.length > 0
+          ? orderItemsInfo.map((item: any) => `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`).join('\n')
+          : '  No items';
+        
+        const telegramMessage = `━━━━━━━━━━━━━━━━━━━━
+🛒 NEW ORDER RECEIVED!
+
+📦 Order ID: ${order.id.slice(0, 8).toUpperCase()}
+
+👤 Customer:
+• Name: ${customerName}
+• Email: ${customerEmail}
+• Phone: ${customerPhone || 'N/A'}
+
+📍 Shipping Address:
+${shippingAddress}
+
+🛍️ Items:
+${itemsList}
+
+💰 Order Summary:
+• Subtotal: $${subtotal.toFixed(2)}
+• Total: $${total.toFixed(2)}
+
+📅 ${formattedDate}, ${formattedTime}
+
+💳 Paid via Stripe Checkout
+━━━━━━━━━━━━━━━━━━━━`;
+
+        const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(telegramUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: telegramMessage,
+            parse_mode: 'HTML'
+          })
+        });
+        logStep('Telegram notification sent');
+      }
+    } catch (telegramErr) {
+      logStep('Telegram error', { error: telegramErr });
+    }
 
     // Send confirmation email
     try {
