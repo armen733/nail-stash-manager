@@ -132,14 +132,15 @@ serve(async (req: Request) => {
 
     logStep('Order created', { orderId: order.id });
 
-    // Use metadata items if available (with image_url), otherwise fall back to Stripe line items
+    // Use metadata items if available, otherwise fall back to Stripe line items
+    // Metadata uses compact format: n=name, id=product_id, q=quantity, p=price
     const orderItemsInfo = metadataItems.length > 0 
       ? metadataItems.map((item: any) => ({
           product_id: item.product_id || item.id || null,
-          product_name: item.name || item.product_name || 'Unknown Product',
-          quantity: item.quantity || 1,
-          unit_price: item.price || item.unit_price || 0,
-          line_total: (item.price || item.unit_price || 0) * (item.quantity || 1),
+          product_name: item.name || item.n || item.product_name || 'Unknown Product',
+          quantity: item.quantity || item.q || 1,
+          unit_price: item.price || item.p || item.unit_price || 0,
+          line_total: (item.price || item.p || item.unit_price || 0) * (item.quantity || item.q || 1),
           image_url: item.image_url || null,
         }))
       : lineItems.map((item: any) => ({
