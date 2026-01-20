@@ -8,53 +8,80 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[${requestId}] stripe-hosted-checkout: Request received`);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log(`[${requestId}] Step 1: Checking Stripe key`);
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
+      console.error(`[${requestId}] Stripe key not configured`);
       return new Response(JSON.stringify({ error: "Stripe not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    console.log(`[${requestId}] Step 2: Initializing Stripe client`);
+    const stripe = new Stripe(stripeKey, { 
+      apiVersion: "2023-10-16",
+      maxNetworkRetries: 2,
+    });
 
+    console.log(`[${requestId}] Step 3: Initializing Supabase client`);
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    console.log(`[${requestId}] Step 4: Parsing request body`);
     const { items, customerEmail, customerName, metadata } = await req.json();
 
     if (!items?.length) {
+      console.error(`[${requestId}] No items in request`);
       return new Response(JSON.stringify({ error: "No items" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
+    console.log(`[${requestId}] Items count: ${items.length}, Customer: ${customerEmail || 'guest'}`);
 
+    console.log(`[${requestId}] Step 5: Checking auth`);
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
-      const { data } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      const { data, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (authError) {
+        console.warn(`[${requestId}] Auth error (non-fatal): ${authError.message}`);
+      }
       userId = data.user?.id ?? null;
     }
+    console.log(`[${requestId}] User ID: ${userId || 'anonymous'}`);
 
+    console.log(`[${requestId}] Step 6: Finding or creating Stripe customer`);
     let customerId: string | undefined;
     if (customerEmail) {
-      const customers = await stripe.customers.list({ email: customerEmail, limit: 1 });
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-      } else {
-        const customer = await stripe.customers.create({ email: customerEmail, name: customerName });
-        customerId = customer.id;
+      try {
+        const customers = await stripe.customers.list({ email: customerEmail, limit: 1 });
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          console.log(`[${requestId}] Found existing customer: ${customerId}`);
+        } else {
+          const customer = await stripe.customers.create({ email: customerEmail, name: customerName });
+          customerId = customer.id;
+          console.log(`[${requestId}] Created new customer: ${customerId}`);
+        }
+      } catch (customerErr) {
+        console.error(`[${requestId}] Customer lookup/create failed: ${customerErr instanceof Error ? customerErr.message : customerErr}`);
+        // Continue without customer - not fatal
       }
     }
 
+    console.log(`[${requestId}] Step 7: Building line items`);
     const lineItems = items.map((item: any) => ({
       price_data: {
         currency: "usd",
@@ -74,7 +101,9 @@ serve(async (req: Request) => {
     }));
 
     const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
+    console.log(`[${requestId}] Origin: ${origin}`);
 
+    console.log(`[${requestId}] Step 8: Creating Stripe checkout session`);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : customerEmail,
@@ -91,11 +120,18 @@ serve(async (req: Request) => {
       },
     });
 
+    console.log(`[${requestId}] Success: Session created ${session.id}`);
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorStack = err instanceof Error ? err.stack : undefined;
+    console.error(`[${requestId}] Fatal error: ${errorMessage}`);
+    if (errorStack) {
+      console.error(`[${requestId}] Stack: ${errorStack}`);
+    }
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
