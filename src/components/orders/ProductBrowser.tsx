@@ -156,7 +156,11 @@ export function ProductBrowser({
             const quantity = getItemQuantity(product.id);
             const isLowStock = product.stock_on_hand !== null && product.stock_on_hand <= 5;
             const isOutOfStock = product.stock_on_hand !== null && product.stock_on_hand <= 0;
-            const productImage = product.image_url || product.product_images?.[0]?.image_url;
+            // Handle multiple potential image sources
+            const productImage = product.image_url || 
+              product.product_images?.[0]?.image_url || 
+              (product as any).images?.[0]?.image_url ||
+              null;
 
             return (
               <div 
@@ -168,17 +172,28 @@ export function ProductBrowser({
                 `}
               >
                 {/* Image */}
-                <div className="aspect-square rounded bg-muted mb-2 overflow-hidden">
+                <div className="aspect-square rounded bg-muted mb-2 overflow-hidden flex items-center justify-center">
                   {productImage ? (
                     <img 
                       src={productImage} 
                       alt={product.name}
                       className="h-full w-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        // Show fallback icon
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'h-full w-full flex items-center justify-center text-muted-foreground';
+                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
+                          parent.appendChild(fallback);
+                        }
+                      }}
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                      <Package className="h-8 w-8" />
-                    </div>
+                    <Package className="h-8 w-8 text-muted-foreground" />
                   )}
                 </div>
 

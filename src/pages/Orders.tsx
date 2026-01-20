@@ -107,6 +107,8 @@ interface Product {
   stock_on_hand: number | null;
   image_url: string | null;
   product_images?: { image_url: string }[];
+  category?: string;
+  bit_type?: string | null;
 }
 
 interface OrderItem {
