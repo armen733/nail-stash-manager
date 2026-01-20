@@ -72,9 +72,11 @@ export function ProductBrowser({
       filtered = filtered.filter(p => p.category === selectedCategory);
     }
     
-    // Filter by variant type
+    // Filter by variant type (uses contains match since bit_type may include extra text)
     if (selectedVariantType !== "all") {
-      filtered = filtered.filter(p => p.bit_type === selectedVariantType);
+      filtered = filtered.filter(p => 
+        p.bit_type?.toLowerCase().includes(selectedVariantType.toLowerCase())
+      );
     }
     
     // Filter by search term
