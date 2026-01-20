@@ -196,11 +196,13 @@ serve(async (req: Request) => {
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
         const orderDate = new Date();
         const formattedDate = orderDate.toLocaleDateString('en-US', { 
+          timeZone: 'America/Los_Angeles',
           year: 'numeric', 
           month: '2-digit', 
           day: '2-digit' 
         });
         const formattedTime = orderDate.toLocaleTimeString('en-US', { 
+          timeZone: 'America/Los_Angeles',
           hour: 'numeric', 
           minute: '2-digit',
           hour12: true 
