@@ -23,6 +23,11 @@ interface Product {
   product_images?: { image_url: string }[];
   category?: string;
   bit_type?: string | null;
+  supplier_sku?: string | null;
+  supplier?: string | null;
+  material?: string | null;
+  grit?: string | null;
+  variant_name?: string | null;
 }
 
 interface OrderItem {
@@ -81,13 +86,19 @@ export function ProductBrowser({
       );
     }
     
-    // Filter by search term
+    // Filter by search term - search across multiple fields
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
         p.name.toLowerCase().includes(term) ||
         p.sku.toLowerCase().includes(term) ||
-        p.category?.toLowerCase().includes(term)
+        p.supplier_sku?.toLowerCase().includes(term) ||
+        p.supplier?.toLowerCase().includes(term) ||
+        p.category?.toLowerCase().includes(term) ||
+        p.bit_type?.toLowerCase().includes(term) ||
+        p.material?.toLowerCase().includes(term) ||
+        p.grit?.toLowerCase().includes(term) ||
+        p.variant_name?.toLowerCase().includes(term)
       );
     }
     
@@ -131,7 +142,7 @@ export function ProductBrowser({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search products by name, SKU..."
+          placeholder="Search by name, SKU, supplier..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9"
