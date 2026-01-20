@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 interface Salon {
   id: string;
@@ -252,10 +253,16 @@ const Salons = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(address, city) => {
+                    setFormData({ 
+                      ...formData, 
+                      address,
+                      ...(city && { city }) // Auto-fill city if found
+                    });
+                  }}
+                  placeholder="Start typing address..."
                   className="min-h-[44px]"
                 />
               </div>
