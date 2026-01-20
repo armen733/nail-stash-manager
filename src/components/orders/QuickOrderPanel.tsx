@@ -176,9 +176,9 @@ export function QuickOrderPanel({
               <div key={item.product.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                 {/* Product thumbnail */}
                 <div className="h-10 w-10 rounded bg-muted flex-shrink-0 overflow-hidden">
-                  {(item.product.image_url || item.product.images?.[0]?.image_url) ? (
+                  {(item.product.image_url || item.product.images?.[0]?.image_url || (item.product as any).product_images?.[0]?.image_url) ? (
                     <img 
-                      src={item.product.image_url || item.product.images?.[0]?.image_url} 
+                      src={item.product.image_url || item.product.images?.[0]?.image_url || (item.product as any).product_images?.[0]?.image_url} 
                       alt={item.product.name}
                       className="h-full w-full object-cover"
                     />
