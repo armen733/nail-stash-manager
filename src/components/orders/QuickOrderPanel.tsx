@@ -128,6 +128,35 @@ export function QuickOrderPanel({
           .eq("id", item.product.id);
       }
 
+      // Send Telegram notification
+      const orderItems = cart.map(item => ({
+        product_name: item.product.name,
+        quantity: item.quantity,
+        unit_price: item.product.price_usd,
+        line_total: item.quantity * item.product.price_usd,
+      }));
+
+      try {
+        await supabase.functions.invoke('notify-new-order', {
+          body: {
+            orderId: order.id,
+            orderData: {
+              customer_name: customerName || 'Walk-in Customer',
+              customer_email: customerEmail || 'N/A',
+              customer_phone: customerPhone,
+              customer_address: 'In-Store Pickup',
+              items: orderItems,
+              subtotal: cartTotal,
+              total: cartTotal,
+              notes: notes || null,
+            }
+          }
+        });
+      } catch (notifyError) {
+        console.error('Telegram notification failed:', notifyError);
+        // Don't fail the order if notification fails
+      }
+
       toast({ 
         title: "✓ Order Created!", 
         description: `Order #${order.id.slice(0, 8).toUpperCase()} - $${cartTotal.toFixed(2)}` 
