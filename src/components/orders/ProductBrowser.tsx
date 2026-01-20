@@ -4,6 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 
 interface Product {
   id: string;
@@ -14,6 +22,7 @@ interface Product {
   image_url: string | null;
   product_images?: { image_url: string }[];
   category?: string;
+  bit_type?: string | null;
 }
 
 interface OrderItem {
@@ -38,16 +47,48 @@ export function ProductBrowser({
   onRemoveProduct,
 }: ProductBrowserProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedVariantType, setSelectedVariantType] = useState<string>("all");
+
+  const { data: categoryVariantTypes = [] } = useCategoryVariantTypes();
+  
+  const categories = useMemo(() => getCategories(categoryVariantTypes), [categoryVariantTypes]);
+  const variantTypes = useMemo(() => 
+    getVariantTypesForCategory(categoryVariantTypes, selectedCategory), 
+    [categoryVariantTypes, selectedCategory]
+  );
+
+  // Reset variant type when category changes
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setSelectedVariantType("all");
+  };
 
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
-    const term = searchTerm.toLowerCase();
-    return products.filter(p => 
-      p.name.toLowerCase().includes(term) ||
-      p.sku.toLowerCase().includes(term) ||
-      p.category?.toLowerCase().includes(term)
-    );
-  }, [products, searchTerm]);
+    let filtered = products;
+    
+    // Filter by category
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(p => p.category === selectedCategory);
+    }
+    
+    // Filter by variant type
+    if (selectedVariantType !== "all") {
+      filtered = filtered.filter(p => p.bit_type === selectedVariantType);
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(term) ||
+        p.sku.toLowerCase().includes(term) ||
+        p.category?.toLowerCase().includes(term)
+      );
+    }
+    
+    return filtered;
+  }, [products, searchTerm, selectedCategory, selectedVariantType]);
 
   const getItemQuantity = (productId: string) => {
     return orderItems.find(item => item.product_id === productId)?.quantity || 0;
@@ -55,11 +96,38 @@ export function ProductBrowser({
 
   return (
     <div className="space-y-3">
+      {/* Filters Row */}
+      <div className="flex gap-2">
+        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map(cat => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select value={selectedVariantType} onValueChange={setSelectedVariantType}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {variantTypes.map(type => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search products by name, SKU, or category..."
+          placeholder="Search products by name, SKU..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9"
