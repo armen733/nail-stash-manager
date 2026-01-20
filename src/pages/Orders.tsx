@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
+import { ProductBrowser } from "@/components/orders/ProductBrowser";
 
 interface Order {
   id: string;
@@ -820,11 +821,15 @@ const Orders = () => {
 
   return (
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div className="flex flex-col gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Track and manage orders</p>
         </div>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Order
+        </Button>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -835,21 +840,26 @@ const Orders = () => {
             <form onSubmit={handleCreateOrder} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="profile_id">Customer</Label>
+                  <Label htmlFor="profile_id">Customer (optional)</Label>
                   <Select 
-                    value={formData.profile_id} 
+                    value={formData.profile_id || ""} 
                     onValueChange={(value) => {
                       if (value === "new") {
                         setShowNewUserForm(true);
+                      } else if (value === "none") {
+                        setFormData({ ...formData, profile_id: "" });
                       } else {
                         setFormData({ ...formData, profile_id: value });
                       }
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
+                      <SelectValue placeholder="Walk-in (no customer)" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">Walk-in (no customer)</span>
+                      </SelectItem>
                       <SelectItem value="new">
                         <span className="flex items-center gap-2 text-primary">
                           <Plus className="h-4 w-4" /> Add New Customer
@@ -947,104 +957,48 @@ const Orders = () => {
               )}
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Products *</Label>
-                  <Button type="button" size="sm" onClick={addOrderItem}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
+                <Label>Products *</Label>
+                
+                {/* Visual Product Browser */}
+                <ProductBrowser
+                  products={products}
+                  orderItems={orderItems}
+                  onAddProduct={(product) => {
+                    // Check if product already exists
+                    const existingIndex = orderItems.findIndex(item => item.product_id === product.id);
+                    if (existingIndex >= 0) {
+                      // Increment quantity
+                      const updated = [...orderItems];
+                      updated[existingIndex].quantity += 1;
+                      setOrderItems(updated);
+                    } else {
+                      // Add new item
+                      setOrderItems([...orderItems, {
+                        product_id: product.id,
+                        quantity: 1,
+                        unit_price: product.price_usd,
+                      }]);
+                    }
+                  }}
+                  onUpdateQuantity={(productId, quantity) => {
+                    const updated = orderItems.map(item =>
+                      item.product_id === productId
+                        ? { ...item, quantity }
+                        : item
+                    );
+                    setOrderItems(updated);
+                  }}
+                  onRemoveProduct={(productId) => {
+                    setOrderItems(orderItems.filter(item => item.product_id !== productId));
+                  }}
+                />
 
-                {orderItems.map((item, index) => {
-                  const product = products.find(p => p.id === item.product_id);
-                  const hasStockWarning = product && product.stock_on_hand !== null && item.quantity > product.stock_on_hand;
-                  
-                  return (
-                    <div key={index} className="space-y-2 p-3 border rounded-lg">
-                      <div className="flex flex-col gap-3">
-                        <div className="flex-1">
-                          <Select
-                            value={item.product_id}
-                            onValueChange={(value) => updateOrderItem(index, "product_id", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {products.map((product) => (
-                                <SelectItem key={product.id} value={product.id}>
-                                  <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded bg-muted flex-shrink-0 overflow-hidden">
-                                      {(product.image_url || product.product_images?.[0]?.image_url) ? (
-                                        <img 
-                                          src={product.image_url || product.product_images?.[0]?.image_url} 
-                                          alt={product.name}
-                                          className="h-full w-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                                          No img
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{product.name}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        ${product.price_usd} • Stock: {product.stock_on_hand ?? 0}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateOrderItem(index, "quantity", parseInt(e.target.value))}
-                              placeholder="Quantity"
-                              className={hasStockWarning ? "border-destructive" : ""}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold whitespace-nowrap">
-                              ${(item.quantity * item.unit_price).toFixed(2)}
-                            </span>
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => removeOrderItem(index)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      {hasStockWarning && (
-                        <Alert variant="destructive" className="py-2">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertDescription className="text-sm">
-                            Only {product.stock_on_hand} in stock! You're ordering {item.quantity}.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {orderItems.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No products added. Click "Add Product" to start.
-                  </p>
-                )}
-
+                {/* Order Summary */}
                 {orderItems.length > 0 && (
                   <div className="border-t pt-3">
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {orderItems.length} product(s) selected
+                    </div>
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total:</span>
                       <span>${calculateTotal().toFixed(2)}</span>
@@ -1067,7 +1021,7 @@ const Orders = () => {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={(showNewUserForm || (!formData.salon_id && !formData.profile_id)) || orderItems.length === 0}>
+                <Button type="submit" disabled={orderItems.length === 0}>
                   Create Order
                 </Button>
               </div>
