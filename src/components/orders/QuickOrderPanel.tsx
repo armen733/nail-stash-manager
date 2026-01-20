@@ -136,25 +136,28 @@ export function QuickOrderPanel({
         line_total: item.quantity * item.product.price_usd,
       }));
 
-      try {
-        await supabase.functions.invoke('notify-new-order', {
-          body: {
-            orderId: order.id,
-            orderData: {
-              customer_name: customerName || 'Walk-in Customer',
-              customer_email: customerEmail || 'N/A',
-              customer_phone: customerPhone,
-              customer_address: 'In-Store Pickup',
-              items: orderItems,
-              subtotal: cartTotal,
-              total: cartTotal,
-              notes: notes || null,
-            }
+      // Send Telegram notification
+      console.log('Sending Telegram notification for order:', order.id);
+      const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-new-order', {
+        body: {
+          orderId: order.id,
+          orderData: {
+            customer_name: customerName || 'Walk-in Customer',
+            customer_email: customerEmail || 'N/A',
+            customer_phone: customerPhone,
+            customer_address: 'In-Store Pickup',
+            items: orderItems,
+            subtotal: cartTotal,
+            total: cartTotal,
+            notes: notes || null,
           }
-        });
-      } catch (notifyError) {
-        console.error('Telegram notification failed:', notifyError);
-        // Don't fail the order if notification fails
+        }
+      });
+      
+      if (notifyError) {
+        console.error('Telegram notification error:', notifyError);
+      } else {
+        console.log('Telegram notification sent:', notifyData);
       }
 
       toast({ 
