@@ -137,10 +137,13 @@ export function QuickOrderPanel({
         line_total: item.quantity * item.product.price_usd,
       }));
 
-      // Send Telegram notification
-      console.log('Sending Telegram notification for order:', order.id);
-      const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-new-order', {
-        body: {
+      // Send Telegram notification - fire and forget, don't block order creation
+      try {
+        console.log('=== TELEGRAM NOTIFICATION START ===');
+        console.log('Order ID:', order.id);
+        console.log('Order items:', JSON.stringify(orderItems, null, 2));
+        
+        const notificationPayload = {
           orderId: order.id,
           orderData: {
             customer_name: customerName || 'Walk-in Customer',
@@ -152,13 +155,21 @@ export function QuickOrderPanel({
             total: cartTotal,
             notes: notes || null,
           }
+        };
+        
+        console.log('Notification payload:', JSON.stringify(notificationPayload, null, 2));
+        
+        const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-new-order', {
+          body: notificationPayload
+        });
+        
+        if (notifyError) {
+          console.error('=== TELEGRAM NOTIFICATION ERROR ===', notifyError);
+        } else {
+          console.log('=== TELEGRAM NOTIFICATION SUCCESS ===', notifyData);
         }
-      });
-      
-      if (notifyError) {
-        console.error('Telegram notification error:', notifyError);
-      } else {
-        console.log('Telegram notification sent:', notifyData);
+      } catch (notifyErr) {
+        console.error('=== TELEGRAM NOTIFICATION EXCEPTION ===', notifyErr);
       }
 
       toast({ 
