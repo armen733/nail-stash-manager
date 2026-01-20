@@ -21,7 +21,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
