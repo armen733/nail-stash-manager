@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Search, Plus, Minus, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,35 @@ interface ProductBrowserProps {
   onAddProduct: (product: Product) => void;
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveProduct: (productId: string) => void;
+}
+
+// Optimized thumbnail component with loading state
+function ProductThumbnail({ src, alt }: { src: string | null; alt: string }) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(src ? 'loading' : 'error');
+
+  const handleLoad = useCallback(() => setStatus('loaded'), []);
+  const handleError = useCallback(() => setStatus('error'), []);
+
+  if (!src || status === 'error') {
+    return <Package className="h-8 w-8 text-muted-foreground" />;
+  }
+
+  return (
+    <div className="relative h-full w-full flex items-center justify-center">
+      {status === 'loading' && (
+        <div className="absolute inset-0 bg-muted animate-pulse rounded" />
+      )}
+      <img 
+        src={src} 
+        alt={alt}
+        className={`max-h-full max-w-full object-contain transition-opacity duration-200 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+        loading="lazy"
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </div>
+  );
 }
 
 export function ProductBrowser({
@@ -166,59 +195,38 @@ export function ProductBrowser({
               <div 
                 key={product.id}
                 className={`
-                  relative border rounded-lg p-2 transition-all
+                  relative border rounded-lg p-2 transition-all flex flex-col
                   ${quantity > 0 ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'hover:border-muted-foreground/30'}
                   ${isOutOfStock ? 'opacity-60' : ''}
                 `}
               >
-                {/* Image */}
-                <div className="aspect-square rounded bg-muted mb-2 overflow-hidden flex items-center justify-center">
-                  {productImage ? (
-                    <img 
-                      src={productImage} 
-                      alt={product.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        target.style.display = 'none';
-                        // Show fallback icon
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const fallback = document.createElement('div');
-                          fallback.className = 'h-full w-full flex items-center justify-center text-muted-foreground';
-                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>';
-                          parent.appendChild(fallback);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <Package className="h-8 w-8 text-muted-foreground" />
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="space-y-1">
-                  <div className="text-xs font-medium line-clamp-2 leading-tight h-8">
-                    {product.name}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">${product.price_usd.toFixed(2)}</span>
-                    <span className={`text-xs ${isLowStock ? 'text-destructive' : 'text-muted-foreground'}`}>
-                      {product.stock_on_hand ?? 0} left
-                    </span>
-                  </div>
-                </div>
-
                 {/* Quantity Badge */}
                 {quantity > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center">
+                  <Badge className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center z-10">
                     {quantity}
                   </Badge>
                 )}
 
+                {/* Thumbnail - fixed square with proper contain */}
+                <div className="w-full aspect-square rounded bg-muted overflow-hidden flex items-center justify-center mb-2">
+                  <ProductThumbnail src={productImage} alt={product.name} />
+                </div>
+
+                {/* Product Name */}
+                <div className="text-xs font-medium line-clamp-2 leading-tight min-h-[2rem] mb-1">
+                  {product.name}
+                </div>
+
+                {/* Price & Stock */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-primary">${product.price_usd.toFixed(2)}</span>
+                  <span className={`text-xs ${isLowStock ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {product.stock_on_hand ?? 0} left
+                  </span>
+                </div>
+
                 {/* Add/Remove Controls */}
-                <div className="mt-2">
+                <div className="mt-auto">
                   {quantity === 0 ? (
                     <Button 
                       size="sm" 
