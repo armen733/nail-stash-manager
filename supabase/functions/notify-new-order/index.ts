@@ -32,16 +32,20 @@ serve(async (req: Request) => {
       `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`
     ).join('\n') || 'No items';
 
-    const message = `🛒 *NEW ORDER RECEIVED!*
+    const isInStore = orderData.customer_address === 'In-Store Pickup';
+    
+    const message = `━━━━━━━━━━━━━━━━━━
+🛒 *NEW ORDER RECEIVED!*
+━━━━━━━━━━━━━━━━━━
 
-📦 *Order ID:* \`${orderId}\`
+📦 *Order ID:* \`${orderId.slice(0, 8).toUpperCase()}\`
 
 👤 *Customer:*
-• Name: ${orderData.customer_name}
-• Email: ${orderData.customer_email}
+• Name: ${orderData.customer_name || 'Walk-in'}
+• Email: ${orderData.customer_email || 'N/A'}
 • Phone: ${orderData.customer_phone || 'N/A'}
 
-📍 *Shipping Address:*
+📍 *${isInStore ? 'Pickup' : 'Shipping'}:*
 ${orderData.customer_address || 'N/A'}
 
 🛍️ *Items:*
@@ -53,9 +57,10 @@ ${orderData.discount_code ? `• Discount (${orderData.discount_code}): -$${orde
 ${orderData.points_redeemed ? `• Points Redeemed: ${orderData.points_redeemed} pts` : ''}
 • *Total: $${orderData.total?.toFixed(2) || '0.00'}*
 
-⭐ Points Earned: ${orderData.points_earned || 0}
+${orderData.notes ? `📝 *Notes:* ${orderData.notes}\n` : ''}📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
 
-📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}`;
+${isInStore ? '🏪 In-Store Quick Order' : '💳 Online Order'}
+━━━━━━━━━━━━━━━━━━`;
 
     const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
     const response = await fetch(telegramUrl, {
