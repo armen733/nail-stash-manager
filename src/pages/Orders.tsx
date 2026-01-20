@@ -529,6 +529,54 @@ const Orders = () => {
         }
       }
 
+      // Get customer/salon info for notification
+      const selectedProfile = profiles.find(p => p.id === formData.profile_id);
+      const selectedSalon = salons.find(s => s.id === formData.salon_id);
+      
+      // Prepare items with product details for Telegram notification
+      const notificationItems = orderItems.map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        return {
+          product_name: product?.name || 'Unknown Product',
+          sku: product?.sku || '',
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          line_total: item.quantity * item.unit_price,
+        };
+      });
+
+      // Send Telegram notification
+      try {
+        console.log('=== TELEGRAM NOTIFICATION (Orders Page) ===');
+        const notificationPayload = {
+          orderId: order.id,
+          orderData: {
+            customer_name: selectedProfile?.full_name || selectedSalon?.name || 'Walk-in Customer',
+            customer_email: selectedProfile?.email || selectedSalon?.email || 'N/A',
+            customer_phone: selectedProfile?.phone || selectedSalon?.phone || null,
+            customer_address: selectedSalon?.address || selectedProfile ? 'Customer Order' : 'In-Store Pickup',
+            items: notificationItems,
+            subtotal: total,
+            total: total,
+            notes: formData.notes || null,
+          }
+        };
+        
+        console.log('Sending notification:', JSON.stringify(notificationPayload, null, 2));
+        
+        const { data: notifyData, error: notifyError } = await supabase.functions.invoke('notify-new-order', {
+          body: notificationPayload
+        });
+        
+        if (notifyError) {
+          console.error('Telegram notification error:', notifyError);
+        } else {
+          console.log('Telegram notification sent:', notifyData);
+        }
+      } catch (notifyErr) {
+        console.error('Telegram notification exception:', notifyErr);
+      }
+
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "" });
