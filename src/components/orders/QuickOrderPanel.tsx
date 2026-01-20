@@ -128,9 +128,10 @@ export function QuickOrderPanel({
           .eq("id", item.product.id);
       }
 
-      // Send Telegram notification
+      // Prepare items with SKU for Telegram notification
       const orderItems = cart.map(item => ({
         product_name: item.product.name,
+        sku: item.product.sku,
         quantity: item.quantity,
         unit_price: item.product.price_usd,
         line_total: item.quantity * item.product.price_usd,

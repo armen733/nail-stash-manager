@@ -29,7 +29,7 @@ serve(async (req: Request) => {
     }
 
     const itemsList = orderData.items?.map((item: any) => 
-      `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`
+      `  • ${item.product_name}${item.sku ? ` (${item.sku})` : ''} x${item.quantity} - $${item.line_total.toFixed(2)}`
     ).join('\n') || 'No items';
 
     const isInStore = orderData.customer_address === 'In-Store Pickup';
