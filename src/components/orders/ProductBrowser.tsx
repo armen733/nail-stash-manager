@@ -72,10 +72,12 @@ export function ProductBrowser({
       filtered = filtered.filter(p => p.category === selectedCategory);
     }
     
-    // Filter by variant type (uses contains match since bit_type may include extra text)
+    // Filter by variant type (checks bit_type first, falls back to product name)
     if (selectedVariantType !== "all") {
+      const variantLower = selectedVariantType.toLowerCase();
       filtered = filtered.filter(p => 
-        p.bit_type?.toLowerCase().includes(selectedVariantType.toLowerCase())
+        p.bit_type?.toLowerCase().includes(variantLower) ||
+        p.name.toLowerCase().includes(variantLower)
       );
     }
     
