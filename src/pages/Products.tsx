@@ -527,8 +527,17 @@ const Products = () => {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const searchLower = debouncedSearchTerm.toLowerCase();
-      const matchesSearch = product.name.toLowerCase().includes(searchLower) ||
-        product.sku.toLowerCase().includes(searchLower);
+      // Search across multiple fields: name, sku, supplier_sku, supplier, category, bit_type, material, grit
+      const matchesSearch = !debouncedSearchTerm || 
+        product.name.toLowerCase().includes(searchLower) ||
+        product.sku.toLowerCase().includes(searchLower) ||
+        product.supplier_sku?.toLowerCase().includes(searchLower) ||
+        product.supplier?.toLowerCase().includes(searchLower) ||
+        product.category?.toLowerCase().includes(searchLower) ||
+        product.bit_type?.toLowerCase().includes(searchLower) ||
+        product.material?.toLowerCase().includes(searchLower) ||
+        product.grit?.toLowerCase().includes(searchLower) ||
+        product.variant_name?.toLowerCase().includes(searchLower);
       const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
       const matchesAdvancedCategory = advancedCategoryFilter === "all" || product.category === advancedCategoryFilter;
       const matchesVariantType = variantTypeFilter === "all" || product.variant_name === variantTypeFilter || product.bit_type === variantTypeFilter;
