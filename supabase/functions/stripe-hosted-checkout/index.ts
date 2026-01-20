@@ -91,14 +91,26 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
-    // Prepare order items with product_id for stock reduction
+    // Prepare order items with product_id for stock reduction (compact format to fit 500 char limit)
     const orderItems = items.map((item: any) => ({
-      name: item.name,
-      product_id: item.id,
-      quantity: item.quantity,
-      price: item.price,
-      image_url: item.image || null,
+      n: item.name?.substring(0, 30), // truncate name
+      id: item.id,
+      q: item.quantity,
+      p: item.price,
     }));
+    
+    // Stringify and check if it fits in metadata (500 char limit)
+    let orderItemsJson = JSON.stringify(orderItems);
+    if (orderItemsJson.length > 490) {
+      // If still too long, only include essential data
+      const minimalItems = items.map((item: any) => ({
+        id: item.id,
+        q: item.quantity,
+        p: item.price,
+      }));
+      orderItemsJson = JSON.stringify(minimalItems);
+    }
+    console.log(`[${requestId}] Order items JSON length: ${orderItemsJson.length}`);
 
     const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
     console.log(`[${requestId}] Origin: ${origin}`);
@@ -116,7 +128,7 @@ serve(async (req: Request) => {
       metadata: { 
         ...(metadata || {}), 
         userId: userId || "",
-        orderItems: JSON.stringify(orderItems),
+        orderItems: orderItemsJson,
       },
     });
 
