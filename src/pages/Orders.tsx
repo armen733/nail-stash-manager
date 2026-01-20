@@ -149,6 +149,17 @@ const Orders = () => {
     address: "",
   });
 
+  const [showNewSalonForm, setShowNewSalonForm] = useState(false);
+  const [isCreatingSalon, setIsCreatingSalon] = useState(false);
+  const [newSalonData, setNewSalonData] = useState({
+    name: "",
+    contact_name: "",
+    phone: "",
+    email: "",
+    address: "",
+    city: "",
+  });
+
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 
   useEffect(() => {
@@ -390,6 +401,54 @@ const Orders = () => {
       });
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const handleCreateInlineSalon = async () => {
+    if (!newSalonData.name) {
+      toast({
+        title: "Error",
+        description: "Salon name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingSalon(true);
+    try {
+      const { data, error } = await supabase
+        .from('salons')
+        .insert([{
+          name: newSalonData.name,
+          contact_name: newSalonData.contact_name || null,
+          phone: newSalonData.phone || null,
+          email: newSalonData.email || null,
+          address: newSalonData.address || null,
+          city: newSalonData.city || null,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh salons and select the new one
+      await fetchData();
+      setFormData({ ...formData, salon_id: data.id });
+      setShowNewSalonForm(false);
+      setNewSalonData({ name: "", contact_name: "", phone: "", email: "", address: "", city: "" });
+      
+      toast({
+        title: "Success",
+        description: "Salon created and selected",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingSalon(false);
     }
   };
 
@@ -881,7 +940,13 @@ const Orders = () => {
                   <Label htmlFor="salon_id">Salon</Label>
                   <Select 
                     value={formData.salon_id || "none"} 
-                    onValueChange={(value) => setFormData({ ...formData, salon_id: value === "none" ? "" : value })}
+                    onValueChange={(value) => {
+                      if (value === "new") {
+                        setShowNewSalonForm(true);
+                      } else {
+                        setFormData({ ...formData, salon_id: value === "none" ? "" : value });
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select salon (optional)" />
@@ -889,6 +954,11 @@ const Orders = () => {
                     <SelectContent>
                       <SelectItem value="none">
                         <span className="text-muted-foreground">No salon</span>
+                      </SelectItem>
+                      <SelectItem value="new">
+                        <span className="flex items-center gap-2 text-primary">
+                          <Plus className="h-4 w-4" /> Add New Salon
+                        </span>
                       </SelectItem>
                       {salons.map((salon) => (
                         <SelectItem key={salon.id} value={salon.id}>
@@ -899,6 +969,84 @@ const Orders = () => {
                   </Select>
                 </div>
               </div>
+
+              {showNewSalonForm && (
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold">New Salon Details</Label>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewSalonForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_name">Salon Name *</Label>
+                      <Input
+                        id="new_salon_name"
+                        value={newSalonData.name}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, name: e.target.value })}
+                        placeholder="Beauty Salon"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_contact">Contact Name</Label>
+                      <Input
+                        id="new_salon_contact"
+                        value={newSalonData.contact_name}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, contact_name: e.target.value })}
+                        placeholder="Jane Doe"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_phone">Phone</Label>
+                      <Input
+                        id="new_salon_phone"
+                        type="tel"
+                        value={newSalonData.phone}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, phone: e.target.value })}
+                        placeholder="+1 234 567 8900"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_email">Email</Label>
+                      <Input
+                        id="new_salon_email"
+                        type="email"
+                        value={newSalonData.email}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, email: e.target.value })}
+                        placeholder="salon@example.com"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_address">Address</Label>
+                      <Input
+                        id="new_salon_address"
+                        value={newSalonData.address}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, address: e.target.value })}
+                        placeholder="123 Main St"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="new_salon_city">City</Label>
+                      <Input
+                        id="new_salon_city"
+                        value={newSalonData.city}
+                        onChange={(e) => setNewSalonData({ ...newSalonData, city: e.target.value })}
+                        placeholder="New York"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    onClick={handleCreateInlineSalon}
+                    disabled={isCreatingSalon || !newSalonData.name}
+                  >
+                    {isCreatingSalon ? "Creating..." : "Create & Select Salon"}
+                  </Button>
+                </div>
+              )}
 
               {showNewUserForm && (
                 <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
