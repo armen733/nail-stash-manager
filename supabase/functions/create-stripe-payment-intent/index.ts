@@ -40,7 +40,7 @@ serve(async (req: Request) => {
     }
 
     const stripe = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: '2025-08-27.basil',
+      apiVersion: '2023-10-16',
     });
 
     const { amount, currency = 'usd', metadata = {}, idempotencyKey } = await req.json();

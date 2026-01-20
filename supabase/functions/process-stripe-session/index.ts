@@ -32,7 +32,7 @@ serve(async (req: Request) => {
       throw new Error('STRIPE_SECRET_KEY not configured');
     }
     
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Note: shipping_details is NOT expandable - it's included automatically if shipping was collected
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
