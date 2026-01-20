@@ -64,6 +64,7 @@ import {
 } from "@/components/products/types";
 import { ProductCard } from "@/components/products/ProductCard";
 import { CartPanel } from "@/components/products/CartPanel";
+import { QuickOrderPanel } from "@/components/orders/QuickOrderPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
@@ -99,6 +100,8 @@ const Products = () => {
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isQuickOrderMode, setIsQuickOrderMode] = useState(true); // Default to quick order mode
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string; email: string; phone: string | null }[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [isConverterOpen, setIsConverterOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -159,6 +162,18 @@ const Products = () => {
       if (data) setSiblingGroups(data as SiblingGroup[]);
     };
     fetchSiblingGroups();
+  }, []);
+
+  // Fetch profiles for quick order mode
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .order("full_name");
+      if (data) setProfiles(data);
+    };
+    fetchProfiles();
   }, []);
 
   // Update maxPrice when query data changes
@@ -921,6 +936,24 @@ const Products = () => {
 
   const getCartQuantity = (productId: string) => {
     return cart.find(item => item.product.id === productId)?.quantity || 0;
+  };
+
+  // Update cart quantity by delta (+1 or -1)
+  const updateCartQuantity = (productId: string, delta: number) => {
+    setCart(prev => {
+      const existingItem = prev.find(item => item.product.id === productId);
+      if (!existingItem) return prev;
+      
+      const newQuantity = existingItem.quantity + delta;
+      if (newQuantity <= 0) {
+        return prev.filter(item => item.product.id !== productId);
+      }
+      return prev.map(item =>
+        item.product.id === productId
+          ? { ...item, quantity: newQuantity }
+          : item
+      );
+    });
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
@@ -2201,10 +2234,16 @@ const Products = () => {
         </CardContent>
       </Card>
 
-      <CartPanel 
+      {/* Quick Order Panel - Always show for quick walk-in sales */}
+      <QuickOrderPanel 
         cart={cart} 
+        profiles={profiles}
         onClear={() => setCart([])} 
-        onPlaceOrder={handlePlaceOrder} 
+        onUpdateQuantity={updateCartQuantity}
+        onOrderCreated={() => {
+          markAsConverted();
+        }}
+        onRefreshProducts={refreshProducts}
       />
 
       {/* Quick View - Responsive (Drawer on mobile, Dialog on desktop) */}
