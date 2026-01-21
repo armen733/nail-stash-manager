@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Search, Plus, Minus, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,31 +44,69 @@ interface ProductBrowserProps {
   onRemoveProduct: (productId: string) => void;
 }
 
-// Optimized thumbnail component with loading state
+// Optimized thumbnail component with IntersectionObserver-based lazy loading
 function ProductThumbnail({ src, alt }: { src: string | null; alt: string }) {
-  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(src ? 'loading' : 'error');
+  const [isInView, setIsInView] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !src) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+          setStatus('loading');
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: "100px", // Start loading 100px before entering viewport
+        threshold: 0,
+      }
+    );
+
+    observer.observe(containerRef.current);
+
+    return () => observer.disconnect();
+  }, [src]);
 
   const handleLoad = useCallback(() => setStatus('loaded'), []);
   const handleError = useCallback(() => setStatus('error'), []);
 
-  if (!src || status === 'error') {
-    return <Package className="h-8 w-8 text-muted-foreground" />;
+  if (!src) {
+    return (
+      <div ref={containerRef} className="h-full w-full flex items-center justify-center">
+        <Package className="h-8 w-8 text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
-    <div className="relative h-full w-full flex items-center justify-center">
-      {status === 'loading' && (
+    <div ref={containerRef} className="relative h-full w-full flex items-center justify-center">
+      {/* Skeleton placeholder */}
+      {(status === 'idle' || status === 'loading') && (
         <div className="absolute inset-0 bg-muted animate-pulse rounded" />
       )}
-      <img 
-        src={src} 
-        alt={alt}
-        className={`max-h-full max-w-full object-contain transition-opacity duration-200 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
-        loading="lazy"
-        decoding="async"
-        onLoad={handleLoad}
-        onError={handleError}
-      />
+      
+      {/* Error fallback */}
+      {status === 'error' && (
+        <Package className="h-8 w-8 text-muted-foreground" />
+      )}
+      
+      {/* Image - only load when in view */}
+      {isInView && status !== 'error' && (
+        <img 
+          src={src} 
+          alt={alt}
+          className={`max-h-full max-w-full object-contain transition-opacity duration-200 ${status === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+          loading="lazy"
+          decoding="async"
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
     </div>
   );
 }
@@ -169,34 +207,30 @@ export function ProductBrowser({
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, SKU, supplier..."
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Search products..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9"
+          className="pl-8"
         />
       </div>
 
-      {/* Products Grid */}
-      <ScrollArea className="h-[300px] rounded-lg border">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2">
+      {/* Product Grid with optimized rendering */}
+      <ScrollArea className="h-[400px] pr-3">
+        <div className="grid grid-cols-3 gap-2">
           {filteredProducts.map((product) => {
             const quantity = getItemQuantity(product.id);
-            const isLowStock = product.stock_on_hand !== null && product.stock_on_hand <= 5;
-            const isOutOfStock = product.stock_on_hand !== null && product.stock_on_hand <= 0;
-            // Handle multiple potential image sources
-            const productImage = product.image_url || 
-              product.product_images?.[0]?.image_url || 
-              (product as any).images?.[0]?.image_url ||
-              null;
-
+            const isLowStock = (product.stock_on_hand ?? 0) <= 5;
+            const isOutOfStock = (product.stock_on_hand ?? 0) === 0;
+            const productImage = product.product_images?.[0]?.image_url || product.image_url;
+            
             return (
               <div 
                 key={product.id}
                 className={`
-                  relative border rounded-lg p-2 transition-all flex flex-col
-                  ${quantity > 0 ? 'border-primary bg-primary/5 ring-1 ring-primary/20' : 'hover:border-muted-foreground/30'}
+                  relative p-2 rounded-lg border bg-card flex flex-col
+                  ${quantity > 0 ? 'ring-2 ring-primary border-primary' : ''}
                   ${isOutOfStock ? 'opacity-60' : ''}
                 `}
               >
@@ -207,7 +241,7 @@ export function ProductBrowser({
                   </Badge>
                 )}
 
-                {/* Thumbnail - fixed square with proper contain */}
+                {/* Thumbnail - fixed square with IntersectionObserver lazy loading */}
                 <div className="w-full aspect-square rounded bg-muted overflow-hidden flex items-center justify-center mb-2">
                   <ProductThumbnail src={productImage} alt={product.name} />
                 </div>
