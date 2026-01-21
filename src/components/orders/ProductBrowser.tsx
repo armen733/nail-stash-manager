@@ -247,8 +247,13 @@ export function ProductBrowser({
                 </div>
 
                 {/* Product Name */}
-                <div className="text-xs font-medium line-clamp-2 leading-tight min-h-[2rem] mb-1">
+                <div className="text-xs font-medium line-clamp-2 leading-tight min-h-[2rem] mb-0.5">
                   {product.name}
+                </div>
+
+                {/* SKU */}
+                <div className="text-[10px] text-muted-foreground mb-1 truncate">
+                  {product.sku}
                 </div>
 
                 {/* Price & Stock */}
