@@ -268,6 +268,7 @@ export function ProductBrowser({
                 <div className="mt-auto">
                   {quantity === 0 ? (
                     <Button 
+                      type="button"
                       size="sm" 
                       className="w-full h-8"
                       onClick={() => onAddProduct(product)}
@@ -279,6 +280,7 @@ export function ProductBrowser({
                   ) : (
                     <div className="flex items-center justify-between gap-1">
                       <Button 
+                        type="button"
                         size="icon" 
                         variant="outline" 
                         className="h-8 w-8"
@@ -294,6 +296,7 @@ export function ProductBrowser({
                       </Button>
                       <span className="font-semibold text-sm">{quantity}</span>
                       <Button 
+                        type="button"
                         size="icon" 
                         variant="outline" 
                         className="h-8 w-8"
