@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, List, FileUp, Boxes } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, List, FileUp, Boxes, FileText } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
@@ -591,6 +593,7 @@ const Products = () => {
     const exportData = allProducts.map(p => ({
       Name: p.name,
       SKU: p.sku,
+      'Supplier SKU': p.supplier_sku || '',
       Category: p.category,
       'Price (USD)': p.price_usd,
       'Salon Price': p.salon_price_usd || '',
@@ -606,6 +609,51 @@ const Products = () => {
     }));
     downloadCSV(exportData, 'products');
     toast({ title: "Success", description: `${exportData.length} products exported successfully` });
+  };
+
+  const exportProductsToPDF = () => {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    
+    // Title
+    doc.setFontSize(18);
+    doc.text('Product Inventory', 14, 20);
+    
+    // Date
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Total Products: ${allProducts.length}`, 14, 34);
+    
+    // Table data
+    const tableData = allProducts.map(p => [
+      p.name,
+      p.sku,
+      p.supplier_sku || '-',
+      p.category,
+      `$${p.price_usd.toFixed(2)}`,
+      p.stock_on_hand ?? 0,
+      p.supplier || '-',
+    ]);
+    
+    autoTable(doc, {
+      startY: 40,
+      head: [['Name', 'SKU', 'Supplier SKU', 'Category', 'Price', 'Stock', 'Supplier']],
+      body: tableData,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 25 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 40 },
+      },
+    });
+    
+    doc.save('products.pdf');
+    toast({ title: "Success", description: `${allProducts.length} products exported to PDF` });
   };
 
   // Bulk stock update handler
@@ -1878,13 +1926,41 @@ const Products = () => {
                 <FileUp className="mr-2 h-4 w-4" />
                 Import
               </Button>
-              <Button onClick={exportProducts} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button onClick={exportProducts} variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background border">
+                  <DropdownMenuItem onClick={exportProducts}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportProductsToPDF}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background border">
+                  <DropdownMenuItem onClick={exportProducts}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportProductsToPDF}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Export PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             {selectedProducts.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
