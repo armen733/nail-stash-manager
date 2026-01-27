@@ -43,7 +43,7 @@ export function ImportDialog({
             />
           </div>
           <p className="text-sm text-muted-foreground">
-            Expected columns: name, sku, category, price_usd, stock_on_hand, reorder_level, supplier, material, bit_type, grit
+            Expected columns: name, sku, category, price_usd, stock_on_hand, reorder_level, supplier, supplier_sku, material, bit_type, grit
           </p>
           <div className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
             <Button 
