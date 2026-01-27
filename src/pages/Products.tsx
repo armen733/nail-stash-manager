@@ -708,6 +708,7 @@ const Products = () => {
           stock_on_hand: parseInt(row.stock_on_hand || row.stock || row["stock on hand"] || "0") || 0,
           reorder_level: parseInt(row.reorder_level || row["reorder level"] || "10") || 10,
           supplier: row.supplier || null,
+          supplier_sku: row.supplier_sku || row["supplier sku"] || row["supplier_sku"] || row["vendor sku"] || null,
           material: row.material || null,
           bit_type: row.bit_type || row["bit type"] || null,
           grit: row.grit || null,
