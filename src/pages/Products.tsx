@@ -70,6 +70,7 @@ import { QuickOrderPanel } from "@/components/orders/QuickOrderPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
+import { ExportDialog } from "@/components/products/ExportDialog";
 import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
@@ -120,6 +121,7 @@ const Products = () => {
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
   const [importData, setImportData] = useState<any[]>([]);
   const [importPreview, setImportPreview] = useState<string>("");
   
@@ -597,33 +599,8 @@ const Products = () => {
     });
   };
 
-  // Get products to export based on selection/filters
-  const getProductsToExport = (): { products: Product[]; label: string } => {
-    // Priority: selected > filtered > all
-    if (selectedProducts.size > 0) {
-      const selected = allProducts.filter(p => selectedProducts.has(p.id));
-      return { products: selected, label: `${selected.length} selected` };
-    }
-    
-    // Check if any filters are active
-    const hasFilters = debouncedSearchTerm || 
-                       categoryFilter !== "all" || 
-                       advancedCategoryFilter !== "all" ||
-                       variantTypeFilter !== "all" ||
-                       supplierFilter !== "all" ||
-                       stockStatusFilter !== "all" ||
-                       priceRange[0] > 0 || 
-                       priceRange[1] < maxPrice;
-    
-    if (hasFilters) {
-      return { products: sortedProducts, label: `${sortedProducts.length} filtered` };
-    }
-    
-    return { products: allProducts, label: `${allProducts.length} total` };
-  };
-
-  const exportProducts = () => {
-    const { products: productsToExport, label } = getProductsToExport();
+  // Export products to CSV (accepts products from dialog or uses all)
+  const handleExportCSV = (productsToExport: Product[]) => {
     const sortedExportProducts = getSortedProductsForExport(productsToExport);
     const exportData = sortedExportProducts.map(p => ({
       Name: p.name,
@@ -642,22 +619,22 @@ const Products = () => {
       'Variant Name': p.variant_name || '',
     }));
     downloadCSV(exportData, 'products');
-    toast({ title: "Success", description: `${label} products exported to CSV` });
+    toast({ title: "Success", description: `${sortedExportProducts.length} products exported to CSV` });
   };
 
-  const exportProductsToPDF = () => {
+  // Export products to PDF (accepts products from dialog)
+  const handleExportPDF = (productsToExport: Product[]) => {
     const doc = new jsPDF({ orientation: 'landscape' });
-    const { products: productsToExport, label } = getProductsToExport();
     const sortedExportProducts = getSortedProductsForExport(productsToExport);
     
-    // Title - indicate if filtered/selected
+    // Title
     doc.setFontSize(18);
     doc.text('Product Inventory', 14, 20);
     
     // Date and count
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Products: ${label}`, 14, 34);
+    doc.text(`Total Products: ${sortedExportProducts.length}`, 14, 34);
     
     // Table data - sorted by SKU
     const tableData = sortedExportProducts.map(p => [
@@ -689,7 +666,7 @@ const Products = () => {
     });
     
     doc.save('products.pdf');
-    toast({ title: "Success", description: `${label} products exported to PDF` });
+    toast({ title: "Success", description: `${sortedExportProducts.length} products exported to PDF` });
   };
 
   // Bulk stock update handler
@@ -1962,41 +1939,23 @@ const Products = () => {
                 <FileUp className="mr-2 h-4 w-4" />
                 Import
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background border">
-                  <DropdownMenuItem onClick={exportProducts}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={exportProductsToPDF}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Export PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background border">
-                  <DropdownMenuItem onClick={exportProducts}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={exportProductsToPDF}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Export PDF
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden"
+                onClick={() => setIsExportOpen(true)}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="default" 
+                className="min-h-[44px] flex-shrink-0 hidden sm:flex"
+                onClick={() => setIsExportOpen(true)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
             </div>
             {selectedProducts.size > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
@@ -2796,6 +2755,15 @@ const Products = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={isExportOpen}
+        onOpenChange={setIsExportOpen}
+        products={allProducts}
+        onExportCSV={handleExportCSV}
+        onExportPDF={handleExportPDF}
+      />
 
       {/* Floating Sibling Selection Bar */}
       {isSiblingSelectionMode && (
