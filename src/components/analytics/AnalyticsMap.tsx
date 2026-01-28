@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2, X } from "lucide-react";
+import { Loader2, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2, X, Building2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -21,77 +21,71 @@ interface AnalyticsMapProps {
   dateRange?: { from: Date; to: Date };
 }
 
-interface GeocodedOrder {
+interface GeocodedSalon {
   id: string;
+  name: string;
   address: string;
-  total: number;
+  city: string | null;
+  phone: string | null;
   lat: number;
   lng: number;
 }
 
-const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
+const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const [geocodedOrders, setGeocodedOrders] = useState<GeocodedOrder[]>([]);
+  const [geocodedSalons, setGeocodedSalons] = useState<GeocodedSalon[]>([]);
   const [showStats, setShowStats] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const { toast } = useToast();
 
-  // Add heatmap layer helper
-  const addHeatmapLayer = () => {
-    if (!map.current || geocodedOrders.length === 0) return;
+  // Add salon markers helper
+  const addSalonMarkers = () => {
+    if (!map.current || geocodedSalons.length === 0) return;
 
-    // Remove existing layers/sources if they exist
-    if (map.current.getLayer("orders-heatmap")) {
-      map.current.removeLayer("orders-heatmap");
-    }
-    if (map.current.getSource("orders-heat")) {
-      map.current.removeSource("orders-heat");
-    }
+    // Remove existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
 
-    // Add heatmap source
-    map.current.addSource("orders-heat", {
-      type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: geocodedOrders.map((order) => ({
-          type: "Feature" as const,
-          properties: {
-            total: order.total,
-          },
-          geometry: {
-            type: "Point" as const,
-            coordinates: [order.lng, order.lat],
-          },
-        })),
-      },
-    });
+    // Add markers for each salon
+    geocodedSalons.forEach((salon) => {
+      // Create custom marker element
+      const el = document.createElement('div');
+      el.className = 'salon-marker';
+      el.innerHTML = `
+        <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
+            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
+            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
+            <path d="M10 6h4"/>
+            <path d="M10 10h4"/>
+            <path d="M10 14h4"/>
+            <path d="M10 18h4"/>
+          </svg>
+        </div>
+      `;
 
-    // Add heatmap layer with blue color scheme
-    map.current.addLayer({
-      id: "orders-heatmap",
-      type: "heatmap",
-      source: "orders-heat",
-      paint: {
-        "heatmap-weight": 1,
-        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
-        "heatmap-color": [
-          "interpolate",
-          ["linear"],
-          ["heatmap-density"],
-          0, "rgba(147, 197, 253, 0)",
-          0.1, "rgba(147, 197, 253, 0.2)",
-          0.3, "rgba(96, 165, 250, 0.4)",
-          0.5, "rgba(59, 130, 246, 0.6)",
-          0.7, "rgba(37, 99, 235, 0.8)",
-          1, "rgba(29, 78, 216, 1)",
-        ],
-        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 15, 15, 40],
-        "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 0.9, 15, 0.6],
-      },
+      // Create popup
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+        <div class="p-2">
+          <h3 class="font-semibold text-sm">${salon.name}</h3>
+          <p class="text-xs text-gray-600 mt-1">${salon.address}</p>
+          ${salon.city ? `<p class="text-xs text-gray-500">${salon.city}</p>` : ''}
+          ${salon.phone ? `<a href="tel:${salon.phone}" class="text-xs text-blue-600 hover:underline block mt-1">${salon.phone}</a>` : ''}
+        </div>
+      `);
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([salon.lng, salon.lat])
+        .setPopup(popup)
+        .addTo(map.current!);
+
+      markersRef.current.push(marker);
     });
   };
 
@@ -118,44 +112,36 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     fetchToken();
   }, [open, toast]);
 
-  // Fetch and geocode orders when dialog opens
+  // Fetch and geocode salons when dialog opens
   useEffect(() => {
     if (!open || !mapboxToken) return;
 
-    const fetchOrders = async () => {
+    const fetchSalons = async () => {
       setLoading(true);
       try {
-        let query = supabase
-          .from("orders")
-          .select("id, customer_address, total, created_at")
-          .not("customer_address", "is", null)
-          .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
-
-        if (dateRange?.from) {
-          query = query.gte("created_at", dateRange.from.toISOString());
-        }
-        if (dateRange?.to) {
-          query = query.lte("created_at", dateRange.to.toISOString());
-        }
-
-        const { data: orders, error } = await query;
+        const { data: salons, error } = await supabase
+          .from("salons")
+          .select("id, name, address, city, phone")
+          .not("address", "is", null);
 
         if (error) throw error;
 
-        // Geocode orders
-        const geocoded: GeocodedOrder[] = [];
+        // Geocode salons
+        const geocoded: GeocodedSalon[] = [];
         const geocodeCache: Record<string, { lat: number; lng: number }> = {};
 
-        for (const order of orders || []) {
-          if (!order.customer_address) continue;
+        for (const salon of salons || []) {
+          if (!salon.address) continue;
 
-          const address = order.customer_address.trim().toLowerCase();
+          const address = salon.address.trim().toLowerCase();
 
           if (geocodeCache[address]) {
             geocoded.push({
-              id: order.id,
-              address: order.customer_address,
-              total: order.total || 0,
+              id: salon.id,
+              name: salon.name,
+              address: salon.address,
+              city: salon.city,
+              phone: salon.phone,
               ...geocodeCache[address],
             });
             continue;
@@ -164,7 +150,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
           try {
             const response = await fetch(
               `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-                order.customer_address
+                salon.address
               )}.json?access_token=${mapboxToken}&limit=1`
             );
             const data = await response.json();
@@ -173,9 +159,11 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
               const [lng, lat] = data.features[0].center;
               geocodeCache[address] = { lat, lng };
               geocoded.push({
-                id: order.id,
-                address: order.customer_address,
-                total: order.total || 0,
+                id: salon.id,
+                name: salon.name,
+                address: salon.address,
+                city: salon.city,
+                phone: salon.phone,
                 lat,
                 lng,
               });
@@ -185,7 +173,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
           }
         }
 
-        setGeocodedOrders(geocoded);
+        setGeocodedSalons(geocoded);
       } catch (error: any) {
         toast({
           title: "Error",
@@ -197,8 +185,8 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       }
     };
 
-    fetchOrders();
-  }, [open, mapboxToken, dateRange, toast]);
+    fetchSalons();
+  }, [open, mapboxToken, toast]);
 
   // Initialize map when open and token available
   useEffect(() => {
@@ -235,6 +223,9 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
 
     // Cleanup on unmount or when dependencies change
     return () => {
+      // Remove markers first
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
       if (map.current) {
         console.log("Cleaning up map...");
         map.current.remove();
@@ -243,16 +234,16 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     };
   }, [open, mapboxToken, mapStyle]);
 
-  // Update heatmap when orders change
+  // Update markers when salons change
   useEffect(() => {
-    if (!map.current || geocodedOrders.length === 0) return;
+    if (!map.current || geocodedSalons.length === 0) return;
     
     const updateMap = () => {
-      addHeatmapLayer();
+      addSalonMarkers();
       
       const bounds = new mapboxgl.LngLatBounds();
-      geocodedOrders.forEach((order) => {
-        bounds.extend([order.lng, order.lat]);
+      geocodedSalons.forEach((salon) => {
+        bounds.extend([salon.lng, salon.lat]);
       });
       map.current?.fitBounds(bounds, { padding: 60, maxZoom: 12 });
     };
@@ -263,7 +254,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       map.current.once("load", updateMap);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geocodedOrders]);
+  }, [geocodedSalons]);
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyle) => {
@@ -273,15 +264,12 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
     map.current.setStyle(MAP_STYLES[newStyle]);
     
     map.current.once("style.load", () => {
-      addHeatmapLayer();
+      addSalonMarkers();
     });
   };
 
   // Memoize stats calculations
-  const { totalOrders, totalRevenue } = useMemo(() => ({
-    totalOrders: geocodedOrders.length,
-    totalRevenue: geocodedOrders.reduce((sum, o) => sum + o.total, 0),
-  }), [geocodedOrders]);
+  const totalSalons = geocodedSalons.length;
 
   if (!open) return null;
 
@@ -290,8 +278,8 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-background/90 to-transparent">
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Geographic Sales Analysis</h2>
+          <Building2 className="h-5 w-5" />
+          <h2 className="text-lg font-semibold">Registered Salons Map</h2>
         </div>
         <Button
           variant="outline"
@@ -312,7 +300,7 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
           <div className="text-center space-y-3">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
             <p className="text-sm text-muted-foreground">
-              Loading order locations...
+              Loading salon locations...
             </p>
           </div>
         </div>
@@ -332,31 +320,16 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
         
         {showStats && (
           <div className="mt-2 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-2 border animate-in slide-in-from-top-2">
-            <h4 className="font-semibold text-sm">Heatmap Stats</h4>
+            <h4 className="font-semibold text-sm">Salon Stats</h4>
             <div className="flex items-center gap-4 text-sm">
               <div>
-                <span className="text-muted-foreground">Orders: </span>
-                <span className="font-medium">{totalOrders}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Revenue: </span>
-                <span className="font-medium">${totalRevenue.toFixed(2)}</span>
+                <span className="text-muted-foreground">Total Salons: </span>
+                <span className="font-medium">{totalSalons}</span>
               </div>
             </div>
-            
-            {/* Legend */}
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground mb-1">Order Density</p>
-              <div className="flex items-center gap-1">
-                <div className="h-3 flex-1 rounded" style={{
-                  background: "linear-gradient(to right, rgba(147, 197, 253, 0.3), rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 1))"
-                }} />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>Low</span>
-                <span>High</span>
-              </div>
-            </div>
+            <p className="text-xs text-muted-foreground pt-2 border-t">
+              Click on a marker to see salon details
+            </p>
           </div>
         )}
       </div>
@@ -394,11 +367,11 @@ const AnalyticsMap = ({ open, onOpenChange, dateRange }: AnalyticsMapProps) => {
       </div>
 
       {/* No data message - doesn't block the map */}
-      {geocodedOrders.length === 0 && !loading && (
+      {geocodedSalons.length === 0 && !loading && (
         <div className="absolute bottom-4 right-4 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>No orders with addresses for this period</span>
+            <Building2 className="h-4 w-4" />
+            <span>No salons with addresses registered</span>
           </div>
         </div>
       )}
