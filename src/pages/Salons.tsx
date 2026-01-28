@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail } from "lucide-react";
+import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
+import { LazyAnalyticsMap } from "@/components/lazy/LazyAnalyticsMap";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -52,6 +53,7 @@ const Salons = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
   const [phoneToCall, setPhoneToCall] = useState<string | null>(null);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const { toast } = useToast();
 
   const openMaps = (address: string) => {
@@ -220,111 +222,117 @@ const Salons = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salons</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="min-h-[44px] w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Salon
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingSalon ? "Edit Salon" : "Add New Salon"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Salon Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="min-h-[44px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contact_name">Contact Name</Label>
-                <Input
-                  id="contact_name"
-                  value={formData.contact_name}
-                  onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                  className="min-h-[44px]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="min-h-[44px] w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Salon
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingSalon ? "Edit Salon" : "Add New Salon"}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="name">Salon Name *</Label>
                   <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
                     className="min-h-[44px]"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="contact_name">Contact Name</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    id="contact_name"
+                    value={formData.contact_name}
+                    onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
                     className="min-h-[44px]"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <AddressAutocomplete
-                  value={formData.address}
-                  onChange={(address, city) => {
-                    setFormData({ 
-                      ...formData, 
-                      address,
-                      ...(city && { city }) // Auto-fill city if found
-                    });
-                  }}
-                  placeholder="Start typing address..."
-                  className="min-h-[44px]"
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="min-h-[44px]"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <AddressAutocomplete
+                    value={formData.address}
+                    onChange={(address, city) => {
+                      setFormData({ 
+                        ...formData, 
+                        address,
+                        ...(city && { city })
+                      });
+                    }}
+                    placeholder="Start typing address..."
+                    className="min-h-[44px]"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Input
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="min-h-[44px]"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="min-h-[44px]"
+                  />
+                </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
-                  Cancel
-                </Button>
-                <Button type="submit" className="min-h-[44px]">
-                  {editingSalon ? "Update Salon" : "Add Salon"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Input
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="min-h-[44px]"
+                  />
+                </div>
+
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="min-h-[44px]">
+                    {editingSalon ? "Update Salon" : "Add Salon"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={() => setIsMapOpen(true)} className="min-h-[44px] w-full sm:w-auto">
+            <Map className="mr-2 h-4 w-4" />
+            View Map
+          </Button>
+        </div>
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
@@ -454,6 +462,9 @@ const Salons = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Salon Map */}
+      <LazyAnalyticsMap open={isMapOpen} onOpenChange={setIsMapOpen} />
     </div>
   );
 };
