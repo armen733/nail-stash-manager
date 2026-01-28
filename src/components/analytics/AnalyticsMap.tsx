@@ -70,13 +70,22 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
         </div>
       `;
 
-      // Create popup
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-        <div class="p-2">
-          <h3 class="font-semibold text-sm">${salon.name}</h3>
-          <p class="text-xs text-gray-600 mt-1">${salon.address}</p>
-          ${salon.city ? `<p class="text-xs text-gray-500">${salon.city}</p>` : ''}
-          ${salon.phone ? `<a href="tel:${salon.phone}" class="text-xs text-blue-600 hover:underline block mt-1">${salon.phone}</a>` : ''}
+      // Create maps URL
+      const encodedAddress = encodeURIComponent(salon.address);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const mapsUrl = isIOS 
+        ? `maps://maps.apple.com/?q=${encodedAddress}`
+        : `https://maps.google.com/?q=${encodedAddress}`;
+
+      // Create popup with better contrast and clickable address
+      const popup = new mapboxgl.Popup({ offset: 25, className: 'salon-popup' }).setHTML(`
+        <div style="padding: 12px; min-width: 200px;">
+          <h3 style="font-weight: 700; font-size: 15px; color: #1a1a1a; margin: 0 0 8px 0;">${salon.name}</h3>
+          <a href="${mapsUrl}" target="_blank" rel="noopener" style="display: block; font-size: 13px; color: #2563eb; text-decoration: none; margin-bottom: 4px; line-height: 1.4;">
+            📍 ${salon.address}
+          </a>
+          ${salon.city ? `<p style="font-size: 12px; color: #4b5563; margin: 0 0 4px 0;">${salon.city}</p>` : ''}
+          ${salon.phone ? `<a href="tel:${salon.phone}" style="display: block; font-size: 13px; color: #2563eb; text-decoration: none; margin-top: 8px;">📞 ${salon.phone}</a>` : ''}
         </div>
       `);
 
