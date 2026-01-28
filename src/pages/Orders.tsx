@@ -1200,64 +1200,71 @@ const Orders = () => {
                           if (!product) return null;
                           const imageUrl = product.image_url || product.product_images?.[0]?.image_url;
                           return (
-                            <div key={item.product_id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                              <div className="h-14 w-14 rounded bg-muted flex-shrink-0 overflow-hidden">
-                                {imageUrl ? (
-                                  <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">—</div>
-                                )}
+                            <div key={item.product_id} className="flex flex-col sm:flex-row gap-3 p-3 bg-muted/50 rounded-lg">
+                              {/* Product info row */}
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="h-14 w-14 rounded bg-muted flex-shrink-0 overflow-hidden">
+                                  {imageUrl ? (
+                                    <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">—</div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{product.name}</div>
+                                  <div className="text-xs text-muted-foreground">{product.sku}</div>
+                                  <div className="text-sm text-primary font-medium">${item.unit_price.toFixed(2)} each</div>
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium truncate">{product.name}</div>
-                                <div className="text-xs text-muted-foreground">{product.sku}</div>
-                                <div className="text-sm text-primary font-medium">${item.unit_price.toFixed(2)}</div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    if (item.quantity <= 1) {
-                                      setOrderItems(orderItems.filter(i => i.product_id !== item.product_id));
-                                    } else {
+                              
+                              {/* Controls row */}
+                              <div className="flex items-center justify-between sm:justify-end gap-3 pl-[68px] sm:pl-0">
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-9 w-9"
+                                    onClick={() => {
+                                      if (item.quantity <= 1) {
+                                        setOrderItems(orderItems.filter(i => i.product_id !== item.product_id));
+                                      } else {
+                                        setOrderItems(orderItems.map(i =>
+                                          i.product_id === item.product_id ? { ...i, quantity: i.quantity - 1 } : i
+                                        ));
+                                      }
+                                    }}
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <span className="w-10 text-center font-semibold text-lg">{item.quantity}</span>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="outline"
+                                    className="h-9 w-9"
+                                    onClick={() => {
                                       setOrderItems(orderItems.map(i =>
-                                        i.product_id === item.product_id ? { ...i, quantity: i.quantity - 1 } : i
+                                        i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
                                       ));
-                                    }
-                                  }}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div className="font-bold text-base w-20 text-right">
+                                  ${(item.unit_price * item.quantity).toFixed(2)}
+                                </div>
                                 <Button
                                   type="button"
                                   size="icon"
-                                  variant="outline"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    setOrderItems(orderItems.map(i =>
-                                      i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
-                                    ));
-                                  }}
+                                  variant="ghost"
+                                  className="h-9 w-9 text-destructive hover:text-destructive flex-shrink-0"
+                                  onClick={() => setOrderItems(orderItems.filter(i => i.product_id !== item.product_id))}
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
-                              <div className="font-semibold text-sm w-16 text-right">
-                                ${(item.unit_price * item.quantity).toFixed(2)}
-                              </div>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => setOrderItems(orderItems.filter(i => i.product_id !== item.product_id))}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
                             </div>
                           );
                         })}
