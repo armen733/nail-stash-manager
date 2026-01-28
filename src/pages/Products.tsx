@@ -588,9 +588,19 @@ const Products = () => {
     }
   }, [categoryFilter]);
 
+  // Sort products by SKU for organized export (natural sort: DDB001, DDB002, DDB003...)
+  const getSortedProductsForExport = () => {
+    return [...allProducts].sort((a, b) => {
+      const skuA = a.sku || '';
+      const skuB = b.sku || '';
+      return skuA.localeCompare(skuB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+  };
+
   const exportProducts = () => {
-    // Export ALL products (allProducts), not just filtered ones
-    const exportData = allProducts.map(p => ({
+    // Export ALL products sorted by SKU
+    const sortedProducts = getSortedProductsForExport();
+    const exportData = sortedProducts.map(p => ({
       Name: p.name,
       SKU: p.sku,
       'Supplier SKU': p.supplier_sku || '',
@@ -605,7 +615,6 @@ const Products = () => {
       'Bit Type': p.bit_type || '',
       Grit: p.grit || '',
       'Variant Name': p.variant_name || '',
-      'Is Parent': p.is_parent ? 'Yes' : 'No',
     }));
     downloadCSV(exportData, 'products');
     toast({ title: "Success", description: `${exportData.length} products exported successfully` });
@@ -613,6 +622,7 @@ const Products = () => {
 
   const exportProductsToPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
+    const sortedProducts = getSortedProductsForExport();
     
     // Title
     doc.setFontSize(18);
@@ -621,10 +631,10 @@ const Products = () => {
     // Date
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Total Products: ${allProducts.length}`, 14, 34);
+    doc.text(`Total Products: ${sortedProducts.length}`, 14, 34);
     
-    // Table data
-    const tableData = allProducts.map(p => [
+    // Table data - sorted by SKU
+    const tableData = sortedProducts.map(p => [
       p.name,
       p.sku,
       p.supplier_sku || '-',
@@ -653,7 +663,7 @@ const Products = () => {
     });
     
     doc.save('products.pdf');
-    toast({ title: "Success", description: `${allProducts.length} products exported to PDF` });
+    toast({ title: "Success", description: `${sortedProducts.length} products exported to PDF` });
   };
 
   // Bulk stock update handler
