@@ -19,6 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -941,12 +947,13 @@ const Orders = () => {
         </Button>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Order</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateOrder} className="space-y-4">
+      <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <SheetContent className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-0">
+          <SheetHeader className="px-6 py-4 border-b">
+            <SheetTitle>Create New Order</SheetTitle>
+          </SheetHeader>
+          <form onSubmit={handleCreateOrder} className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="profile_id">Customer (optional)</Label>
@@ -962,10 +969,10 @@ const Orders = () => {
                       }
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Walk-in (no customer)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border z-50">
                       <SelectItem value="none">
                         <span className="text-muted-foreground">Walk-in (no customer)</span>
                       </SelectItem>
@@ -1220,8 +1227,11 @@ const Orders = () => {
                   placeholder="Optional notes..."
                 />
               </div>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-4">
+            {/* Sticky footer */}
+            <div className="border-t px-6 py-4 bg-background">
+              <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
@@ -1229,9 +1239,10 @@ const Orders = () => {
                   Create Order
                 </Button>
               </div>
-            </form>
-          </DialogContent>
-      </Dialog>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
