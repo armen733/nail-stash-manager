@@ -589,18 +589,43 @@ const Products = () => {
   }, [categoryFilter]);
 
   // Sort products by SKU for organized export (natural sort: DDB001, DDB002, DDB003...)
-  const getSortedProductsForExport = () => {
-    return [...allProducts].sort((a, b) => {
+  const getSortedProductsForExport = (productsToSort: Product[]) => {
+    return [...productsToSort].sort((a, b) => {
       const skuA = a.sku || '';
       const skuB = b.sku || '';
       return skuA.localeCompare(skuB, undefined, { numeric: true, sensitivity: 'base' });
     });
   };
 
+  // Get products to export based on selection/filters
+  const getProductsToExport = (): { products: Product[]; label: string } => {
+    // Priority: selected > filtered > all
+    if (selectedProducts.size > 0) {
+      const selected = allProducts.filter(p => selectedProducts.has(p.id));
+      return { products: selected, label: `${selected.length} selected` };
+    }
+    
+    // Check if any filters are active
+    const hasFilters = debouncedSearchTerm || 
+                       categoryFilter !== "all" || 
+                       advancedCategoryFilter !== "all" ||
+                       variantTypeFilter !== "all" ||
+                       supplierFilter !== "all" ||
+                       stockStatusFilter !== "all" ||
+                       priceRange[0] > 0 || 
+                       priceRange[1] < maxPrice;
+    
+    if (hasFilters) {
+      return { products: sortedProducts, label: `${sortedProducts.length} filtered` };
+    }
+    
+    return { products: allProducts, label: `${allProducts.length} total` };
+  };
+
   const exportProducts = () => {
-    // Export ALL products sorted by SKU
-    const sortedProducts = getSortedProductsForExport();
-    const exportData = sortedProducts.map(p => ({
+    const { products: productsToExport, label } = getProductsToExport();
+    const sortedExportProducts = getSortedProductsForExport(productsToExport);
+    const exportData = sortedExportProducts.map(p => ({
       Name: p.name,
       SKU: p.sku,
       'Supplier SKU': p.supplier_sku || '',
@@ -617,24 +642,25 @@ const Products = () => {
       'Variant Name': p.variant_name || '',
     }));
     downloadCSV(exportData, 'products');
-    toast({ title: "Success", description: `${exportData.length} products exported successfully` });
+    toast({ title: "Success", description: `${label} products exported to CSV` });
   };
 
   const exportProductsToPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
-    const sortedProducts = getSortedProductsForExport();
+    const { products: productsToExport, label } = getProductsToExport();
+    const sortedExportProducts = getSortedProductsForExport(productsToExport);
     
-    // Title
+    // Title - indicate if filtered/selected
     doc.setFontSize(18);
     doc.text('Product Inventory', 14, 20);
     
-    // Date
+    // Date and count
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-    doc.text(`Total Products: ${sortedProducts.length}`, 14, 34);
+    doc.text(`Products: ${label}`, 14, 34);
     
     // Table data - sorted by SKU
-    const tableData = sortedProducts.map(p => [
+    const tableData = sortedExportProducts.map(p => [
       p.name,
       p.sku,
       p.supplier_sku || '-',
@@ -663,7 +689,7 @@ const Products = () => {
     });
     
     doc.save('products.pdf');
-    toast({ title: "Success", description: `${sortedProducts.length} products exported to PDF` });
+    toast({ title: "Success", description: `${label} products exported to PDF` });
   };
 
   // Bulk stock update handler
