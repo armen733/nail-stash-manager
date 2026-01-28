@@ -4,7 +4,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -169,6 +169,7 @@ const Orders = () => {
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [showCartOnly, setShowCartOnly] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -1168,53 +1169,130 @@ const Orders = () => {
               )}
 
               <div className="space-y-3">
-                <Label>Products *</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Products *</Label>
+                  {showCartOnly && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCartOnly(false)}
+                      className="text-muted-foreground"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Back to products
+                    </Button>
+                  )}
+                </div>
                 
-                {/* Visual Product Browser */}
-                <ProductBrowser
-                  products={products}
-                  orderItems={orderItems}
-                  onAddProduct={(product) => {
-                    // Check if product already exists
-                    const existingIndex = orderItems.findIndex(item => item.product_id === product.id);
-                    if (existingIndex >= 0) {
-                      // Increment quantity
-                      const updated = [...orderItems];
-                      updated[existingIndex].quantity += 1;
-                      setOrderItems(updated);
-                    } else {
-                      // Add new item
-                      setOrderItems([...orderItems, {
-                        product_id: product.id,
-                        quantity: 1,
-                        unit_price: product.price_usd,
-                      }]);
-                    }
-                  }}
-                  onUpdateQuantity={(productId, quantity) => {
-                    const updated = orderItems.map(item =>
-                      item.product_id === productId
-                        ? { ...item, quantity }
-                        : item
-                    );
-                    setOrderItems(updated);
-                  }}
-                  onRemoveProduct={(productId) => {
-                    setOrderItems(orderItems.filter(item => item.product_id !== productId));
-                  }}
-                />
-
-                {/* Order Summary */}
-                {orderItems.length > 0 && (
-                  <div className="border-t pt-3">
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {orderItems.length} product(s) selected
-                    </div>
-                    <div className="flex justify-between font-semibold text-lg">
-                      <span>Total:</span>
-                      <span>${calculateTotal().toFixed(2)}</span>
-                    </div>
+                {showCartOnly ? (
+                  /* Cart View */
+                  <div className="space-y-3">
+                    {orderItems.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                        <p>No products selected</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {orderItems.map((item) => {
+                          const product = products.find(p => p.id === item.product_id);
+                          if (!product) return null;
+                          const imageUrl = product.image_url || product.product_images?.[0]?.image_url;
+                          return (
+                            <div key={item.product_id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                              <div className="h-14 w-14 rounded bg-muted flex-shrink-0 overflow-hidden">
+                                {imageUrl ? (
+                                  <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">—</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{product.name}</div>
+                                <div className="text-xs text-muted-foreground">{product.sku}</div>
+                                <div className="text-sm text-primary font-medium">${item.unit_price.toFixed(2)}</div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    if (item.quantity <= 1) {
+                                      setOrderItems(orderItems.filter(i => i.product_id !== item.product_id));
+                                    } else {
+                                      setOrderItems(orderItems.map(i =>
+                                        i.product_id === item.product_id ? { ...i, quantity: i.quantity - 1 } : i
+                                      ));
+                                    }
+                                  }}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    setOrderItems(orderItems.map(i =>
+                                      i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
+                                    ));
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <div className="font-semibold text-sm w-16 text-right">
+                                ${(item.unit_price * item.quantity).toFixed(2)}
+                              </div>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => setOrderItems(orderItems.filter(i => i.product_id !== item.product_id))}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  /* Product Browser */
+                  <ProductBrowser
+                    products={products}
+                    orderItems={orderItems}
+                    onAddProduct={(product) => {
+                      const existingIndex = orderItems.findIndex(item => item.product_id === product.id);
+                      if (existingIndex >= 0) {
+                        const updated = [...orderItems];
+                        updated[existingIndex].quantity += 1;
+                        setOrderItems(updated);
+                      } else {
+                        setOrderItems([...orderItems, {
+                          product_id: product.id,
+                          quantity: 1,
+                          unit_price: product.price_usd,
+                        }]);
+                      }
+                    }}
+                    onUpdateQuantity={(productId, quantity) => {
+                      const updated = orderItems.map(item =>
+                        item.product_id === productId ? { ...item, quantity } : item
+                      );
+                      setOrderItems(updated);
+                    }}
+                    onRemoveProduct={(productId) => {
+                      setOrderItems(orderItems.filter(item => item.product_id !== productId));
+                    }}
+                  />
                 )}
               </div>
 
@@ -1230,9 +1308,30 @@ const Orders = () => {
             </div>
 
             {/* Sticky footer */}
-            <div className="border-t px-6 py-4 bg-background">
+            <div className="border-t px-6 py-4 bg-background space-y-3">
+              {/* Cart summary row */}
+              {orderItems.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <Button
+                    type="button"
+                    variant={showCartOnly ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setShowCartOnly(!showCartOnly)}
+                    className="gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
+                  </Button>
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
+                    <div className="font-bold text-lg">${calculateTotal().toFixed(2)}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Actions */}
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setShowCartOnly(false); }}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={orderItems.length === 0}>
