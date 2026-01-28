@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Plus, Pencil, Trash2, Download, Filter } from "lucide-react";
+import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
@@ -41,7 +51,24 @@ const Salons = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
+  const [phoneToCall, setPhoneToCall] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const openMaps = (address: string) => {
+    // Encode the address for URL
+    const encoded = encodeURIComponent(address);
+    // Try Apple Maps first (works on iOS), falls back to Google Maps
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const url = isIOS 
+      ? `maps://maps.apple.com/?q=${encoded}`
+      : `https://maps.google.com/?q=${encoded}`;
+    window.open(url, '_blank');
+  };
+
+  const handleCallPhone = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+    setPhoneToCall(null);
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -364,21 +391,42 @@ const Salons = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-1 text-sm">
+                  <div className="space-y-2 text-sm">
                     {salon.contact_name && (
                       <p className="text-muted-foreground truncate">Contact: {salon.contact_name}</p>
                     )}
                     {salon.phone && (
-                      <p className="text-muted-foreground truncate">Phone: {salon.phone}</p>
+                      <button
+                        onClick={() => setPhoneToCall(salon.phone)}
+                        className="flex items-center gap-2 text-primary hover:underline w-full text-left group"
+                      >
+                        <Phone className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="truncate">{salon.phone}</span>
+                      </button>
                     )}
                     {salon.email && (
-                      <p className="text-muted-foreground truncate">Email: {salon.email}</p>
-                    )}
-                    {salon.city && (
-                      <p className="text-muted-foreground truncate">City: {salon.city}</p>
+                      <a
+                        href={`mailto:${salon.email}`}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:underline w-full truncate"
+                      >
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{salon.email}</span>
+                      </a>
                     )}
                     {salon.address && (
-                      <p className="text-muted-foreground text-xs mt-2 truncate">{salon.address}</p>
+                      <button
+                        onClick={() => openMaps(salon.address!)}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:underline w-full text-left group mt-2"
+                      >
+                        <MapPin className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <span className="truncate text-xs">{salon.address}</span>
+                      </button>
+                    )}
+                    {salon.city && !salon.address && (
+                      <p className="text-muted-foreground truncate flex items-center gap-2">
+                        <MapPin className="h-4 w-4 flex-shrink-0" />
+                        {salon.city}
+                      </p>
                     )}
                   </div>
                 </Card>
@@ -387,6 +435,25 @@ const Salons = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Call Confirmation Dialog */}
+      <AlertDialog open={!!phoneToCall} onOpenChange={(open) => !open && setPhoneToCall(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Call this number?</AlertDialogTitle>
+            <AlertDialogDescription className="flex items-center gap-2 text-lg font-medium">
+              <Phone className="h-5 w-5" />
+              {phoneToCall}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => phoneToCall && handleCallPhone(phoneToCall)}>
+              Call
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
