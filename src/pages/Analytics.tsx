@@ -199,7 +199,7 @@ const Analytics = () => {
           id, created_at, total, profile_id, customer_email, customer_name, status,
           order_items (
             quantity, unit_price, line_total,
-            products (name, category, price_usd, wholesale_price_usd, stock_on_hand)
+            products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand)
           )
         `)
         .gte("created_at", periodStart.toISOString())
@@ -328,7 +328,8 @@ const Analytics = () => {
           productMap[productName].revenue += item.line_total;
           productMap[productName].quantity += item.quantity;
           
-          const cost = product.wholesale_price_usd || 0;
+          // Use cost_usd if available, fallback to wholesale_price_usd
+          const cost = product.cost_usd || product.wholesale_price_usd || 0;
           const profit = (item.unit_price - cost) * item.quantity;
           productMap[productName].profit += profit;
         });
@@ -1332,6 +1333,105 @@ const Analytics = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Profit Margins Section */}
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-500" />
+                Profit Margins by Product
+                <span className="text-xs font-normal text-muted-foreground ml-2">(Based on Cost vs Selling Price)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              {loading || topProducts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {loading ? "Loading..." : "No data available"}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
+                        <th className="text-right py-3 px-2 font-medium text-muted-foreground">Units Sold</th>
+                        <th className="text-right py-3 px-2 font-medium text-muted-foreground">Revenue</th>
+                        <th className="text-right py-3 px-2 font-medium text-muted-foreground">Profit</th>
+                        <th className="text-right py-3 px-2 font-medium text-muted-foreground">Margin</th>
+                        <th className="py-3 px-2 w-32"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topProducts.map((product, index) => {
+                        const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+                        return (
+                          <tr key={index} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-2">
+                              <span className="font-medium truncate max-w-[200px] inline-block">{product.name}</span>
+                            </td>
+                            <td className="text-right py-3 px-2 tabular-nums">{product.quantity}</td>
+                            <td className="text-right py-3 px-2 tabular-nums text-primary font-medium">${product.revenue.toFixed(2)}</td>
+                            <td className="text-right py-3 px-2 tabular-nums text-green-500 font-medium">${product.profit.toFixed(2)}</td>
+                            <td className="text-right py-3 px-2">
+                              <Badge 
+                                variant={margin > 40 ? "default" : margin > 20 ? "secondary" : "outline"}
+                                className={cn(
+                                  "font-medium",
+                                  margin > 40 && "bg-green-500 hover:bg-green-600",
+                                  margin <= 20 && margin > 0 && "text-amber-600 border-amber-300",
+                                  margin <= 0 && "text-red-600 border-red-300"
+                                )}
+                              >
+                                {margin.toFixed(1)}%
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-2">
+                              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className={cn(
+                                    "h-full rounded-full transition-all",
+                                    margin > 40 ? "bg-green-500" : margin > 20 ? "bg-primary" : margin > 0 ? "bg-amber-500" : "bg-red-500"
+                                  )}
+                                  style={{ width: `${Math.min(Math.max(margin, 0), 100)}%` }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {/* Summary Row */}
+                  <div className="mt-4 p-3 rounded-lg bg-muted/50 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Overall Margin:</span>
+                      <Badge 
+                        variant="default"
+                        className={cn(
+                          "text-sm",
+                          totalRevenue > 0 && (totalProfit / totalRevenue) * 100 > 30 
+                            ? "bg-green-500 hover:bg-green-600" 
+                            : ""
+                        )}
+                      >
+                        {totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Total Revenue:</span>
+                        <span className="ml-2 font-bold text-primary">${totalRevenue.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total Profit:</span>
+                        <span className="ml-2 font-bold text-green-500">${totalProfit.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Product Performance Cards */}
           <Card className="shadow-[var(--shadow-card)]">
