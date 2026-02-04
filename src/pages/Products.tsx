@@ -331,7 +331,10 @@ const Products = () => {
     });
 
     try {
-      let siblingGroupId: string | null = null;
+      // Preserve existing sibling_group_id when editing if no sibling action is taken
+      let siblingGroupId: string | null = editingProduct 
+        ? (editingProduct as any).sibling_group_id || null 
+        : null;
 
       // Handle sibling group creation/assignment
       if (siblingAction === "new") {
