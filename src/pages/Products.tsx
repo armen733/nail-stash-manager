@@ -332,8 +332,9 @@ const Products = () => {
 
     try {
       // Preserve existing sibling_group_id when editing if no sibling action is taken
-      let siblingGroupId: string | null = editingProduct 
-        ? (editingProduct as any).sibling_group_id || null 
+      // Use the sibling_group_id from formData which was populated from the product
+      let siblingGroupId: string | null = editingProduct && siblingAction === "none"
+        ? (formData.sibling_group_id || editingProduct.sibling_group_id || null)
         : null;
 
       // Handle sibling group creation/assignment
