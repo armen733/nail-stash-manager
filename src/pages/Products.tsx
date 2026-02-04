@@ -392,6 +392,7 @@ const Products = () => {
         price_usd: parseFloat(formData.price_usd),
         salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
         wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
+        cost_usd: formData.cost_usd ? parseFloat(formData.cost_usd) : null,
         image_url: null, // Deprecated, using product_images table now
         stock_on_hand: parseInt(formData.stock_on_hand) || 0,
         stock_reserved: parseInt(formData.stock_reserved) || 0,
@@ -499,6 +500,7 @@ const Products = () => {
       price_usd: product.price_usd.toString(),
       salon_price_usd: product.salon_price_usd?.toString() || "",
       wholesale_price_usd: product.wholesale_price_usd?.toString() || "",
+      cost_usd: product.cost_usd?.toString() || "",
       stock_on_hand: product.stock_on_hand?.toString() || "0",
       stock_reserved: product.stock_reserved?.toString() || "0",
       reorder_level: product.reorder_level?.toString() || "10",
@@ -1516,9 +1518,9 @@ const Products = () => {
               {/* ===== PRICING (Global) ===== */}
               <div className="border-t pt-4 mt-4 space-y-4">
                 <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Pricing</h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price_usd">Price (USD) *</Label>
+                    <Label htmlFor="price_usd">Selling Price (USD) *</Label>
                     <Input
                       id="price_usd"
                       type="number"
@@ -1528,6 +1530,20 @@ const Products = () => {
                       required
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cost_usd">Cost (USD)</Label>
+                    <Input
+                      id="cost_usd"
+                      type="number"
+                      step="0.01"
+                      value={formData.cost_usd}
+                      onChange={(e) => setFormData({ ...formData, cost_usd: e.target.value })}
+                      placeholder="Your cost"
+                    />
+                    <p className="text-xs text-muted-foreground">Internal only - not shown to customers</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="salon_price_usd">Salon Price</Label>
                     <Input
