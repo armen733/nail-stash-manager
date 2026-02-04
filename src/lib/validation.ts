@@ -14,6 +14,7 @@ export const productSchema = z.object({
   price_usd: z.number().positive("Price must be positive").max(999999, "Price too high"),
   salon_price_usd: z.number().positive("Price must be positive").max(999999, "Price too high").optional().nullable(),
   wholesale_price_usd: z.number().positive("Price must be positive").max(999999, "Price too high").optional().nullable(),
+  cost_usd: z.number().positive("Cost must be positive").max(999999, "Cost too high").optional().nullable(),
   stock_on_hand: z.number().int().min(0, "Stock cannot be negative").max(999999),
   stock_reserved: z.number().int().min(0, "Reserved stock cannot be negative").max(999999),
   reorder_level: z.number().int().min(0, "Reorder level cannot be negative").max(999999),

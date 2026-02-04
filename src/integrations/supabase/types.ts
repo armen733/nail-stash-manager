@@ -482,6 +482,7 @@ export type Database = {
           bit_type: string | null
           category: string
           category_attributes: Json | null
+          cost_usd: number | null
           created_at: string
           direction: string | null
           grit: string | null
@@ -510,6 +511,7 @@ export type Database = {
           bit_type?: string | null
           category: string
           category_attributes?: Json | null
+          cost_usd?: number | null
           created_at?: string
           direction?: string | null
           grit?: string | null
@@ -538,6 +540,7 @@ export type Database = {
           bit_type?: string | null
           category?: string
           category_attributes?: Json | null
+          cost_usd?: number | null
           created_at?: string
           direction?: string | null
           grit?: string | null

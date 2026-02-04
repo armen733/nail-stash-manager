@@ -27,6 +27,7 @@ export interface Product {
   price_usd: number;
   salon_price_usd: number | null;
   wholesale_price_usd: number | null;
+  cost_usd: number | null;
   image_url: string | null;
   stock_on_hand: number | null;
   stock_reserved: number | null;
@@ -61,6 +62,7 @@ export interface ProductFormData {
   price_usd: string;
   salon_price_usd: string;
   wholesale_price_usd: string;
+  cost_usd: string;
   stock_on_hand: string;
   stock_reserved: string;
   reorder_level: string;
@@ -87,6 +89,7 @@ export const defaultFormData: ProductFormData = {
   price_usd: "",
   salon_price_usd: "",
   wholesale_price_usd: "",
+  cost_usd: "",
   stock_on_hand: "0",
   stock_reserved: "0",
   reorder_level: "10",
