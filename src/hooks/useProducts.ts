@@ -109,15 +109,16 @@ export function useDeleteProduct() {
       toast({ title: "Success", description: "Product deleted successfully" });
     },
     onError: (error: any) => {
-      // Check for foreign key constraint error
-      const isForeignKeyError = error.message?.includes('order_items_product_id_fkey') || 
-                                 error.code === '23503';
+      const errorStr = typeof error === 'string' ? error : (error?.message || error?.details || JSON.stringify(error) || '');
+      const isForeignKeyError = errorStr.includes('order_items_product_id_fkey') || 
+                                 errorStr.includes('foreign key constraint') ||
+                                 error?.code === '23503';
       
       toast({
         title: isForeignKeyError ? "Cannot Delete Product" : "Error",
         description: isForeignKeyError 
           ? "This product cannot be deleted because it's part of existing orders. Consider marking it as discontinued instead."
-          : error.message,
+          : errorStr,
         variant: "destructive",
       });
     },
