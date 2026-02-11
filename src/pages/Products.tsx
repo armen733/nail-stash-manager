@@ -462,9 +462,16 @@ const Products = () => {
       toast({ title: "Success", description: "Product deleted successfully" });
       refreshProducts();
     } catch (error: any) {
+      const errorStr = error?.message || error?.details || JSON.stringify(error) || '';
+      const isForeignKeyError = errorStr.includes('order_items_product_id_fkey') || 
+                                 errorStr.includes('foreign key constraint') ||
+                                 error?.code === '23503';
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: isForeignKeyError ? "Cannot Delete Product" : "Error",
+        description: isForeignKeyError 
+          ? "This product cannot be deleted because it's part of existing orders. Consider marking it as discontinued instead."
+          : errorStr,
         variant: "destructive",
       });
     }
