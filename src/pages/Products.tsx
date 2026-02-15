@@ -136,6 +136,16 @@ const Products = () => {
 
   const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
   
+  // SKU duplicate warnings
+  const skuDuplicate = useMemo(() => {
+    if (!formData.sku) return null;
+    return allProducts.find(p => p.sku.toLowerCase() === formData.sku.toLowerCase() && p.id !== editingProduct?.id);
+  }, [formData.sku, allProducts, editingProduct]);
+  
+  const supplierSkuDuplicate = useMemo(() => {
+    if (!formData.supplier_sku) return null;
+    return allProducts.find(p => p.supplier_sku && p.supplier_sku.toLowerCase() === formData.supplier_sku.toLowerCase() && p.id !== editingProduct?.id);
+  }, [formData.supplier_sku, allProducts, editingProduct]);
   // Sibling groups
   const [siblingGroups, setSiblingGroups] = useState<SiblingGroup[]>([]);
   const [siblingAction, setSiblingAction] = useState<"none" | "existing" | "new">("none");
@@ -458,20 +468,46 @@ const Products = () => {
     try {
       const { error } = await supabase.from("products").delete().eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        const errorStr = error?.message || error?.details || JSON.stringify(error) || '';
+        const isForeignKeyError = errorStr.includes('order_items_product_id_fkey') || 
+                                   errorStr.includes('foreign key constraint') ||
+                                   error?.code === '23503';
+
+        if (isForeignKeyError) {
+          // Ask user if they want to force delete
+          if (confirm("This product is part of existing orders. Do you want to delete it anyway? The product will be removed from order history.")) {
+            // Delete order items referencing this product first
+            const { error: deleteItemsError } = await supabase
+              .from("order_items")
+              .delete()
+              .eq("product_id", id);
+            
+            if (deleteItemsError) throw deleteItemsError;
+
+            // Now delete the product
+            const { error: deleteProductError } = await supabase
+              .from("products")
+              .delete()
+              .eq("id", id);
+            
+            if (deleteProductError) throw deleteProductError;
+
+            toast({ title: "Success", description: "Product and related order items deleted successfully" });
+            refreshProducts();
+            return;
+          }
+          return; // User cancelled force delete
+        }
+        throw error;
+      }
+      
       toast({ title: "Success", description: "Product deleted successfully" });
       refreshProducts();
     } catch (error: any) {
-      const errorStr = error?.message || error?.details || JSON.stringify(error) || '';
-      const isForeignKeyError = errorStr.includes('order_items_product_id_fkey') || 
-                                 errorStr.includes('foreign key constraint') ||
-                                 error?.code === '23503';
-      
       toast({
-        title: isForeignKeyError ? "Cannot Delete Product" : "Error",
-        description: isForeignKeyError 
-          ? "This product cannot be deleted because it's part of existing orders. Consider marking it as discontinued instead."
-          : errorStr,
+        title: "Error",
+        description: error?.message || "Failed to delete product",
         variant: "destructive",
       });
     }
@@ -1492,7 +1528,13 @@ const Products = () => {
                       onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                       placeholder="Your internal SKU"
                       required
+                      className={skuDuplicate ? "border-yellow-500" : ""}
                     />
+                    {skuDuplicate && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                        ⚠️ SKU already used by "{skuDuplicate.name}"
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="supplier_sku">Supplier SKU</Label>
@@ -1501,7 +1543,13 @@ const Products = () => {
                       value={formData.supplier_sku}
                       onChange={(e) => setFormData({ ...formData, supplier_sku: e.target.value })}
                       placeholder="Supplier's SKU"
+                      className={supplierSkuDuplicate ? "border-yellow-500" : ""}
                     />
+                    {supplierSkuDuplicate && (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                        ⚠️ Supplier SKU already used by "{supplierSkuDuplicate.name}"
+                      </p>
+                    )}
                   </div>
                 </div>
 
