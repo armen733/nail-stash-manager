@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map } from "lucide-react";
+import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map, ShoppingBag } from "lucide-react";
+import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
 import { downloadCSV } from "@/lib/csv-export";
 import { LazyAnalyticsMap } from "@/components/lazy/LazyAnalyticsMap";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,7 @@ const Salons = () => {
   const [editingSalon, setEditingSalon] = useState<Salon | null>(null);
   const [phoneToCall, setPhoneToCall] = useState<string | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [selectedSalonForHistory, setSelectedSalonForHistory] = useState<Salon | null>(null);
   const { toast } = useToast();
 
   const openMaps = (address: string) => {
@@ -379,20 +381,20 @@ const Salons = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredSalons.map((salon) => (
-                <Card key={salon.id} className="p-3 sm:p-4">
+                <Card key={salon.id} className="p-3 sm:p-4 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelectedSalonForHistory(salon)}>
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
                       <h3 className="font-semibold text-base sm:text-lg truncate">{salon.name}</h3>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => handleEdit(salon)} className="h-10 w-10">
+                      <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleEdit(salon); }} className="h-10 w-10">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => handleDelete(salon.id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(salon.id); }}
                         className="text-destructive hover:text-destructive h-10 w-10"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -405,7 +407,7 @@ const Salons = () => {
                     )}
                     {salon.phone && (
                       <button
-                        onClick={() => setPhoneToCall(salon.phone)}
+                        onClick={(e) => { e.stopPropagation(); setPhoneToCall(salon.phone); }}
                         className="flex items-center gap-2 text-primary hover:underline w-full text-left group"
                       >
                         <Phone className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
@@ -415,6 +417,7 @@ const Salons = () => {
                     {salon.email && (
                       <a
                         href={`mailto:${salon.email}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:underline w-full truncate"
                       >
                         <Mail className="h-4 w-4 flex-shrink-0" />
@@ -423,7 +426,7 @@ const Salons = () => {
                     )}
                     {salon.address && (
                       <button
-                        onClick={() => openMaps(salon.address!)}
+                        onClick={(e) => { e.stopPropagation(); openMaps(salon.address!); }}
                         className="flex items-center gap-2 text-muted-foreground hover:text-primary hover:underline w-full text-left group mt-2"
                       >
                         <MapPin className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" />
@@ -465,6 +468,14 @@ const Salons = () => {
 
       {/* Salon Map */}
       <LazyAnalyticsMap open={isMapOpen} onOpenChange={setIsMapOpen} />
+
+      {/* Salon Order History */}
+      <SalonOrderHistory
+        salonId={selectedSalonForHistory?.id || null}
+        salonName={selectedSalonForHistory?.name || ""}
+        open={!!selectedSalonForHistory}
+        onOpenChange={(open) => !open && setSelectedSalonForHistory(null)}
+      />
     </div>
   );
 };
