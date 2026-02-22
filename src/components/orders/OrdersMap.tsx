@@ -491,10 +491,10 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
     map.current.on('load', () => {
       if (!map.current) return;
 
-      // Create GeoJSON from ALL orders
+      // Create GeoJSON from filtered orders (excludes Delivered/Paid)
       const geojsonData: GeoJSON.FeatureCollection = {
         type: 'FeatureCollection',
-        features: geocodedOrders.map((order) => ({
+        features: filteredGeocodedOrders.map((order) => ({
           type: 'Feature',
           properties: {
             id: order.id,
@@ -706,9 +706,9 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
       });
 
       // Fit bounds to show all markers
-      if (geocodedOrders.length >= 1) {
+      if (filteredGeocodedOrders.length >= 1) {
         const bounds = new mapboxgl.LngLatBounds();
-        geocodedOrders.forEach(order => {
+        filteredGeocodedOrders.forEach(order => {
           bounds.extend([order.lng, order.lat]);
         });
         map.current.fitBounds(bounds, { padding: 80, maxZoom: 12 });
