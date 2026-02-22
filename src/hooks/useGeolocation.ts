@@ -28,6 +28,7 @@ export const useGeolocation = (enabled: boolean = true) => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log("Geolocation success:", position.coords.latitude, position.coords.longitude);
         setState({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -36,6 +37,7 @@ export const useGeolocation = (enabled: boolean = true) => {
         });
       },
       (err) => {
+        console.warn("Geolocation error:", err.message);
         setState({ lat: null, lng: null, error: err.message, loading: false });
       },
       { enableHighAccuracy: true, timeout: 10000 }
