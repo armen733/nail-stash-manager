@@ -289,7 +289,7 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
       </div>
     `;
 
-    const popup = new mapboxgl.Popup({ offset: 15 }).setText('Your location');
+    const popup = new mapboxgl.Popup({ offset: 15, className: 'user-location-popup' }).setHTML('<div style="color: #1a1a1a; font-weight: 600; font-size: 14px; padding: 4px 8px;">📍 Your location</div>');
 
     userMarkerRef.current = new mapboxgl.Marker(el)
       .setLngLat([userLocation.lng, userLocation.lat])
