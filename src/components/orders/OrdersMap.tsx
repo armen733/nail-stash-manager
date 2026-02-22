@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useGeolocation } from "@/hooks/useGeolocation";
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings, CheckCircle, Truck } from "lucide-react";
@@ -73,6 +75,7 @@ const statusColors: Record<string, string> = {
 export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: OrdersMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<GeocodedOrder | null>(null);
   const [selectedClusterOrders, setSelectedClusterOrders] = useState<GeocodedOrder[]>([]);
@@ -89,6 +92,7 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { toast } = useToast();
+  const userLocation = useGeolocation(open);
 
   const orderStatuses = ['Draft', 'Confirmed', 'Shipped', 'Delivered', 'Paid'];
 
@@ -723,6 +727,37 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
       }
     }
   }, [open]);
+
+  // Add user location marker
+  useEffect(() => {
+    if (!map.current || !userLocation.lat || !userLocation.lng) return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div class="relative flex items-center justify-center">
+        <div class="w-5 h-5 bg-blue-500 rounded-full border-3 border-white shadow-lg z-10"></div>
+        <div class="absolute w-12 h-12 bg-blue-500/20 rounded-full animate-ping"></div>
+        <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full"></div>
+      </div>
+    `;
+
+    const popup = new mapboxgl.Popup({ offset: 15 }).setText('Your location');
+
+    userMarkerRef.current = new mapboxgl.Marker(el)
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .setPopup(popup)
+      .addTo(map.current);
+
+    return () => {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+    };
+  }, [userLocation.lat, userLocation.lng]);
 
   // Update map data when filters change (without re-initializing map)
   useEffect(() => {
