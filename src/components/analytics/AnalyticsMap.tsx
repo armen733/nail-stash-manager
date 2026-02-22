@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { Loader2, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2, X, Building2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
@@ -35,6 +36,8 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const userLocation = useGeolocation(open);
   const [loading, setLoading] = useState(true);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [geocodedSalons, setGeocodedSalons] = useState<GeocodedSalon[]>([]);
@@ -264,6 +267,38 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geocodedSalons]);
+
+  // Add user location marker
+  useEffect(() => {
+    if (!map.current || !userLocation.lat || !userLocation.lng) return;
+
+    // Remove existing user marker
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div class="relative flex items-center justify-center">
+        <div class="w-5 h-5 bg-blue-500 rounded-full border-3 border-white shadow-lg z-10"></div>
+        <div class="absolute w-12 h-12 bg-blue-500/20 rounded-full animate-ping"></div>
+        <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full"></div>
+      </div>
+    `;
+
+    const popup = new mapboxgl.Popup({ offset: 15 }).setText('Your location');
+
+    userMarkerRef.current = new mapboxgl.Marker(el)
+      .setLngLat([userLocation.lng, userLocation.lat])
+      .setPopup(popup)
+      .addTo(map.current);
+
+    return () => {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+    };
+  }, [userLocation.lat, userLocation.lng]);
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyle) => {
