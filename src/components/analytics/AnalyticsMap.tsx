@@ -280,10 +280,12 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
 
     const el = document.createElement('div');
     el.innerHTML = `
-      <div class="relative flex items-center justify-center">
-        <div class="w-5 h-5 bg-blue-500 rounded-full border-3 border-white shadow-lg z-10"></div>
-        <div class="absolute w-12 h-12 bg-blue-500/20 rounded-full animate-ping"></div>
-        <div class="absolute w-8 h-8 bg-blue-500/30 rounded-full"></div>
+      <div class="relative flex items-center justify-center" style="width: 44px; height: 44px;">
+        <div class="absolute w-10 h-10 bg-blue-500/20 rounded-full animate-ping"></div>
+        <div class="absolute w-7 h-7 bg-blue-500/25 rounded-full"></div>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#3b82f6" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); z-index: 10;">
+          <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+        </svg>
       </div>
     `;
 
