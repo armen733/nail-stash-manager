@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, ChevronUp, ChevronDown, Moon, Sun, Satellite, Settings2, X, Building2 } from "lucide-react";
+import { Loader2, ChevronUp, ChevronDown, Moon, Sun, Satellite, LocateFixed, Settings2, X, Building2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -270,7 +270,7 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
 
   // Add user location marker
   useEffect(() => {
-    if (!map.current || !userLocation.lat || !userLocation.lng) return;
+    if (!map.current || userLocation.lat === null || userLocation.lng === null) return;
 
     // Remove existing user marker
     if (userMarkerRef.current) {
@@ -316,6 +316,7 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
 
   // Memoize stats calculations
   const totalSalons = geocodedSalons.length;
+  const shouldShowLocationPrompt = !userLocation.loading && (userLocation.lat === null || userLocation.lng === null);
 
   if (!open) return null;
 
@@ -412,15 +413,36 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
         )}
       </div>
 
-      {/* No data message - doesn't block the map */}
-      {geocodedSalons.length === 0 && !loading && (
-        <div className="absolute bottom-4 right-4 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Building2 className="h-4 w-4" />
-            <span>No salons with addresses registered</span>
+      {/* Bottom-right notices */}
+      <div className="absolute bottom-4 right-4 z-20 space-y-2">
+        {shouldShowLocationPrompt && (
+          <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border max-w-xs">
+            <p className="text-sm font-medium">Current location unavailable</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {userLocation.permissionDenied
+                ? "Allow Location for this site in Safari settings, then tap Retry."
+                : userLocation.error || "Tap retry to request location permission again."}
+            </p>
+            <Button
+              size="sm"
+              className="mt-3 w-full"
+              onClick={userLocation.requestLocation}
+            >
+              <LocateFixed className="h-4 w-4 mr-2" />
+              Retry location
+            </Button>
           </div>
-        </div>
-      )}
+        )}
+
+        {geocodedSalons.length === 0 && !loading && (
+          <div className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+              <span>No salons with addresses registered</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
