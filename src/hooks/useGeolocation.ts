@@ -5,6 +5,7 @@ interface GeolocationState {
   lng: number | null;
   error: string | null;
   loading: boolean;
+  locationTimestamp: number;
 }
 
 const HIGH_ACCURACY_OPTIONS: PositionOptions = {
@@ -28,6 +29,7 @@ export const useGeolocation = (enabled: boolean = true) => {
     lng: null,
     error: null,
     loading: true,
+    locationTimestamp: 0,
   });
 
   const requestLocation = useCallback(() => {
@@ -37,7 +39,7 @@ export const useGeolocation = (enabled: boolean = true) => {
     }
 
     if (!navigator.geolocation) {
-      setState({ lat: null, lng: null, error: "Geolocation not supported", loading: false });
+      setState({ lat: null, lng: null, error: "Geolocation not supported", loading: false, locationTimestamp: 0 });
       return;
     }
 
@@ -50,6 +52,7 @@ export const useGeolocation = (enabled: boolean = true) => {
         lng: position.coords.longitude,
         error: null,
         loading: false,
+        locationTimestamp: Date.now(),
       });
     };
 
@@ -61,10 +64,11 @@ export const useGeolocation = (enabled: boolean = true) => {
           lng: null,
           error: "Location permission denied. Please allow location access and tap retry.",
           loading: false,
+          locationTimestamp: 0,
         });
         return;
       }
-      setState({ lat: null, lng: null, error: err.message, loading: false });
+      setState({ lat: null, lng: null, error: err.message, loading: false, locationTimestamp: 0 });
     };
 
     navigator.geolocation.getCurrentPosition(

@@ -44,6 +44,7 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
   const [showStats, setShowStats] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
+  const [mapReady, setMapReady] = useState(0);
   const { toast } = useToast();
 
   // Add salon markers helper
@@ -224,8 +225,8 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
     
     map.current.on("load", () => {
       console.log("Map loaded successfully");
-      // Force resize after load to ensure proper rendering
       map.current?.resize();
+      setMapReady(prev => prev + 1);
     });
     
     // Also trigger resize after a short delay for safety
@@ -300,7 +301,7 @@ const AnalyticsMap = ({ open, onOpenChange }: AnalyticsMapProps) => {
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
     };
-  }, [userLocation.lat, userLocation.lng]);
+  }, [userLocation.lat, userLocation.lng, mapReady]);
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyle) => {
