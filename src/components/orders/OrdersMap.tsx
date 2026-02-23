@@ -5,7 +5,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings, CheckCircle, Truck } from "lucide-react";
+import { MapPin, Navigation, Package, X, ChevronDown, Route, Loader2, GripVertical, Search, Flame, Phone, Mail, Calendar, Settings, CheckCircle, Truck, LocateFixed } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -91,6 +91,7 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
   const [searchTerm, setSearchTerm] = useState("");
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [mapReady, setMapReady] = useState(0);
   const { toast } = useToast();
   const userLocation = useGeolocation(open);
 
@@ -490,6 +491,7 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
 
     map.current.on('load', () => {
       if (!map.current) return;
+      setMapReady(prev => prev + 1);
 
       // Create GeoJSON from filtered orders (excludes Delivered/Paid)
       const geojsonData: GeoJSON.FeatureCollection = {
@@ -759,7 +761,7 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
     };
-  }, [userLocation.lat, userLocation.lng]);
+  }, [userLocation.lat, userLocation.lng, mapReady]);
 
   // Update map data when filters change (without re-initializing map)
   useEffect(() => {
@@ -1270,6 +1272,26 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Location retry prompt */}
+          {!userLocation.loading && (userLocation.lat === null || userLocation.lng === null) && (
+            <div className="absolute bottom-4 right-4 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border max-w-xs">
+              <p className="text-sm font-medium">Current location unavailable</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {userLocation.permissionDenied
+                  ? "Allow Location for this site in Safari settings, then tap Retry."
+                  : userLocation.error || "Tap retry to request location permission again."}
+              </p>
+              <Button
+                size="sm"
+                className="mt-3 w-full"
+                onClick={userLocation.requestLocation}
+              >
+                <LocateFixed className="h-4 w-4 mr-2" />
+                Retry location
+              </Button>
             </div>
           )}
         </div>
