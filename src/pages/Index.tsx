@@ -301,13 +301,27 @@ const Index = () => {
       
       setLowStockProducts(lowStock);
 
-      // Calculate revenue trend data (last 7 days for day/week, last 30 for month)
-      const days = timePeriod === "month" ? 30 : 7;
+      // Calculate revenue trend data
+      const isSpecificMonth = timePeriod.includes("-");
+      let days: number;
+      let trendStartDate: Date;
+      
+      if (isSpecificMonth) {
+        const [year, month] = timePeriod.split("-").map(Number);
+        trendStartDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); // last day of month
+        days = endDate.getDate();
+      } else {
+        days = timePeriod === "month" ? 30 : 7;
+        trendStartDate = new Date();
+        trendStartDate.setDate(trendStartDate.getDate() - (days - 1));
+      }
+      
       const trendData: RevenueData[] = [];
       
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+      for (let i = 0; i < days; i++) {
+        const date = new Date(trendStartDate);
+        date.setDate(trendStartDate.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
         
         const dayOrders = orders.filter(o => {
