@@ -568,14 +568,25 @@ const Index = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <Select value={timePeriod} onValueChange={(value: "day" | "week" | "month") => setTimePeriod(value)}>
+          <Select value={timePeriod} onValueChange={(value: string) => setTimePeriod(value)}>
             <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-background border">
+            <SelectContent className="bg-background border max-h-[300px]">
               <SelectItem value="day">Today</SelectItem>
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
+              {(() => {
+                const now = new Date();
+                const months = [];
+                for (let i = 0; i < 12; i++) {
+                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                  const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                  const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                  months.push(<SelectItem key={val} value={val}>{label}</SelectItem>);
+                }
+                return months;
+              })()}
             </SelectContent>
           </Select>
           <Button onClick={exportDashboardData} variant="outline" size="default" className="min-h-[44px] flex-1 sm:flex-none">
