@@ -949,7 +949,7 @@ const Orders = () => {
       </div>
 
       <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <SheetContent className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-0">
+        <SheetContent className="w-full sm:max-w-[min(90vw,42rem)] flex flex-col p-0">
           <SheetHeader className="px-6 py-4 border-b">
             <SheetTitle>Create New Order</SheetTitle>
           </SheetHeader>
