@@ -108,7 +108,7 @@ const Index = () => {
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("month");
+  const [timePeriod, setTimePeriod] = useState<string>("month");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
@@ -168,11 +168,21 @@ const Index = () => {
   const fetchDashboardData = async () => {
     try {
       const now = new Date();
-      const periodStart = timePeriod === "day"
-        ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-        : timePeriod === "week" 
-        ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      let periodStart: string;
+      let periodEnd: string | null = null;
+
+      if (timePeriod === "day") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      } else if (timePeriod === "week") {
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (timePeriod === "month") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else {
+        // Specific month: "2026-01", "2026-02", etc.
+        const [year, month] = timePeriod.split("-").map(Number);
+        periodStart = new Date(year, month - 1, 1).toISOString();
+        periodEnd = new Date(year, month, 1).toISOString();
+      }
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes] = await Promise.all([
@@ -199,7 +209,10 @@ const Index = () => {
       });
 
       const orders = ordersRes.data || [];
-      const periodOrders = orders.filter(o => new Date(o.created_at) >= new Date(periodStart));
+      const periodOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
+      });
 
       // Calculate stats
       const newStats: Stats = {
@@ -288,13 +301,27 @@ const Index = () => {
       
       setLowStockProducts(lowStock);
 
-      // Calculate revenue trend data (last 7 days for day/week, last 30 for month)
-      const days = timePeriod === "month" ? 30 : 7;
+      // Calculate revenue trend data
+      const isSpecificMonth = timePeriod.includes("-");
+      let days: number;
+      let trendStartDate: Date;
+      
+      if (isSpecificMonth) {
+        const [year, month] = timePeriod.split("-").map(Number);
+        trendStartDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); // last day of month
+        days = endDate.getDate();
+      } else {
+        days = timePeriod === "month" ? 30 : 7;
+        trendStartDate = new Date();
+        trendStartDate.setDate(trendStartDate.getDate() - (days - 1));
+      }
+      
       const trendData: RevenueData[] = [];
       
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+      for (let i = 0; i < days; i++) {
+        const date = new Date(trendStartDate);
+        date.setDate(trendStartDate.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
         
         const dayOrders = orders.filter(o => {
@@ -501,7 +528,10 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : "Monthly";
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : (() => {
+    const [y, m] = timePeriod.split("-").map(Number);
+    return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  })();
 
   const exportDashboardData = () => {
     const exportData = [
@@ -552,14 +582,25 @@ const Index = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Welcome to Salon Supply Manager</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <Select value={timePeriod} onValueChange={(value: "day" | "week" | "month") => setTimePeriod(value)}>
+          <Select value={timePeriod} onValueChange={(value: string) => setTimePeriod(value)}>
             <SelectTrigger className="w-full sm:w-[180px] min-h-[44px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-background border">
+            <SelectContent className="bg-background border max-h-[300px]">
               <SelectItem value="day">Today</SelectItem>
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
+              {(() => {
+                const now = new Date();
+                const months = [];
+                for (let i = 0; i < 12; i++) {
+                  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                  const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                  const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                  months.push(<SelectItem key={val} value={val}>{label}</SelectItem>);
+                }
+                return months;
+              })()}
             </SelectContent>
           </Select>
           <Button onClick={exportDashboardData} variant="outline" size="default" className="min-h-[44px] flex-1 sm:flex-none">
