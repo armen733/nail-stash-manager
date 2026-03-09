@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, List, FileUp, Boxes, FileText } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3x3, List, FileUp, Boxes, FileText } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -116,7 +116,7 @@ const Products = () => {
   const isMobile = useIsMobile();
 
   // New state for improvements
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid");
   const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
@@ -1998,6 +1998,14 @@ const Products = () => {
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
                 <Button 
+                  variant={viewMode === "compact" ? "default" : "ghost"} 
+                  size="icon" 
+                  className="rounded-none border-x min-h-[44px] min-w-[44px]"
+                  onClick={() => setViewMode("compact")}
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button 
                   variant={viewMode === "table" ? "default" : "ghost"} 
                   size="icon" 
                   className="rounded-l-none min-h-[44px] min-w-[44px]"
@@ -2099,8 +2107,13 @@ const Products = () => {
                   </span>
                 </div>
               )}
-              {viewMode === "grid" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {viewMode === "grid" || viewMode === "compact" ? (
+                <div className={cn(
+                  "grid gap-3 sm:gap-4",
+                  viewMode === "compact" 
+                    ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-5" 
+                    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                )}>
                   {displayedItems.map((product) => {
                     const isSelectedForSibling = selectedVariantProducts.has(product.id);
                     const existingSiblingGroup = (product as any).sibling_group_id;
