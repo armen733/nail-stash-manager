@@ -514,7 +514,10 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : "Monthly";
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : (() => {
+    const [y, m] = timePeriod.split("-").map(Number);
+    return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  })();
 
   const exportDashboardData = () => {
     const exportData = [
