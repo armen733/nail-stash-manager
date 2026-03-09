@@ -116,7 +116,7 @@ const Products = () => {
   const isMobile = useIsMobile();
 
   // New state for improvements
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid");
   const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
