@@ -168,11 +168,21 @@ const Index = () => {
   const fetchDashboardData = async () => {
     try {
       const now = new Date();
-      const periodStart = timePeriod === "day"
-        ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-        : timePeriod === "week" 
-        ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      let periodStart: string;
+      let periodEnd: string | null = null;
+
+      if (timePeriod === "day") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      } else if (timePeriod === "week") {
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (timePeriod === "month") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else {
+        // Specific month: "2026-01", "2026-02", etc.
+        const [year, month] = timePeriod.split("-").map(Number);
+        periodStart = new Date(year, month - 1, 1).toISOString();
+        periodEnd = new Date(year, month, 1).toISOString();
+      }
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes] = await Promise.all([
