@@ -949,7 +949,7 @@ const Orders = () => {
       </div>
 
       <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <SheetContent className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-0">
+        <SheetContent className="w-full sm:max-w-[min(90vw,42rem)] flex flex-col p-0">
           <SheetHeader className="px-6 py-4 border-b">
             <SheetTitle>Create New Order</SheetTitle>
           </SheetHeader>
@@ -1501,7 +1501,7 @@ const Orders = () => {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Status Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {orderStatusData.map((status) => {
                   const IconComponent = status.icon;
                   return (
@@ -1590,7 +1590,7 @@ const Orders = () => {
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -1600,28 +1600,30 @@ const Orders = () => {
                   className="pl-10 h-11 min-h-[44px]"
                 />
               </div>
-              <Button className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Order
-              </Button>
-              {selectedOrders.size > 0 && (
-                <Button 
-                  variant="default" 
-                  className="h-11 min-h-[44px] w-full sm:w-auto"
-                  onClick={() => setBulkStatusDialogOpen(true)}
-                >
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  Update {selectedOrders.size} Orders
+              <div className="flex flex-wrap items-center gap-2">
+                <Button className="h-11 min-h-[44px] flex-1 sm:flex-none" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Order
                 </Button>
-              )}
-              <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={() => setIsMapOpen(true)}>
-                <Map className="h-4 w-4 mr-2" />
-                View Map
-              </Button>
-              <Button variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto" onClick={exportOrders}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+                {selectedOrders.size > 0 && (
+                  <Button 
+                    variant="default" 
+                    className="h-11 min-h-[44px] flex-1 sm:flex-none"
+                    onClick={() => setBulkStatusDialogOpen(true)}
+                  >
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    Update {selectedOrders.size}
+                  </Button>
+                )}
+                <Button variant="outline" className="h-11 min-h-[44px]" onClick={() => setIsMapOpen(true)}>
+                  <Map className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Map</span>
+                </Button>
+                <Button variant="outline" className="h-11 min-h-[44px]" onClick={exportOrders}>
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </div>
             </div>
             
             {/* Date Range Filter */}
