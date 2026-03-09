@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3x3, List, FileUp, Boxes, FileText } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -2003,7 +2003,7 @@ const Products = () => {
                   className="rounded-none border-x min-h-[44px] min-w-[44px]"
                   onClick={() => setViewMode("compact")}
                 >
-                  <Grid3x3 className="h-4 w-4" />
+                  <Grid3X3 className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant={viewMode === "table" ? "default" : "ghost"} 
