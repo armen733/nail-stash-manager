@@ -108,7 +108,7 @@ const Index = () => {
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">("month");
+  const [timePeriod, setTimePeriod] = useState<string>("month");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
