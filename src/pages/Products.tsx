@@ -2107,8 +2107,13 @@ const Products = () => {
                   </span>
                 </div>
               )}
-              {viewMode === "grid" ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {viewMode === "grid" || viewMode === "compact" ? (
+                <div className={cn(
+                  "grid gap-3 sm:gap-4",
+                  viewMode === "compact" 
+                    ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-5" 
+                    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+                )}>
                   {displayedItems.map((product) => {
                     const isSelectedForSibling = selectedVariantProducts.has(product.id);
                     const existingSiblingGroup = (product as any).sibling_group_id;
