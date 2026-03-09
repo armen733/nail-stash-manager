@@ -209,7 +209,10 @@ const Index = () => {
       });
 
       const orders = ordersRes.data || [];
-      const periodOrders = orders.filter(o => new Date(o.created_at) >= new Date(periodStart));
+      const periodOrders = orders.filter(o => {
+        const d = new Date(o.created_at);
+        return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
+      });
 
       // Calculate stats
       const newStats: Stats = {
