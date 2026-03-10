@@ -102,9 +102,9 @@ export function QuickOrderPanel({
             customer_phone: customerPhone,
             notes: notes || null,
             created_by: user?.id,
-            status: "Confirmed", // Quick orders are immediately confirmed
-            subtotal: cartTotal,
-            tax: 0,
+            status: "Confirmed",
+            subtotal: cartSubtotal,
+            tax: cartTax,
             total: cartTotal,
           },
         ])
