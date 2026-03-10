@@ -135,7 +135,9 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { taxRate, calculateTax } = useTaxSettings();
+  const { taxRate, taxSettings, calculateTax, updateTaxSettings } = useTaxSettings();
+  const [isTaxSettingsOpen, setIsTaxSettingsOpen] = useState(false);
+  const [editTaxRate, setEditTaxRate] = useState("");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
