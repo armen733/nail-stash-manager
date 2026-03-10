@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart, Minus, Plus, User, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
