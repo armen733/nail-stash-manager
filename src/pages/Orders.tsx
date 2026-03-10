@@ -1335,7 +1335,10 @@ const Orders = () => {
                   </Button>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
-                    <div className="font-bold text-lg">${calculateTotal().toFixed(2)}</div>
+                    {taxRate > 0 && (
+                      <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${calculateTax(calculateTotal()).toFixed(2)}</div>
+                    )}
+                    <div className="font-bold text-lg">${(calculateTotal() + calculateTax(calculateTotal())).toFixed(2)}</div>
                   </div>
                 </div>
               )}
