@@ -567,8 +567,8 @@ const Orders = () => {
             customer_phone: selectedProfile?.phone || selectedSalon?.phone || null,
             customer_address: selectedSalon?.address || selectedProfile ? 'Customer Order' : 'In-Store Pickup',
             items: notificationItems,
-            subtotal: total,
-            total: total,
+            subtotal,
+            total,
             notes: formData.notes || null,
           }
         };
