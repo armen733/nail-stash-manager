@@ -681,6 +681,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          tax_name: string
+          tax_rate: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          tax_name?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          tax_name?: string
+          tax_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
