@@ -1,0 +1,1 @@
+UPDATE public.tax_settings SET tax_rate = 10;
