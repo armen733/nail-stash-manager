@@ -282,7 +282,10 @@ const Analytics = () => {
       });
       setDailyRevenue(dailyData);
 
-      // Calculate category sales & product performance
+      // Calculate total tax collected
+      const taxCollected = orders?.reduce((sum, o) => sum + (o.tax || 0), 0) || 0;
+      setTotalTaxCollected(taxCollected);
+
       const categoryMap: Record<string, CategorySales> = {};
       const productMap: Record<string, ProductPerformance> = {};
       const customerMap: Record<string, CustomerInsight> = {};
