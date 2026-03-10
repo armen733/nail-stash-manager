@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart, Minus, Plus, User, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -52,13 +53,16 @@ export function QuickOrderPanel({
   onRefreshProducts,
 }: QuickOrderPanelProps) {
   const { toast } = useToast();
+  const { taxRate, calculateTax } = useTaxSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [notes, setNotes] = useState("");
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
+  const cartTax = calculateTax(cartSubtotal);
+  const cartTotal = cartSubtotal + cartTax;
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   if (cart.length === 0) return null;
@@ -98,9 +102,9 @@ export function QuickOrderPanel({
             customer_phone: customerPhone,
             notes: notes || null,
             created_by: user?.id,
-            status: "Confirmed", // Quick orders are immediately confirmed
-            subtotal: cartTotal,
-            tax: 0,
+            status: "Confirmed",
+            subtotal: cartSubtotal,
+            tax: cartTax,
             total: cartTotal,
           },
         ])
@@ -158,7 +162,7 @@ export function QuickOrderPanel({
             customer_phone: customerPhone,
             customer_address: 'In-Store Pickup',
             items: orderItems,
-            subtotal: cartTotal,
+            subtotal: cartSubtotal,
             total: cartTotal,
             notes: notes || null,
           }
@@ -292,10 +296,22 @@ export function QuickOrderPanel({
 
         {/* Footer - Fixed at bottom */}
         <div className="border-t pt-4 space-y-4">
-          {/* Total */}
-          <div className="flex items-center justify-between font-bold text-lg">
-            <span>Total</span>
-            <span>${cartTotal.toFixed(2)}</span>
+          {/* Totals */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>Subtotal</span>
+              <span>${cartSubtotal.toFixed(2)}</span>
+            </div>
+            {taxRate > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Tax ({taxRate}%)</span>
+                <span>${cartTax.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>${cartTotal.toFixed(2)}</span>
+            </div>
           </div>
 
           {/* Customer Selection (Collapsible) */}

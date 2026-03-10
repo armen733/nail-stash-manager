@@ -4,7 +4,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +57,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
+import { Switch } from "@/components/ui/switch";
+import { useTaxSettings } from "@/hooks/useTaxSettings";
 
 interface Order {
   id: string;
@@ -134,6 +136,9 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { taxRate, taxSettings, calculateTax, updateTaxSettings } = useTaxSettings();
+  const [isTaxSettingsOpen, setIsTaxSettingsOpen] = useState(false);
+  const [editTaxRate, setEditTaxRate] = useState("");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
@@ -486,7 +491,9 @@ const Orders = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const total = calculateTotal();
+      const subtotal = calculateTotal();
+      const tax = calculateTax(subtotal);
+      const total = subtotal + tax;
       
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -497,8 +504,8 @@ const Orders = () => {
             notes: formData.notes || null,
             created_by: user?.id,
             status: "Draft",
-            subtotal: total,
-            tax: 0,
+            subtotal,
+            tax,
             total,
           },
         ])
@@ -563,8 +570,8 @@ const Orders = () => {
             customer_phone: selectedProfile?.phone || selectedSalon?.phone || null,
             customer_address: selectedSalon?.address || selectedProfile ? 'Customer Order' : 'In-Store Pickup',
             items: notificationItems,
-            subtotal: total,
-            total: total,
+            subtotal,
+            total,
             notes: formData.notes || null,
           }
         };
@@ -942,10 +949,68 @@ const Orders = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Orders</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Track and manage orders</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Order
-        </Button>
+        <div className="flex items-center gap-2">
+          <Popover open={isTaxSettingsOpen} onOpenChange={(open) => {
+            setIsTaxSettingsOpen(open);
+            if (open) setEditTaxRate(String(taxSettings?.tax_rate ?? 0));
+          }}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-11 min-h-[44px] gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Tax: {taxRate}%</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 z-50">
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Sales Tax Rate</h4>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    max="100"
+                    value={editTaxRate}
+                    onChange={(e) => setEditTaxRate(e.target.value)}
+                    className="h-9"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground">Active</Label>
+                  <Switch
+                    checked={taxSettings?.is_active ?? true}
+                    onCheckedChange={async (checked) => {
+                      const result = await updateTaxSettings({ is_active: checked });
+                      if (!result?.error) toast({ title: "Tax " + (checked ? "enabled" : "disabled") });
+                    }}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={async () => {
+                    const rate = parseFloat(editTaxRate);
+                    if (isNaN(rate) || rate < 0 || rate > 100) {
+                      toast({ title: "Invalid rate", variant: "destructive" });
+                      return;
+                    }
+                    const result = await updateTaxSettings({ tax_rate: rate });
+                    if (!result?.error) {
+                      toast({ title: "Tax rate updated to " + rate + "%" });
+                      setIsTaxSettingsOpen(false);
+                    }
+                  }}
+                >
+                  Save
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Order
+          </Button>
+        </div>
       </div>
 
       <Sheet open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1331,7 +1396,10 @@ const Orders = () => {
                   </Button>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
-                    <div className="font-bold text-lg">${calculateTotal().toFixed(2)}</div>
+                    {taxRate > 0 && (
+                      <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${calculateTax(calculateTotal()).toFixed(2)}</div>
+                    )}
+                    <div className="font-bold text-lg">${(calculateTotal() + calculateTax(calculateTotal())).toFixed(2)}</div>
                   </div>
                 </div>
               )}
