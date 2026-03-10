@@ -77,6 +77,7 @@ const Analytics = () => {
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
+  const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
