@@ -853,7 +853,7 @@ const Analytics = () => {
       />
 
       {/* KPI Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
         <StatCard 
           title="Total Revenue" 
           value={totalRevenue.toFixed(2)} 
@@ -888,6 +888,12 @@ const Analytics = () => {
           title="Total Profit" 
           value={totalProfit.toFixed(2)} 
           icon={TrendingUp}
+          prefix="$"
+        />
+        <StatCard 
+          title="Tax Collected" 
+          value={totalTaxCollected.toFixed(2)} 
+          icon={DollarSign}
           prefix="$"
         />
       </div>
