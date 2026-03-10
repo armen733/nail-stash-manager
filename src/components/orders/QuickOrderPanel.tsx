@@ -296,10 +296,22 @@ export function QuickOrderPanel({
 
         {/* Footer - Fixed at bottom */}
         <div className="border-t pt-4 space-y-4">
-          {/* Total */}
-          <div className="flex items-center justify-between font-bold text-lg">
-            <span>Total</span>
-            <span>${cartTotal.toFixed(2)}</span>
+          {/* Totals */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>Subtotal</span>
+              <span>${cartSubtotal.toFixed(2)}</span>
+            </div>
+            {taxRate > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Tax ({taxRate}%)</span>
+                <span>${cartTax.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>${cartTotal.toFixed(2)}</span>
+            </div>
           </div>
 
           {/* Customer Selection (Collapsible) */}
