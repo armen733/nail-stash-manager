@@ -162,7 +162,7 @@ export function QuickOrderPanel({
             customer_phone: customerPhone,
             customer_address: 'In-Store Pickup',
             items: orderItems,
-            subtotal: cartTotal,
+            subtotal: cartSubtotal,
             total: cartTotal,
             notes: notes || null,
           }
