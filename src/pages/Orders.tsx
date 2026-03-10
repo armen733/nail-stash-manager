@@ -1368,8 +1368,12 @@ const Orders = () => {
                 )}
               </div>
 
+            </div>
+
+            {/* Sticky footer */}
+            <div className="border-t px-6 py-4 bg-background space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes" className="text-xs">Notes</Label>
                 <Input
                   id="notes"
                   value={formData.notes}
@@ -1377,10 +1381,6 @@ const Orders = () => {
                   placeholder="Optional notes..."
                 />
               </div>
-            </div>
-
-            {/* Sticky footer */}
-            <div className="border-t px-6 py-4 bg-background space-y-3">
               {/* Cart summary row */}
               {orderItems.length > 0 && (
                 <div className="flex items-center justify-between">
