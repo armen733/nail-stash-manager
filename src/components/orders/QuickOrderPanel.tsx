@@ -53,13 +53,16 @@ export function QuickOrderPanel({
   onRefreshProducts,
 }: QuickOrderPanelProps) {
   const { toast } = useToast();
+  const { taxRate, calculateTax } = useTaxSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [notes, setNotes] = useState("");
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.product.price_usd * item.quantity), 0);
+  const cartTax = calculateTax(cartSubtotal);
+  const cartTotal = cartSubtotal + cartTax;
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   if (cart.length === 0) return null;
