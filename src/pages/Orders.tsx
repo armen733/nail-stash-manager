@@ -488,7 +488,9 @@ const Orders = () => {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const total = calculateTotal();
+      const subtotal = calculateTotal();
+      const tax = calculateTax(subtotal);
+      const total = subtotal + tax;
       
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -499,8 +501,8 @@ const Orders = () => {
             notes: formData.notes || null,
             created_by: user?.id,
             status: "Draft",
-            subtotal: total,
-            tax: 0,
+            subtotal,
+            tax,
             total,
           },
         ])
