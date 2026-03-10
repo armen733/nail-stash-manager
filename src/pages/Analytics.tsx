@@ -77,6 +77,7 @@ const Analytics = () => {
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
+  const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -196,7 +197,7 @@ const Analytics = () => {
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select(`
-          id, created_at, total, profile_id, customer_email, customer_name, status,
+          id, created_at, total, tax, profile_id, customer_email, customer_name, status,
           order_items (
             quantity, unit_price, line_total,
             products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand)
@@ -281,7 +282,10 @@ const Analytics = () => {
       });
       setDailyRevenue(dailyData);
 
-      // Calculate category sales & product performance
+      // Calculate total tax collected
+      const taxCollected = orders?.reduce((sum, o) => sum + (o.tax || 0), 0) || 0;
+      setTotalTaxCollected(taxCollected);
+
       const categoryMap: Record<string, CategorySales> = {};
       const productMap: Record<string, ProductPerformance> = {};
       const customerMap: Record<string, CustomerInsight> = {};
@@ -849,7 +853,7 @@ const Analytics = () => {
       />
 
       {/* KPI Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
         <StatCard 
           title="Total Revenue" 
           value={totalRevenue.toFixed(2)} 
@@ -884,6 +888,12 @@ const Analytics = () => {
           title="Total Profit" 
           value={totalProfit.toFixed(2)} 
           icon={TrendingUp}
+          prefix="$"
+        />
+        <StatCard 
+          title="Tax Collected" 
+          value={totalTaxCollected.toFixed(2)} 
+          icon={DollarSign}
           prefix="$"
         />
       </div>
