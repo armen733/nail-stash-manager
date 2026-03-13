@@ -173,6 +173,9 @@ export const SalonOrderHistory = ({ salonId, salonName, open, onOpenChange }: Sa
                         <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
                           <span className="truncate flex-1">
                             {item.products?.name || "Unknown"} × {item.quantity}
+                            {item.products?.sku && (
+                              <span className="ml-1.5 text-[10px] opacity-60">({item.products.sku})</span>
+                            )}
                           </span>
                           <span className="ml-2">${Number(item.line_total).toFixed(2)}</span>
                         </div>
