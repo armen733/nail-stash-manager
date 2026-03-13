@@ -28,7 +28,9 @@ interface TopSalon {
 }
 
 interface TopProduct {
+  product_id: string;
   product_name: string;
+  sku: string;
   quantity_sold: number;
   revenue: number;
   image_url?: string;
