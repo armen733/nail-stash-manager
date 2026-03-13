@@ -324,7 +324,33 @@ const Orders = () => {
     if (!deleteOrderId) return;
     
     try {
-      // First delete order items
+      // Fetch order items to restore stock
+      const { data: orderItems, error: fetchError } = await supabase
+        .from("order_items")
+        .select("product_id, quantity")
+        .eq("order_id", deleteOrderId);
+      
+      if (fetchError) throw fetchError;
+
+      // Restore stock for each product
+      if (orderItems && orderItems.length > 0) {
+        for (const item of orderItems) {
+          const { data: product } = await supabase
+            .from("products")
+            .select("stock_on_hand")
+            .eq("id", item.product_id)
+            .single();
+          
+          if (product) {
+            await supabase
+              .from("products")
+              .update({ stock_on_hand: (product.stock_on_hand ?? 0) + item.quantity })
+              .eq("id", item.product_id);
+          }
+        }
+      }
+
+      // Delete order items
       const { error: itemsError } = await supabase
         .from("order_items")
         .delete()
@@ -332,7 +358,7 @@ const Orders = () => {
       
       if (itemsError) throw itemsError;
 
-      // Then delete the order
+      // Delete the order
       const { error: orderError } = await supabase
         .from("orders")
         .delete()
@@ -340,7 +366,7 @@ const Orders = () => {
       
       if (orderError) throw orderError;
 
-      toast({ title: "Success", description: "Order deleted" });
+      toast({ title: "Success", description: "Order deleted and stock restored" });
       setDeleteOrderId(null);
       fetchData();
     } catch (error: any) {
