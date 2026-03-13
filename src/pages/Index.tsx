@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
