@@ -60,20 +60,38 @@ export const SalonOrderHistory = ({ salonId, salonName, open, onOpenChange }: Sa
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select(`
-            id, order_date, status, total, subtotal, customer_name, notes,
-            order_items (
-              id, quantity, unit_price, line_total,
-              products ( name, sku, image_url )
-            )
-          `)
-          .eq("salon_id", salonId)
-          .order("order_date", { ascending: false });
+        // Paginate to get ALL orders (bypass 1000 row limit)
+        const PAGE_SIZE = 1000;
+        let allOrders: any[] = [];
+        let page = 0;
+        let hasMore = true;
 
-        if (error) throw error;
-        setOrders((data as unknown as OrderWithItems[]) || []);
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from("orders")
+            .select(`
+              id, order_date, status, total, subtotal, customer_name, notes,
+              order_items (
+                id, quantity, unit_price, line_total,
+                products ( name, sku, image_url )
+              )
+            `)
+            .eq("salon_id", salonId)
+            .order("order_date", { ascending: false })
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            allOrders = [...allOrders, ...data];
+            hasMore = data.length === PAGE_SIZE;
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        setOrders((allOrders as unknown as OrderWithItems[]) || []);
       } catch (err) {
         console.error("Failed to fetch salon orders:", err);
       } finally {
@@ -155,6 +173,9 @@ export const SalonOrderHistory = ({ salonId, salonName, open, onOpenChange }: Sa
                         <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
                           <span className="truncate flex-1">
                             {item.products?.name || "Unknown"} × {item.quantity}
+                            {item.products?.sku && (
+                              <span className="ml-1.5 text-[10px] opacity-60">({item.products.sku})</span>
+                            )}
                           </span>
                           <span className="ml-2">${Number(item.line_total).toFixed(2)}</span>
                         </div>
