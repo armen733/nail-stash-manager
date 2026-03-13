@@ -269,13 +269,13 @@ const Index = () => {
       setTopSalons(topSalonsData);
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; image_url?: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
-        // Use products.image_url first, fallback to product_images table
+        const productSku = item.products?.sku || "";
         const productImage = item.products?.image_url || productImagesMap[productId];
         if (!acc[productId]) {
-          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, image_url: productImage };
+          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
         acc[productId].revenue += item.line_total || 0;
@@ -284,9 +284,11 @@ const Index = () => {
 
       const topProductsData = Object.values(productStats)
         .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 5)
+        .slice(0, 10)
         .map(p => ({
+          product_id: p.id,
           product_name: p.name,
+          sku: p.sku,
           quantity_sold: p.quantity,
           revenue: p.revenue,
           image_url: p.image_url,
