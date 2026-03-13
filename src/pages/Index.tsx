@@ -1073,7 +1073,16 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {topSalons.map((salon, index) => (
-                  <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between border-b pb-2 last:border-0 ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors' : ''}`}
+                    onClick={() => {
+                      if (salon.salon_id) {
+                        setSelectedSalonId(salon.salon_id);
+                        setSelectedSalonName(salon.salon_name);
+                      }
+                    }}
+                  >
                     <div>
                       <p className="font-medium">{salon.salon_name}</p>
                       <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
