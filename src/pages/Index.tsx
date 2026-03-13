@@ -125,6 +125,7 @@ const Index = () => {
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Custom active shape for pie chart hover effect
   const renderActiveShape = (props: any) => {
