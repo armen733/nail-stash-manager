@@ -370,6 +370,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order deleted and stock restored" });
       setDeleteOrderId(null);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       fetchData();
     } catch (error: any) {
       toast({
