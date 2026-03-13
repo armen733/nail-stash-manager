@@ -76,10 +76,7 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="h-screen flex w-full safe-left safe-right overflow-hidden">
-      {/* Hide sidebar on mobile — use bottom nav instead */}
-      <div className="hidden md:block">
-        <AppSidebar />
-      </div>
+      <AppSidebar />
       
       {/* Mobile backdrop overlay */}
       {isMobile && openMobile && (
@@ -92,7 +89,7 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
       
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header className="border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 py-3 md:py-6 pt-[max(env(safe-area-inset-top,0px),12px)] md:pt-[max(env(safe-area-inset-top,0px),24px)]">
-          <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+          <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2" />
           <img 
             src={logo} 
             alt="NÉRA Beauty" 
@@ -100,15 +97,12 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
             style={{ background: 'transparent' }}
           />
         </header>
-        <div className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 safe-bottom">
+        <div className="flex-1 p-3 sm:p-4 md:p-6 safe-bottom">
           <Suspense fallback={<PageLoader />}>
             {children}
           </Suspense>
         </div>
       </main>
-      
-      {/* Bottom navigation for mobile */}
-      <BottomNav />
     </div>
   );
 };
