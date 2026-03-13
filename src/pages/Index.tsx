@@ -1569,6 +1569,13 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
+
+      <SalonOrderHistory
+        salonId={selectedSalonId}
+        salonName={selectedSalonName}
+        open={!!selectedSalonId}
+        onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
+      />
     </div>
   );
 };
