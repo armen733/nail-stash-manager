@@ -642,7 +642,7 @@ const Index = () => {
       </div>
 
       {/* Sales by Category - Pie Chart */}
-      <Card className="shadow-[var(--shadow-card)]">
+      <Card className="shadow-[var(--shadow-card)] content-auto">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
           <Button 
