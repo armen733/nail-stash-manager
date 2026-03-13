@@ -23,6 +23,7 @@ interface Stats {
 }
 
 interface TopSalon {
+  salon_id: string | null;
   salon_name: string;
   order_count: number;
   total_revenue: number;
