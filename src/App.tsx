@@ -93,7 +93,7 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
           <img 
             src={logo} 
             alt="NÉRA Beauty" 
-            className="h-10 sm:h-14 md:h-20 lg:h-24 w-auto object-contain"
+            className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto object-contain"
             style={{ background: 'transparent' }}
           />
         </header>
