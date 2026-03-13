@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,6 +128,7 @@ interface OrderItem {
 
 const Orders = () => {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
@@ -368,6 +370,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order deleted and stock restored" });
       setDeleteOrderId(null);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       fetchData();
     } catch (error: any) {
       toast({

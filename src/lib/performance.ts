@@ -64,7 +64,7 @@ export function batchUpdates(callback: () => void): void {
  * Measure component render time (development only)
  */
 export function measureRender(componentName: string): () => void {
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     return () => {};
   }
   

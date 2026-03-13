@@ -154,6 +154,29 @@ serve(async (req: Request) => {
     
     logStep('Order items prepared', { count: orderItemsInfo.length, hasImages: orderItemsInfo.some((i: any) => i.image_url) });
 
+    // Insert order items into order_items table
+    const orderItemsToInsert = orderItemsInfo
+      .filter((item: any) => item.product_id)
+      .map((item: any) => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.line_total,
+      }));
+
+    if (orderItemsToInsert.length > 0) {
+      const { error: itemsInsertError } = await supabase
+        .from('order_items')
+        .insert(orderItemsToInsert);
+      
+      if (itemsInsertError) {
+        logStep('Failed to insert order items', { error: itemsInsertError.message });
+      } else {
+        logStep('Order items inserted', { count: orderItemsToInsert.length });
+      }
+    }
+
     // Reduce stock for each product
     for (const item of orderItemsInfo) {
       if (item.product_id) {
