@@ -91,7 +91,8 @@ const Products = () => {
   // Fetch category-variant type mappings from database
   const { data: categoryVariantTypes = [] } = useCategoryVariantTypes();
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
