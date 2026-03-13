@@ -261,10 +261,11 @@ const Index = () => {
         return acc;
       }, {});
 
-      const topSalonsData = Object.values(salonStats)
-        .sort((a, b) => b.revenue - a.revenue)
+      const topSalonsData = Object.entries(salonStats)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
         .slice(0, 5)
-        .map(s => ({
+        .map(([id, s]) => ({
+          salon_id: id === 'null' ? null : id,
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
