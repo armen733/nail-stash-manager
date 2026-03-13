@@ -126,6 +126,8 @@ const Index = () => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
+  const [selectedSalonName, setSelectedSalonName] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
