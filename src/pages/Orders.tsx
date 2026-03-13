@@ -128,6 +128,7 @@ interface OrderItem {
 
 const Orders = () => {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
