@@ -13,6 +13,7 @@ import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
+import { BottomNav } from "@/components/BottomNav";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
