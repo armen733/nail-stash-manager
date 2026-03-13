@@ -88,6 +88,7 @@ interface OrderItemWithProduct {
   product_id: string;
   products: {
     name: string;
+    sku?: string;
     image_url?: string | null;
     product_images?: { image_url: string }[];
   };
