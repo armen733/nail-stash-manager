@@ -1532,6 +1532,9 @@ const Orders = () => {
                           <div>
                             <span className="font-medium">{it.products?.name}</span>
                             <span className="text-muted-foreground ml-2">× {it.quantity}</span>
+                            {it.products?.sku && (
+                              <span className="text-xs text-muted-foreground/60 ml-2">({it.products.sku})</span>
+                            )}
                           </div>
                         </div>
                         <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
