@@ -173,25 +173,6 @@ const Index = () => {
     fetchDashboardData();
   }, [timePeriod]);
 
-  // Re-fetch when page becomes visible (e.g., navigating back after deleting orders)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchDashboardData();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Also re-fetch on window focus (covers tab switching and SPA navigation)
-    const handleFocus = () => fetchDashboardData();
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [timePeriod]);
-
   const fetchDashboardData = async () => {
     try {
       const now = new Date();
@@ -661,7 +642,7 @@ const Index = () => {
       </div>
 
       {/* Sales by Category - Pie Chart */}
-      <Card className="shadow-[var(--shadow-card)]">
+      <Card className="shadow-[var(--shadow-card)] content-auto">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base sm:text-lg">Sales by Category</CardTitle>
           <Button 

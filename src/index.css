@@ -105,12 +105,33 @@ All colors MUST be HSL.
 
   html {
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
     overflow-y: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* GPU-accelerated page transitions */
+  main {
+    will-change: scroll-position;
+  }
+
+  /* Off-screen content optimization — skip rendering until near viewport */
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
+  }
+
+  /* Smoother transitions globally */
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Safe area insets for iPhone notch/Dynamic Island */
