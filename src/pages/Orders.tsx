@@ -88,6 +88,7 @@ interface OrderItemWithProduct {
   product_id: string;
   products: {
     name: string;
+    sku?: string;
     image_url?: string | null;
     product_images?: { image_url: string }[];
   };
@@ -258,7 +259,7 @@ const Orders = () => {
   const fetchData = async () => {
     try {
       const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, product_id, products(name, image_url, product_images(image_url)))").order("order_date", { ascending: false }),
+        supabase.from("orders").select("*, salons(name), order_items(id, quantity, unit_price, product_id, products(name, sku, image_url, product_images(image_url)))").order("order_date", { ascending: false }),
         supabase.from("salons").select("id, name, phone, email, address").order("name"),
         supabase.from("products").select("id, name, price_usd, sku, stock_on_hand, image_url, category, bit_type, product_images(image_url)").order("name"),
         supabase.from("profiles").select("id, full_name, email, phone").order("full_name"),
@@ -1532,6 +1533,9 @@ const Orders = () => {
                           <div>
                             <span className="font-medium">{it.products?.name}</span>
                             <span className="text-muted-foreground ml-2">× {it.quantity}</span>
+                            {it.products?.sku && (
+                              <span className="text-xs text-muted-foreground/60 ml-2">({it.products.sku})</span>
+                            )}
                           </div>
                         </div>
                         <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
