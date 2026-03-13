@@ -195,15 +195,21 @@ const Orders = () => {
           table: 'orders'
         },
         async (payload) => {
-          console.log('New order received:', payload);
+          // Fetch just the new order with its relations instead of re-fetching everything
+          const { data: newOrder } = await supabase
+            .from("orders")
+            .select("*, salons(name), order_items(id, quantity, unit_price, product_id, products(name, sku, image_url, product_images(image_url)))")
+            .eq("id", (payload.new as any).id)
+            .single();
           
-          // Show toast notification
+          if (newOrder) {
+            setOrders(prev => [newOrder, ...prev]);
+          }
+          
           toast({
             title: "🔔 New Order Received!",
             description: "A new customer order has been placed.",
           });
-          
-          fetchData(); // Refresh orders list
         }
       )
       .on(
@@ -214,19 +220,23 @@ const Orders = () => {
           table: 'orders'
         },
         async (payload) => {
-          console.log('Order updated:', payload);
           const newStatus = (payload.new as any)?.status;
           const oldStatus = (payload.old as any)?.status;
+          const updatedId = (payload.new as any)?.id;
           
-          // Only show notification if status changed
+          // Update just the changed order in state
+          setOrders(prev => prev.map(order => 
+            order.id === updatedId 
+              ? { ...order, ...(payload.new as any) }
+              : order
+          ));
+          
           if (newStatus && newStatus !== oldStatus) {
             toast({
               title: "📦 Order Status Updated",
               description: `Order status changed to: ${newStatus}`,
             });
           }
-          
-          fetchData(); // Refresh orders list
         }
       )
       .subscribe();
