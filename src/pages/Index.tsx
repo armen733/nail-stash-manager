@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
