@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +29,9 @@ interface TopSalon {
 }
 
 interface TopProduct {
+  product_id: string;
   product_name: string;
+  sku: string;
   quantity_sold: number;
   revenue: number;
   image_url?: string;
@@ -122,6 +125,7 @@ const Index = () => {
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Custom active shape for pie chart hover effect
   const renderActiveShape = (props: any) => {
@@ -208,7 +212,7 @@ const Index = () => {
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("product_id, quantity, line_total, products(name, category, image_url)"),
+        supabase.from("order_items").select("product_id, quantity, line_total, products(name, sku, category, image_url)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
       ]);
@@ -267,13 +271,13 @@ const Index = () => {
       setTopSalons(topSalonsData);
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; image_url?: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
-        // Use products.image_url first, fallback to product_images table
+        const productSku = item.products?.sku || "";
         const productImage = item.products?.image_url || productImagesMap[productId];
         if (!acc[productId]) {
-          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, image_url: productImage };
+          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
         acc[productId].revenue += item.line_total || 0;
@@ -282,9 +286,11 @@ const Index = () => {
 
       const topProductsData = Object.values(productStats)
         .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 5)
+        .slice(0, 10)
         .map(p => ({
+          product_id: p.id,
           product_name: p.name,
+          sku: p.sku,
           quantity_sold: p.quantity,
           revenue: p.revenue,
           image_url: p.image_url,
@@ -1078,131 +1084,136 @@ const Index = () => {
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={async () => {
-                // Export as high-quality visual bar chart PNG with thumbnails (2x scale)
-                const scale = 2;
-                const baseWidth = 750;
-                const baseHeight = 500;
-                const canvas = document.createElement('canvas');
-                canvas.width = baseWidth * scale;
-                canvas.height = baseHeight * scale;
-                const ctx = canvas.getContext('2d')!;
-                ctx.scale(scale, scale);
-                
-                // Background
-                ctx.fillStyle = '#1a1a2e';
-                ctx.fillRect(0, 0, baseWidth, baseHeight);
-                
-                // Title
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText('Top Products', 40, 45);
-                
-                const barColors = ['hsl(145, 60%, 45%)', 'hsl(210, 70%, 50%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)'];
-                const maxQty = Math.max(...topProducts.map(p => p.quantity_sold));
-                const barHeight = 50;
-                const barGap = 20;
-                const chartStartY = 80;
-                const chartWidth = 420;
-                const chartStartX = 260;
-                const thumbSize = 40;
-                
-                // Load image with timeout to ensure it loads
-                const loadImage = (url: string): Promise<HTMLImageElement | null> => {
-                  return new Promise((resolve) => {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
-                    img.onload = () => {
-                      clearTimeout(timeout);
-                      resolve(img);
-                    };
-                    img.onerror = () => {
-                      clearTimeout(timeout);
-                      resolve(null);
-                    };
-                    img.src = url;
-                  });
-                };
-                
-                // Load all images with a small delay between each to avoid race conditions
-                const images: (HTMLImageElement | null)[] = [];
-                for (const product of topProducts) {
-                  if (product.image_url) {
-                    const img = await loadImage(product.image_url);
-                    images.push(img);
-                  } else {
-                    images.push(null);
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  const csvHeader = "SKU,Product Name,Units Sold,Revenue\n";
+                  const csvRows = topProducts.map(p => 
+                    `"${p.sku}","${p.product_name}",${p.quantity_sold},${p.revenue.toFixed(2)}`
+                  ).join('\n');
+                  const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
+                  const link = document.createElement('a');
+                  link.download = `top-products-${new Date().toISOString().split('T')[0]}.csv`;
+                  link.href = URL.createObjectURL(blob);
+                  link.click();
+                  URL.revokeObjectURL(link.href);
+                  toast({ title: "Success", description: "Top products exported as CSV" });
+                }}
+                disabled={topProducts.length === 0}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                CSV
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={async () => {
+                  const scale = 2;
+                  const baseWidth = 750;
+                  const baseHeight = 500;
+                  const canvas = document.createElement('canvas');
+                  canvas.width = baseWidth * scale;
+                  canvas.height = baseHeight * scale;
+                  const ctx = canvas.getContext('2d')!;
+                  ctx.scale(scale, scale);
+                  
+                  ctx.fillStyle = '#1a1a2e';
+                  ctx.fillRect(0, 0, baseWidth, baseHeight);
+                  
+                  ctx.fillStyle = '#ffffff';
+                  ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+                  ctx.textAlign = 'left';
+                  ctx.fillText('Top Products', 40, 45);
+                  
+                  const barColors = ['hsl(145, 60%, 45%)', 'hsl(210, 70%, 50%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)'];
+                  const maxQty = Math.max(...topProducts.map(p => p.quantity_sold));
+                  const barHeight = 50;
+                  const barGap = 20;
+                  const chartStartY = 80;
+                  const chartWidth = 420;
+                  const chartStartX = 260;
+                  const thumbSize = 40;
+                  
+                  const loadImage = (url: string): Promise<HTMLImageElement | null> => {
+                    return new Promise((resolve) => {
+                      const img = new Image();
+                      img.crossOrigin = 'anonymous';
+                      const timeout = setTimeout(() => resolve(null), 5000);
+                      img.onload = () => { clearTimeout(timeout); resolve(img); };
+                      img.onerror = () => { clearTimeout(timeout); resolve(null); };
+                      img.src = url;
+                    });
+                  };
+                  
+                  const images: (HTMLImageElement | null)[] = [];
+                  for (const product of topProducts) {
+                    if (product.image_url) {
+                      const img = await loadImage(product.image_url);
+                      images.push(img);
+                    } else {
+                      images.push(null);
+                    }
                   }
-                }
-                
-                
-                topProducts.forEach((product, idx) => {
-                  const y = chartStartY + idx * (barHeight + barGap);
-                  const barWidth = (product.quantity_sold / maxQty) * chartWidth;
                   
-                  // Draw thumbnail
-                  const thumbX = 40;
-                  const thumbY = y + (barHeight - thumbSize) / 2;
-                  ctx.fillStyle = '#2a2a4a';
-                  ctx.beginPath();
-                  ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
-                  ctx.fill();
-                  
-                  if (images[idx]) {
-                    ctx.save();
+                  topProducts.forEach((product, idx) => {
+                    const y = chartStartY + idx * (barHeight + barGap);
+                    const barWidth = (product.quantity_sold / maxQty) * chartWidth;
+                    
+                    const thumbX = 40;
+                    const thumbY = y + (barHeight - thumbSize) / 2;
+                    ctx.fillStyle = '#2a2a4a';
                     ctx.beginPath();
                     ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
-                    ctx.clip();
-                    ctx.drawImage(images[idx]!, thumbX, thumbY, thumbSize, thumbSize);
-                    ctx.restore();
-                  } else {
-                    // Placeholder icon
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.font = '16px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 5);
-                  }
+                    ctx.fill();
+                    
+                    if (images[idx]) {
+                      ctx.save();
+                      ctx.beginPath();
+                      ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 6);
+                      ctx.clip();
+                      ctx.drawImage(images[idx]!, thumbX, thumbY, thumbSize, thumbSize);
+                      ctx.restore();
+                    } else {
+                      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                      ctx.font = '16px sans-serif';
+                      ctx.textAlign = 'center';
+                      ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 5);
+                    }
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '14px sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(product.product_name.substring(0, 22), chartStartX - 15, y + barHeight / 2 + 5);
+                    
+                    ctx.fillStyle = barColors[idx % barColors.length];
+                    ctx.beginPath();
+                    ctx.roundRect(chartStartX, y, barWidth, barHeight, 4);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 14px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${product.quantity_sold} sold`, chartStartX + barWidth + 10, y + barHeight / 2 - 5);
+                    ctx.font = '12px sans-serif';
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.fillText(`$${product.revenue.toFixed(0)}`, chartStartX + barWidth + 10, y + barHeight / 2 + 12);
+                  });
                   
-                  // Product name
-                  ctx.fillStyle = '#ffffff';
-                  ctx.font = '14px sans-serif';
-                  ctx.textAlign = 'right';
-                  ctx.fillText(product.product_name.substring(0, 22), chartStartX - 15, y + barHeight / 2 + 5);
+                  const link = document.createElement('a');
+                  link.download = `top-products-${new Date().toISOString().split('T')[0]}.png`;
+                  link.href = canvas.toDataURL('image/png');
+                  link.click();
                   
-                  // Bar
-                  ctx.fillStyle = barColors[idx % barColors.length];
-                  ctx.beginPath();
-                  ctx.roundRect(chartStartX, y, barWidth, barHeight, 4);
-                  ctx.fill();
-                  
-                  // Quantity and revenue on bar
-                  ctx.fillStyle = '#ffffff';
-                  ctx.font = 'bold 14px sans-serif';
-                  ctx.textAlign = 'left';
-                  ctx.fillText(`${product.quantity_sold} sold`, chartStartX + barWidth + 10, y + barHeight / 2 - 5);
-                  ctx.font = '12px sans-serif';
-                  ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                  ctx.fillText(`$${product.revenue.toFixed(0)}`, chartStartX + barWidth + 10, y + barHeight / 2 + 12);
-                });
-                
-                // Download
-                const link = document.createElement('a');
-                link.download = `top-products-${new Date().toISOString().split('T')[0]}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                toast({ title: "Success", description: "Top products chart exported as image" });
-              }}
-              disabled={topProducts.length === 0}
-            >
-              <Download className="h-4 w-4 mr-1" />
-              Export
-            </Button>
+                  toast({ title: "Success", description: "Top products chart exported as image" });
+                }}
+                disabled={topProducts.length === 0}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                PNG
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {loading ? (
@@ -1217,10 +1228,19 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                    onClick={() => navigate(`/products?search=${encodeURIComponent(product.sku || product.product_name)}`)}
+                  >
                     <div>
                       <p className="font-medium">{product.product_name}</p>
-                      <p className="text-sm text-muted-foreground">{product.quantity_sold} sold</p>
+                      <div className="flex items-center gap-2">
+                        {product.sku && (
+                          <span className="text-xs text-muted-foreground/60 font-mono">{product.sku}</span>
+                        )}
+                        <span className="text-sm text-muted-foreground">{product.quantity_sold} sold</span>
+                      </div>
                     </div>
                     <p className="font-semibold text-primary">${product.revenue.toFixed(2)}</p>
                   </div>
