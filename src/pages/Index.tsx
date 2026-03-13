@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
@@ -23,6 +24,7 @@ interface Stats {
 }
 
 interface TopSalon {
+  salon_id: string | null;
   salon_name: string;
   order_count: number;
   total_revenue: number;
@@ -124,6 +126,8 @@ const Index = () => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
+  const [selectedSalonName, setSelectedSalonName] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -260,10 +264,11 @@ const Index = () => {
         return acc;
       }, {});
 
-      const topSalonsData = Object.values(salonStats)
-        .sort((a, b) => b.revenue - a.revenue)
+      const topSalonsData = Object.entries(salonStats)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
         .slice(0, 5)
-        .map(s => ({
+        .map(([id, s]) => ({
+          salon_id: id === 'null' ? null : id,
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
@@ -1068,7 +1073,16 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {topSalons.map((salon, index) => (
-                  <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between border-b pb-2 last:border-0 ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors' : ''}`}
+                    onClick={() => {
+                      if (salon.salon_id) {
+                        setSelectedSalonId(salon.salon_id);
+                        setSelectedSalonName(salon.salon_name);
+                      }
+                    }}
+                  >
                     <div>
                       <p className="font-medium">{salon.salon_name}</p>
                       <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
@@ -1555,6 +1569,13 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
+
+      <SalonOrderHistory
+        salonId={selectedSalonId}
+        salonName={selectedSalonName}
+        open={!!selectedSalonId}
+        onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
+      />
     </div>
   );
 };
