@@ -13,6 +13,7 @@ import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
+import { BottomNav } from "@/components/BottomNav";
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
@@ -75,7 +76,10 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="h-screen flex w-full safe-left safe-right overflow-hidden">
-      <AppSidebar />
+      {/* Hide sidebar on mobile — use bottom nav instead */}
+      <div className="hidden md:block">
+        <AppSidebar />
+      </div>
       
       {/* Mobile backdrop overlay */}
       {isMobile && openMobile && (
@@ -87,21 +91,24 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
       )}
       
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <header className="border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 py-6 pt-[max(env(safe-area-inset-top,0px),24px)]">
-          <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2" />
+        <header className="border-b bg-card flex items-center justify-center px-4 relative flex-shrink-0 sticky top-0 z-50 py-3 md:py-6 pt-[max(env(safe-area-inset-top,0px),12px)] md:pt-[max(env(safe-area-inset-top,0px),24px)]">
+          <SidebarTrigger className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex" />
           <img 
             src={logo} 
             alt="NÉRA Beauty" 
-            className="h-20 sm:h-24 w-auto object-contain"
+            className="h-10 sm:h-14 md:h-20 lg:h-24 w-auto object-contain"
             style={{ background: 'transparent' }}
           />
         </header>
-        <div className="flex-1 p-4 sm:p-6 safe-bottom">
+        <div className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6 safe-bottom">
           <Suspense fallback={<PageLoader />}>
             {children}
           </Suspense>
         </div>
       </main>
+      
+      {/* Bottom navigation for mobile */}
+      <BottomNav />
     </div>
   );
 };
