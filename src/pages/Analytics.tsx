@@ -76,6 +76,7 @@ const Analytics = () => {
   const [categorySales, setCategorySales] = useState<CategorySales[]>([]);
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
+  const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [loading, setLoading] = useState(true);
