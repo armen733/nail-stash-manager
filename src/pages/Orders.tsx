@@ -1685,6 +1685,66 @@ const Orders = () => {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <Button className="h-11 min-h-[44px] flex-1 sm:flex-none" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Order
+                </Button>
+                <Popover open={isTaxSettingsOpen} onOpenChange={(open) => {
+                  setIsTaxSettingsOpen(open);
+                  if (open) setEditTaxRate(String(taxSettings?.tax_rate ?? 0));
+                }}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-11 min-h-[44px] gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span className="hidden sm:inline">Tax: {taxRate}%</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 z-50">
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm">Sales Tax Rate</h4>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          max="100"
+                          value={editTaxRate}
+                          onChange={(e) => setEditTaxRate(e.target.value)}
+                          className="h-9"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground">Active</Label>
+                        <Switch
+                          checked={taxSettings?.is_active ?? true}
+                          onCheckedChange={async (checked) => {
+                            const result = await updateTaxSettings({ is_active: checked });
+                            if (!result?.error) toast({ title: "Tax " + (checked ? "enabled" : "disabled") });
+                          }}
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        onClick={async () => {
+                          const rate = parseFloat(editTaxRate);
+                          if (isNaN(rate) || rate < 0 || rate > 100) {
+                            toast({ title: "Invalid rate", variant: "destructive" });
+                            return;
+                          }
+                          const result = await updateTaxSettings({ tax_rate: rate });
+                          if (!result?.error) {
+                            toast({ title: "Tax rate updated to " + rate + "%" });
+                            setIsTaxSettingsOpen(false);
+                          }
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 {selectedOrders.size > 0 && (
                   <Button 
                     variant="default" 
