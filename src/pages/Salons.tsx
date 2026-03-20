@@ -222,7 +222,7 @@ const Salons = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salons</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients · <span className="font-semibold text-foreground">{salons.length}</span> registered</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
