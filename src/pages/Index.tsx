@@ -283,6 +283,7 @@ const Index = () => {
           sku: p.sku,
           quantity_sold: p.quantity,
           revenue: p.revenue,
+          supplier_sku: p.supplier_sku,
           image_url: p.image_url,
         }));
       setTopProducts(topProductsData);
