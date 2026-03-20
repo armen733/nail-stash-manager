@@ -36,6 +36,7 @@ interface TopProduct {
   sku: string;
   quantity_sold: number;
   revenue: number;
+  supplier_sku?: string;
   image_url?: string;
 }
 
