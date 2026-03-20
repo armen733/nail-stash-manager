@@ -60,6 +60,8 @@ import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 
 interface Order {
   id: string;
