@@ -1589,12 +1589,30 @@ const Orders = () => {
               </div>
 
               {/* Notes */}
-              {viewOrder.notes && (
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Notes</h3>
-                  <div className="bg-muted/50 rounded-lg p-3 text-sm">{viewOrder.notes}</div>
-                </div>
-              )}
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Notes</h3>
+                <textarea
+                  className="w-full bg-muted/50 rounded-lg p-3 text-sm border-0 resize-none focus:ring-1 focus:ring-primary outline-none min-h-[60px]"
+                  defaultValue={viewOrder.notes || ""}
+                  placeholder="Add notes..."
+                  onBlur={async (e) => {
+                    const newNotes = e.target.value.trim();
+                    if (newNotes === (viewOrder.notes || "")) return;
+                    try {
+                      const { error } = await supabase
+                        .from("orders")
+                        .update({ notes: newNotes || null })
+                        .eq("id", viewOrder.id);
+                      if (error) throw error;
+                      setViewOrder({ ...viewOrder, notes: newNotes || null });
+                      fetchData();
+                      toast({ title: "Updated", description: "Notes saved" });
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                />
+              </div>
 
               {/* Totals */}
               <div className="border-t pt-4">
