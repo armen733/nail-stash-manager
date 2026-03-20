@@ -198,7 +198,8 @@ const Analytics = () => {
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select(`
-          id, created_at, total, tax, profile_id, customer_email, customer_name, status,
+          id, created_at, total, tax, profile_id, customer_email, customer_name, status, salon_id,
+          salons (name),
           order_items (
             quantity, unit_price, line_total,
             products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand)
