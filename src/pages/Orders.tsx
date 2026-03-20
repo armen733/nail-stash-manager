@@ -1509,14 +1509,44 @@ const Orders = () => {
               </div>
 
               {/* Salon Info */}
-              {viewOrder.salons?.name && (
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Salon</h3>
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <div className="font-medium">{viewOrder.salons.name}</div>
-                  </div>
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Salon</h3>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={viewOrder.salon_id || "none"}
+                    onValueChange={async (value) => {
+                      const newSalonId = value === "none" ? null : value;
+                      try {
+                        const { error } = await supabase
+                          .from("orders")
+                          .update({ salon_id: newSalonId })
+                          .eq("id", viewOrder.id);
+                        if (error) throw error;
+                        const selectedSalon = salons.find(s => s.id === newSalonId);
+                        setViewOrder({
+                          ...viewOrder,
+                          salon_id: newSalonId,
+                          salons: selectedSalon ? { name: selectedSalon.name } : null,
+                        });
+                        fetchData();
+                        toast({ title: "Updated", description: `Salon ${selectedSalon ? `set to ${selectedSalon.name}` : 'removed'}` });
+                      } catch (err: any) {
+                        toast({ title: "Error", description: err.message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select salon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No salon</SelectItem>
+                      {salons.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+              </div>
 
               {/* Order Items */}
               <div className="border-t pt-4">
