@@ -1040,8 +1040,14 @@ const Index = () => {
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base sm:text-lg">Top Salons</CardTitle>
+            {allSalons.length > 5 && (
+              <Button variant="ghost" size="sm" onClick={() => setShowAllSalons(true)} className="text-xs text-primary">
+                View All ({allSalons.length})
+                <ChevronRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {loading ? (
