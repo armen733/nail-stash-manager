@@ -60,6 +60,8 @@ import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 
 interface Order {
   id: string;
@@ -166,6 +168,7 @@ const Orders = () => {
   });
 
   const [showNewSalonForm, setShowNewSalonForm] = useState(false);
+  const [salonComboOpen, setSalonComboOpen] = useState(false);
   const [isCreatingSalon, setIsCreatingSalon] = useState(false);
   const [newSalonData, setNewSalonData] = useState({
     name: "",
@@ -1026,35 +1029,64 @@ const Orders = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="salon_id">Salon</Label>
-                  <Select 
-                    value={formData.salon_id || "none"} 
-                    onValueChange={(value) => {
-                      if (value === "new") {
-                        setShowNewSalonForm(true);
-                      } else {
-                        setFormData({ ...formData, salon_id: value === "none" ? "" : value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select salon (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">No salon</span>
-                      </SelectItem>
-                      <SelectItem value="new">
-                        <span className="flex items-center gap-2 text-primary">
-                          <Plus className="h-4 w-4" /> Add New Salon
-                        </span>
-                      </SelectItem>
-                      {salons.map((salon) => (
-                        <SelectItem key={salon.id} value={salon.id}>
-                          {salon.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={salonComboOpen} onOpenChange={setSalonComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={salonComboOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.salon_id
+                          ? salons.find(s => s.id === formData.salon_id)?.name || "No salon"
+                          : "No salon"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search salons..." />
+                        <CommandList>
+                          <CommandEmpty>No salon found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="no-salon"
+                              onSelect={() => {
+                                setFormData({ ...formData, salon_id: "" });
+                                setSalonComboOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", !formData.salon_id ? "opacity-100" : "opacity-0")} />
+                              <span className="text-muted-foreground">No salon</span>
+                            </CommandItem>
+                            <CommandItem
+                              value="add-new-salon"
+                              onSelect={() => {
+                                setShowNewSalonForm(true);
+                                setSalonComboOpen(false);
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4 text-primary" />
+                              <span className="text-primary">Add New Salon</span>
+                            </CommandItem>
+                            {salons.map((salon) => (
+                              <CommandItem
+                                key={salon.id}
+                                value={salon.name}
+                                onSelect={() => {
+                                  setFormData({ ...formData, salon_id: salon.id });
+                                  setSalonComboOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", formData.salon_id === salon.id ? "opacity-100" : "opacity-0")} />
+                                {salon.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
