@@ -345,6 +345,23 @@ const Analytics = () => {
       setTopProducts(Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10));
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5));
 
+      // Calculate salon stats
+      const salonMap: Record<string, { name: string; revenue: number; orderCount: number }> = {};
+      orders?.forEach(order => {
+        const salonName = (order as any).salons?.name || "Walk-in / Direct";
+        const key = (order as any).salon_id || "direct";
+        if (!salonMap[key]) {
+          salonMap[key] = { name: salonName, revenue: 0, orderCount: 0 };
+        }
+        salonMap[key].revenue += order.total || 0;
+        salonMap[key].orderCount += 1;
+      });
+      setSalonStats(
+        Object.values(salonMap)
+          .map(s => ({ ...s, avgOrder: s.orderCount > 0 ? s.revenue / s.orderCount : 0 }))
+          .sort((a, b) => b.revenue - a.revenue)
+      );
+
       // Fetch slow-moving products (low sales, high stock)
       const { data: allProducts } = await supabase
         .from("products")
