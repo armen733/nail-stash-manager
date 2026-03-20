@@ -36,6 +36,7 @@ interface TopProduct {
   sku: string;
   quantity_sold: number;
   revenue: number;
+  supplier_sku?: string;
   image_url?: string;
 }
 
@@ -199,7 +200,7 @@ const Index = () => {
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("product_id, quantity, line_total, products(name, sku, category, image_url)"),
+        supabase.from("order_items").select("product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
       ]);
@@ -259,13 +260,14 @@ const Index = () => {
       setTopSalons(allSalonsData.slice(0, 5));
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; image_url?: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
         const productSku = item.products?.sku || "";
+        const productSupplierSku = item.products?.supplier_sku || "";
         const productImage = item.products?.image_url || productImagesMap[productId];
         if (!acc[productId]) {
-          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, image_url: productImage };
+          acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, supplier_sku: productSupplierSku, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
         acc[productId].revenue += item.line_total || 0;
@@ -281,6 +283,7 @@ const Index = () => {
           sku: p.sku,
           quantity_sold: p.quantity,
           revenue: p.revenue,
+          supplier_sku: p.supplier_sku,
           image_url: p.image_url,
         }));
       setTopProducts(topProductsData);
@@ -1092,9 +1095,9 @@ const Index = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
-                  const csvHeader = "SKU,Product Name,Units Sold,Revenue\n";
+                  const csvHeader = "SKU,Supplier SKU,Product Name,Units Sold,Revenue\n";
                   const csvRows = topProducts.map(p => 
-                    `"${p.sku}","${p.product_name}",${p.quantity_sold},${p.revenue.toFixed(2)}`
+                    `"${p.sku}","${p.supplier_sku || ''}","${p.product_name}",${p.quantity_sold},${p.revenue.toFixed(2)}`
                   ).join('\n');
                   const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
                   const link = document.createElement('a');
