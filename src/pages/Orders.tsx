@@ -1747,10 +1747,6 @@ const Orders = () => {
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button className="h-11 min-h-[44px] flex-1 sm:flex-none" onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Order
-                </Button>
                 {selectedOrders.size > 0 && (
                   <Button 
                     variant="default" 
