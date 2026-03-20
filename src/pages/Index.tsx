@@ -109,6 +109,8 @@ const Index = () => {
     totalRevenue: 0,
   });
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
+  const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
+  const [showAllSalons, setShowAllSalons] = useState(false);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
@@ -245,16 +247,16 @@ const Index = () => {
         return acc;
       }, {});
 
-      const topSalonsData = Object.entries(salonStats)
+      const allSalonsData = Object.entries(salonStats)
         .sort((a, b) => b[1].revenue - a[1].revenue)
-        .slice(0, 5)
         .map(([id, s]) => ({
           salon_id: id === 'null' ? null : id,
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
         }));
-      setTopSalons(topSalonsData);
+      setAllSalons(allSalonsData);
+      setTopSalons(allSalonsData.slice(0, 5));
 
       // Calculate top products
       const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; image_url?: string }>, item) => {
@@ -1038,8 +1040,14 @@ const Index = () => {
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base sm:text-lg">Top Salons</CardTitle>
+            {allSalons.length > 5 && (
+              <Button variant="ghost" size="sm" onClick={() => setShowAllSalons(true)} className="text-xs text-primary">
+                View All ({allSalons.length})
+                <ChevronRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {loading ? (
@@ -1557,6 +1565,40 @@ const Index = () => {
         open={!!selectedSalonId}
         onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
       />
+
+      <Sheet open={showAllSalons} onOpenChange={setShowAllSalons}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>All Salons Ranking</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+            <div className="space-y-2 pr-4">
+              {allSalons.map((salon, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                  onClick={() => {
+                    if (salon.salon_id) {
+                      setShowAllSalons(false);
+                      setSelectedSalonId(salon.salon_id);
+                      setSelectedSalonName(salon.salon_name);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
+                    <div>
+                      <p className="font-medium">{salon.salon_name}</p>
+                      <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
