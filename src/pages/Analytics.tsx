@@ -1714,6 +1714,95 @@ const Analytics = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Salons Tab */}
+        <TabsContent value="salons" className="mt-4 space-y-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">{salonStats.length}</div>
+                <p className="text-xs text-muted-foreground">Active Salons</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">${salonStats.reduce((s, x) => s + x.revenue, 0).toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Total Salon Revenue</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">{salonStats.reduce((s, x) => s + x.orderCount, 0)}</div>
+                <p className="text-xs text-muted-foreground">Total Orders</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Revenue by Salon
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              ) : salonStats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground">No salon data for this period</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {salonStats.map((salon, index) => {
+                    const maxRevenue = salonStats[0]?.revenue || 1;
+                    const percentage = (salon.revenue / maxRevenue) * 100;
+                    return (
+                      <div key={index} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs w-6 h-6 flex items-center justify-center rounded-full p-0">
+                              {index + 1}
+                            </Badge>
+                            <span className="text-sm font-medium truncate max-w-[150px] sm:max-w-none">{salon.name}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-semibold text-primary">${salon.revenue.toFixed(2)}</span>
+                            <span className="text-xs text-muted-foreground ml-2">({salon.orderCount} orders)</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary rounded-full h-2 transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {salonStats.length > 0 && (
+            <Card className="shadow-[var(--shadow-card)]">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Salon Map
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="w-full" onClick={() => setShowMap(true)}>
+                  <MapPin className="h-4 w-4 mr-2" />
+                  View Salon Locations
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
       {/* Category Drill-Down Sheet */}
       <Sheet open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
