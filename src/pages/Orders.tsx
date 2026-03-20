@@ -810,7 +810,7 @@ const Orders = () => {
   const printPackingSlip = (order: Order) => {
     const itemsHtml = (order.order_items || []).map(item => `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.products?.name || 'Unknown'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.products?.name || 'Unknown'}${item.products?.sku ? `<br><span style="font-size:11px;color:#888;">${item.products.sku}</span>` : ''}</td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${item.unit_price.toFixed(2)}</td>
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">$${(item.quantity * item.unit_price).toFixed(2)}</td>
