@@ -1095,9 +1095,9 @@ const Index = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
-                  const csvHeader = "SKU,Product Name,Units Sold,Revenue\n";
+                  const csvHeader = "SKU,Supplier SKU,Product Name,Units Sold,Revenue\n";
                   const csvRows = topProducts.map(p => 
-                    `"${p.sku}","${p.product_name}",${p.quantity_sold},${p.revenue.toFixed(2)}`
+                    `"${p.sku}","${p.supplier_sku || ''}","${p.product_name}",${p.quantity_sold},${p.revenue.toFixed(2)}`
                   ).join('\n');
                   const blob = new Blob([csvHeader + csvRows], { type: 'text/csv' });
                   const link = document.createElement('a');
