@@ -1232,10 +1232,11 @@ const Analytics = () => {
 
       {/* Tabs for different analytics sections */}
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
           <TabsTrigger value="sales" className="text-xs sm:text-sm py-2">Sales</TabsTrigger>
           <TabsTrigger value="customers" className="text-xs sm:text-sm py-2">Customers</TabsTrigger>
           <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2">Inventory</TabsTrigger>
+          <TabsTrigger value="salons" className="text-xs sm:text-sm py-2">Salons</TabsTrigger>
         </TabsList>
 
         {/* Sales Tab */}
