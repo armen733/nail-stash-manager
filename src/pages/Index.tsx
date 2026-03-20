@@ -1565,6 +1565,40 @@ const Index = () => {
         open={!!selectedSalonId}
         onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
       />
+
+      <Sheet open={showAllSalons} onOpenChange={setShowAllSalons}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>All Salons Ranking</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+            <div className="space-y-2 pr-4">
+              {allSalons.map((salon, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                  onClick={() => {
+                    if (salon.salon_id) {
+                      setShowAllSalons(false);
+                      setSelectedSalonId(salon.salon_id);
+                      setSelectedSalonName(salon.salon_name);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
+                    <div>
+                      <p className="font-medium">{salon.salon_name}</p>
+                      <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
