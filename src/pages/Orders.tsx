@@ -168,6 +168,7 @@ const Orders = () => {
   });
 
   const [showNewSalonForm, setShowNewSalonForm] = useState(false);
+  const [salonComboOpen, setSalonComboOpen] = useState(false);
   const [isCreatingSalon, setIsCreatingSalon] = useState(false);
   const [newSalonData, setNewSalonData] = useState({
     name: "",
