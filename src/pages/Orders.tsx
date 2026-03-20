@@ -817,30 +817,20 @@ const Orders = () => {
       </tr>
     `).join('');
 
-    // Create an iframe for printing (better mobile support)
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = 'none';
-    document.body.appendChild(printFrame);
-
-    const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (!printDocument) {
-      toast({ title: "Error", description: "Unable to print", variant: "destructive" });
-      document.body.removeChild(printFrame);
+    // Use window.open for better mobile compatibility
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ title: "Error", description: "Please allow popups to print", variant: "destructive" });
       return;
     }
 
-    printDocument.write(`
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Packing Slip - Order ${order.id.slice(0, 8)}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #000; background: #fff; }
           .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; }
           .logo { font-size: 24px; font-weight: bold; }
           .order-info { text-align: right; }
@@ -870,7 +860,7 @@ const Orders = () => {
       </head>
       <body>
         <div class="header">
-          <div class="logo"><img src="/images/nera-logo-packing.png" alt="NERA Beauty" style="height: 60px; width: auto;" /></div>
+          <div class="logo"><img src="${window.location.origin}/images/nera-logo-packing.png" alt="NERA Beauty" style="height: 60px; width: auto;" onerror="this.style.display='none'" /></div>
           <div class="order-info">
             <div class="order-id">Order #${order.id.slice(0, 8).toUpperCase()}</div>
             <div class="date">${new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
@@ -909,21 +899,18 @@ const Orders = () => {
         </div>
 
         ${order.notes ? `<div class="notes"><h3>Notes</h3><p>${order.notes}</p></div>` : ''}
+        
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+          };
+        </script>
       </body>
       </html>
-    `);
-    printDocument.close();
+    `;
 
-    // Wait for content to load then print
-    printFrame.onload = () => {
-      setTimeout(() => {
-        printFrame.contentWindow?.print();
-        // Remove iframe after print dialog closes
-        setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
-      }, 250);
-    };
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   const getStatusBadge = (status: string) => {
