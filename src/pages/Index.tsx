@@ -247,16 +247,16 @@ const Index = () => {
         return acc;
       }, {});
 
-      const topSalonsData = Object.entries(salonStats)
+      const allSalonsData = Object.entries(salonStats)
         .sort((a, b) => b[1].revenue - a[1].revenue)
-        .slice(0, 5)
         .map(([id, s]) => ({
           salon_id: id === 'null' ? null : id,
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
         }));
-      setTopSalons(topSalonsData);
+      setAllSalons(allSalonsData);
+      setTopSalons(allSalonsData.slice(0, 5));
 
       // Calculate top products
       const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; image_url?: string }>, item) => {
