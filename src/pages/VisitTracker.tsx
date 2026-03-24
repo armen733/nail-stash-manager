@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Search, MapPin, Clock, AlertTriangle, CheckCircle, Plus, CalendarDays, Building2, ShoppingCart, Eye } from "lucide-react";
 import { formatDistanceToNow, differenceInDays, format } from "date-fns";
 
