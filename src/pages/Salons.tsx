@@ -90,6 +90,19 @@ const Salons = () => {
     fetchSalons();
   }, []);
 
+  // Restore scroll position when returning from salon profile
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem('salons_scrollY');
+    if (saved) {
+      const main = document.querySelector('main');
+      if (main) {
+        requestAnimationFrame(() => { main.scrollTop = Number(saved); });
+      }
+      sessionStorage.removeItem('salons_scrollY');
+    }
+  }, [loading]);
+
   const fetchSalons = async () => {
     try {
       const { data, error } = await supabase
@@ -383,7 +396,11 @@ const Salons = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredSalons.map((salon) => (
-                <Card key={salon.id} className="p-3 sm:p-4 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate(`/salons/${salon.id}`)}>
+                <Card key={salon.id} className="p-3 sm:p-4 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => {
+                  const main = document.querySelector('main');
+                  if (main) sessionStorage.setItem('salons_scrollY', String(main.scrollTop));
+                  navigate(`/salons/${salon.id}`);
+                }}>
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Building2 className="h-5 w-5 text-primary flex-shrink-0" />

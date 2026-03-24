@@ -136,8 +136,28 @@ export default function VisitTracker() {
   };
 
   const openSalonProfile = (salon: SalonWithVisit) => {
+    // Save scroll position of main container before navigating
+    const main = document.querySelector('main');
+    if (main) {
+      sessionStorage.setItem('visitTracker_scrollY', String(main.scrollTop));
+    }
     navigate(`/salons/${salon.id}`);
   };
+
+  // Restore scroll position when data finishes loading
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem('visitTracker_scrollY');
+    if (saved) {
+      const main = document.querySelector('main');
+      if (main) {
+        requestAnimationFrame(() => {
+          main.scrollTop = Number(saved);
+        });
+      }
+      sessionStorage.removeItem('visitTracker_scrollY');
+    }
+  }, [loading]);
 
   // Calendar data
   const calendarDays = useMemo(() => {
