@@ -16,7 +16,7 @@ const VisitStatusMap = lazy(() => import("@/components/visits/VisitStatusMap"));
 import {
   Search, MapPin, AlertTriangle, CheckCircle, Plus,
   Building2, ShoppingCart, ChevronLeft, ChevronRight,
-  CalendarDays, Map as MapIcon,
+  CalendarDays, Map as MapIcon, Loader2,
 } from "lucide-react";
 import {
   differenceInDays, format, startOfMonth, endOfMonth,
