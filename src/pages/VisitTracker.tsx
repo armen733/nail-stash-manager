@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { LazyAnalyticsMap } from "@/components/lazy";
 import {
   Search, MapPin, AlertTriangle, CheckCircle, Plus,
   Building2, ShoppingCart, ChevronLeft, ChevronRight,
-  CalendarDays,
+  CalendarDays, Map as MapIcon,
 } from "lucide-react";
 import {
   differenceInDays, format, startOfMonth, endOfMonth,
@@ -60,6 +61,7 @@ export default function VisitTracker() {
   const [orderHistorySalonId, setOrderHistorySalonId] = useState<string | null>(null);
   const [orderHistorySalonName, setOrderHistorySalonName] = useState("");
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -227,6 +229,7 @@ export default function VisitTracker() {
         <TabsList>
           <TabsTrigger value="calendar"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendar</TabsTrigger>
           <TabsTrigger value="salons"><Building2 className="h-3.5 w-3.5 mr-1.5" />Salons</TabsTrigger>
+          <TabsTrigger value="map" onClick={() => setMapOpen(true)}><MapIcon className="h-3.5 w-3.5 mr-1.5" />Map</TabsTrigger>
         </TabsList>
 
         {/* ===== CALENDAR TAB ===== */}
@@ -466,6 +469,12 @@ export default function VisitTracker() {
         salonName={orderHistorySalonName}
         open={orderHistoryOpen}
         onOpenChange={setOrderHistoryOpen}
+      />
+
+      {/* Salon Map */}
+      <LazyAnalyticsMap
+        open={mapOpen}
+        onOpenChange={setMapOpen}
       />
     </div>
   );
