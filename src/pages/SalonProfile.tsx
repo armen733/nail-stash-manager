@@ -4,10 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { toast } from "sonner";
 import {
-  ArrowLeft, Building2, Phone, Mail, MapPin, ShoppingCart,
-  DollarSign, Package, CalendarDays, Clock, TrendingUp, AlertTriangle,
+  ArrowLeft, Phone, Mail, MapPin, ShoppingCart,
+  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil,
 } from "lucide-react";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -37,6 +41,7 @@ interface ProductInfo {
   name: string;
   sku: string;
   image_url: string | null;
+  first_image: string | null;
 }
 
 interface VisitRecord {
@@ -54,6 +59,11 @@ export default function SalonProfile() {
   const [visits, setVisits] = useState<VisitRecord[]>([]);
   const [products, setProducts] = useState<Map<string, ProductInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "", contact_name: "", phone: "", email: "", address: "", city: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -70,13 +80,27 @@ export default function SalonProfile() {
       setOrders(ordersData);
       setVisits((visitsRes.data || []) as VisitRecord[]);
 
-      // Fetch product info for all ordered products
+      // Fetch product info + images for all ordered products
       const productIds = new Set<string>();
       ordersData.forEach(o => o.order_items?.forEach(i => productIds.add(i.product_id)));
       if (productIds.size > 0) {
-        const { data: prods } = await supabase.from("products").select("id, name, sku, image_url").in("id", Array.from(productIds));
+        const idsArr = Array.from(productIds);
+        const [{ data: prods }, { data: images }] = await Promise.all([
+          supabase.from("products").select("id, name, sku, image_url").in("id", idsArr),
+          supabase.from("product_images").select("product_id, image_url, display_order").in("product_id", idsArr).order("display_order", { ascending: true }),
+        ]);
+        // Build a map of first image per product
+        const firstImageMap = new Map<string, string>();
+        (images || []).forEach(img => {
+          if (!firstImageMap.has(img.product_id)) {
+            firstImageMap.set(img.product_id, img.image_url);
+          }
+        });
         const map = new Map<string, ProductInfo>();
-        (prods || []).forEach(p => map.set(p.id, p));
+        (prods || []).forEach(p => map.set(p.id, {
+          ...p,
+          first_image: firstImageMap.get(p.id) || p.image_url || null,
+        }));
         setProducts(map);
       }
       setLoading(false);
@@ -84,14 +108,50 @@ export default function SalonProfile() {
     fetchAll();
   }, [id]);
 
+  // Edit handlers
+  const openEdit = () => {
+    if (!salon) return;
+    setEditForm({
+      name: salon.name,
+      contact_name: salon.contact_name || "",
+      phone: salon.phone || "",
+      email: salon.email || "",
+      address: salon.address || "",
+      city: salon.city || "",
+      notes: salon.notes || "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!salon) return;
+    setSaving(true);
+    const { error } = await supabase.from("salons").update({
+      name: editForm.name,
+      contact_name: editForm.contact_name || null,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      address: editForm.address || null,
+      city: editForm.city || null,
+      notes: editForm.notes || null,
+    }).eq("id", salon.id);
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to update salon");
+    } else {
+      setSalon({ ...salon, ...editForm, contact_name: editForm.contact_name || null, phone: editForm.phone || null, email: editForm.email || null, address: editForm.address || null, city: editForm.city || null, notes: editForm.notes || null });
+      setEditOpen(false);
+      toast.success("Salon updated");
+    }
+  };
+
   // Computed stats
   const totalRevenue = useMemo(() => orders.reduce((s, o) => s + Number(o.total), 0), [orders]);
   const avgOrderValue = useMemo(() => orders.length ? totalRevenue / orders.length : 0, [orders, totalRevenue]);
   const lastVisit = visits[0]?.visited_at ? new Date(visits[0].visited_at) : null;
   const daysSinceVisit = lastVisit ? differenceInDays(new Date(), lastVisit) : null;
-  const lastOrder = orders[0]?.order_date ? new Date(orders[0].order_date) : null;
 
-  // Monthly chart data (last 6 months)
   const monthlyData = useMemo(() => {
     const months: { month: string; revenue: number; orders: number }[] = [];
     for (let i = 5; i >= 0; i--) {
@@ -111,7 +171,6 @@ export default function SalonProfile() {
     return months;
   }, [orders]);
 
-  // Top products
   const topProducts = useMemo(() => {
     const map = new Map<string, { qty: number; revenue: number }>();
     orders.forEach(o => o.order_items?.forEach(i => {
@@ -132,6 +191,8 @@ export default function SalonProfile() {
 
   const visitStatusLabel = daysSinceVisit === null
     ? "Never visited" : `${daysSinceVisit}d ago`;
+
+  const getProductImage = (p: ProductInfo) => p.first_image || p.image_url;
 
   if (loading) {
     return (
@@ -166,6 +227,9 @@ export default function SalonProfile() {
             {salon.contact_name && <span>· {salon.contact_name}</span>}
           </div>
         </div>
+        <Button variant="outline" size="icon" onClick={openEdit} className="flex-shrink-0">
+          <Pencil className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Contact actions */}
@@ -253,26 +317,29 @@ export default function SalonProfile() {
           </CardHeader>
           <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
             <div className="space-y-2">
-              {topProducts.map((tp, i) => (
-                <div key={tp.product!.id} className="flex items-center gap-3 py-1.5">
-                  <span className="text-xs font-bold text-muted-foreground w-5 text-right">{i + 1}</span>
-                  {tp.product!.image_url ? (
-                    <img src={tp.product!.image_url} alt="" className="w-8 h-8 rounded object-cover" />
-                  ) : (
-                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
-                      <Package className="h-4 w-4 text-muted-foreground" />
+              {topProducts.map((tp, i) => {
+                const imgUrl = getProductImage(tp.product!);
+                return (
+                  <div key={tp.product!.id} className="flex items-center gap-3 py-1.5">
+                    <span className="text-xs font-bold text-muted-foreground w-5 text-right">{i + 1}</span>
+                    {imgUrl ? (
+                      <img src={imgUrl} alt="" className="w-9 h-9 rounded object-cover border border-border" />
+                    ) : (
+                      <div className="w-9 h-9 rounded bg-muted flex items-center justify-center border border-border">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{tp.product!.name}</p>
+                      <p className="text-xs text-muted-foreground">{tp.product!.sku}</p>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{tp.product!.name}</p>
-                    <p className="text-xs text-muted-foreground">{tp.product!.sku}</p>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">{tp.qty} units</p>
+                      <p className="text-xs text-muted-foreground">${tp.revenue.toFixed(2)}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">{tp.qty} units</p>
-                    <p className="text-xs text-muted-foreground">${tp.revenue.toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -346,6 +413,56 @@ export default function SalonProfile() {
           <p className="text-sm">{salon.notes}</p>
         </Card>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Salon</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Salon Name *</Label>
+              <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required className="min-h-[44px]" />
+            </div>
+            <div className="space-y-2">
+              <Label>Contact Name</Label>
+              <Input value={editForm.contact_name} onChange={e => setEditForm({ ...editForm, contact_name: e.target.value })} className="min-h-[44px]" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} className="min-h-[44px]" />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="min-h-[44px]" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <AddressAutocomplete
+                value={editForm.address}
+                onChange={(address, city) => setEditForm({ ...editForm, address, ...(city && { city }) })}
+                placeholder="Start typing address..."
+                className="min-h-[44px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>City</Label>
+              <Input value={editForm.city} onChange={e => setEditForm({ ...editForm, city: e.target.value })} className="min-h-[44px]" />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Input value={editForm.notes} onChange={e => setEditForm({ ...editForm, notes: e.target.value })} className="min-h-[44px]" />
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="min-h-[44px]">Cancel</Button>
+              <Button type="submit" disabled={saving} className="min-h-[44px]">{saving ? "Saving..." : "Save Changes"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
