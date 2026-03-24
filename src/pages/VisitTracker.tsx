@@ -50,6 +50,9 @@ type Visit = {
 
 export default function VisitTracker() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "calendar";
+  const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
   const [salons, setSalons] = useState<SalonWithVisit[]>([]);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -227,7 +230,7 @@ export default function VisitTracker() {
         </Card>
       </div>
 
-      <Tabs defaultValue="calendar">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="calendar"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendar</TabsTrigger>
           <TabsTrigger value="salons"><Building2 className="h-3.5 w-3.5 mr-1.5" />Salons</TabsTrigger>
