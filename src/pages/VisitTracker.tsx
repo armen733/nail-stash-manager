@@ -11,11 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
-import { LazyAnalyticsMap } from "@/components/lazy";
+import { lazy, Suspense } from "react";
+const VisitStatusMap = lazy(() => import("@/components/visits/VisitStatusMap"));
 import {
   Search, MapPin, AlertTriangle, CheckCircle, Plus,
   Building2, ShoppingCart, ChevronLeft, ChevronRight,
-  CalendarDays, Map as MapIcon,
+  CalendarDays, Map as MapIcon, Loader2,
 } from "lucide-react";
 import {
   differenceInDays, format, startOfMonth, endOfMonth,
@@ -61,7 +62,7 @@ export default function VisitTracker() {
   const [orderHistorySalonId, setOrderHistorySalonId] = useState<string | null>(null);
   const [orderHistorySalonName, setOrderHistorySalonName] = useState("");
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
-  const [mapOpen, setMapOpen] = useState(false);
+  
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -229,7 +230,7 @@ export default function VisitTracker() {
         <TabsList>
           <TabsTrigger value="calendar"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendar</TabsTrigger>
           <TabsTrigger value="salons"><Building2 className="h-3.5 w-3.5 mr-1.5" />Salons</TabsTrigger>
-          <TabsTrigger value="map" onClick={() => setMapOpen(true)}><MapIcon className="h-3.5 w-3.5 mr-1.5" />Map</TabsTrigger>
+          <TabsTrigger value="map"><MapIcon className="h-3.5 w-3.5 mr-1.5" />Map</TabsTrigger>
         </TabsList>
 
         {/* ===== CALENDAR TAB ===== */}
@@ -433,6 +434,26 @@ export default function VisitTracker() {
             </div>
           )}
         </TabsContent>
+
+        {/* ===== MAP TAB ===== */}
+        <TabsContent value="map" className="mt-3">
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          }>
+            <VisitStatusMap
+              salons={salons.filter(s => s.address).map(s => ({
+                id: s.id,
+                name: s.name,
+                address: s.address!,
+                city: s.city,
+                phone: s.phone,
+                daysSinceVisit: s.days_since_visit,
+              }))}
+            />
+          </Suspense>
+        </TabsContent>
       </Tabs>
 
       {/* Check-in Dialog */}
@@ -471,11 +492,6 @@ export default function VisitTracker() {
         onOpenChange={setOrderHistoryOpen}
       />
 
-      {/* Salon Map */}
-      <LazyAnalyticsMap
-        open={mapOpen}
-        onOpenChange={setMapOpen}
-      />
     </div>
   );
 }
