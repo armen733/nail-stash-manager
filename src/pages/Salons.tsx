@@ -90,6 +90,19 @@ const Salons = () => {
     fetchSalons();
   }, []);
 
+  // Restore scroll position when returning from salon profile
+  useEffect(() => {
+    if (loading) return;
+    const saved = sessionStorage.getItem('salons_scrollY');
+    if (saved) {
+      const main = document.querySelector('main');
+      if (main) {
+        requestAnimationFrame(() => { main.scrollTop = Number(saved); });
+      }
+      sessionStorage.removeItem('salons_scrollY');
+    }
+  }, [loading]);
+
   const fetchSalons = async () => {
     try {
       const { data, error } = await supabase
