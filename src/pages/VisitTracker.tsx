@@ -144,8 +144,9 @@ export default function VisitTracker() {
     navigate(`/salons/${salon.id}`);
   };
 
-  // Restore scroll position when returning
+  // Restore scroll position when data finishes loading
   useEffect(() => {
+    if (loading) return;
     const saved = sessionStorage.getItem('visitTracker_scrollY');
     if (saved) {
       const main = document.querySelector('main');
@@ -156,7 +157,7 @@ export default function VisitTracker() {
       }
       sessionStorage.removeItem('visitTracker_scrollY');
     }
-  }, []);
+  }, [loading]);
 
   // Calendar data
   const calendarDays = useMemo(() => {
