@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ interface Salon {
 }
 
 const Salons = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
   const [salons, setSalons] = useState<Salon[]>([]);
@@ -381,7 +383,7 @@ const Salons = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredSalons.map((salon) => (
-                <Card key={salon.id} className="p-3 sm:p-4 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setSelectedSalonForHistory(salon)}>
+                <Card key={salon.id} className="p-3 sm:p-4 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate(`/salons/${salon.id}`)}>
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
