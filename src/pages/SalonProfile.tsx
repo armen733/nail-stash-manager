@@ -64,6 +64,7 @@ export default function SalonProfile() {
     name: "", contact_name: "", phone: "", email: "", address: "", city: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -385,7 +386,11 @@ export default function SalonProfile() {
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {orders.slice(0, 30).map(o => (
-                <div key={o.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                <div
+                  key={o.id}
+                  className="flex items-center gap-3 py-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
+                  onClick={() => setSelectedOrder(o)}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{format(new Date(o.order_date), "MMM d, yyyy")}</p>
