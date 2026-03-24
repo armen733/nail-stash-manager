@@ -229,6 +229,7 @@ export default function VisitTracker() {
         <TabsList>
           <TabsTrigger value="calendar"><CalendarDays className="h-3.5 w-3.5 mr-1.5" />Calendar</TabsTrigger>
           <TabsTrigger value="salons"><Building2 className="h-3.5 w-3.5 mr-1.5" />Salons</TabsTrigger>
+          <TabsTrigger value="map" onClick={() => setMapOpen(true)}><MapIcon className="h-3.5 w-3.5 mr-1.5" />Map</TabsTrigger>
         </TabsList>
 
         {/* ===== CALENDAR TAB ===== */}
