@@ -412,7 +412,7 @@ export default function VisitTracker() {
                     "cursor-pointer transition-colors hover:bg-accent/30",
                     (salon.days_since_visit === null || salon.days_since_visit >= 7) && "border-destructive/25",
                   )}
-                  onClick={() => openSalonOrders(salon)}
+                  onClick={() => openSalonProfile(salon)}
                 >
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className={cn(
