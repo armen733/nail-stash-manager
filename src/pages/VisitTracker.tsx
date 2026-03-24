@@ -479,7 +479,20 @@ export default function VisitTracker() {
           <div className="space-y-4">
             <div>
               <Label>Salon</Label>
-              <p className="text-sm font-medium mt-1">{salons.find(s => s.id === selectedSalonId)?.name || "—"}</p>
+              {selectedSalonId ? (
+                <p className="text-sm font-medium mt-1">{salons.find(s => s.id === selectedSalonId)?.name || "—"}</p>
+              ) : (
+                <select
+                  className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={selectedSalonId || ""}
+                  onChange={e => setSelectedSalonId(e.target.value || null)}
+                >
+                  <option value="">Select a salon...</option>
+                  {salons.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <Label>Notes (optional)</Label>
