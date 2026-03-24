@@ -642,6 +642,61 @@ export type Database = {
         }
         Relationships: []
       }
+      salon_visits: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          salon_id: string
+          visit_type: string
+          visited_at: string
+          visited_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          salon_id: string
+          visit_type?: string
+          visited_at?: string
+          visited_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          salon_id?: string
+          visit_type?: string
+          visited_at?: string
+          visited_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_visits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salon_visits_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salon_visits_visited_by_fkey"
+            columns: ["visited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salons: {
         Row: {
           address: string | null

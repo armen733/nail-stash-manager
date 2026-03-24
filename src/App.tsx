@@ -26,6 +26,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const LowStock = lazy(() => import("./pages/LowStock"));
 const Users = lazy(() => import("./pages/Users"));
 const Promotions = lazy(() => import("./pages/Promotions"));
+const VisitTracker = lazy(() => import("./pages/VisitTracker"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure React Query with better caching defaults
@@ -200,6 +201,16 @@ const App = () => (
                 <ManagerRoute>
                   <AppLayout>
                     <Promotions />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/visit-tracker"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <VisitTracker />
                   </AppLayout>
                 </ManagerRoute>
               }
