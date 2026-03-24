@@ -186,7 +186,11 @@ const Index = () => {
       if (timePeriod === "day") {
         periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
       } else if (timePeriod === "week") {
-        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        // Start from Monday of the current week
+        const dayOfWeek = now.getDay(); // 0=Sun
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
+        periodStart = monday.toISOString();
       } else if (timePeriod === "month") {
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       } else {
@@ -328,10 +332,19 @@ const Index = () => {
         trendStartDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0); // last day of month
         days = endDate.getDate();
+      } else if (timePeriod === "month") {
+        trendStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Days from 1st of month to today
+        days = now.getDate();
+      } else if (timePeriod === "week") {
+        const dayOfWeek = now.getDay();
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        trendStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
+        // Days from Monday to today
+        days = diffToMonday + 1;
       } else {
-        days = timePeriod === "month" ? 30 : 7;
-        trendStartDate = new Date();
-        trendStartDate.setDate(trendStartDate.getDate() - (days - 1));
+        days = 1;
+        trendStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       }
       
       const trendData: RevenueData[] = [];
