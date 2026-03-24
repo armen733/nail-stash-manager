@@ -61,6 +61,7 @@ export default function VisitTracker() {
   const [orderHistorySalonId, setOrderHistorySalonId] = useState<string | null>(null);
   const [orderHistorySalonName, setOrderHistorySalonName] = useState("");
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
