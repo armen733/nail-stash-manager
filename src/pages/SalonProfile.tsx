@@ -64,6 +64,7 @@ export default function SalonProfile() {
     name: "", contact_name: "", phone: "", email: "", address: "", city: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -385,7 +386,11 @@ export default function SalonProfile() {
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {orders.slice(0, 30).map(o => (
-                <div key={o.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                <div
+                  key={o.id}
+                  className="flex items-center gap-3 py-2 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
+                  onClick={() => setSelectedOrder(o)}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{format(new Date(o.order_date), "MMM d, yyyy")}</p>
@@ -413,6 +418,56 @@ export default function SalonProfile() {
           <p className="text-sm">{salon.notes}</p>
         </Card>
       )}
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={open => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Order — {selectedOrder && format(new Date(selectedOrder.order_date), "MMM d, yyyy")}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge variant={selectedOrder.status === "Paid" || selectedOrder.status === "Delivered" ? "default" : "secondary"}>
+                  {selectedOrder.status}
+                </Badge>
+                <p className="text-lg font-bold">${Number(selectedOrder.total).toFixed(2)}</p>
+              </div>
+              {selectedOrder.notes && (
+                <p className="text-sm text-muted-foreground italic">"{selectedOrder.notes}"</p>
+              )}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Items</p>
+                {(selectedOrder.order_items || []).map((item, idx) => {
+                  const prod = products.get(item.product_id);
+                  const imgUrl = prod ? getProductImage(prod) : null;
+                  return (
+                    <div key={idx} className="flex items-center gap-3 py-1.5 border-b border-border last:border-0">
+                      {imgUrl ? (
+                        <img src={imgUrl} alt="" className="w-10 h-10 rounded object-cover border border-border" />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center border border-border">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{prod?.name || "Unknown product"}</p>
+                        <p className="text-xs text-muted-foreground">{prod?.sku || "—"} · Qty: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">${Number(item.line_total).toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">${Number(item.unit_price).toFixed(2)} ea</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
