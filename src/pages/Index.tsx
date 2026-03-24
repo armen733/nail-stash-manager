@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart, BarChart, Bar, Tooltip, Sector } from "recharts";
 import { Button } from "@/components/ui/button";
+import { toLocalDateStr, todayLocalStr, getLocalDay, formatLocalDate } from "@/lib/timezone";
 import { downloadCSV } from "@/lib/csv-export";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -338,17 +339,16 @@ const Index = () => {
       for (let i = 0; i < days; i++) {
         const date = new Date(trendStartDate);
         date.setDate(trendStartDate.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD local
         
         const dayOrders = orders.filter(o => {
-          const orderDate = new Date(o.created_at).toISOString().split('T')[0];
-          return orderDate === dateStr;
+          return toLocalDateStr(o.created_at) === dateStr;
         });
         
         const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
         
         trendData.push({
-          date: timePeriod === "month" ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : date.toLocaleDateString('en-US', { weekday: 'short' }),
+          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
         });
       }
@@ -408,7 +408,7 @@ const Index = () => {
       // Calculate Day of Week data
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const dayStats = orders.reduce((acc: Record<number, { revenue: number; orders: number }>, order) => {
-        const dayNum = new Date(order.created_at).getDay();
+        const dayNum = getLocalDay(order.created_at);
         if (!acc[dayNum]) acc[dayNum] = { revenue: 0, orders: 0 };
         acc[dayNum].revenue += order.total || 0;
         acc[dayNum].orders += 1;
@@ -425,10 +425,10 @@ const Index = () => {
       // Calculate AOV (Average Order Value) trend
       const aovTrend: AOVData[] = trendData.map((d, idx) => {
         const dayOrders = orders.filter(o => {
-          const date = new Date();
-          date.setDate(date.getDate() - (days - 1 - idx));
-          const dateStr = date.toISOString().split('T')[0];
-          return new Date(o.created_at).toISOString().split('T')[0] === dateStr;
+          const date = new Date(trendStartDate);
+          date.setDate(trendStartDate.getDate() + idx);
+          const dateStr = date.toLocaleDateString('en-CA');
+          return toLocalDateStr(o.created_at) === dateStr;
         });
         const orderCount = dayOrders.length;
         const totalRev = dayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -441,15 +441,15 @@ const Index = () => {
 
       // Calculate Profit Margins (simplified - using wholesale vs sale price)
       const profitTrend: ProfitData[] = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+      for (let i = 0; i < days; i++) {
+        const date = new Date(trendStartDate);
+        date.setDate(trendStartDate.getDate() + i);
+        const dateStr = date.toLocaleDateString('en-CA');
         
         let dayRevenue = 0;
         let dayCost = 0;
         
-        orders.filter(o => new Date(o.created_at).toISOString().split('T')[0] === dateStr)
+        orders.filter(o => toLocalDateStr(o.created_at) === dateStr)
           .forEach(order => {
             dayRevenue += order.total || 0;
           });
@@ -460,7 +460,7 @@ const Index = () => {
         const margin = dayRevenue > 0 ? (dayProfit / dayRevenue) * 100 : 0;
         
         profitTrend.push({
-          date: timePeriod === "month" ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : date.toLocaleDateString('en-US', { weekday: 'short' }),
+          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
           cost: dayCost,
           profit: dayProfit,
