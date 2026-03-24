@@ -470,6 +470,12 @@ export default function VisitTracker() {
         open={orderHistoryOpen}
         onOpenChange={setOrderHistoryOpen}
       />
+
+      {/* Salon Map */}
+      <LazyAnalyticsMap
+        open={mapOpen}
+        onOpenChange={setMapOpen}
+      />
     </div>
   );
 }
