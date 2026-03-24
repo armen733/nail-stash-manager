@@ -15,7 +15,7 @@ import { LazyAnalyticsMap } from "@/components/lazy";
 import {
   Search, MapPin, AlertTriangle, CheckCircle, Plus,
   Building2, ShoppingCart, ChevronLeft, ChevronRight,
-  CalendarDays,
+  CalendarDays, Map,
 } from "lucide-react";
 import {
   differenceInDays, format, startOfMonth, endOfMonth,
