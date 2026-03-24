@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -25,6 +26,7 @@ interface SalonVisitStatus {
 
 interface VisitStatusMapProps {
   salons: SalonVisitStatus[];
+  fullScreen?: boolean;
 }
 
 interface GeoSalon extends SalonVisitStatus {
@@ -39,7 +41,7 @@ const getMarkerColor = (daysSinceVisit: number | null): { bg: string; ring: stri
   return { bg: "#22c55e", ring: "#86efac", label: `${daysSinceVisit}d ago` };
 };
 
-export default function VisitStatusMap({ salons }: VisitStatusMapProps) {
+export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -236,7 +238,7 @@ export default function VisitStatusMap({ salons }: VisitStatusMapProps) {
   const shouldShowLocationPrompt = !userLocation.loading && userLocation.lat === null;
 
   return (
-    <div className="relative w-full rounded-lg overflow-hidden border border-border" style={{ height: "450px" }}>
+    <div className={cn("relative w-full overflow-hidden", fullScreen ? "h-full" : "rounded-lg border border-border")} style={fullScreen ? undefined : { height: "450px" }}>
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
       {loading && (
