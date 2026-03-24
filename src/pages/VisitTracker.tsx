@@ -434,6 +434,26 @@ export default function VisitTracker() {
             </div>
           )}
         </TabsContent>
+
+        {/* ===== MAP TAB ===== */}
+        <TabsContent value="map" className="mt-3">
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          }>
+            <VisitStatusMap
+              salons={salons.filter(s => s.address).map(s => ({
+                id: s.id,
+                name: s.name,
+                address: s.address!,
+                city: s.city,
+                phone: s.phone,
+                daysSinceVisit: s.days_since_visit,
+              }))}
+            />
+          </Suspense>
+        </TabsContent>
       </Tabs>
 
       {/* Check-in Dialog */}
