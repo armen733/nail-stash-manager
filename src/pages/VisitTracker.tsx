@@ -132,10 +132,8 @@ export default function VisitTracker() {
     }
   };
 
-  const openSalonOrders = (salon: SalonWithVisit) => {
-    setOrderHistorySalonId(salon.id);
-    setOrderHistorySalonName(salon.name);
-    setOrderHistoryOpen(true);
+  const openSalonProfile = (salon: SalonWithVisit) => {
+    navigate(`/salons/${salon.id}`);
   };
 
   // Calendar data
