@@ -318,7 +318,21 @@ export default function VisitTracker() {
           {selectedDate && (
             <Card>
               <CardContent className="p-3 md:p-4">
-                <h3 className="text-sm font-semibold mb-2">{format(selectedDate, "EEEE, MMMM d, yyyy")}</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold">{format(selectedDate, "EEEE, MMMM d, yyyy")}</h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setSelectedSalonId(null);
+                      setCheckinOpen(true);
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Visit
+                  </Button>
+                </div>
                 {selectedDateVisits.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">No visits on this day</p>
                 ) : (
@@ -465,7 +479,20 @@ export default function VisitTracker() {
           <div className="space-y-4">
             <div>
               <Label>Salon</Label>
-              <p className="text-sm font-medium mt-1">{salons.find(s => s.id === selectedSalonId)?.name || "—"}</p>
+              {selectedSalonId ? (
+                <p className="text-sm font-medium mt-1">{salons.find(s => s.id === selectedSalonId)?.name || "—"}</p>
+              ) : (
+                <select
+                  className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={selectedSalonId || ""}
+                  onChange={e => setSelectedSalonId(e.target.value || null)}
+                >
+                  <option value="">Select a salon...</option>
+                  {salons.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <Label>Notes (optional)</Label>
