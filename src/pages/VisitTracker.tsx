@@ -318,7 +318,21 @@ export default function VisitTracker() {
           {selectedDate && (
             <Card>
               <CardContent className="p-3 md:p-4">
-                <h3 className="text-sm font-semibold mb-2">{format(selectedDate, "EEEE, MMMM d, yyyy")}</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold">{format(selectedDate, "EEEE, MMMM d, yyyy")}</h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setSelectedSalonId(null);
+                      setCheckinOpen(true);
+                    }}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Visit
+                  </Button>
+                </div>
                 {selectedDateVisits.length === 0 ? (
                   <p className="text-xs text-muted-foreground py-2">No visits on this day</p>
                 ) : (
