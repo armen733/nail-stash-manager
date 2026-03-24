@@ -49,6 +49,7 @@ type Visit = {
 };
 
 export default function VisitTracker() {
+  const navigate = useNavigate();
   const [salons, setSalons] = useState<SalonWithVisit[]>([]);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
