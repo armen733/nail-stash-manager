@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
-import { LazyAnalyticsMap } from "@/components/lazy";
+import { lazy, Suspense } from "react";
+const VisitStatusMap = lazy(() => import("@/components/visits/VisitStatusMap"));
 import {
   Search, MapPin, AlertTriangle, CheckCircle, Plus,
   Building2, ShoppingCart, ChevronLeft, ChevronRight,
