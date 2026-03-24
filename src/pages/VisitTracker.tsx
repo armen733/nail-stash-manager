@@ -62,6 +62,7 @@ export default function VisitTracker() {
   const [orderHistorySalonId, setOrderHistorySalonId] = useState<string | null>(null);
   const [orderHistorySalonName, setOrderHistorySalonName] = useState("");
   const [orderHistoryOpen, setOrderHistoryOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
   
 
   const fetchData = useCallback(async () => {
@@ -449,25 +450,38 @@ export default function VisitTracker() {
           )}
         </TabsContent>
 
-        {/* ===== MAP TAB ===== */}
-        <TabsContent value="map" className="mt-3">
-          <Suspense fallback={
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        {/* Full-screen Map Dialog */}
+        <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+          <DialogContent className="max-w-[100vw] w-screen h-screen max-h-screen p-0 border-0 rounded-none [&>button]:hidden">
+            <div className="relative w-full h-full">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute top-[max(0.75rem,env(safe-area-inset-top))] right-3 z-50 h-10 w-10 rounded-full shadow-lg bg-background/90 backdrop-blur-sm"
+                onClick={() => setMapOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              <Suspense fallback={
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              }>
+                <VisitStatusMap
+                  fullScreen
+                  salons={salons.filter(s => s.address).map(s => ({
+                    id: s.id,
+                    name: s.name,
+                    address: s.address!,
+                    city: s.city,
+                    phone: s.phone,
+                    daysSinceVisit: s.days_since_visit,
+                  }))}
+                />
+              </Suspense>
             </div>
-          }>
-            <VisitStatusMap
-              salons={salons.filter(s => s.address).map(s => ({
-                id: s.id,
-                name: s.name,
-                address: s.address!,
-                city: s.city,
-                phone: s.phone,
-                daysSinceVisit: s.days_since_visit,
-              }))}
-            />
-          </Suspense>
-        </TabsContent>
+          </DialogContent>
+        </Dialog>
       </Tabs>
 
       {/* Check-in Dialog */}
