@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ type Visit = {
 };
 
 export default function VisitTracker() {
+  const navigate = useNavigate();
   const [salons, setSalons] = useState<SalonWithVisit[]>([]);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,10 +132,8 @@ export default function VisitTracker() {
     }
   };
 
-  const openSalonOrders = (salon: SalonWithVisit) => {
-    setOrderHistorySalonId(salon.id);
-    setOrderHistorySalonName(salon.name);
-    setOrderHistoryOpen(true);
+  const openSalonProfile = (salon: SalonWithVisit) => {
+    navigate(`/salons/${salon.id}`);
   };
 
   // Calendar data
@@ -412,7 +412,7 @@ export default function VisitTracker() {
                     "cursor-pointer transition-colors hover:bg-accent/30",
                     (salon.days_since_visit === null || salon.days_since_visit >= 7) && "border-destructive/25",
                   )}
-                  onClick={() => openSalonOrders(salon)}
+                  onClick={() => openSalonProfile(salon)}
                 >
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className={cn(
