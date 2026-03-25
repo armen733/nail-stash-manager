@@ -177,7 +177,7 @@ export function ProductBrowser({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 flex flex-col flex-1 min-h-0">
       {/* Filters Row */}
       <div className="flex gap-2">
         <Select value={selectedCategory} onValueChange={handleCategoryChange}>
@@ -217,7 +217,7 @@ export function ProductBrowser({
       </div>
 
       {/* Product Grid with optimized rendering */}
-      <ScrollArea className="h-[400px] pr-3">
+      <ScrollArea className="flex-1 min-h-[200px] pr-3">
         <div className="grid grid-cols-3 gap-2">
           {filteredProducts.map((product) => {
             const quantity = getItemQuantity(product.id);
