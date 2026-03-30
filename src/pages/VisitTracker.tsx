@@ -439,7 +439,7 @@ export default function VisitTracker() {
                   key={salon.id}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-accent/30",
-                    (salon.days_since_visit === null || salon.days_since_visit >= 7) && "border-destructive/25",
+                    (salon.days_since_visit === null || salon.days_since_visit >= 15) && "border-destructive/25",
                   )}
                   onClick={() => openSalonProfile(salon)}
                 >
@@ -447,7 +447,8 @@ export default function VisitTracker() {
                     <div className={cn(
                       "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
                       salon.days_since_visit === null ? "bg-destructive/10 text-destructive" :
-                      salon.days_since_visit >= 7 ? "bg-orange-500/10 text-orange-500" :
+                      salon.days_since_visit >= 15 ? "bg-destructive/10 text-destructive" :
+                      salon.days_since_visit >= 10 ? "bg-orange-500/10 text-orange-500" :
                       "bg-primary/10 text-primary",
                     )}>
                       {salon.name.charAt(0)}
