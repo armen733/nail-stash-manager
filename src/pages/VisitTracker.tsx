@@ -204,7 +204,7 @@ export default function VisitTracker() {
     return [...list].sort((a, b) => (b.days_since_visit ?? 999) - (a.days_since_visit ?? 999));
   }, [salons, search, filter]);
 
-  const overdueCount = salons.filter(s => s.days_since_visit === null || s.days_since_visit >= 10).length;
+  const overdueCount = salons.filter(s => s.days_since_visit !== null && s.days_since_visit >= 10).length;
   const visitedRecently = salons.filter(s => s.days_since_visit !== null && s.days_since_visit < 10).length;
   const neverVisited = salons.filter(s => s.days_since_visit === null).length;
 
