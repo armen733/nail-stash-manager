@@ -186,8 +186,8 @@ export default function SalonProfile() {
   }, [orders, products]);
 
   const visitStatusColor = daysSinceVisit === null
-    ? "text-destructive" : daysSinceVisit >= 14
-    ? "text-destructive" : daysSinceVisit >= 7
+    ? "text-destructive" : daysSinceVisit >= 15
+    ? "text-destructive" : daysSinceVisit >= 10
     ? "text-orange-500" : "text-green-500";
 
   const visitStatusLabel = daysSinceVisit === null

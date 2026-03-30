@@ -192,19 +192,19 @@ export default function VisitTracker() {
       const q = search.toLowerCase();
       list = list.filter(s => s.name.toLowerCase().includes(q) || s.city?.toLowerCase().includes(q) || s.contact_name?.toLowerCase().includes(q));
     }
-    if (filter === "overdue") list = list.filter(s => s.days_since_visit === null || s.days_since_visit >= 7);
-    else if (filter === "recent") list = list.filter(s => s.days_since_visit !== null && s.days_since_visit < 7);
+    if (filter === "overdue") list = list.filter(s => s.days_since_visit === null || s.days_since_visit >= 10);
+    else if (filter === "recent") list = list.filter(s => s.days_since_visit !== null && s.days_since_visit < 10);
     return [...list].sort((a, b) => (b.days_since_visit ?? 999) - (a.days_since_visit ?? 999));
   }, [salons, search, filter]);
 
-  const overdueCount = salons.filter(s => s.days_since_visit === null || s.days_since_visit >= 7).length;
-  const visitedThisWeek = salons.filter(s => s.days_since_visit !== null && s.days_since_visit < 7).length;
+  const overdueCount = salons.filter(s => s.days_since_visit === null || s.days_since_visit >= 10).length;
+  const visitedRecently = salons.filter(s => s.days_since_visit !== null && s.days_since_visit < 10).length;
   const neverVisited = salons.filter(s => s.days_since_visit === null).length;
 
   const getStatusBadge = (s: SalonWithVisit) => {
     if (s.days_since_visit === null) return <Badge variant="destructive" className="text-xs">Never</Badge>;
-    if (s.days_since_visit >= 14) return <Badge variant="destructive" className="text-xs">{s.days_since_visit}d</Badge>;
-    if (s.days_since_visit >= 7) return <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-500">{s.days_since_visit}d</Badge>;
+    if (s.days_since_visit >= 15) return <Badge variant="destructive" className="text-xs">{s.days_since_visit}d</Badge>;
+    if (s.days_since_visit >= 10) return <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-500">{s.days_since_visit}d</Badge>;
     return <Badge variant="outline" className="text-xs border-primary/50 text-primary">{s.days_since_visit}d</Badge>;
   };
 
@@ -230,8 +230,8 @@ export default function VisitTracker() {
         <Card className="bg-card">
           <CardContent className="p-2.5 md:p-4 text-center">
             <CheckCircle className="h-4 w-4 mx-auto text-primary" />
-            <p className="text-lg md:text-2xl font-bold mt-1 text-primary">{visitedThisWeek}</p>
-            <p className="text-[10px] md:text-xs text-muted-foreground">This Week</p>
+            <p className="text-lg md:text-2xl font-bold mt-1 text-primary">{visitedRecently}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Recent</p>
           </CardContent>
         </Card>
         <Card className="bg-card">
@@ -415,7 +415,7 @@ export default function VisitTracker() {
                 size="sm"
                 onClick={() => setFilter("recent")}
               >
-                OK ({visitedThisWeek})
+                OK ({visitedRecently})
               </Button>
             </div>
           </div>

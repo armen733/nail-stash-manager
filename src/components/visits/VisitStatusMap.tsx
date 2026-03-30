@@ -36,8 +36,8 @@ interface GeoSalon extends SalonVisitStatus {
 
 const getMarkerColor = (daysSinceVisit: number | null): { bg: string; ring: string; label: string } => {
   if (daysSinceVisit === null) return { bg: "#ef4444", ring: "#fca5a5", label: "Never visited" };
-  if (daysSinceVisit >= 14) return { bg: "#ef4444", ring: "#fca5a5", label: `${daysSinceVisit}d ago` };
-  if (daysSinceVisit >= 7) return { bg: "#f97316", ring: "#fdba74", label: `${daysSinceVisit}d ago` };
+  if (daysSinceVisit >= 15) return { bg: "#ef4444", ring: "#fca5a5", label: `${daysSinceVisit}d ago` };
+  if (daysSinceVisit >= 10) return { bg: "#f97316", ring: "#fdba74", label: `${daysSinceVisit}d ago` };
   return { bg: "#22c55e", ring: "#86efac", label: `${daysSinceVisit}d ago` };
 };
 
@@ -255,15 +255,15 @@ export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapPro
         <p className="font-semibold text-[11px]">Visit Status</p>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ background: "#22c55e" }} />
-          <span className="text-muted-foreground">Recent (&lt;7d)</span>
+          <span className="text-muted-foreground">Recent (&lt;10d)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ background: "#f97316" }} />
-          <span className="text-muted-foreground">Overdue (7-13d)</span>
+          <span className="text-muted-foreground">Overdue (10-14d)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ background: "#ef4444" }} />
-          <span className="text-muted-foreground">Critical (14d+/Never)</span>
+          <span className="text-muted-foreground">Critical (15d+/Never)</span>
         </div>
       </div>
 
