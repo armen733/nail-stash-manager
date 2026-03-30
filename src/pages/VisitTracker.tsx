@@ -24,6 +24,7 @@ import {
   startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth,
   isSameDay, addMonths, subMonths, isToday,
 } from "date-fns";
+import { toLocalDateStr, todayLocalStr, dateFromLocalStr } from "@/lib/timezone";
 
 type SalonWithVisit = {
   id: string;
@@ -101,7 +102,12 @@ export default function VisitTracker() {
 
       const enrichedSalons: SalonWithVisit[] = (salonsData || []).map(s => {
         const visit = visitsBySalon.get(s.id);
-        const daysSince = visit ? differenceInDays(new Date(), new Date(visit.last)) : null;
+        const daysSince = visit
+          ? differenceInDays(
+              dateFromLocalStr(todayLocalStr()),
+              dateFromLocalStr(toLocalDateStr(visit.last)),
+            )
+          : null;
         return { ...s, last_visit: visit?.last || null, last_visit_type: visit?.type || null, visit_count: visit?.count || 0, days_since_visit: daysSince };
       });
       setSalons(enrichedSalons);
@@ -171,7 +177,7 @@ export default function VisitTracker() {
   const visitsByDate = useMemo(() => {
     const map = new Map<string, Visit[]>();
     for (const v of allVisits) {
-      const key = format(new Date(v.visited_at), "yyyy-MM-dd");
+      const key = toLocalDateStr(v.visited_at);
       const existing = map.get(key) || [];
       existing.push(v);
       map.set(key, existing);
@@ -433,7 +439,7 @@ export default function VisitTracker() {
                   key={salon.id}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-accent/30",
-                    (salon.days_since_visit === null || salon.days_since_visit >= 7) && "border-destructive/25",
+                    (salon.days_since_visit === null || salon.days_since_visit >= 15) && "border-destructive/25",
                   )}
                   onClick={() => openSalonProfile(salon)}
                 >
@@ -441,7 +447,8 @@ export default function VisitTracker() {
                     <div className={cn(
                       "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
                       salon.days_since_visit === null ? "bg-destructive/10 text-destructive" :
-                      salon.days_since_visit >= 7 ? "bg-orange-500/10 text-orange-500" :
+                      salon.days_since_visit >= 15 ? "bg-destructive/10 text-destructive" :
+                      salon.days_since_visit >= 10 ? "bg-orange-500/10 text-orange-500" :
                       "bg-primary/10 text-primary",
                     )}>
                       {salon.name.charAt(0)}
