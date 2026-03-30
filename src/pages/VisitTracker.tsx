@@ -24,6 +24,7 @@ import {
   startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth,
   isSameDay, addMonths, subMonths, isToday,
 } from "date-fns";
+import { toLocalDateStr, todayLocalStr, dateFromLocalStr } from "@/lib/timezone";
 
 type SalonWithVisit = {
   id: string;
@@ -101,7 +102,12 @@ export default function VisitTracker() {
 
       const enrichedSalons: SalonWithVisit[] = (salonsData || []).map(s => {
         const visit = visitsBySalon.get(s.id);
-        const daysSince = visit ? differenceInDays(new Date(), new Date(visit.last)) : null;
+        const daysSince = visit
+          ? differenceInDays(
+              dateFromLocalStr(todayLocalStr()),
+              dateFromLocalStr(toLocalDateStr(visit.last)),
+            )
+          : null;
         return { ...s, last_visit: visit?.last || null, last_visit_type: visit?.type || null, visit_count: visit?.count || 0, days_since_visit: daysSince };
       });
       setSalons(enrichedSalons);
@@ -171,7 +177,7 @@ export default function VisitTracker() {
   const visitsByDate = useMemo(() => {
     const map = new Map<string, Visit[]>();
     for (const v of allVisits) {
-      const key = format(new Date(v.visited_at), "yyyy-MM-dd");
+      const key = toLocalDateStr(v.visited_at);
       const existing = map.get(key) || [];
       existing.push(v);
       map.set(key, existing);
