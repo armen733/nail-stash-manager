@@ -230,8 +230,8 @@ export default function VisitTracker() {
         <Card className="bg-card">
           <CardContent className="p-2.5 md:p-4 text-center">
             <CheckCircle className="h-4 w-4 mx-auto text-primary" />
-            <p className="text-lg md:text-2xl font-bold mt-1 text-primary">{visitedThisWeek}</p>
-            <p className="text-[10px] md:text-xs text-muted-foreground">This Week</p>
+            <p className="text-lg md:text-2xl font-bold mt-1 text-primary">{visitedRecently}</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground">Recent</p>
           </CardContent>
         </Card>
         <Card className="bg-card">
@@ -415,7 +415,7 @@ export default function VisitTracker() {
                 size="sm"
                 onClick={() => setFilter("recent")}
               >
-                OK ({visitedThisWeek})
+                OK ({visitedRecently})
               </Button>
             </div>
           </div>
