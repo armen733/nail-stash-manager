@@ -1468,41 +1468,69 @@ const Orders = () => {
               {/* Salon Info */}
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Salon</h3>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={viewOrder.salon_id || "none"}
-                    onValueChange={async (value) => {
-                      const newSalonId = value === "none" ? null : value;
-                      try {
-                        const { error } = await supabase
-                          .from("orders")
-                          .update({ salon_id: newSalonId })
-                          .eq("id", viewOrder.id);
-                        if (error) throw error;
-                        const selectedSalon = salons.find(s => s.id === newSalonId);
-                        setViewOrder({
-                          ...viewOrder,
-                          salon_id: newSalonId,
-                          salons: selectedSalon ? { name: selectedSalon.name } : null,
-                        });
-                        fetchData();
-                        toast({ title: "Updated", description: `Salon ${selectedSalon ? `set to ${selectedSalon.name}` : 'removed'}` });
-                      } catch (err: any) {
-                        toast({ title: "Error", description: err.message, variant: "destructive" });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select salon" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No salon</SelectItem>
-                      {salons.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" className="w-full justify-between">
+                      {viewOrder.salon_id
+                        ? salons.find(s => s.id === viewOrder.salon_id)?.name || viewOrder.salons?.name || "Select salon"
+                        : "No salon"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search salons..." />
+                      <CommandList>
+                        <CommandEmpty>No salon found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="no-salon"
+                            onSelect={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from("orders")
+                                  .update({ salon_id: null })
+                                  .eq("id", viewOrder.id);
+                                if (error) throw error;
+                                setViewOrder({ ...viewOrder, salon_id: null, salons: null });
+                                fetchData();
+                                toast({ title: "Updated", description: "Salon removed" });
+                              } catch (err: any) {
+                                toast({ title: "Error", description: err.message, variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", !viewOrder.salon_id ? "opacity-100" : "opacity-0")} />
+                            No salon
+                          </CommandItem>
+                          {salons.map((s) => (
+                            <CommandItem
+                              key={s.id}
+                              value={s.name}
+                              onSelect={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from("orders")
+                                    .update({ salon_id: s.id })
+                                    .eq("id", viewOrder.id);
+                                  if (error) throw error;
+                                  setViewOrder({ ...viewOrder, salon_id: s.id, salons: { name: s.name } });
+                                  fetchData();
+                                  toast({ title: "Updated", description: `Salon set to ${s.name}` });
+                                } catch (err: any) {
+                                  toast({ title: "Error", description: err.message, variant: "destructive" });
+                                }
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", viewOrder.salon_id === s.id ? "opacity-100" : "opacity-0")} />
+                              {s.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Order Items */}
