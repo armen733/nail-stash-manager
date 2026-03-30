@@ -198,8 +198,9 @@ export default function VisitTracker() {
       const q = search.toLowerCase();
       list = list.filter(s => s.name.toLowerCase().includes(q) || s.city?.toLowerCase().includes(q) || s.contact_name?.toLowerCase().includes(q));
     }
-    if (filter === "overdue") list = list.filter(s => s.days_since_visit === null || s.days_since_visit >= 10);
+    if (filter === "overdue") list = list.filter(s => s.days_since_visit !== null && s.days_since_visit >= 10);
     else if (filter === "recent") list = list.filter(s => s.days_since_visit !== null && s.days_since_visit < 10);
+    else if (filter === "never") list = list.filter(s => s.days_since_visit === null);
     return [...list].sort((a, b) => (b.days_since_visit ?? 999) - (a.days_since_visit ?? 999));
   }, [salons, search, filter]);
 
@@ -226,28 +227,28 @@ export default function VisitTracker() {
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-2 md:gap-3">
-        <Card className="bg-card">
+        <Card className="bg-card cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => { setActiveTab("salons"); setFilter("all"); }}>
           <CardContent className="p-2.5 md:p-4 text-center">
             <Building2 className="h-4 w-4 mx-auto text-muted-foreground" />
             <p className="text-lg md:text-2xl font-bold mt-1">{salons.length}</p>
             <p className="text-[10px] md:text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="bg-card cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => { setActiveTab("salons"); setFilter("recent"); }}>
           <CardContent className="p-2.5 md:p-4 text-center">
             <CheckCircle className="h-4 w-4 mx-auto text-primary" />
             <p className="text-lg md:text-2xl font-bold mt-1 text-primary">{visitedRecently}</p>
             <p className="text-[10px] md:text-xs text-muted-foreground">Recent</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="bg-card cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => { setActiveTab("salons"); setFilter("overdue"); }}>
           <CardContent className="p-2.5 md:p-4 text-center">
             <AlertTriangle className="h-4 w-4 mx-auto text-orange-500" />
             <p className="text-lg md:text-2xl font-bold mt-1 text-orange-500">{overdueCount}</p>
             <p className="text-[10px] md:text-xs text-muted-foreground">Overdue</p>
           </CardContent>
         </Card>
-        <Card className="bg-card">
+        <Card className="bg-card cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => { setActiveTab("salons"); setFilter("never"); }}>
           <CardContent className="p-2.5 md:p-4 text-center">
             <AlertTriangle className="h-4 w-4 mx-auto text-destructive" />
             <p className="text-lg md:text-2xl font-bold mt-1 text-destructive">{neverVisited}</p>
