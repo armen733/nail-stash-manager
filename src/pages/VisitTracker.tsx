@@ -304,8 +304,10 @@ export default function VisitTracker() {
                   const inMonth = isSameMonth(day, currentMonth);
                   const today = isToday(day);
                   const selected = selectedDate && isSameDay(day, selectedDate);
-                  const orderVisits = dayVisits.filter(v => v.visit_type === "order");
-                  const manualVisits = dayVisits.filter(v => v.visit_type === "manual");
+                   const orderVisits = dayVisits.filter(v => v.visit_type === "order");
+                   const manualVisits = dayVisits.filter(v => v.visit_type === "manual");
+                   const uniqueSalonIds = new Set(dayVisits.map(v => v.salon_id));
+                   const uniqueSalonCount = uniqueSalonIds.size;
 
                   return (
                     <button
@@ -331,6 +333,14 @@ export default function VisitTracker() {
                             <ShoppingCart className="h-2.5 w-2.5 text-primary flex-shrink-0" />
                             <span className="text-[9px] md:text-[10px] text-primary truncate">
                               {orderVisits.length === 1 ? orderVisits[0].salon_name : `${orderVisits.length} orders`}
+                            </span>
+                          </div>
+                        )}
+                        {uniqueSalonCount > 0 && (
+                          <div className="flex items-center gap-0.5 truncate">
+                            <Building2 className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground truncate">
+                              {uniqueSalonCount} {uniqueSalonCount === 1 ? "salon" : "salons"}
                             </span>
                           </div>
                         )}
