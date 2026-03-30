@@ -58,7 +58,7 @@ export default function VisitTracker() {
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "overdue" | "recent">("all");
+  const [filter, setFilter] = useState<"all" | "overdue" | "recent" | "never">("all");
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [selectedSalonId, setSelectedSalonId] = useState<string | null>(null);
   const [checkinNotes, setCheckinNotes] = useState("");
