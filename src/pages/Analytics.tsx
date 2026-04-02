@@ -75,6 +75,7 @@ const Analytics = () => {
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [categorySales, setCategorySales] = useState<CategorySales[]>([]);
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
+  const [allSoldProducts, setAllSoldProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
   const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
@@ -341,8 +342,10 @@ const Analytics = () => {
         });
       });
 
+      const sortedProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
+      setAllSoldProducts(sortedProducts);
       setCategorySales(Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue));
-      setTopProducts(Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10));
+      setTopProducts(sortedProducts.slice(0, 10));
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5));
 
       // Calculate salon stats
@@ -1232,8 +1235,9 @@ const Analytics = () => {
 
       {/* Tabs for different analytics sections */}
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-5 h-auto">
           <TabsTrigger value="sales" className="text-xs sm:text-sm py-2">Sales</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs sm:text-sm py-2">Products</TabsTrigger>
           <TabsTrigger value="customers" className="text-xs sm:text-sm py-2">Customers</TabsTrigger>
           <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2">Inventory</TabsTrigger>
           <TabsTrigger value="salons" className="text-xs sm:text-sm py-2">Salons</TabsTrigger>
@@ -1505,6 +1509,162 @@ const Analytics = () => {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Sold Products Tab */}
+        <TabsContent value="products" className="mt-4 space-y-4">
+          <Card className="shadow-[var(--shadow-card)]">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  All Sold Products
+                  <Badge variant="secondary" className="ml-2">{allSoldProducts.length}</Badge>
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const headers = ["Product", "Units Sold", "Revenue ($)", "Profit ($)", "Margin (%)"];
+                      const rows = allSoldProducts.map(p => {
+                        const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
+                        return [p.name, p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
+                      });
+                      const periodText = period === "custom" && dateRange?.from 
+                        ? `${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to || new Date(), "yyyy-MM-dd")}`
+                        : period;
+                      const csvContent = [
+                        headers.join(","),
+                        ...rows.map(row => row.map(v => `"${v}"`).join(","))
+                      ].join("\n");
+                      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                      const link = document.createElement("a");
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `sold_products_${periodText}_${format(new Date(), "yyyy-MM-dd")}.csv`;
+                      link.click();
+                      toast({ title: "Exported", description: "Sold products CSV downloaded" });
+                    }}
+                    disabled={allSoldProducts.length === 0}
+                  >
+                    <Download className="mr-1 h-4 w-4" />
+                    CSV
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const doc = new jsPDF();
+                      const pageWidth = doc.internal.pageSize.getWidth();
+                      const periodText = period === "custom" && dateRange?.from 
+                        ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to || new Date(), "MMM dd, yyyy")}`
+                        : period === "week" ? "Last 7 Days" : period === "month" ? "This Month" : "Last Quarter";
+                      
+                      doc.setFontSize(18);
+                      doc.text("Sold Products Report", pageWidth / 2, 20, { align: "center" });
+                      doc.setFontSize(11);
+                      doc.setTextColor(100);
+                      doc.text(periodText, pageWidth / 2, 28, { align: "center" });
+                      doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`, pageWidth / 2, 34, { align: "center" });
+                      
+                      const totalRev = allSoldProducts.reduce((s, p) => s + p.revenue, 0);
+                      const totalQty = allSoldProducts.reduce((s, p) => s + p.quantity, 0);
+                      doc.setFontSize(10);
+                      doc.setTextColor(40);
+                      doc.text(`Total: ${allSoldProducts.length} products | ${totalQty} units | $${totalRev.toFixed(2)} revenue`, pageWidth / 2, 42, { align: "center" });
+
+                      const productData = allSoldProducts.map((p, i) => {
+                        const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
+                        return [
+                          (i + 1).toString(),
+                          p.name.length > 30 ? p.name.slice(0, 30) + "..." : p.name,
+                          p.quantity.toString(),
+                          `$${p.revenue.toFixed(2)}`,
+                          `$${p.profit.toFixed(2)}`,
+                          `${margin.toFixed(1)}%`
+                        ];
+                      });
+
+                      autoTable(doc, {
+                        startY: 48,
+                        head: [["#", "Product", "Units", "Revenue", "Profit", "Margin"]],
+                        body: productData,
+                        theme: "striped",
+                        headStyles: { fillColor: [59, 130, 246] },
+                        margin: { left: 14, right: 14 },
+                        columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 70 } },
+                        styles: { fontSize: 8 },
+                      });
+
+                      doc.save(`sold_products_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+                      toast({ title: "Exported", description: "Sold products PDF downloaded" });
+                    }}
+                    disabled={allSoldProducts.length === 0}
+                  >
+                    <FileText className="mr-1 h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              ) : allSoldProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                  <p className="text-sm text-muted-foreground">No products sold in this period</p>
+                </div>
+              ) : (
+                <div className="overflow-auto max-h-[500px]">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-background border-b">
+                      <tr>
+                        <th className="text-left p-2 font-medium text-muted-foreground">#</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Product</th>
+                        <th className="text-right p-2 font-medium text-muted-foreground">Units</th>
+                        <th className="text-right p-2 font-medium text-muted-foreground">Revenue</th>
+                        <th className="text-right p-2 font-medium text-muted-foreground">Profit</th>
+                        <th className="text-right p-2 font-medium text-muted-foreground">Margin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allSoldProducts.map((product, index) => {
+                        const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+                        return (
+                          <tr key={product.name} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                            <td className="p-2 text-muted-foreground">{index + 1}</td>
+                            <td className="p-2 font-medium">{product.name}</td>
+                            <td className="p-2 text-right">{product.quantity}</td>
+                            <td className="p-2 text-right font-medium">${product.revenue.toFixed(2)}</td>
+                            <td className="p-2 text-right">${product.profit.toFixed(2)}</td>
+                            <td className={cn("p-2 text-right font-medium", margin > 40 ? "text-green-500" : margin > 20 ? "text-amber-500" : "text-red-500")}>
+                              {margin.toFixed(1)}%
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="border-t-2 font-semibold bg-muted/30">
+                      <tr>
+                        <td className="p-2" colSpan={2}>Total ({allSoldProducts.length} products)</td>
+                        <td className="p-2 text-right">{allSoldProducts.reduce((s, p) => s + p.quantity, 0)}</td>
+                        <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.revenue, 0).toFixed(2)}</td>
+                        <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.profit, 0).toFixed(2)}</td>
+                        <td className="p-2 text-right">
+                          {(() => {
+                            const totRev = allSoldProducts.reduce((s, p) => s + p.revenue, 0);
+                            const totProfit = allSoldProducts.reduce((s, p) => s + p.profit, 0);
+                            return totRev > 0 ? ((totProfit / totRev) * 100).toFixed(1) + "%" : "0%";
+                          })()}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               )}
             </CardContent>
