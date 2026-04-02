@@ -1614,7 +1614,8 @@ const Analytics = () => {
                         const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
                         return [
                           (i + 1).toString(),
-                          p.name.length > 25 ? p.name.slice(0, 25) + "..." : p.name,
+                          p.name.length > 22 ? p.name.slice(0, 22) + "..." : p.name,
+                          p.sku || "-",
                           p.supplier_sku || "-",
                           p.quantity.toString(),
                           `$${p.revenue.toFixed(2)}`,
