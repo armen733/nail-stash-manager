@@ -69,6 +69,7 @@ interface ProductPerformance {
   quantity: number;
   profit: number;
   stock: number;
+  sku: string;
   supplier_sku: string;
 }
 
@@ -212,7 +213,7 @@ const Analytics = () => {
           salons (name),
           order_items (
             quantity, unit_price, line_total,
-            products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand, supplier_sku)
+            products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand, sku, supplier_sku)
           )
         `)
         .gte("created_at", periodStart.toISOString())
@@ -339,6 +340,7 @@ const Analytics = () => {
               quantity: 0,
               profit: 0,
               stock: product.stock_on_hand || 0,
+              sku: product.sku || "",
               supplier_sku: product.supplier_sku || ""
             };
           }
@@ -391,6 +393,7 @@ const Analytics = () => {
           quantity: productMap[p.name]?.quantity || 0,
           profit: 0,
           stock: p.stock_on_hand || 0,
+          sku: "",
           supplier_sku: ""
         }))
         .slice(0, 5);
@@ -1559,10 +1562,10 @@ const Analytics = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      const headers = ["Product", "Supplier SKU", "Units Sold", "Revenue ($)", "Profit ($)", "Margin (%)"];
+                      const headers = ["Product", "SKU", "Supplier SKU", "Units Sold", "Revenue ($)", "Profit ($)", "Margin (%)"];
                       const rows = allSoldProducts.map(p => {
                         const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
-                        return [p.name, p.supplier_sku || "", p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
+                        return [p.name, p.sku || "", p.supplier_sku || "", p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
                       });
                       const periodText = period === "custom" && dateRange?.from 
                         ? `${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to || new Date(), "yyyy-MM-dd")}`
@@ -1611,7 +1614,8 @@ const Analytics = () => {
                         const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
                         return [
                           (i + 1).toString(),
-                          p.name.length > 25 ? p.name.slice(0, 25) + "..." : p.name,
+                          p.name.length > 22 ? p.name.slice(0, 22) + "..." : p.name,
+                          p.sku || "-",
                           p.supplier_sku || "-",
                           p.quantity.toString(),
                           `$${p.revenue.toFixed(2)}`,
@@ -1622,13 +1626,13 @@ const Analytics = () => {
 
                       autoTable(doc, {
                         startY: 48,
-                        head: [["#", "Product", "Supplier SKU", "Units", "Revenue", "Profit", "Margin"]],
+                        head: [["#", "Product", "SKU", "Supplier SKU", "Units", "Revenue", "Profit", "Margin"]],
                         body: productData,
                         theme: "striped",
                         headStyles: { fillColor: [59, 130, 246] },
-                        margin: { left: 14, right: 14 },
-                        columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 50 }, 2: { cellWidth: 28 } },
-                        styles: { fontSize: 7 },
+                        margin: { left: 10, right: 10 },
+                        columnStyles: { 0: { cellWidth: 7 }, 1: { cellWidth: 40 }, 2: { cellWidth: 22 }, 3: { cellWidth: 22 } },
+                        styles: { fontSize: 6.5 },
                       });
 
                       doc.save(`sold_products_${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -1657,6 +1661,7 @@ const Analytics = () => {
                       <tr>
                         <th className="text-left p-2 font-medium text-muted-foreground">#</th>
                         <th className="text-left p-2 font-medium text-muted-foreground">Product</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">SKU</th>
                         <th className="text-left p-2 font-medium text-muted-foreground">Supplier SKU</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Units</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Revenue</th>
@@ -1671,6 +1676,7 @@ const Analytics = () => {
                           <tr key={product.name} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                             <td className="p-2 text-muted-foreground">{index + 1}</td>
                             <td className="p-2 font-medium">{product.name}</td>
+                            <td className="p-2 text-muted-foreground text-xs">{product.sku || "-"}</td>
                             <td className="p-2 text-muted-foreground text-xs">{product.supplier_sku || "-"}</td>
                             <td className="p-2 text-right">{product.quantity}</td>
                             <td className="p-2 text-right font-medium">${product.revenue.toFixed(2)}</td>
@@ -1684,7 +1690,7 @@ const Analytics = () => {
                     </tbody>
                     <tfoot className="border-t-2 font-semibold bg-muted/30">
                       <tr>
-                        <td className="p-2" colSpan={3}>Total ({allSoldProducts.length} products)</td>
+                        <td className="p-2" colSpan={4}>Total ({allSoldProducts.length} products)</td>
                         <td className="p-2 text-right">{allSoldProducts.reduce((s, p) => s + p.quantity, 0)}</td>
                         <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.revenue, 0).toFixed(2)}</td>
                         <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.profit, 0).toFixed(2)}</td>
