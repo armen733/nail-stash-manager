@@ -213,7 +213,7 @@ const Analytics = () => {
           salons (name),
           order_items (
             quantity, unit_price, line_total,
-            products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand, supplier_sku)
+            products (name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand, sku, supplier_sku)
           )
         `)
         .gte("created_at", periodStart.toISOString())
