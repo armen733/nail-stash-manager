@@ -69,6 +69,7 @@ interface ProductPerformance {
   quantity: number;
   profit: number;
   stock: number;
+  sku: string;
   supplier_sku: string;
 }
 
