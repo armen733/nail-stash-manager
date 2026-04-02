@@ -1656,6 +1656,7 @@ const Analytics = () => {
                       <tr>
                         <th className="text-left p-2 font-medium text-muted-foreground">#</th>
                         <th className="text-left p-2 font-medium text-muted-foreground">Product</th>
+                        <th className="text-left p-2 font-medium text-muted-foreground">Supplier SKU</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Units</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Revenue</th>
                         <th className="text-right p-2 font-medium text-muted-foreground">Profit</th>
