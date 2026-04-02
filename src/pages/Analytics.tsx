@@ -1670,6 +1670,7 @@ const Analytics = () => {
                           <tr key={product.name} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                             <td className="p-2 text-muted-foreground">{index + 1}</td>
                             <td className="p-2 font-medium">{product.name}</td>
+                            <td className="p-2 text-muted-foreground text-xs">{product.supplier_sku || "-"}</td>
                             <td className="p-2 text-right">{product.quantity}</td>
                             <td className="p-2 text-right font-medium">${product.revenue.toFixed(2)}</td>
                             <td className="p-2 text-right">${product.profit.toFixed(2)}</td>
