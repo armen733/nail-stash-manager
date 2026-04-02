@@ -1683,7 +1683,7 @@ const Analytics = () => {
                     </tbody>
                     <tfoot className="border-t-2 font-semibold bg-muted/30">
                       <tr>
-                        <td className="p-2" colSpan={2}>Total ({allSoldProducts.length} products)</td>
+                        <td className="p-2" colSpan={3}>Total ({allSoldProducts.length} products)</td>
                         <td className="p-2 text-right">{allSoldProducts.reduce((s, p) => s + p.quantity, 0)}</td>
                         <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.revenue, 0).toFixed(2)}</td>
                         <td className="p-2 text-right">${allSoldProducts.reduce((s, p) => s + p.profit, 0).toFixed(2)}</td>
