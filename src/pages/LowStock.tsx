@@ -28,6 +28,7 @@ interface LowStockProduct {
   id: string;
   name: string;
   sku: string;
+  supplier_sku: string | null;
   category: string;
   stock_on_hand: number;
   reorder_level: number;
