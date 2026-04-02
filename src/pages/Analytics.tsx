@@ -149,7 +149,7 @@ const Analytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [period, dateRange]);
+  }, [period, dateRange, selectedMonth]);
 
   // Auto-refresh effect
   useEffect(() => {
