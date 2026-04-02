@@ -393,6 +393,7 @@ const Analytics = () => {
           quantity: productMap[p.name]?.quantity || 0,
           profit: 0,
           stock: p.stock_on_hand || 0,
+          sku: "",
           supplier_sku: ""
         }))
         .slice(0, 5);
