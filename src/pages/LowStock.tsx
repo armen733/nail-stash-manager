@@ -206,10 +206,16 @@ const LowStock = () => {
             Products that need reordering ({filteredProducts.length} of {products.length})
           </p>
         </div>
-        <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button onClick={exportLowStockCSV} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none" disabled={filteredProducts.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
