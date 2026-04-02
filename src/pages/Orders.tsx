@@ -903,11 +903,11 @@ const Orders = () => {
 
         ${order.notes ? `<div class="notes"><h3>Notes</h3><p>${order.notes}</p></div>` : ''}
         
-        <script>
-          window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
-          };
-        </script>
+        <div style="text-align:center;margin-top:24px;" class="no-print">
+          <button onclick="window.close()" style="padding:10px 24px;font-size:14px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:8px;">← Go Back</button>
+          <button onclick="window.print()" style="padding:10px 24px;font-size:14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">🖨 Print</button>
+        </div>
+        <style>.no-print { display: block; } @media print { .no-print { display: none !important; } }</style>
       </body>
       </html>
     `;
