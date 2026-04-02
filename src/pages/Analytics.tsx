@@ -340,6 +340,7 @@ const Analytics = () => {
               quantity: 0,
               profit: 0,
               stock: product.stock_on_hand || 0,
+              sku: product.sku || "",
               supplier_sku: product.supplier_sku || ""
             };
           }
