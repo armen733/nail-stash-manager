@@ -769,17 +769,35 @@ const Analytics = () => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={period} onValueChange={(value: "week" | "month" | "quarter" | "custom") => setPeriod(value)}>
+          <Select value={period} onValueChange={(value: "week" | "month" | "quarter" | "custom" | "specific-month") => setPeriod(value)}>
             <SelectTrigger className="w-full sm:w-[160px] h-11">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="week">Last 7 Days</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="specific-month">Select Month</SelectItem>
               <SelectItem value="quarter">Last Quarter</SelectItem>
               <SelectItem value="custom">Custom Range</SelectItem>
             </SelectContent>
           </Select>
+          
+          {period === "specific-month" && (
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-full sm:w-[180px] h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const d = new Date();
+                  d.setMonth(d.getMonth() - i);
+                  const value = format(d, "yyyy-MM");
+                  const label = format(d, "MMMM yyyy");
+                  return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                })}
+              </SelectContent>
+            </Select>
+          )
           
           {period === "custom" && (
             <Popover>
