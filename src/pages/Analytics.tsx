@@ -345,7 +345,7 @@ const Analytics = () => {
       const sortedProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
       setAllSoldProducts(sortedProducts);
       setCategorySales(Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue));
-      setTopProducts(allProducts.slice(0, 10));
+      setTopProducts(sortedProducts.slice(0, 10));
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5));
 
       // Calculate salon stats
