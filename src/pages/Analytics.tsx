@@ -169,7 +169,14 @@ const Analytics = () => {
     let previousStart: Date;
     let previousEnd: Date;
 
-    if (period === "custom" && dateRange?.from) {
+    if (period === "specific-month") {
+      const [year, month] = selectedMonth.split("-").map(Number);
+      periodStart = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0);
+      periodEnd = endOfMonth > now ? now : endOfMonth;
+      previousEnd = subDays(periodStart, 1);
+      previousStart = new Date(previousEnd.getFullYear(), previousEnd.getMonth(), 1);
+    } else if (period === "custom" && dateRange?.from) {
       periodStart = dateRange.from;
       periodEnd = dateRange.to || now;
       const daysDiff = differenceInDays(periodEnd, periodStart);
