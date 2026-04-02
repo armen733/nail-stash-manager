@@ -1562,10 +1562,10 @@ const Analytics = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      const headers = ["Product", "Supplier SKU", "Units Sold", "Revenue ($)", "Profit ($)", "Margin (%)"];
+                      const headers = ["Product", "SKU", "Supplier SKU", "Units Sold", "Revenue ($)", "Profit ($)", "Margin (%)"];
                       const rows = allSoldProducts.map(p => {
                         const margin = p.revenue > 0 ? (p.profit / p.revenue) * 100 : 0;
-                        return [p.name, p.supplier_sku || "", p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
+                        return [p.name, p.sku || "", p.supplier_sku || "", p.quantity, p.revenue.toFixed(2), p.profit.toFixed(2), margin.toFixed(1)];
                       });
                       const periodText = period === "custom" && dateRange?.from 
                         ? `${format(dateRange.from, "yyyy-MM-dd")}_to_${format(dateRange.to || new Date(), "yyyy-MM-dd")}`
