@@ -1933,10 +1933,84 @@ const Analytics = () => {
 
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Revenue by Salon
-              </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Revenue by Salon
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const headers = ["Rank", "Salon", "Orders", "Revenue ($)", "Avg Order ($)"];
+                      const rows = salonStats.map((s, i) => [i + 1, s.name, s.orderCount, s.revenue.toFixed(2), s.avgOrder.toFixed(2)]);
+                      const csvContent = [
+                        headers.join(","),
+                        ...rows.map(row => row.map(v => `"${v}"`).join(","))
+                      ].join("\n");
+                      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                      const link = document.createElement("a");
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `salon_revenue_${format(new Date(), "yyyy-MM-dd")}.csv`;
+                      link.click();
+                      toast({ title: "Exported", description: "Salon revenue CSV downloaded" });
+                    }}
+                    disabled={salonStats.length === 0}
+                  >
+                    <Download className="mr-1 h-4 w-4" />
+                    CSV
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const doc = new jsPDF();
+                      const pageWidth = doc.internal.pageSize.getWidth();
+                      const periodText = period === "custom" && dateRange?.from 
+                        ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to || new Date(), "MMM dd, yyyy")}`
+                        : period === "specific-month" ? format(new Date(selectedMonth + "-01"), "MMMM yyyy")
+                        : period === "week" ? "Last 7 Days" : period === "month" ? "This Month" : "Last Quarter";
+                      
+                      doc.setFontSize(18);
+                      doc.text("Revenue by Salon", pageWidth / 2, 20, { align: "center" });
+                      doc.setFontSize(11);
+                      doc.setTextColor(100);
+                      doc.text(periodText, pageWidth / 2, 28, { align: "center" });
+                      doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`, pageWidth / 2, 34, { align: "center" });
+                      
+                      const totalRev = salonStats.reduce((s, x) => s + x.revenue, 0);
+                      const totalOrd = salonStats.reduce((s, x) => s + x.orderCount, 0);
+                      doc.setFontSize(10);
+                      doc.setTextColor(40);
+                      doc.text(`Total: ${salonStats.length} salons | ${totalOrd} orders | $${totalRev.toFixed(2)} revenue`, pageWidth / 2, 42, { align: "center" });
+
+                      autoTable(doc, {
+                        startY: 48,
+                        head: [["#", "Salon", "Orders", "Revenue", "Avg Order"]],
+                        body: salonStats.map((s, i) => [
+                          (i + 1).toString(),
+                          s.name.length > 30 ? s.name.slice(0, 30) + "..." : s.name,
+                          s.orderCount.toString(),
+                          `$${s.revenue.toFixed(2)}`,
+                          `$${s.avgOrder.toFixed(2)}`
+                        ]),
+                        theme: "striped",
+                        headStyles: { fillColor: [59, 130, 246] },
+                        margin: { left: 14, right: 14 },
+                        styles: { fontSize: 8 },
+                      });
+
+                      doc.save(`salon_revenue_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+                      toast({ title: "Exported", description: "Salon revenue PDF downloaded" });
+                    }}
+                    disabled={salonStats.length === 0}
+                  >
+                    <FileText className="mr-1 h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
