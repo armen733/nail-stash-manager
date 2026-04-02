@@ -1591,6 +1591,7 @@ const Analytics = () => {
                       const pageWidth = doc.internal.pageSize.getWidth();
                       const periodText = period === "custom" && dateRange?.from 
                         ? `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to || new Date(), "MMM dd, yyyy")}`
+                        : period === "specific-month" ? format(new Date(selectedMonth + "-01"), "MMMM yyyy")
                         : period === "week" ? "Last 7 Days" : period === "month" ? "This Month" : "Last Quarter";
                       
                       doc.setFontSize(18);
