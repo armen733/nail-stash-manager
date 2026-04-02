@@ -797,7 +797,7 @@ const Analytics = () => {
                 })}
               </SelectContent>
             </Select>
-          )
+          )}
           
           {period === "custom" && (
             <Popover>
