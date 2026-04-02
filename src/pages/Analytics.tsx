@@ -390,7 +390,8 @@ const Analytics = () => {
           revenue: productMap[p.name]?.revenue || 0,
           quantity: productMap[p.name]?.quantity || 0,
           profit: 0,
-          stock: p.stock_on_hand || 0
+          stock: p.stock_on_hand || 0,
+          supplier_sku: ""
         }))
         .slice(0, 5);
       setSlowMoving(slowMovingProducts);
