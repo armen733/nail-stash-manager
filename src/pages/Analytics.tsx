@@ -69,6 +69,7 @@ interface ProductPerformance {
   quantity: number;
   profit: number;
   stock: number;
+  supplier_sku: string;
 }
 
 const Analytics = () => {
