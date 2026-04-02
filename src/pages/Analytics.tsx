@@ -82,11 +82,12 @@ const Analytics = () => {
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom">("month");
+  const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom" | "specific-month">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date()
   });
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), "yyyy-MM"));
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const [showComparison, setShowComparison] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
