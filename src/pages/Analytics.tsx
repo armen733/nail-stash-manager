@@ -1626,13 +1626,13 @@ const Analytics = () => {
 
                       autoTable(doc, {
                         startY: 48,
-                        head: [["#", "Product", "Supplier SKU", "Units", "Revenue", "Profit", "Margin"]],
+                        head: [["#", "Product", "SKU", "Supplier SKU", "Units", "Revenue", "Profit", "Margin"]],
                         body: productData,
                         theme: "striped",
                         headStyles: { fillColor: [59, 130, 246] },
-                        margin: { left: 14, right: 14 },
-                        columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 50 }, 2: { cellWidth: 28 } },
-                        styles: { fontSize: 7 },
+                        margin: { left: 10, right: 10 },
+                        columnStyles: { 0: { cellWidth: 7 }, 1: { cellWidth: 40 }, 2: { cellWidth: 22 }, 3: { cellWidth: 22 } },
+                        styles: { fontSize: 6.5 },
                       });
 
                       doc.save(`sold_products_${format(new Date(), "yyyy-MM-dd")}.pdf`);
