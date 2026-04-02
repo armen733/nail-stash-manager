@@ -152,6 +152,31 @@ const LowStock = () => {
     return { label: "Low", variant: "secondary" as const };
   };
 
+  const exportLowStockCSV = () => {
+    const headers = ["Name", "Variant", "SKU", "Supplier SKU", "Category", "Supplier", "Current Stock", "Reorder Level", "Shortage", "Unit Price"];
+    const rows = filteredProducts.map(p => [
+      p.name,
+      p.variant_name || "",
+      p.sku,
+      p.supplier_sku || "",
+      p.category,
+      p.supplier || "",
+      p.stock_on_hand,
+      p.reorder_level,
+      p.reorder_level - p.stock_on_hand,
+      p.price_usd.toFixed(2),
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `low-stock-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: `${filteredProducts.length} low stock products exported to CSV` });
+  };
+
   // Get unique categories from low stock products
   const categories = [...new Set(products.map(p => p.category))].sort();
   
