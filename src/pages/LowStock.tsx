@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Package, Edit, RefreshCw, Filter } from "lucide-react";
+import { AlertTriangle, Package, Edit, RefreshCw, Filter, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ interface LowStockProduct {
   id: string;
   name: string;
   sku: string;
+  supplier_sku: string | null;
   category: string;
   stock_on_hand: number;
   reorder_level: number;
@@ -71,7 +72,7 @@ const LowStock = () => {
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape,
+          id, name, sku, supplier_sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape,
           product_images(image_url, display_order)
         `)
         .order("stock_on_hand", { ascending: true });
@@ -151,6 +152,31 @@ const LowStock = () => {
     return { label: "Low", variant: "secondary" as const };
   };
 
+  const exportLowStockCSV = () => {
+    const headers = ["Name", "Variant", "SKU", "Supplier SKU", "Category", "Supplier", "Current Stock", "Reorder Level", "Shortage", "Unit Price"];
+    const rows = filteredProducts.map(p => [
+      p.name,
+      p.variant_name || "",
+      p.sku,
+      p.supplier_sku || "",
+      p.category,
+      p.supplier || "",
+      p.stock_on_hand,
+      p.reorder_level,
+      p.reorder_level - p.stock_on_hand,
+      p.price_usd.toFixed(2),
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `low-stock-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: `${filteredProducts.length} low stock products exported to CSV` });
+  };
+
   // Get unique categories from low stock products
   const categories = [...new Set(products.map(p => p.category))].sort();
   
@@ -180,10 +206,16 @@ const LowStock = () => {
             Products that need reordering ({filteredProducts.length} of {products.length})
           </p>
         </div>
-        <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] w-full sm:w-auto">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button onClick={exportLowStockCSV} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none" disabled={filteredProducts.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
