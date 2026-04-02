@@ -72,7 +72,7 @@ const LowStock = () => {
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id, name, sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape,
+          id, name, sku, supplier_sku, category, stock_on_hand, reorder_level, price_usd, supplier, variant_name, image_url, grit, material, shape,
           product_images(image_url, display_order)
         `)
         .order("stock_on_hand", { ascending: true });
