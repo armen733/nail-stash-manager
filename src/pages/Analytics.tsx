@@ -338,7 +338,8 @@ const Analytics = () => {
               revenue: 0,
               quantity: 0,
               profit: 0,
-              stock: product.stock_on_hand || 0
+              stock: product.stock_on_hand || 0,
+              supplier_sku: product.supplier_sku || ""
             };
           }
           productMap[productName].revenue += item.line_total;
