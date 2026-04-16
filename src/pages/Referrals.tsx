@@ -77,6 +77,7 @@ const generateCode = () => {
 };
 
 const Referrals = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [referrers, setReferrers] = useState<Referrer[]>([]);
   const [customerReferrals, setCustomerReferrals] = useState<CustomerReferral[]>([]);
