@@ -186,7 +186,7 @@ export default function Users() {
       });
 
       setIsDialogOpen(false);
-      setFormData({ full_name: "", email: "", phone: "" });
+      setFormData({ full_name: "", email: "", phone: "", referrer_id: "" });
       queryClient.invalidateQueries({ queryKey: ["users-with-tiers"] });
     } catch (error: any) {
       toast({
