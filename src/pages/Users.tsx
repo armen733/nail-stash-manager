@@ -141,7 +141,6 @@ export default function Users() {
     queryFn: async () => {
       if (!selectedUser) return [];
       
-      // Fetch orders by profile_id OR by customer_email (for guest orders)
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_date, status, total, customer_name, order_items(id, quantity, unit_price, products(name))")
@@ -150,6 +149,21 @@ export default function Users() {
       
       if (error) throw error;
       return data || [];
+    },
+    enabled: !!selectedUser,
+  });
+
+  const { data: userReferrer } = useQuery({
+    queryKey: ["user-referrer", selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return null;
+      const { data, error } = await supabase
+        .from("customer_referrals")
+        .select("referrer_id, referral_code_used, referred_at, referrers(name, referral_code)")
+        .eq("customer_id", selectedUser.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!selectedUser,
   });
@@ -429,6 +443,15 @@ export default function Users() {
                     <Calendar className="h-3 w-3" />
                     Member since {format(new Date(selectedUser.created_at), "MMM d, yyyy")}
                   </div>
+                  {userReferrer?.referrers && (
+                    <div className="flex items-center gap-1.5 mt-2 p-2 rounded-md bg-muted/50 border">
+                      <Share2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-sm">
+                        Referred by <span className="font-medium text-foreground">{(userReferrer.referrers as any).name}</span>
+                        <span className="text-muted-foreground ml-1">({(userReferrer.referrers as any).referral_code})</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats Cards */}
