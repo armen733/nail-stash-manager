@@ -180,6 +180,23 @@ export default function Users() {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // If a referrer was selected, create the customer_referral link
+      if (formData.referrer_id && data.user?.id) {
+        const selectedRef = activeReferrers?.find(r => r.id === formData.referrer_id);
+        if (selectedRef) {
+          await supabase.from("customer_referrals").insert([{
+            customer_id: data.user.id,
+            referrer_id: formData.referrer_id,
+            referral_code_used: selectedRef.referral_code,
+          }]);
+          // Update referrer stats
+          const { count } = await supabase.from("customer_referrals")
+            .select("*", { count: "exact", head: true })
+            .eq("referrer_id", formData.referrer_id);
+          await supabase.from("referrers").update({ total_referred: count || 0 }).eq("id", formData.referrer_id);
+        }
+      }
+
       toast({
         title: "Success",
         description: "Customer created successfully",
