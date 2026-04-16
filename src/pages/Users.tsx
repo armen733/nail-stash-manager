@@ -157,10 +157,10 @@ export default function Users() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.full_name || !formData.email) {
+    if (!formData.full_name) {
       toast({
         title: "Error",
-        description: "Name and email are required",
+        description: "Name is required",
         variant: "destructive",
       });
       return;
@@ -168,9 +168,10 @@ export default function Users() {
 
     setIsLoading(true);
     try {
+      const emailToUse = formData.email || `${formData.full_name.toLowerCase().replace(/\s+/g, '.')}.${Date.now()}@placeholder.local`;
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
-          email: formData.email,
+          email: emailToUse,
           full_name: formData.full_name,
           phone: formData.phone || null,
           role: "Customer",
@@ -264,14 +265,13 @@ export default function Users() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="john@example.com"
-                  required
                   className="min-h-[44px]"
                 />
               </div>
