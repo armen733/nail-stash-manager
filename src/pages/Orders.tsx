@@ -1084,6 +1084,18 @@ const Orders = () => {
                   </Select>
                 </div>
 
+                {/* Referrer auto-detection indicator */}
+                {detectedReferrer && (
+                  <div className="sm:col-span-2 bg-muted/50 border rounded-md p-3 flex items-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <div className="text-sm">
+                      <span className="font-medium">Referrer detected:</span>{" "}
+                      <span>{detectedReferrer.name}</span>{" "}
+                      <span className="text-muted-foreground">({detectedReferrer.commission_rate}% commission = ${(calculateTotal() * detectedReferrer.commission_rate / 100).toFixed(2)})</span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="salon_id">Salon</Label>
                   <Popover open={salonComboOpen} onOpenChange={setSalonComboOpen}>
