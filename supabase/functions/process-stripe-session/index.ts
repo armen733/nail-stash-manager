@@ -212,6 +212,50 @@ serve(async (req: Request) => {
       }
     }
 
+    // Check for referral and create commission
+    if (userId) {
+      try {
+        const { data: referral } = await supabase
+          .from('customer_referrals')
+          .select('referrer_id, referrers(commission_rate, total_revenue, total_commission)')
+          .eq('customer_id', userId)
+          .maybeSingle();
+
+        if (referral && referral.referrer_id) {
+          const referrer = referral.referrers as any;
+          const commissionRate = referrer?.commission_rate || 10;
+          const commissionAmount = (subtotal * commissionRate) / 100;
+
+          const { error: commError } = await supabase
+            .from('referral_commissions')
+            .insert({
+              referrer_id: referral.referrer_id,
+              customer_id: userId,
+              order_id: order.id,
+              order_subtotal: subtotal,
+              commission_rate: commissionRate,
+              commission_amount: commissionAmount,
+              status: 'pending',
+            });
+
+          if (commError) {
+            logStep('Failed to insert referral commission', { error: commError.message });
+          } else {
+            // Update referrer totals
+            const newRevenue = (referrer?.total_revenue || 0) + subtotal;
+            const newCommission = (referrer?.total_commission || 0) + commissionAmount;
+            await supabase
+              .from('referrers')
+              .update({ total_revenue: newRevenue, total_commission: newCommission })
+              .eq('id', referral.referrer_id);
+            logStep('Referral commission created', { referrerId: referral.referrer_id, commissionAmount });
+          }
+        }
+      } catch (refErr) {
+        logStep('Referral check error', { error: refErr });
+      }
+    }
+
     // Send Telegram notification
     try {
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
