@@ -168,9 +168,10 @@ export default function Users() {
 
     setIsLoading(true);
     try {
+      const emailToUse = formData.email || `${formData.full_name.toLowerCase().replace(/\s+/g, '.')}.${Date.now()}@placeholder.local`;
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
-          email: formData.email,
+          email: emailToUse,
           full_name: formData.full_name,
           phone: formData.phone || null,
           role: "Customer",
