@@ -272,7 +272,6 @@ export default function Users() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="john@example.com"
                   className="min-h-[44px]"
-                  className="min-h-[44px]"
                 />
               </div>
               <div className="space-y-2">
