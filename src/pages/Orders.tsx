@@ -168,6 +168,7 @@ const Orders = () => {
   });
 
   const [showNewSalonForm, setShowNewSalonForm] = useState(false);
+  const [customerComboOpen, setCustomerComboOpen] = useState(false);
   const [salonComboOpen, setSalonComboOpen] = useState(false);
   const [isCreatingSalon, setIsCreatingSalon] = useState(false);
   const [newSalonData, setNewSalonData] = useState({
@@ -1048,40 +1049,67 @@ const Orders = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="profile_id">Customer (optional)</Label>
-                  <Select 
-                    value={formData.profile_id || ""} 
-                    onValueChange={(value) => {
-                      if (value === "new") {
-                        setShowNewUserForm(true);
-                      } else if (value === "none") {
-                        setFormData({ ...formData, profile_id: "" });
-                      } else {
-                        setFormData({ ...formData, profile_id: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Walk-in (no customer)" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border z-50">
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">Walk-in (no customer)</span>
-                      </SelectItem>
-                      <SelectItem value="new">
-                        <span className="flex items-center gap-2 text-primary">
-                          <Plus className="h-4 w-4" /> Add New Customer
-                        </span>
-                      </SelectItem>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.id}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{profile.full_name}</span>
-                            <span className="text-xs text-muted-foreground">{profile.email}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={customerComboOpen} onOpenChange={setCustomerComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerComboOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.profile_id
+                          ? profiles.find(p => p.id === formData.profile_id)?.full_name || "Walk-in (no customer)"
+                          : "Walk-in (no customer)"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search customers..." />
+                        <CommandList>
+                          <CommandEmpty>No customer found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="no-customer"
+                              onSelect={() => {
+                                setFormData({ ...formData, profile_id: "" });
+                                setCustomerComboOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", !formData.profile_id ? "opacity-100" : "opacity-0")} />
+                              <span className="text-muted-foreground">Walk-in (no customer)</span>
+                            </CommandItem>
+                            <CommandItem
+                              value="add-new-customer"
+                              onSelect={() => {
+                                setShowNewUserForm(true);
+                                setCustomerComboOpen(false);
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4 text-primary" />
+                              <span className="text-primary">Add New Customer</span>
+                            </CommandItem>
+                            {profiles.map((profile) => (
+                              <CommandItem
+                                key={profile.id}
+                                value={`${profile.full_name} ${profile.email} ${profile.phone || ""}`}
+                                onSelect={() => {
+                                  setFormData({ ...formData, profile_id: profile.id });
+                                  setCustomerComboOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", formData.profile_id === profile.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{profile.full_name}</span>
+                                  <span className="text-xs text-muted-foreground">{profile.email}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Referrer auto-detection indicator */}
