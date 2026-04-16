@@ -138,6 +138,19 @@ const ReferrerProfile = () => {
     return { totalRevenue, totalCommission, unpaid, paid, orderCount, customerCount: customers.length };
   }, [commissions, customers]);
 
+  // Build unique month options from commission data
+  const monthOptions = useMemo(() => {
+    const months = new Map<string, string>();
+    commissions.forEach(c => {
+      const d = new Date(c.created_at);
+      const key = format(d, "yyyy-MM");
+      if (!months.has(key)) {
+        months.set(key, format(d, "MMM yyyy"));
+      }
+    });
+    return Array.from(months.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [commissions]);
+
   const filteredCommissions = useMemo(() => {
     let filtered = commissions;
     if (commissionFilter !== "all") {
@@ -148,8 +161,13 @@ const ReferrerProfile = () => {
       let start: Date, end: Date;
       if (dateFilter === "week") {
         start = startOfWeek(now); end = endOfWeek(now);
-      } else {
+      } else if (dateFilter === "month") {
         start = startOfMonth(now); end = endOfMonth(now);
+      } else {
+        // Specific month filter like "2026-04"
+        const [y, m] = dateFilter.split("-").map(Number);
+        start = new Date(y, m - 1, 1);
+        end = endOfMonth(start);
       }
       filtered = filtered.filter(c => {
         const d = new Date(c.created_at);
