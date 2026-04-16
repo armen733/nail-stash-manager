@@ -286,6 +286,31 @@ export default function Users() {
                   className="min-h-[44px]"
                 />
               </div>
+              {activeReferrers && activeReferrers.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="referrer">Referred By (optional)</Label>
+                  <Select
+                    value={formData.referrer_id || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, referrer_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger className="min-h-[44px]">
+                      <SelectValue placeholder="No referrer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No referrer</SelectItem>
+                      {activeReferrers.map((ref) => (
+                        <SelectItem key={ref.id} value={ref.id}>
+                          <div className="flex items-center gap-2">
+                            <Share2 className="h-3 w-3" />
+                            <span>{ref.name}</span>
+                            <span className="text-xs text-muted-foreground">({ref.referral_code})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                   Cancel
