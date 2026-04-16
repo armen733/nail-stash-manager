@@ -301,28 +301,28 @@ const Referrals = () => {
   }, [commissions, commissionFilter, commissionDateFilter]);
 
   const exportCommissions = () => {
-    const headers = ["Date", "Referrer", "Customer", "Order Subtotal", "Rate %", "Commission", "Status", "Paid At"];
-    const rows = filteredCommissions.map(c => [
-      format(new Date(c.created_at), "yyyy-MM-dd"),
-      c.referrers?.name || "",
-      c.profiles?.full_name || "",
-      Number(c.order_subtotal).toFixed(2),
-      String(c.commission_rate),
-      Number(c.commission_amount).toFixed(2),
-      c.status,
-      c.paid_at ? format(new Date(c.paid_at), "yyyy-MM-dd") : "",
-    ]);
-    downloadCSV(headers, rows, `referral-commissions-${format(new Date(), "yyyy-MM-dd")}`);
+    const data = filteredCommissions.map(c => ({
+      Date: format(new Date(c.created_at), "yyyy-MM-dd"),
+      Referrer: c.referrers?.name || "",
+      Customer: c.profiles?.full_name || "",
+      "Order Subtotal": Number(c.order_subtotal).toFixed(2),
+      "Rate %": String(c.commission_rate),
+      Commission: Number(c.commission_amount).toFixed(2),
+      Status: c.status,
+      "Paid At": c.paid_at ? format(new Date(c.paid_at), "yyyy-MM-dd") : "",
+    }));
+    downloadCSV(data, `referral-commissions`);
   };
 
   const exportReferrers = () => {
-    const headers = ["Name", "Phone", "Email", "Code", "Commission Rate", "Status", "Referred Customers", "Total Revenue", "Total Commission"];
-    const rows = referrers.map(r => [
-      r.name, r.phone || "", r.email || "", r.referral_code,
-      String(r.commission_rate) + "%", r.status,
-      String(r.total_referred), Number(r.total_revenue).toFixed(2), Number(r.total_commission).toFixed(2),
-    ]);
-    downloadCSV(headers, rows, `referrers-${format(new Date(), "yyyy-MM-dd")}`);
+    const data = referrers.map(r => ({
+      Name: r.name, Phone: r.phone || "", Email: r.email || "", Code: r.referral_code,
+      "Commission Rate": String(r.commission_rate) + "%", Status: r.status,
+      "Referred Customers": String(r.total_referred),
+      "Total Revenue": Number(r.total_revenue).toFixed(2),
+      "Total Commission": Number(r.total_commission).toFixed(2),
+    }));
+    downloadCSV(data, `referrers`);
   };
 
   if (loading) {
