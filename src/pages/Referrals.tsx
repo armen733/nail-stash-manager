@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ const generateCode = () => {
 };
 
 const Referrals = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [referrers, setReferrers] = useState<Referrer[]>([]);
   const [customerReferrals, setCustomerReferrals] = useState<CustomerReferral[]>([]);
@@ -436,7 +438,11 @@ const Referrals = () => {
                 ) : (
                   filteredReferrers.map((ref) => (
                     <TableRow key={ref.id}>
-                      <TableCell className="font-medium">{ref.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <button onClick={() => navigate(`/referrals/${ref.id}`)} className="text-primary hover:underline text-left">
+                          {ref.name}
+                        </button>
+                      </TableCell>
                       <TableCell>
                         <button onClick={() => copyCode(ref.referral_code)} className="flex items-center gap-1 text-xs font-mono bg-muted px-2 py-1 rounded hover:bg-muted/80">
                           {ref.referral_code} <Copy className="h-3 w-3" />
