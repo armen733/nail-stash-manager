@@ -29,6 +29,7 @@ const Promotions = lazy(() => import("./pages/Promotions"));
 const VisitTracker = lazy(() => import("./pages/VisitTracker"));
 const SalonProfile = lazy(() => import("./pages/SalonProfile"));
 const Referrals = lazy(() => import("./pages/Referrals"));
+const ReferrerProfile = lazy(() => import("./pages/ReferrerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure React Query with better caching defaults
@@ -233,6 +234,16 @@ const App = () => (
                 <ManagerRoute>
                   <AppLayout>
                     <Referrals />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/referrals/:id"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <ReferrerProfile />
                   </AppLayout>
                 </ManagerRoute>
               }
