@@ -443,6 +443,15 @@ export default function Users() {
                     <Calendar className="h-3 w-3" />
                     Member since {format(new Date(selectedUser.created_at), "MMM d, yyyy")}
                   </div>
+                  {userReferrer?.referrers && (
+                    <div className="flex items-center gap-1.5 mt-2 p-2 rounded-md bg-muted/50 border">
+                      <Share2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-sm">
+                        Referred by <span className="font-medium text-foreground">{(userReferrer.referrers as any).name}</span>
+                        <span className="text-muted-foreground ml-1">({(userReferrer.referrers as any).referral_code})</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats Cards */}
