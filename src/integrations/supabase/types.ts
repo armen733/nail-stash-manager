@@ -127,6 +127,48 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_referrals: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          referral_code_used: string
+          referred_at: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          referral_code_used: string
+          referred_at?: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          referral_code_used?: string
+          referred_at?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_referrals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_codes: {
         Row: {
           code: string
@@ -641,6 +683,126 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      referral_commissions: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          created_at: string
+          customer_id: string
+          id: string
+          order_id: string
+          order_subtotal: number
+          paid_at: string | null
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          order_id: string
+          order_subtotal?: number
+          paid_at?: string | null
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          order_id?: string
+          order_subtotal?: number
+          paid_at?: string | null
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_commissions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrers: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          email: string | null
+          id: string
+          linked_profile_id: string | null
+          name: string
+          phone: string | null
+          referral_code: string
+          status: string
+          total_commission: number
+          total_referred: number
+          total_revenue: number
+          updated_at: string
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          linked_profile_id?: string | null
+          name: string
+          phone?: string | null
+          referral_code: string
+          status?: string
+          total_commission?: number
+          total_referred?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          linked_profile_id?: string | null
+          name?: string
+          phone?: string | null
+          referral_code?: string
+          status?: string
+          total_commission?: number
+          total_referred?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrers_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       salon_visits: {
         Row: {
