@@ -272,6 +272,33 @@ const Orders = () => {
     }
   }, [location, toast]);
 
+  // Auto-detect referrer when customer is selected
+  useEffect(() => {
+    const detectReferrer = async () => {
+      if (!formData.profile_id) {
+        setDetectedReferrer(null);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("customer_referrals")
+          .select("referrer_id, referrers(id, name, commission_rate, status)")
+          .eq("customer_id", formData.profile_id)
+          .maybeSingle();
+        
+        if (data?.referrers && (data.referrers as any).status === "active") {
+          const ref = data.referrers as any;
+          setDetectedReferrer({ id: ref.id, name: ref.name, commission_rate: ref.commission_rate });
+        } else {
+          setDetectedReferrer(null);
+        }
+      } catch {
+        setDetectedReferrer(null);
+      }
+    };
+    detectReferrer();
+  }, [formData.profile_id]);
+
   const fetchData = async () => {
     try {
       const [ordersRes, salonsRes, productsRes, profilesRes] = await Promise.all([
