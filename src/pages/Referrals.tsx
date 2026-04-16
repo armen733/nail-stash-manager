@@ -342,7 +342,6 @@ const Referrals = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
@@ -353,35 +352,35 @@ const Referrals = () => {
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <UserPlus className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+            <UserPlus className="h-5 w-5 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{stats.totalCustomersReferred}</p>
             <p className="text-xs text-muted-foreground">Referred Customers</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
+            <DollarSign className="h-5 w-5 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">${stats.totalRevenue.toFixed(0)}</p>
             <p className="text-xs text-muted-foreground">Revenue Generated</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <TrendingUp className="h-5 w-5 mx-auto text-purple-500 mb-1" />
+            <TrendingUp className="h-5 w-5 mx-auto text-accent-foreground mb-1" />
             <p className="text-lg font-bold">${stats.totalCommission.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">Total Commission</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <Clock className="h-5 w-5 mx-auto text-yellow-500 mb-1" />
+            <Clock className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
             <p className="text-lg font-bold">${stats.unpaidCommission.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">Unpaid</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-1" />
+            <CheckCircle className="h-5 w-5 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">${stats.paidCommission.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">Paid Out</p>
           </CardContent>
@@ -459,7 +458,7 @@ const Referrals = () => {
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleBulkMarkPaid(ref.id)}>
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-primary" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(ref.id)}>
                             <Trash2 className="h-4 w-4" />
@@ -579,7 +578,7 @@ const Referrals = () => {
                       <TableCell className="text-right">
                         {c.status === "pending" && (
                           <Button variant="ghost" size="sm" onClick={() => handleMarkPaid(c.id)}>
-                            <CheckCircle className="h-4 w-4 text-green-600 mr-1" /> Pay
+                            <CheckCircle className="h-4 w-4 text-primary mr-1" /> Pay
                           </Button>
                         )}
                       </TableCell>
