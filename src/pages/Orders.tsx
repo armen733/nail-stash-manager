@@ -664,9 +664,36 @@ const Orders = () => {
         console.error('Telegram notification exception:', notifyErr);
       }
 
+      // Create referral commission if customer has a referrer
+      if (detectedReferrer && formData.profile_id) {
+        const commissionAmount = subtotal * (detectedReferrer.commission_rate / 100);
+        try {
+          await supabase.from("referral_commissions").insert([{
+            order_id: order.id,
+            referrer_id: detectedReferrer.id,
+            customer_id: formData.profile_id,
+            order_subtotal: subtotal,
+            commission_rate: detectedReferrer.commission_rate,
+            commission_amount: commissionAmount,
+            status: "pending",
+          }]);
+          // Update referrer cached stats
+          const { data: refData } = await supabase.from("referrers").select("total_revenue, total_commission").eq("id", detectedReferrer.id).single();
+          if (refData) {
+            await supabase.from("referrers").update({
+              total_revenue: Number(refData.total_revenue) + subtotal,
+              total_commission: Number(refData.total_commission) + commissionAmount,
+            }).eq("id", detectedReferrer.id);
+          }
+        } catch (commErr) {
+          console.error("Failed to create referral commission:", commErr);
+        }
+      }
+
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "" });
+      setDetectedReferrer(null);
       setOrderItems([]);
       fetchData();
     } catch (error: any) {
