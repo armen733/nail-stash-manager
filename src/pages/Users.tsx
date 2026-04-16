@@ -71,9 +71,24 @@ export default function Users() {
     full_name: "",
     email: "",
     phone: "",
+    referrer_id: "",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch active referrers for the dropdown
+  const { data: activeReferrers } = useQuery({
+    queryKey: ["active-referrers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrers")
+        .select("id, name, referral_code")
+        .eq("status", "active")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ["users-with-tiers"],
