@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -64,9 +71,24 @@ export default function Users() {
     full_name: "",
     email: "",
     phone: "",
+    referrer_id: "",
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch active referrers for the dropdown
+  const { data: activeReferrers } = useQuery({
+    queryKey: ["active-referrers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrers")
+        .select("id, name, referral_code")
+        .eq("status", "active")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ["users-with-tiers"],
@@ -158,13 +180,30 @@ export default function Users() {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // If a referrer was selected, create the customer_referral link
+      if (formData.referrer_id && data.user?.id) {
+        const selectedRef = activeReferrers?.find(r => r.id === formData.referrer_id);
+        if (selectedRef) {
+          await supabase.from("customer_referrals").insert([{
+            customer_id: data.user.id,
+            referrer_id: formData.referrer_id,
+            referral_code_used: selectedRef.referral_code,
+          }]);
+          // Update referrer stats
+          const { count } = await supabase.from("customer_referrals")
+            .select("*", { count: "exact", head: true })
+            .eq("referrer_id", formData.referrer_id);
+          await supabase.from("referrers").update({ total_referred: count || 0 }).eq("id", formData.referrer_id);
+        }
+      }
+
       toast({
         title: "Success",
         description: "Customer created successfully",
       });
 
       setIsDialogOpen(false);
-      setFormData({ full_name: "", email: "", phone: "" });
+      setFormData({ full_name: "", email: "", phone: "", referrer_id: "" });
       queryClient.invalidateQueries({ queryKey: ["users-with-tiers"] });
     } catch (error: any) {
       toast({
@@ -247,6 +286,31 @@ export default function Users() {
                   className="min-h-[44px]"
                 />
               </div>
+              {activeReferrers && activeReferrers.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="referrer">Referred By (optional)</Label>
+                  <Select
+                    value={formData.referrer_id || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, referrer_id: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger className="min-h-[44px]">
+                      <SelectValue placeholder="No referrer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No referrer</SelectItem>
+                      {activeReferrers.map((ref) => (
+                        <SelectItem key={ref.id} value={ref.id}>
+                          <div className="flex items-center gap-2">
+                            <Share2 className="h-3 w-3" />
+                            <span>{ref.name}</span>
+                            <span className="text-xs text-muted-foreground">({ref.referral_code})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                   Cancel
