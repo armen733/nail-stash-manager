@@ -141,7 +141,6 @@ export default function Users() {
     queryFn: async () => {
       if (!selectedUser) return [];
       
-      // Fetch orders by profile_id OR by customer_email (for guest orders)
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_date, status, total, customer_name, order_items(id, quantity, unit_price, products(name))")
@@ -150,6 +149,21 @@ export default function Users() {
       
       if (error) throw error;
       return data || [];
+    },
+    enabled: !!selectedUser,
+  });
+
+  const { data: userReferrer } = useQuery({
+    queryKey: ["user-referrer", selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return null;
+      const { data, error } = await supabase
+        .from("customer_referrals")
+        .select("referrer_id, referral_code_used, referred_at, referrers(name, referral_code)")
+        .eq("customer_id", selectedUser.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!selectedUser,
   });
