@@ -422,7 +422,14 @@ export default function Warehouse() {
               <span className="font-semibold">
                 ${totals.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
-              <span className="text-muted-foreground text-xs">value</span>
+              <span className="text-muted-foreground text-xs">cost</span>
+            </div>
+            <div className="h-4 w-px bg-border hidden sm:block" />
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-primary">
+                ${totals.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-muted-foreground text-xs">retail</span>
             </div>
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-1">
