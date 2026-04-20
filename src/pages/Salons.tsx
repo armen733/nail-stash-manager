@@ -523,12 +523,6 @@ const Salons = () => {
         onOpenChange={(open) => !open && setSelectedSalonForHistory(null)}
       />
 
-      {/* Bulk CSV Import */}
-      <SalonImportDialog
-        isOpen={isImportOpen}
-        onOpenChange={setIsImportOpen}
-        onImported={fetchSalons}
-      />
     </div>
   );
 };
