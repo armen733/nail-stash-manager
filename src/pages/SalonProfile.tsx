@@ -262,9 +262,40 @@ export default function SalonProfile() {
             {salon.contact_name && <span>· {salon.contact_name}</span>}
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={openEdit} className="flex-shrink-0">
-          <Pencil className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2 flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!salon) return;
+              generateSalonStatementPDF({
+                salon,
+                orders: orders.map((o) => ({
+                  id: o.id,
+                  invoice_number: o.invoice_number,
+                  order_date: o.order_date,
+                  total: Number(o.total),
+                  amount_paid: Number(o.amount_paid),
+                  balance_due: Number(o.balance_due),
+                  status: o.status,
+                })),
+                payments: payments.map((p) => ({
+                  id: p.id,
+                  paid_at: p.paid_at,
+                  amount: Number(p.amount),
+                  method: p.method,
+                  reference: p.reference,
+                  order_invoice: orders.find((o) => o.id === p.order_id)?.invoice_number ?? null,
+                })),
+              });
+            }}
+          >
+            <FileText className="h-4 w-4 mr-1.5" /> Statement
+          </Button>
+          <Button variant="outline" size="icon" onClick={openEdit}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Contact actions */}
