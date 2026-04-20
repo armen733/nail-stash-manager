@@ -259,14 +259,7 @@ export default function SalonProfile() {
                   balance_due: Number(o.balance_due),
                   status: o.status,
                 })),
-                payments: payments.map((p) => ({
-                  id: p.id,
-                  paid_at: p.paid_at,
-                  amount: Number(p.amount),
-                  method: p.method,
-                  reference: p.reference,
-                  order_invoice: orders.find((o) => o.id === p.order_id)?.invoice_number ?? null,
-                })),
+                payments: [],
               });
             }}
           >
