@@ -107,31 +107,31 @@ export const SalonOrderHistory = ({ salonId, salonName, open, onOpenChange }: Sa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-primary" />
-            {salonName} — Order History
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl h-[90vh] sm:h-[85vh] flex flex-col p-4 sm:p-6 gap-3">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg pr-6">
+            <ShoppingBag className="h-5 w-5 text-primary flex-shrink-0" />
+            <span className="truncate">{salonName}</span>
           </DialogTitle>
         </DialogHeader>
 
         {/* Summary stats */}
-        {!loading && orders.length > 0 && (
-          <div className="flex gap-4 text-sm border-b pb-3">
+        {!loading && (
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-sm border-b pb-3 flex-shrink-0">
             <div className="flex items-center gap-1.5">
               <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Orders:</span>
+              <span className="text-muted-foreground">Total orders:</span>
               <span className="font-semibold">{totalOrders}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Total Revenue:</span>
+              <span className="text-muted-foreground">Revenue:</span>
               <span className="font-semibold text-primary">${totalRevenue.toFixed(2)}</span>
             </div>
           </div>
         )}
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
