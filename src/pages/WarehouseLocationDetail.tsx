@@ -132,9 +132,15 @@ export default function WarehouseLocationDetail() {
       </Button>
 
       <div className="flex items-start gap-3">
-        <div className="p-2.5 rounded-md bg-primary/10 text-primary flex-shrink-0">
-          <Icon className="h-6 w-6" />
-        </div>
+        {location.type === "fba" ? (
+          <div className="p-2 rounded-md bg-white border flex-shrink-0">
+            <img src={amazonLogo} alt="Amazon" className="h-6 w-6 object-contain" loading="lazy" />
+          </div>
+        ) : (
+          <div className="p-2.5 rounded-md bg-primary/10 text-primary flex-shrink-0">
+            <Icon className="h-6 w-6" />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <h1 className="text-xl md:text-2xl font-bold truncate">{location.name}</h1>
           <div className="flex items-center gap-1 mt-1 flex-wrap">
