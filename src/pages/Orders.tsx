@@ -2177,7 +2177,7 @@ const Orders = () => {
                                   {editedOrderIds.has(order.id) && (
                                     <Badge
                                       variant="outline"
-                                      className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer border-yellow-500/50 bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/25"
                                       onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
                                     >
                                       Edited
