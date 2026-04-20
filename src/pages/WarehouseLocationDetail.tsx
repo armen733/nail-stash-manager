@@ -227,52 +227,78 @@ export default function WarehouseLocationDetail() {
         </CardContent></Card>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {rows.length === 0 ? (
-            <div className="py-12 px-4 text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                No stock at this location yet.
-              </p>
-              <Button size="sm" onClick={() => setAction("receive")}>
-                <PackagePlus className="h-4 w-4 mr-1" /> Receive your first stock
-              </Button>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {rows.map((r) => {
-                const low = r.product.reorder_level && r.quantity <= r.product.reorder_level;
-                const imgs = r.product.product_images ?? [];
-                const sorted = [...imgs].sort(
-                  (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
-                );
-                const thumb = r.product.image_url || sorted[0]?.image_url || null;
-                return (
-                  <div key={r.product_id} className="flex items-center gap-3 p-3">
-                    {thumb ? (
-                      <img src={thumb} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted flex-shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{r.product.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{r.product.sku}</div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
-                        {r.quantity}
+      <Tabs defaultValue="stock" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="stock">Stock</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock" className="mt-3">
+          <Card>
+            <CardContent className="p-0">
+              {rows.length === 0 ? (
+                <div className="py-12 px-4 text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    No stock at this location yet.
+                  </p>
+                  <Button size="sm" onClick={() => setAction("receive")}>
+                    <PackagePlus className="h-4 w-4 mr-1" /> Receive your first stock
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {rows.map((r) => {
+                    const low = r.product.reorder_level && r.quantity <= r.product.reorder_level;
+                    const imgs = r.product.product_images ?? [];
+                    const sorted = [...imgs].sort(
+                      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+                    );
+                    const thumb = r.product.image_url || sorted[0]?.image_url || null;
+                    const effectivePrice = r.override_price ?? Number(r.product.price_usd ?? 0);
+                    const hasOverride = r.override_price !== null;
+                    return (
+                      <div key={r.product_id} className="flex items-center gap-3 p-3">
+                        {thumb ? (
+                          <img src={thumb} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex-shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{r.product.name}</div>
+                          <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                            <span>{r.product.sku}</span>
+                            <span>·</span>
+                            <span className={hasOverride ? "text-primary font-medium" : ""}>
+                              ${effectivePrice.toFixed(2)}
+                            </span>
+                            {hasOverride && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                Custom
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
+                            {r.quantity}
+                          </div>
+                          {r.reserved > 0 && (
+                            <div className="text-[10px] text-muted-foreground">{r.reserved} reserved</div>
+                          )}
+                        </div>
                       </div>
-                      {r.reserved > 0 && (
-                        <div className="text-[10px] text-muted-foreground">{r.reserved} reserved</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="mt-3">
+          <LocationPricingTab locationId={location.id} />
+        </TabsContent>
+      </Tabs>
 
       {action && (
         <StockActionDialog
