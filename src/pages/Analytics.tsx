@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
-  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse
 } from "lucide-react";
+import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -1267,11 +1268,15 @@ const Analytics = () => {
 
       {/* Tabs for different analytics sections */}
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-6 h-auto">
           <TabsTrigger value="sales" className="text-xs sm:text-sm py-2">Sales</TabsTrigger>
           <TabsTrigger value="products" className="text-xs sm:text-sm py-2">Products</TabsTrigger>
           <TabsTrigger value="customers" className="text-xs sm:text-sm py-2">Customers</TabsTrigger>
           <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2">Inventory</TabsTrigger>
+          <TabsTrigger value="warehouses" className="text-xs sm:text-sm py-2">
+            <Warehouse className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+            Warehouses
+          </TabsTrigger>
           <TabsTrigger value="salons" className="text-xs sm:text-sm py-2">Salons</TabsTrigger>
         </TabsList>
 
