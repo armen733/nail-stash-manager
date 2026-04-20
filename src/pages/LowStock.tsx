@@ -484,10 +484,5 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
     </div>
   );
 }
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default LowStock;
