@@ -310,9 +310,7 @@ export default function Warehouse() {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {loc.type === "fba" ? (
-                <div className="p-1 rounded-md bg-white border flex-shrink-0">
-                  <img src={amazonLogo} alt="Amazon" className="h-4 w-4 object-contain" loading="lazy" />
-                </div>
+                <img src={amazonLogo} alt="Amazon" className="h-6 w-6 object-contain flex-shrink-0" loading="lazy" />
               ) : (
                 <div className={`p-1.5 rounded-md ${meta.color} flex-shrink-0`}>
                   <Icon className="h-4 w-4" />
@@ -496,9 +494,7 @@ export default function Warehouse() {
               <section key={type} className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                   {type === "fba" ? (
-                    <div className="p-0.5 rounded bg-white border flex items-center justify-center">
-                      <img src={amazonLogo} alt="" className="h-3.5 w-3.5 object-contain" loading="lazy" />
-                    </div>
+                    <img src={amazonLogo} alt="" className="h-5 w-5 object-contain" loading="lazy" />
                   ) : (
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   )}
