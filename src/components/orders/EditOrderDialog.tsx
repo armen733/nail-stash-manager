@@ -302,7 +302,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               Editing a {order.status} order
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -503,7 +503,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between text-sm text-emerald-500">
+                <div className="flex justify-between text-sm text-primary">
                   <span>Discount</span>
                   <span>−${discountAmount.toFixed(2)}</span>
                 </div>
