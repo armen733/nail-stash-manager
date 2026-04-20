@@ -197,6 +197,7 @@ export default function Users() {
     enabled: !!selectedUser,
   });
 
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.full_name) {
