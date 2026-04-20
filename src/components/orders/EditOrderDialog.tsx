@@ -148,7 +148,12 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
     [items]
   );
-  const taxableSubtotal = Math.max(0, subtotal - discountAmount);
+  const loyaltyDiscount = useMemo(() => {
+    if (!loyalty || !pointsRedeemed) return 0;
+    const blocks = Math.floor(pointsRedeemed / loyalty.minRedeem);
+    return blocks * loyalty.redeemValue;
+  }, [loyalty, pointsRedeemed]);
+  const taxableSubtotal = Math.max(0, subtotal - discountAmount - loyaltyDiscount);
   const tax = calculateTax(taxableSubtotal);
   const total = taxableSubtotal + tax;
 
