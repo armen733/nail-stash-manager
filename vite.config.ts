@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
       srcDir: 'public',
       filename: 'sw.js',
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ['favicon.png', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'NÉRA Beauty - Salon Manager',
@@ -27,6 +30,7 @@ export default defineConfig(({ mode }) => ({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: '/',
         icons: [
           {
             src: '/icon-192.png',
@@ -43,7 +47,8 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        navigateFallbackDenylist: [/^\/~oauth/],
       }
     })
   ].filter(Boolean),
