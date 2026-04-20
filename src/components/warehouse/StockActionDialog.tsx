@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Minus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/audit-log";
 
 export type StockAction = "receive" | "transfer" | "adjust" | "sale";
 

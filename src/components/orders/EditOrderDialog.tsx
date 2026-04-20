@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
+import { logAudit } from "@/lib/audit-log";
 
 interface ProductLite {
   id: string;

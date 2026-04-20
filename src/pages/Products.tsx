@@ -77,6 +77,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAbandonedCart } from "@/hooks/useAbandonedCart";
+import { logAudit } from "@/lib/audit-log";
 
 const Products = () => {
   const navigate = useNavigate();

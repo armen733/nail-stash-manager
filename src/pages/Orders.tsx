@@ -64,6 +64,7 @@ import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
+import { logAudit } from "@/lib/audit-log";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 
