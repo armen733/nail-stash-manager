@@ -168,7 +168,35 @@ export default function Users() {
     enabled: !!selectedUser,
   });
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  // If this customer is ALSO a referrer (linked_profile_id), load their referrals + commissions
+  const { data: customerAsReferrer } = useQuery({
+    queryKey: ["customer-as-referrer", selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return null;
+      const { data: ref } = await supabase
+        .from("referrers")
+        .select("id, name, referral_code, commission_rate, total_referred, total_revenue, total_commission, status")
+        .eq("linked_profile_id", selectedUser.id)
+        .maybeSingle();
+      if (!ref) return null;
+
+      const [{ data: referrals }, { data: commissions }] = await Promise.all([
+        supabase
+          .from("customer_referrals")
+          .select("id, referred_at, referral_code_used, customer:profiles!customer_referrals_customer_id_fkey(id, full_name, email)")
+          .eq("referrer_id", ref.id)
+          .order("referred_at", { ascending: false }),
+        supabase
+          .from("referral_commissions")
+          .select("id, commission_amount, order_subtotal, status, created_at")
+          .eq("referrer_id", ref.id),
+      ]);
+
+      return { referrer: ref, referrals: referrals || [], commissions: commissions || [] };
+    },
+    enabled: !!selectedUser,
+  });
+
     e.preventDefault();
     
     if (!formData.full_name) {
