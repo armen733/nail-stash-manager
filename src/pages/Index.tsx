@@ -1280,6 +1280,7 @@ const Index = () => {
               </div>
             )}
           </CardContent>
+          )}
         </Card>
       </div>
 
