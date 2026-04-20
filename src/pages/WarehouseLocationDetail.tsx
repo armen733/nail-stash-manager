@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
-import amazonLogo from "@/assets/amazon-logo.png";
+import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
