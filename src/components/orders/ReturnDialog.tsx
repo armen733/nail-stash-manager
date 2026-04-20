@@ -209,8 +209,8 @@ export function ReturnDialog({ order, open, onOpenChange, onCompleted }: Props) 
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="border-amber-500/40 bg-amber-500/5">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
             Returned items are <strong>not restocked</strong> (treated as damaged). This affects only the financial side.
           </AlertDescription>
