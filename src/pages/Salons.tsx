@@ -147,11 +147,29 @@ const Salons = () => {
           .eq("id", editingSalon.id);
 
         if (error) throw error;
+        await logAudit({
+          action: "update",
+          entityType: "salon",
+          entityId: editingSalon.id,
+          entityLabel: salonData.name,
+          summary: `Updated salon "${salonData.name}"`,
+        });
         toast({ title: "Success", description: "Salon updated successfully" });
       } else {
-        const { error } = await supabase.from("salons").insert([salonData]);
+        const { data: created, error } = await supabase
+          .from("salons")
+          .insert([salonData])
+          .select("id")
+          .single();
 
         if (error) throw error;
+        await logAudit({
+          action: "create",
+          entityType: "salon",
+          entityId: created?.id,
+          entityLabel: salonData.name,
+          summary: `Created salon "${salonData.name}"`,
+        });
         toast({ title: "Success", description: "Salon added successfully" });
       }
 
@@ -243,6 +261,13 @@ const Salons = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients · <span className="font-semibold text-foreground">{salons.length}</span> registered</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            className="min-h-[44px] w-full sm:w-auto"
+            onClick={() => setIsImportOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
