@@ -138,8 +138,10 @@ export default function WarehouseLocationDetail() {
       : Number(r.product.price_usd);
     return s + r.quantity * v;
   }, 0);
+  // Retail value uses per-location override if set, falling back to product default.
   const totalRetail = rows.reduce(
-    (s, r) => s + r.quantity * Number(r.product.price_usd ?? 0),
+    (s, r) =>
+      s + r.quantity * Number(r.override_price ?? r.product.price_usd ?? 0),
     0
   );
 
