@@ -18,6 +18,8 @@ import {
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
+import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
