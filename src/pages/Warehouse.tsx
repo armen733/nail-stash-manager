@@ -33,6 +33,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import amazonLogo from "@/assets/amazon-logo.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
