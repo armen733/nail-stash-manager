@@ -242,6 +242,19 @@ export default function Users() {
         }
       }
 
+      await logAudit({
+        action: "create",
+        entityType: "user",
+        entityId: data.user?.id ?? null,
+        entityLabel: formData.full_name,
+        summary: `Created customer ${formData.full_name}${formData.email ? ` (${formData.email})` : ""}${formData.referrer_id ? " with referrer link" : ""}`,
+        metadata: {
+          email: emailToUse,
+          phone: formData.phone || null,
+          referrer_id: formData.referrer_id || null,
+        },
+      });
+
       toast({
         title: "Success",
         description: "Customer created successfully",
