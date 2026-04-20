@@ -474,9 +474,9 @@ const LowStock = () => {
 
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: "destructive" }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`text-base sm:text-lg font-bold leading-tight ${accent === "destructive" ? "text-destructive" : ""}`}>
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground truncate">{label}</p>
+      <p className={`text-sm sm:text-base font-bold leading-tight truncate ${accent === "destructive" ? "text-destructive" : ""}`}>
         {value}
       </p>
     </div>
