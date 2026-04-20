@@ -66,6 +66,8 @@ import { ReturnDialog } from "@/components/orders/ReturnDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { logAudit } from "@/lib/audit-log";
+import { enqueueOrder, isOnline } from "@/lib/offline-queue";
+import { notifyQueueChanged } from "@/hooks/useOnlineStatus";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 
@@ -600,7 +602,47 @@ const Orders = () => {
       const subtotal = calculateTotal();
       const tax = calculateTax(subtotal);
       const total = subtotal + tax;
-      
+
+      // === OFFLINE PATH: queue locally and bail out ===
+      if (!isOnline()) {
+        const selectedProfile = profiles.find((p) => p.id === formData.profile_id);
+        const selectedSalon = salons.find((s) => s.id === formData.salon_id);
+        const customerLabel = selectedProfile?.full_name || selectedSalon?.name || "Walk-in";
+
+        await enqueueOrder({
+          salon_id: formData.salon_id || null,
+          profile_id: formData.profile_id || null,
+          notes: formData.notes || null,
+          created_by: user?.id ?? null,
+          status: "Draft",
+          subtotal,
+          tax,
+          total,
+          customer_label: customerLabel,
+          items: orderItems.map((it) => {
+            const p = products.find((pp) => pp.id === it.product_id);
+            return {
+              product_id: it.product_id,
+              product_name: p?.name,
+              sku: p?.sku,
+              quantity: it.quantity,
+              unit_price: it.unit_price,
+            };
+          }),
+        });
+        notifyQueueChanged();
+
+        toast({
+          title: "Order saved offline",
+          description: "It will sync automatically when you're back online.",
+        });
+        setIsDialogOpen(false);
+        setFormData({ salon_id: "", profile_id: "", notes: "" });
+        setDetectedReferrer(null);
+        setOrderItems([]);
+        return;
+      }
+
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert([
