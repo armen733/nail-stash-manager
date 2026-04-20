@@ -309,9 +309,15 @@ export default function Warehouse() {
         <CardHeader className="pb-2 p-3 sm:p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className={`p-1.5 rounded-md ${meta.color} flex-shrink-0`}>
-                <Icon className="h-4 w-4" />
-              </div>
+              {loc.type === "fba" ? (
+                <div className="p-1 rounded-md bg-white border flex-shrink-0">
+                  <img src={amazonLogo} alt="Amazon" className="h-4 w-4 object-contain" loading="lazy" />
+                </div>
+              ) : (
+                <div className={`p-1.5 rounded-md ${meta.color} flex-shrink-0`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-sm sm:text-base truncate leading-tight">
                   {loc.name}
