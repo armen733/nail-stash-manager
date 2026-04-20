@@ -367,45 +367,67 @@ export function StockActionDialog({
                 className="pl-8 h-9"
               />
             </div>
-            {search && (
-              <div className="border rounded-md max-h-56 overflow-y-auto divide-y">
-                {loadingProducts ? (
-                  <div className="p-3 text-sm text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Loading…
-                  </div>
-                ) : visibleProducts.length === 0 ? (
-                  <div className="p-3 text-sm text-muted-foreground">No matches.</div>
-                ) : (
-                  visibleProducts.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => addLine(p)}
-                      className="w-full flex items-center gap-2 p-2 hover:bg-accent text-left"
-                    >
-                      {p.image_url ? (
-                        <img
-                          src={p.image_url}
-                          alt=""
-                          className="h-8 w-8 rounded object-cover flex-shrink-0"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-muted flex-shrink-0" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">{p.name}</div>
-                        <div className="text-xs text-muted-foreground truncate">{p.sku}</div>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {p.stockHere} here
-                      </Badge>
-                      <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            {/* Always show the product list so users can browse without searching */}
+            <div className="border rounded-md max-h-64 overflow-y-auto divide-y">
+              {loadingProducts ? (
+                <div className="p-3 text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+                </div>
+              ) : visibleProducts.length === 0 ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  {action === "receive"
+                    ? "No products match your search."
+                    : search
+                    ? "No matches in this location."
+                    : "No products with stock at this location yet."}
+                </div>
+              ) : (
+                <>
+                  {visibleProducts.map((p) => {
+                    const added = lines.some((l) => l.product_id === p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => addLine(p)}
+                        disabled={added}
+                        className="w-full flex items-center gap-2 p-2 hover:bg-accent text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt=""
+                            className="h-8 w-8 rounded object-cover flex-shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted flex-shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{p.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{p.sku}</div>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {p.stockHere} here
+                        </Badge>
+                        {added ? (
+                          <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                            Added
+                          </Badge>
+                        ) : (
+                          <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  {!search && visibleProducts.length >= 50 && (
+                    <div className="p-2 text-[11px] text-center text-muted-foreground bg-muted/30">
+                      Showing first 50 — search to find more.
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Selected lines */}
