@@ -37,6 +37,7 @@ interface StockRow {
   product_id: string;
   quantity: number;
   reserved: number;
+  override_price: number | null;
   product: {
     name: string;
     sku: string;
