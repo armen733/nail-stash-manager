@@ -11,12 +11,11 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, Mail, MapPin, ShoppingCart,
-  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil, FileText, Wallet,
+  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil, FileText,
 } from "lucide-react";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { generateSalonStatementPDF } from "@/lib/statement-pdf";
-import { RecordPaymentDialog, PayableOrder } from "@/components/payments/RecordPaymentDialog";
 
 interface SalonData {
   id: string;
@@ -39,15 +38,6 @@ interface OrderWithItems {
   status: string;
   notes: string | null;
   order_items: { product_id: string; quantity: number; unit_price: number; line_total: number }[];
-}
-
-interface PaymentRow {
-  id: string;
-  amount: number;
-  method: string;
-  reference: string | null;
-  paid_at: string;
-  order_id: string;
 }
 
 interface ProductInfo {
@@ -79,23 +69,14 @@ export default function SalonProfile() {
   });
   const [saving, setSaving] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
-  const [payments, setPayments] = useState<PaymentRow[]>([]);
-  const [paymentTarget, setPaymentTarget] = useState<PayableOrder | null>(null);
 
   const refresh = async () => {
     if (!id) return;
-    const [ordersRes, paysRes] = await Promise.all([
-      supabase.from("orders")
-        .select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)")
-        .eq("salon_id", id)
-        .order("order_date", { ascending: false }),
-      supabase.from("payments")
-        .select("id, amount, method, reference, paid_at, order_id")
-        .eq("salon_id", id)
-        .order("paid_at", { ascending: false }),
-    ]);
+    const ordersRes = await supabase.from("orders")
+      .select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)")
+      .eq("salon_id", id)
+      .order("order_date", { ascending: false });
     setOrders((ordersRes.data || []) as OrderWithItems[]);
-    setPayments((paysRes.data || []) as PaymentRow[]);
   };
 
   useEffect(() => {
