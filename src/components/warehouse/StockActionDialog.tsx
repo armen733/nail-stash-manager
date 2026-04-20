@@ -249,6 +249,26 @@ export function StockActionDialog({
           unit_cost: unitCost,
           reason: reason.trim() || null,
         });
+      } else if (action === "sale") {
+        if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+          toast.error(`Invalid quantity for ${l.name}`);
+          return;
+        }
+        if (qtyNum > l.stockHere) {
+          toast.error(`Only ${l.stockHere} available for ${l.name}`);
+          return;
+        }
+        const priceNum = l.unit_price ? Number(l.unit_price) : l.default_price;
+        movements.push({
+          product_id: l.product_id,
+          movement_type: "sale",
+          quantity: qtyNum,
+          from_location_id: locationId,
+          to_location_id: null,
+          unit_cost: Number.isFinite(priceNum) ? priceNum : null,
+          reason: reason.trim() || "Manual sale",
+          reference_type: "manual_sale",
+        });
       } else {
         // transfer
         if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
