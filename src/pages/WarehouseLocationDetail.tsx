@@ -40,6 +40,7 @@ interface StockRow {
     cost_usd: number | null;
     reorder_level: number | null;
     image_url: string | null;
+    product_images?: { image_url: string; display_order: number | null }[];
   };
 }
 
