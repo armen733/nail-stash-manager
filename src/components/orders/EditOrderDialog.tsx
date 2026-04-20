@@ -87,6 +87,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [notes, setNotes] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
+  const [loyalty, setLoyalty] = useState<{ available: number; perDollar: number; minRedeem: number; redeemValue: number } | null>(null);
 
   // Detect Stripe orders: no created_by + has customer_email
   const isStripeOrder = useMemo(() => {
