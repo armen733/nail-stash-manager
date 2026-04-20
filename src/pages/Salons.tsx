@@ -267,13 +267,6 @@ const Salons = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients · <span className="font-semibold text-foreground">{salons.length}</span> registered</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            className="min-h-[44px] w-full sm:w-auto"
-            onClick={() => setIsImportOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" /> Import CSV
-          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
