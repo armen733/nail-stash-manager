@@ -79,21 +79,41 @@ export default function SalonProfile() {
   });
   const [saving, setSaving] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentTarget, setPaymentTarget] = useState<PayableOrder | null>(null);
+
+  const refresh = async () => {
+    if (!id) return;
+    const [ordersRes, paysRes] = await Promise.all([
+      supabase.from("orders")
+        .select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)")
+        .eq("salon_id", id)
+        .order("order_date", { ascending: false }),
+      supabase.from("payments")
+        .select("id, amount, method, reference, paid_at, order_id")
+        .eq("salon_id", id)
+        .order("paid_at", { ascending: false }),
+    ]);
+    setOrders((ordersRes.data || []) as OrderWithItems[]);
+    setPayments((paysRes.data || []) as PaymentRow[]);
+  };
 
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [salonRes, ordersRes, visitsRes] = await Promise.all([
+      const [salonRes, ordersRes, visitsRes, paysRes] = await Promise.all([
         supabase.from("salons").select("*").eq("id", id).single(),
-        supabase.from("orders").select("id, order_date, total, status, notes, order_items(product_id, quantity, unit_price, line_total)").eq("salon_id", id).order("order_date", { ascending: false }),
+        supabase.from("orders").select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)").eq("salon_id", id).order("order_date", { ascending: false }),
         supabase.from("salon_visits").select("id, visited_at, visit_type, notes").eq("salon_id", id).order("visited_at", { ascending: false }),
+        supabase.from("payments").select("id, amount, method, reference, paid_at, order_id").eq("salon_id", id).order("paid_at", { ascending: false }),
       ]);
 
       if (salonRes.data) setSalon(salonRes.data);
       const ordersData = (ordersRes.data || []) as OrderWithItems[];
       setOrders(ordersData);
       setVisits((visitsRes.data || []) as VisitRecord[]);
+      setPayments((paysRes.data || []) as PaymentRow[]);
 
       // Fetch product info + images for all ordered products
       const productIds = new Set<string>();
