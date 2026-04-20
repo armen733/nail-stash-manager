@@ -164,10 +164,13 @@ export default function Warehouse() {
       const qty = Number(row.quantity ?? 0);
       if (qty <= 0) return;
       const prod = productMap.get(row.product_id);
-      const valuePer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
-      const cur = aggregated[row.location_id] ?? { units: 0, value: 0, skus: 0, lowSkus: 0 };
+      const costPer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
+      const retailPer = prod?.price ?? 0;
+      const cur =
+        aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
       cur.units += qty;
-      cur.value += qty * valuePer;
+      cur.value += qty * costPer;
+      cur.retail += qty * retailPer;
       cur.skus += 1;
       if (prod && prod.reorder > 0 && qty <= prod.reorder) cur.lowSkus += 1;
       aggregated[row.location_id] = cur;
