@@ -1729,6 +1729,15 @@ const Orders = () => {
               
               {/* Actions */}
               <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
+                {editedOrderIds.has(viewOrder.id) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setHistoryOrderId(viewOrder.id)}
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    View History
+                  </Button>
+                )}
                 <Button
                   variant="default"
                   onClick={() => {
@@ -1758,6 +1767,12 @@ const Orders = () => {
           fetchData();
           queryClient.invalidateQueries({ queryKey: ["products"] });
         }}
+      />
+
+      <OrderHistoryDialog
+        orderId={historyOrderId}
+        open={!!historyOrderId}
+        onOpenChange={(o) => !o && setHistoryOrderId(null)}
       />
 
       {/* Order Status Breakdown */}
