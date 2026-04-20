@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, useTheme } from "next-themes";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ManagerRoute } from "@/components/ManagerRoute";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
@@ -103,6 +104,9 @@ const AppLayoutInner = ({ children }: { children: React.ReactNode }) => {
             className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto object-contain"
             style={{ background: 'transparent' }}
           />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <OfflineIndicator />
+          </div>
         </header>
         <div className="flex-1 p-3 sm:p-4 md:p-6 safe-bottom">
           <Suspense fallback={<PageLoader />}>

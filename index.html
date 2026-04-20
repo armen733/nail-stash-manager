@@ -28,13 +28,32 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(() => {
-          console.log('Service Worker registered');
-        }).catch((err) => {
-          console.error('SW registration failed:', err);
-        });
-      }
+      // Guard service-worker registration so it never runs inside the
+      // Lovable editor preview (iframe) or on a preview hostname.
+      (function () {
+        var inIframe = false;
+        try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
+        var host = window.location.hostname;
+        var isPreviewHost =
+          host.indexOf('id-preview--') !== -1 ||
+          host.indexOf('lovableproject.com') !== -1 ||
+          host.indexOf('lovable.app') !== -1 && host.indexOf('id-preview--') !== -1;
+
+        if ('serviceWorker' in navigator) {
+          if (inIframe || isPreviewHost) {
+            // Clean up any previously-registered SW so it stops caching the preview.
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) { r.unregister(); });
+            });
+          } else {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('/sw.js')
+                .then(function () { console.log('Service Worker registered'); })
+                .catch(function (err) { console.error('SW registration failed:', err); });
+            });
+          }
+        }
+      })();
     </script>
   </body>
 </html>
