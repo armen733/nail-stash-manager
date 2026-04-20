@@ -323,8 +323,7 @@ const LowStock = () => {
                 </h2>
                 <Badge variant="destructive" className="text-xs">{outOfStock.length}</Badge>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {outOfStock.map((product) => renderCompactCard(product))}
+              <div className="grid gap-3 lg:grid-cols-2">
               </div>
             </section>
           )}
