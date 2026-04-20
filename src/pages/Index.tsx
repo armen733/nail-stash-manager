@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -117,6 +117,8 @@ const Index = () => {
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [topProductsOpen, setTopProductsOpen] = useState(false);
+  const [stockValueOpen, setStockValueOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<string>("month");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
@@ -1102,7 +1104,17 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
+            <button
+              type="button"
+              onClick={() => setTopProductsOpen((v) => !v)}
+              className="flex items-center gap-2 text-left flex-1 min-w-0"
+            >
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topProductsOpen ? "" : "-rotate-90"}`} />
+              <CardTitle className="text-base sm:text-lg truncate">Top Products</CardTitle>
+              {!topProductsOpen && topProducts.length > 0 && (
+                <span className="text-xs text-muted-foreground ml-1">({topProducts.length})</span>
+              )}
+            </button>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -1234,6 +1246,7 @@ const Index = () => {
               </Button>
             </div>
           </CardHeader>
+          {topProductsOpen && (
           <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -1267,15 +1280,23 @@ const Index = () => {
               </div>
             )}
           </CardContent>
+          )}
         </Card>
       </div>
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">Total: ${loading ? "..." : totalStockValue.toFixed(2)}</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setStockValueOpen((v) => !v)}
+            className="flex items-start gap-2 text-left flex-1 min-w-0"
+          >
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 mt-1 ${stockValueOpen ? "" : "-rotate-90"}`} />
+            <div className="min-w-0">
+              <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Total: ${loading ? "..." : totalStockValue.toFixed(2)}</p>
+            </div>
+          </button>
           <Button 
             variant="outline" 
             size="sm" 
@@ -1409,6 +1430,7 @@ const Index = () => {
             Export
           </Button>
         </CardHeader>
+        {stockValueOpen && (
         <CardContent className="overflow-x-auto">
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -1435,6 +1457,7 @@ const Index = () => {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* New Analytics Row */}
