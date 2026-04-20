@@ -261,10 +261,22 @@ const LowStock = () => {
               ))}
             </SelectContent>
           </Select>
+          {copiesCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHideCopies((v) => !v)}
+              className="h-10"
+              title="Products with '(Copy)' in their name or 'COPY-' in their SKU come from the Duplicate action on the Products page."
+            >
+              {hideCopies ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+              {hideCopies ? `Show duplicates (${copiesCount})` : "Hide duplicates"}
+            </Button>
+          )}
           {(categoryFilter !== "all" || variantFilter !== "all") && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => { setCategoryFilter("all"); setVariantFilter("all"); }}
               className="h-10"
             >
