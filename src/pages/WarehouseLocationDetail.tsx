@@ -4,8 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Warehouse, Package, Truck, Store } from "lucide-react";
+import {
+  ArrowLeft,
+  Warehouse,
+  Package,
+  Truck,
+  Store,
+  PackagePlus,
+  ArrowLeftRight,
+  ClipboardEdit,
+} from "lucide-react";
 import { toast } from "sonner";
+import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -44,29 +54,49 @@ export default function WarehouseLocationDetail() {
   const navigate = useNavigate();
   const [location, setLocation] = useState<StockLocation | null>(null);
   const [rows, setRows] = useState<StockRow[]>([]);
+  const [otherLocations, setOtherLocations] = useState<
+    { id: string; name: string; type: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      setLoading(true);
-      const [locRes, stockRes] = await Promise.all([
-        supabase.from("stock_locations").select("*").eq("id", id).maybeSingle(),
-        supabase
-          .from("product_stock")
-          .select(
-            "product_id, quantity, reserved, product:products(name, sku, price_usd, cost_usd, reorder_level, image_url)"
-          )
-          .eq("location_id", id)
-          .gt("quantity", 0)
-          .order("quantity", { ascending: false }),
-      ]);
+  const [action, setAction] = useState<StockAction | null>(null);
 
-      if (locRes.error) toast.error(locRes.error.message);
-      setLocation((locRes.data ?? null) as StockLocation | null);
-      setRows((stockRes.data ?? []) as any);
-      setLoading(false);
-    })();
+  const load = async () => {
+    if (!id) return;
+    setLoading(true);
+    const [locRes, stockRes, allLocRes] = await Promise.all([
+      supabase.from("stock_locations").select("*").eq("id", id).maybeSingle(),
+      supabase
+        .from("product_stock")
+        .select(
+          "product_id, quantity, reserved, product:products(name, sku, price_usd, cost_usd, reorder_level, image_url)"
+        )
+        .eq("location_id", id)
+        .gt("quantity", 0)
+        .order("quantity", { ascending: false }),
+      supabase
+        .from("stock_locations")
+        .select("id, name, type, is_active")
+        .eq("is_active", true)
+        .order("name"),
+    ]);
+
+    if (locRes.error) toast.error(locRes.error.message);
+    setLocation((locRes.data ?? null) as StockLocation | null);
+    setRows((stockRes.data ?? []) as any);
+    setOtherLocations(
+      ((allLocRes.data ?? []) as any[]).filter((l) => l.id !== id).map((l) => ({
+        id: l.id,
+        name: l.name,
+        type: l.type,
+      }))
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   if (loading) {
@@ -95,7 +125,7 @@ export default function WarehouseLocationDetail() {
   );
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
+    <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
       <Button variant="ghost" size="sm" onClick={() => navigate("/warehouse")} className="-ml-2">
         <ArrowLeft className="h-4 w-4 mr-1" /> Back
       </Button>
@@ -112,6 +142,31 @@ export default function WarehouseLocationDetail() {
             {!location.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
           </div>
         </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        <Button onClick={() => setAction("receive")} className="h-auto py-2.5 flex-col gap-1">
+          <PackagePlus className="h-4 w-4" />
+          <span className="text-xs">Receive</span>
+        </Button>
+        <Button
+          onClick={() => setAction("transfer")}
+          variant="outline"
+          className="h-auto py-2.5 flex-col gap-1"
+          disabled={rows.length === 0 || otherLocations.length === 0}
+        >
+          <ArrowLeftRight className="h-4 w-4" />
+          <span className="text-xs">Transfer</span>
+        </Button>
+        <Button
+          onClick={() => setAction("adjust")}
+          variant="outline"
+          className="h-auto py-2.5 flex-col gap-1"
+        >
+          <ClipboardEdit className="h-4 w-4" />
+          <span className="text-xs">Adjust</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -136,8 +191,13 @@ export default function WarehouseLocationDetail() {
       <Card>
         <CardContent className="p-0">
           {rows.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No stock at this location yet.
+            <div className="py-12 px-4 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                No stock at this location yet.
+              </p>
+              <Button size="sm" onClick={() => setAction("receive")}>
+                <PackagePlus className="h-4 w-4 mr-1" /> Receive your first stock
+              </Button>
             </div>
           ) : (
             <div className="divide-y">
@@ -170,9 +230,17 @@ export default function WarehouseLocationDetail() {
         </CardContent>
       </Card>
 
-      <p className="text-xs text-center text-muted-foreground">
-        Receive / Transfer / Adjust actions coming next.
-      </p>
+      {action && (
+        <StockActionDialog
+          open={!!action}
+          onOpenChange={(v) => !v && setAction(null)}
+          action={action}
+          locationId={location.id}
+          locationName={location.name}
+          otherLocations={otherLocations}
+          onDone={load}
+        />
+      )}
     </div>
   );
 }
