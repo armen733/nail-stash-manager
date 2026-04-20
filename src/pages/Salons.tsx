@@ -59,7 +59,6 @@ const Salons = () => {
   const [phoneToCall, setPhoneToCall] = useState<string | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [selectedSalonForHistory, setSelectedSalonForHistory] = useState<Salon | null>(null);
-  const [isImportOpen, setIsImportOpen] = useState(false);
   const { toast } = useToast();
 
   const openMaps = (address: string) => {
