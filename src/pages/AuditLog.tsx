@@ -177,7 +177,7 @@ const AuditLog = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -187,6 +187,15 @@ const AuditLog = () => {
                 className="pl-9"
               />
             </div>
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger><SelectValue placeholder="All severities" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="critical">🔴 Critical only</SelectItem>
+                <SelectItem value="warning">🟡 Warning only</SelectItem>
+                <SelectItem value="info">⚪ Info only</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger><SelectValue placeholder="All actions" /></SelectTrigger>
               <SelectContent>
@@ -205,6 +214,17 @@ const AuditLog = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
+            <span className="font-medium">Legend:</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.critical}>🔴 Critical</Badge>
+            <span>deletes, payouts, prices, user changes</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.warning}>🟡 Warning</Badge>
+            <span>stock, status changes, imports</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.info}>⚪ Info</Badge>
+            <span>routine creates/updates</span>
           </div>
         </CardContent>
       </Card>
