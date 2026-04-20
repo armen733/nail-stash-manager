@@ -187,7 +187,36 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
 
     setSaving(true);
     try {
-      // 1) Compute stock deltas (new - old) per product_id
+      // 0) Snapshot the current order BEFORE any changes (for edit history)
+      const { data: { user } } = await supabase.auth.getUser();
+      const snapshot = {
+        status: order.status,
+        salon_id: order.salon_id,
+        customer_name: order.customer_name,
+        customer_email: order.customer_email,
+        customer_phone: order.customer_phone,
+        customer_address: order.customer_address,
+        notes: order.notes,
+        subtotal: order.subtotal,
+        tax: order.tax,
+        total: order.total,
+        discount_code: order.discount_code || null,
+        discount_amount: order.discount_amount || null,
+        items: (order.order_items || []).map((it) => ({
+          product_id: it.product_id,
+          product_name: it.products?.name || null,
+          product_sku: it.products?.sku || null,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+          line_total: it.quantity * it.unit_price,
+        })),
+      };
+      await (supabase as any).from("order_edit_history").insert({
+        order_id: order.id,
+        edited_by: user?.id || null,
+        snapshot,
+      });
+
       const originalById = new Map<string, number>();
       (order.order_items || []).forEach((oi) => {
         originalById.set(oi.product_id, (originalById.get(oi.product_id) || 0) + oi.quantity);
