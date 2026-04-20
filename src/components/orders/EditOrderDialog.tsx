@@ -365,6 +365,33 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
         }
       }
 
+      // Audit log: capture what changed at a high level
+      const statusChanged = order.status !== status;
+      const totalChanged = Math.abs(Number(order.total) - total) > 0.001;
+      const summaryParts: string[] = [];
+      if (statusChanged) summaryParts.push(`status ${order.status} → ${status}`);
+      if (totalChanged) summaryParts.push(`total $${Number(order.total).toFixed(2)} → $${total.toFixed(2)}`);
+      if (items.length !== (order.order_items?.length ?? 0)) {
+        summaryParts.push(`items ${order.order_items?.length ?? 0} → ${items.length}`);
+      }
+      await logAudit({
+        action: "update",
+        entityType: "order",
+        entityId: order.id,
+        entityLabel: (order as any).invoice_number ?? order.id.slice(0, 8),
+        summary: summaryParts.length > 0
+          ? `Edited order: ${summaryParts.join(", ")}`
+          : "Edited order",
+        metadata: {
+          status_before: order.status,
+          status_after: status,
+          total_before: Number(order.total),
+          total_after: total,
+          item_count_before: order.order_items?.length ?? 0,
+          item_count_after: items.length,
+        },
+      });
+
       toast({ title: "Order updated", description: "Items, stock, and totals were updated." });
       onSaved();
       onOpenChange(false);
