@@ -131,7 +131,7 @@ export const SalonOrderHistory = ({ salonId, salonName, open, onOpenChange }: Sa
           </div>
         )}
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
