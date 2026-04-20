@@ -33,6 +33,7 @@ const SalonProfile = lazy(() => import("./pages/SalonProfile"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const ReferrerProfile = lazy(() => import("./pages/ReferrerProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AuditLog = lazy(() => import("./pages/AuditLog"));
 
 // Configure React Query with better caching defaults
 const queryClient = new QueryClient({
@@ -266,6 +267,16 @@ const App = () => (
                 <ManagerRoute>
                   <AppLayout>
                     <ReferrerProfile />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/audit-log"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <AuditLog />
                   </AppLayout>
                 </ManagerRoute>
               }

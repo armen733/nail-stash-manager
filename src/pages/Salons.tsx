@@ -202,10 +202,18 @@ const Salons = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this salon?")) return;
 
+    const target = salons.find((s) => s.id === id);
     try {
       const { error } = await supabase.from("salons").delete().eq("id", id);
 
       if (error) throw error;
+      await logAudit({
+        action: "delete",
+        entityType: "salon",
+        entityId: id,
+        entityLabel: target?.name ?? "(unknown)",
+        summary: `Deleted salon "${target?.name ?? id}"`,
+      });
       toast({ title: "Success", description: "Salon deleted successfully" });
       fetchSalons();
     } catch (error: any) {
@@ -522,6 +530,13 @@ const Salons = () => {
         salonName={selectedSalonForHistory?.name || ""}
         open={!!selectedSalonForHistory}
         onOpenChange={(open) => !open && setSelectedSalonForHistory(null)}
+      />
+
+      {/* Bulk CSV Import */}
+      <SalonImportDialog
+        isOpen={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onImported={fetchSalons}
       />
     </div>
   );
