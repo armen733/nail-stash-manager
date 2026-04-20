@@ -339,8 +339,7 @@ const LowStock = () => {
                   {lowStock.length}
                 </Badge>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {lowStock.map((product) => renderCompactCard(product))}
+              <div className="grid gap-3 lg:grid-cols-2">
               </div>
             </section>
           )}
