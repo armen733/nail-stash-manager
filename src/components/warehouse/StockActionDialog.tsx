@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Minus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export type StockAction = "receive" | "transfer" | "adjust";
+export type StockAction = "receive" | "transfer" | "adjust" | "sale";
 
 interface LocationOption {
   id: string;
@@ -48,6 +48,8 @@ interface LineItem {
   stockHere: number;
   quantity: string;
   unit_cost: string;
+  unit_price: string;
+  default_price: number;
 }
 
 interface Props {
@@ -76,6 +78,11 @@ const ACTION_META: Record<StockAction, { title: string; verb: string; submit: st
     title: "Adjust stock",
     verb: "Correct on-hand counts at",
     submit: "Save adjustment",
+  },
+  sale: {
+    title: "Record sale",
+    verb: "Log units sold from",
+    submit: "Record sale",
   },
 };
 
@@ -181,6 +188,8 @@ export function StockActionDialog({
         stockHere: p.stockHere,
         quantity: "1",
         unit_cost: p.cost_usd ? String(p.cost_usd) : "",
+        unit_price: p.price_usd ? String(p.price_usd) : "",
+        default_price: p.price_usd,
       },
     ]);
   };
