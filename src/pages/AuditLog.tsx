@@ -83,6 +83,7 @@ const AuditLog = () => {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const fetchEntries = async () => {
@@ -112,6 +113,7 @@ const AuditLog = () => {
     return entries.filter((e) => {
       if (actionFilter !== "all" && e.action !== actionFilter) return false;
       if (entityFilter !== "all" && e.entity_type !== entityFilter) return false;
+      if (severityFilter !== "all" && getSeverity(e) !== severityFilter) return false;
       if (!q) return true;
       return (
         (e.actor_name ?? "").toLowerCase().includes(q) ||
@@ -122,7 +124,7 @@ const AuditLog = () => {
         e.action.toLowerCase().includes(q)
       );
     });
-  }, [entries, search, actionFilter, entityFilter]);
+  }, [entries, search, actionFilter, entityFilter, severityFilter]);
 
   const uniqueActions = useMemo(
     () => Array.from(new Set(entries.map((e) => e.action))).sort(),
