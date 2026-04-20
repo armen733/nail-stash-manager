@@ -34,6 +34,44 @@ const ACTION_VARIANTS: Record<string, string> = {
   export: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
   import: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
   payout: "bg-primary/15 text-primary border-primary/30",
+  payment: "bg-primary/15 text-primary border-primary/30",
+};
+
+type Severity = "critical" | "warning" | "info";
+
+/**
+ * Severity rules (most → least specific):
+ *  - CRITICAL (red):  any delete, role/user changes, payouts, payments, refunds, price changes
+ *  - WARNING (yellow): stock movements, order status changes, imports, bulk updates
+ *  - INFO (neutral):   everything else (creates, plain edits, exports)
+ */
+function getSeverity(e: { action: string; entity_type: string; summary: string | null }): Severity {
+  const a = e.action.toLowerCase();
+  const t = e.entity_type.toLowerCase();
+  const s = (e.summary ?? "").toLowerCase();
+
+  if (a === "delete") return "critical";
+  if (a === "payout" || a === "payment") return "critical";
+  if (t === "user" || t === "commission") return "critical";
+  if (s.includes("price") || s.includes("cost") || s.includes("refund")) return "critical";
+
+  if (t === "stock" || t === "warehouse") return "warning";
+  if (s.includes("status") || s.includes("bulk")) return "warning";
+  if (a === "import") return "warning";
+
+  return "info";
+}
+
+const SEVERITY_ROW: Record<Severity, string> = {
+  critical: "border-l-4 border-l-destructive bg-destructive/[0.04] hover:bg-destructive/[0.08]",
+  warning: "border-l-4 border-l-amber-500 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]",
+  info: "border-l-4 border-l-transparent",
+};
+
+const SEVERITY_BADGE: Record<Severity, string> = {
+  critical: "bg-destructive/15 text-destructive border-destructive/40",
+  warning: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40",
+  info: "bg-muted text-muted-foreground border-border",
 };
 
 const PAGE_SIZE = 100;
@@ -45,6 +83,7 @@ const AuditLog = () => {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [entityFilter, setEntityFilter] = useState<string>("all");
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const fetchEntries = async () => {
@@ -74,6 +113,7 @@ const AuditLog = () => {
     return entries.filter((e) => {
       if (actionFilter !== "all" && e.action !== actionFilter) return false;
       if (entityFilter !== "all" && e.entity_type !== entityFilter) return false;
+      if (severityFilter !== "all" && getSeverity(e) !== severityFilter) return false;
       if (!q) return true;
       return (
         (e.actor_name ?? "").toLowerCase().includes(q) ||
@@ -84,7 +124,7 @@ const AuditLog = () => {
         e.action.toLowerCase().includes(q)
       );
     });
-  }, [entries, search, actionFilter, entityFilter]);
+  }, [entries, search, actionFilter, entityFilter, severityFilter]);
 
   const uniqueActions = useMemo(
     () => Array.from(new Set(entries.map((e) => e.action))).sort(),
@@ -137,7 +177,7 @@ const AuditLog = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 sm:p-6 pt-0 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -147,6 +187,15 @@ const AuditLog = () => {
                 className="pl-9"
               />
             </div>
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger><SelectValue placeholder="All severities" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="critical">🔴 Critical only</SelectItem>
+                <SelectItem value="warning">🟡 Warning only</SelectItem>
+                <SelectItem value="info">⚪ Info only</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger><SelectValue placeholder="All actions" /></SelectTrigger>
               <SelectContent>
@@ -166,6 +215,17 @@ const AuditLog = () => {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
+            <span className="font-medium">Legend:</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.critical}>🔴 Critical</Badge>
+            <span>deletes, payouts, prices, user changes</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.warning}>🟡 Warning</Badge>
+            <span>stock, status changes, imports</span>
+            <span className="hidden sm:inline text-border">·</span>
+            <Badge variant="outline" className={SEVERITY_BADGE.info}>⚪ Info</Badge>
+            <span>routine creates/updates</span>
+          </div>
         </CardContent>
       </Card>
 
@@ -176,6 +236,7 @@ const AuditLog = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">When</TableHead>
+                  <TableHead>Severity</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Action</TableHead>
                   <TableHead>Entity</TableHead>
@@ -185,50 +246,58 @@ const AuditLog = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No audit entries match your filters yet. Activity will be recorded as users
                       create, update, or delete records across the app.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(e.created_at), "MMM dd, HH:mm:ss")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-sm">{e.actor_name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {e.actor_email ?? ""}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`capitalize ${ACTION_VARIANTS[e.action] ?? ""}`}
-                        >
-                          {e.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="capitalize text-xs text-muted-foreground">
-                          {e.entity_type}
-                        </div>
-                        <div className="font-medium text-sm truncate max-w-[200px]">
-                          {e.entity_label ?? "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[400px]">
-                        {e.summary ?? "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((e) => {
+                    const sev = getSeverity(e);
+                    return (
+                      <TableRow key={e.id} className={SEVERITY_ROW[sev]}>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(e.created_at), "MMM dd, HH:mm:ss")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize text-[10px] ${SEVERITY_BADGE[sev]}`}>
+                            {sev}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-sm">{e.actor_name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {e.actor_email ?? ""}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`capitalize ${ACTION_VARIANTS[e.action] ?? ""}`}
+                          >
+                            {e.action}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="capitalize text-xs text-muted-foreground">
+                            {e.entity_type}
+                          </div>
+                          <div className="font-medium text-sm truncate max-w-[200px]">
+                            {e.entity_label ?? "—"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[400px]">
+                          {e.summary ?? "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
