@@ -33,12 +33,12 @@ export interface StatementSalon {
 export function generateSalonStatementPDF(opts: {
   salon: StatementSalon;
   orders: StatementOrder[];
-  payments: StatementPayment[];
+  payments?: StatementPayment[];
   fromDate?: Date;
   toDate?: Date;
   companyName?: string;
 }) {
-  const { salon, orders, payments, fromDate, toDate, companyName = "NÉRA Beauty" } = opts;
+  const { salon, orders, fromDate, toDate, companyName = "NÉRA Beauty" } = opts;
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -71,10 +71,8 @@ export function generateSalonStatementPDF(opts: {
   if (salon.phone) { doc.text(salon.phone, 14, y); y += 5; }
   if (salon.email) { doc.text(salon.email, 14, y); y += 5; }
 
-  // Totals summary
+  // Cash-on-delivery: total billed = total paid, balance is always 0
   const totalBilled = orders.reduce((s, o) => s + Number(o.total), 0);
-  const totalPaid = orders.reduce((s, o) => s + Number(o.amount_paid), 0);
-  const balance = orders.reduce((s, o) => s + Number(o.balance_due), 0);
 
   const summaryY = Math.max(y + 4, 44);
   doc.setFont("helvetica", "bold");
@@ -82,57 +80,37 @@ export function generateSalonStatementPDF(opts: {
   doc.text("Summary", pageWidth - 14, 38, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.text(`Total billed: $${totalBilled.toFixed(2)}`, pageWidth - 14, 44, { align: "right" });
-  doc.text(`Total paid:   $${totalPaid.toFixed(2)}`, pageWidth - 14, 50, { align: "right" });
   doc.setFont("helvetica", "bold");
-  doc.text(`Balance due:  $${balance.toFixed(2)}`, pageWidth - 14, 56, { align: "right" });
+  doc.text(`Total paid:   $${totalBilled.toFixed(2)}`, pageWidth - 14, 50, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(20, 120, 50);
+  doc.text(`Balance due:  $0.00`, pageWidth - 14, 56, { align: "right" });
+  doc.setTextColor(0);
 
-  // Orders table
+  // Orders table — all marked Paid (cash-on-delivery)
   autoTable(doc, {
     startY: Math.max(summaryY + 6, 70),
-    head: [["Date", "Invoice #", "Status", "Total", "Paid", "Balance"]],
+    head: [["Date", "Invoice #", "Status", "Total", "Paid"]],
     body: orders.map((o) => [
       format(new Date(o.order_date), "MMM dd, yyyy"),
       o.invoice_number ?? "—",
-      o.status,
+      "Paid",
       `$${Number(o.total).toFixed(2)}`,
-      `$${Number(o.amount_paid).toFixed(2)}`,
-      `$${Number(o.balance_due).toFixed(2)}`,
+      `$${Number(o.total).toFixed(2)}`,
     ]),
-    foot: [["", "", "Totals", `$${totalBilled.toFixed(2)}`, `$${totalPaid.toFixed(2)}`, `$${balance.toFixed(2)}`]],
+    foot: [["", "", "Totals", `$${totalBilled.toFixed(2)}`, `$${totalBilled.toFixed(2)}`]],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [40, 40, 40] },
     footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
     margin: { left: 14, right: 14 },
   });
 
-  // Payments table
-  if (payments.length > 0) {
-    const lastY = (doc as any).lastAutoTable?.finalY ?? 100;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Payments Received", 14, lastY + 10);
-    autoTable(doc, {
-      startY: lastY + 14,
-      head: [["Date", "Invoice #", "Method", "Reference", "Amount"]],
-      body: payments.map((p) => [
-        format(new Date(p.paid_at), "MMM dd, yyyy"),
-        p.order_invoice ?? "—",
-        p.method,
-        p.reference ?? "",
-        `$${Number(p.amount).toFixed(2)}`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [40, 40, 40] },
-      margin: { left: 14, right: 14 },
-    });
-  }
-
   // Footer
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setFontSize(8);
   doc.setTextColor(120);
   doc.text(
-    "Please remit payment for the balance due. Contact us with any questions.",
+    "Thank you for your business. All orders paid in full on delivery.",
     pageWidth / 2,
     pageHeight - 10,
     { align: "center" }
