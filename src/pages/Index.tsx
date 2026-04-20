@@ -1286,10 +1286,17 @@ const Index = () => {
 
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">Total: ${loading ? "..." : totalStockValue.toFixed(2)}</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setStockValueOpen((v) => !v)}
+            className="flex items-start gap-2 text-left flex-1 min-w-0"
+          >
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 mt-1 ${stockValueOpen ? "" : "-rotate-90"}`} />
+            <div className="min-w-0">
+              <CardTitle className="text-base sm:text-lg">Stock Inventory Value</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Total: ${loading ? "..." : totalStockValue.toFixed(2)}</p>
+            </div>
+          </button>
           <Button 
             variant="outline" 
             size="sm" 
