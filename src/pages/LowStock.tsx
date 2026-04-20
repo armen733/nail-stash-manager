@@ -205,38 +205,63 @@ const LowStock = () => {
   const lowStock = filteredProducts.filter((p) => p.stock_on_hand > 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-destructive flex-shrink-0" />
-            <span className="truncate">Low Stock Management</span>
+    <div className="space-y-3 sm:space-y-5 animate-fade-in">
+      {/* Compact header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 sm:h-7 sm:w-7 text-destructive flex-shrink-0" />
+            <span className="truncate">Low Stock</span>
+            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
+              ({filteredProducts.length}/{products.length})
+            </span>
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Products that need reordering ({filteredProducts.length} of {products.length})
-          </p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button onClick={exportLowStockCSV} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none" disabled={filteredProducts.length === 0}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
+        <div className="flex gap-1 flex-shrink-0">
+          <Button
+            onClick={exportLowStockCSV}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 sm:hidden"
+            disabled={filteredProducts.length === 0}
+            title="Export CSV"
+          >
+            <Download className="h-4 w-4" />
           </Button>
-          <Button onClick={fetchLowStockProducts} variant="outline" className="h-11 min-h-[44px] flex-1 sm:flex-none">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+          <Button
+            onClick={fetchLowStockProducts}
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 sm:hidden"
+            title="Refresh"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={exportLowStockCSV}
+            variant="outline"
+            size="sm"
+            className="hidden sm:inline-flex h-9"
+            disabled={filteredProducts.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" /> Export
+          </Button>
+          <Button
+            onClick={fetchLowStockProducts}
+            variant="outline"
+            size="sm"
+            className="hidden sm:inline-flex h-9"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Refresh
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Compact filters row */}
       {products.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Filter:</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] h-10">
+            <SelectTrigger className="w-[140px] sm:w-[160px] h-9 text-sm">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
@@ -246,13 +271,13 @@ const LowStock = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select 
-            value={variantFilter} 
+          <Select
+            value={variantFilter}
             onValueChange={setVariantFilter}
             disabled={variantTypesForCategory.length === 0}
           >
-            <SelectTrigger className="w-full sm:w-[180px] h-10">
-              <SelectValue placeholder="Variant Type" />
+            <SelectTrigger className="w-[140px] sm:w-[160px] h-9 text-sm">
+              <SelectValue placeholder="Variant" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Variants</SelectItem>
@@ -266,11 +291,11 @@ const LowStock = () => {
               variant="outline"
               size="sm"
               onClick={() => setHideCopies((v) => !v)}
-              className="h-10"
+              className="h-9 text-xs"
               title="Products with '(Copy)' in their name or 'COPY-' in their SKU come from the Duplicate action on the Products page."
             >
-              {hideCopies ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-              {hideCopies ? `Show duplicates (${copiesCount})` : "Hide duplicates"}
+              {hideCopies ? <Eye className="mr-1.5 h-3.5 w-3.5" /> : <EyeOff className="mr-1.5 h-3.5 w-3.5" />}
+              {hideCopies ? `Duplicates (${copiesCount})` : "Hide dupes"}
             </Button>
           )}
           {(categoryFilter !== "all" || variantFilter !== "all") && (
@@ -278,9 +303,9 @@ const LowStock = () => {
               variant="ghost"
               size="sm"
               onClick={() => { setCategoryFilter("all"); setVariantFilter("all"); }}
-              className="h-10"
+              className="h-9 text-xs"
             >
-              Clear filters
+              Clear
             </Button>
           )}
         </div>
