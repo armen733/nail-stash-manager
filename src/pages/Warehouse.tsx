@@ -495,7 +495,11 @@ export default function Warehouse() {
             return (
               <section key={type} className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  {type === "fba" ? (
+                    <img src={amazonLogo} alt="" className="h-4 w-4 object-contain" loading="lazy" />
+                  ) : (
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  )}
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     {meta.plural}
                   </h2>
