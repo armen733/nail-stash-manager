@@ -168,6 +168,35 @@ export default function Users() {
     enabled: !!selectedUser,
   });
 
+  // If this customer is ALSO a referrer (linked_profile_id), load their referrals + commissions
+  const { data: customerAsReferrer } = useQuery({
+    queryKey: ["customer-as-referrer", selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser) return null;
+      const { data: ref } = await supabase
+        .from("referrers")
+        .select("id, name, referral_code, commission_rate, total_referred, total_revenue, total_commission, status")
+        .eq("linked_profile_id", selectedUser.id)
+        .maybeSingle();
+      if (!ref) return null;
+
+      const [{ data: referrals }, { data: commissions }] = await Promise.all([
+        supabase
+          .from("customer_referrals")
+          .select("id, referred_at, referral_code_used, customer:profiles!customer_referrals_customer_id_fkey(id, full_name, email)")
+          .eq("referrer_id", ref.id)
+          .order("referred_at", { ascending: false }),
+        supabase
+          .from("referral_commissions")
+          .select("id, commission_amount, order_subtotal, status, created_at")
+          .eq("referrer_id", ref.id),
+      ]);
+
+      return { referrer: ref, referrals: referrals || [], commissions: commissions || [] };
+    },
+    enabled: !!selectedUser,
+  });
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -511,7 +540,60 @@ export default function Users() {
                 )}
               </div>
 
-              {/* Order History */}
+              {/* Referrals made by this customer (if they're also a referrer) */}
+              {customerAsReferrer?.referrer && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    Referrals from {customerAsReferrer.referrer.name}
+                    <Badge variant="outline" className="ml-1 text-[10px]">
+                      {customerAsReferrer.referrer.referral_code}
+                    </Badge>
+                  </h4>
+
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-lg font-bold">{customerAsReferrer.referrer.total_referred || 0}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Referred</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-lg font-bold">${Number(customerAsReferrer.referrer.total_revenue || 0).toFixed(0)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Revenue</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-3 text-center">
+                        <p className="text-lg font-bold text-primary">${Number(customerAsReferrer.referrer.total_commission || 0).toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Commission</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {customerAsReferrer.referrals.length > 0 ? (
+                    <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                      {customerAsReferrer.referrals.map((r: any) => (
+                        <div key={r.id} className="p-2.5 rounded-lg border bg-card flex items-center justify-between">
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{r.customer?.full_name || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground truncate">{r.customer?.email || ""}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                            {format(new Date(r.referred_at), "MMM d, yyyy")}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-3">
+                      No referrals yet
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4" />
