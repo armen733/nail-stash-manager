@@ -34,6 +34,44 @@ const ACTION_VARIANTS: Record<string, string> = {
   export: "bg-violet-500/15 text-violet-700 dark:text-violet-400 border-violet-500/30",
   import: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
   payout: "bg-primary/15 text-primary border-primary/30",
+  payment: "bg-primary/15 text-primary border-primary/30",
+};
+
+type Severity = "critical" | "warning" | "info";
+
+/**
+ * Severity rules (most → least specific):
+ *  - CRITICAL (red):  any delete, role/user changes, payouts, payments, refunds, price changes
+ *  - WARNING (yellow): stock movements, order status changes, imports, bulk updates
+ *  - INFO (neutral):   everything else (creates, plain edits, exports)
+ */
+function getSeverity(e: { action: string; entity_type: string; summary: string | null }): Severity {
+  const a = e.action.toLowerCase();
+  const t = e.entity_type.toLowerCase();
+  const s = (e.summary ?? "").toLowerCase();
+
+  if (a === "delete") return "critical";
+  if (a === "payout" || a === "payment") return "critical";
+  if (t === "user" || t === "commission") return "critical";
+  if (s.includes("price") || s.includes("cost") || s.includes("refund")) return "critical";
+
+  if (t === "stock" || t === "warehouse") return "warning";
+  if (s.includes("status") || s.includes("bulk")) return "warning";
+  if (a === "import") return "warning";
+
+  return "info";
+}
+
+const SEVERITY_ROW: Record<Severity, string> = {
+  critical: "border-l-4 border-l-destructive bg-destructive/[0.04] hover:bg-destructive/[0.08]",
+  warning: "border-l-4 border-l-amber-500 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]",
+  info: "border-l-4 border-l-transparent",
+};
+
+const SEVERITY_BADGE: Record<Severity, string> = {
+  critical: "bg-destructive/15 text-destructive border-destructive/40",
+  warning: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40",
+  info: "bg-muted text-muted-foreground border-border",
 };
 
 const PAGE_SIZE = 100;
