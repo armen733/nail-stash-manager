@@ -93,7 +93,7 @@ export default function SalonProfile() {
       const ordersData = (ordersRes.data || []) as OrderWithItems[];
       setOrders(ordersData);
       setVisits((visitsRes.data || []) as VisitRecord[]);
-      setPayments((paysRes.data || []) as PaymentRow[]);
+      
 
       // Fetch product info + images for all ordered products
       const productIds = new Set<string>();
