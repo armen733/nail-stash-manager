@@ -323,6 +323,14 @@ const Orders = () => {
       setSalons(salonsRes.data || []);
       setProducts(productsRes.data || []);
       setProfiles(profilesRes.data || []);
+
+      // Load which orders have edit history (for "Edited" badge)
+      const { data: editedRows } = await (supabase as any)
+        .from("order_edit_history")
+        .select("order_id");
+      if (editedRows) {
+        setEditedOrderIds(new Set((editedRows as any[]).map((r) => r.order_id)));
+      }
     } catch (error: any) {
       toast({
         title: "Error",
