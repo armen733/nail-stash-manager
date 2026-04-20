@@ -59,6 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
+import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -147,6 +148,8 @@ const Orders = () => {
   const [editTaxRate, setEditTaxRate] = useState("");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
+  const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
