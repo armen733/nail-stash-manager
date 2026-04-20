@@ -24,10 +24,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Search, Plus, Users, DollarSign, TrendingUp, Download, Edit, Trash2,
-  CheckCircle, Clock, UserPlus, Copy, RefreshCw,
+  CheckCircle, Clock, UserPlus, Copy, RefreshCw, Banknote,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import { PayoutsTab } from "@/components/referrals/PayoutsTab";
 
 interface Referrer {
   id: string;
@@ -390,11 +391,24 @@ const Referrals = () => {
       </div>
 
       <Tabs defaultValue="referrers">
-        <TabsList className="w-full md:w-auto">
-          <TabsTrigger value="referrers">Referrers</TabsTrigger>
-          <TabsTrigger value="customers">Referred Customers</TabsTrigger>
-          <TabsTrigger value="commissions">Commissions</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <TabsList className="inline-flex w-auto min-w-full md:w-auto md:min-w-0">
+            <TabsTrigger value="referrers" className="whitespace-nowrap">Referrers</TabsTrigger>
+            <TabsTrigger value="customers" className="whitespace-nowrap">Referred Customers</TabsTrigger>
+            <TabsTrigger value="commissions" className="whitespace-nowrap">Commissions</TabsTrigger>
+            <TabsTrigger value="payouts" className="whitespace-nowrap">
+              <Banknote className="h-3.5 w-3.5 mr-1" /> Payouts
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="payouts" className="space-y-4">
+          <PayoutsTab
+            commissions={commissions}
+            referrers={referrers}
+            onAfterPayout={fetchAll}
+          />
+        </TabsContent>
 
         {/* REFERRERS TAB */}
         <TabsContent value="referrers" className="space-y-4">

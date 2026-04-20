@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Warehouse, Trophy, TrendingUp, TrendingDown, Boxes, DollarSign } from "lucide-react";
 import { format, eachDayOfInterval, differenceInDays, subDays } from "date-fns";
+import { WarehousePnLTable } from "./WarehousePnLTable";
 
 interface Props {
   periodStart: Date;
@@ -272,6 +273,19 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* P&L summary table — explicit revenue, COGS, gross profit, margin */}
+      <WarehousePnLTable
+        rows={sales.map((s) => ({
+          warehouseId: s.warehouseId,
+          warehouse: s.warehouse,
+          type: s.type,
+          units: s.units,
+          orders: s.orders,
+          revenue: s.revenue,
+          cogs: s.cogs,
+        }))}
+      />
+
       {/* Ranking leaderboard */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">

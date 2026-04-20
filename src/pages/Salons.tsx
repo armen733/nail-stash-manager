@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map, ShoppingBag } from "lucide-react";
+import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map, ShoppingBag, Upload } from "lucide-react";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { SalonImportDialog } from "@/components/salons/SalonImportDialog";
 import { downloadCSV } from "@/lib/csv-export";
+import { logAudit } from "@/lib/audit-log";
 import { LazyAnalyticsMap } from "@/components/lazy/LazyAnalyticsMap";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +60,7 @@ const Salons = () => {
   const [phoneToCall, setPhoneToCall] = useState<string | null>(null);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [selectedSalonForHistory, setSelectedSalonForHistory] = useState<Salon | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const { toast } = useToast();
 
   const openMaps = (address: string) => {
@@ -144,11 +147,29 @@ const Salons = () => {
           .eq("id", editingSalon.id);
 
         if (error) throw error;
+        await logAudit({
+          action: "update",
+          entityType: "salon",
+          entityId: editingSalon.id,
+          entityLabel: salonData.name,
+          summary: `Updated salon "${salonData.name}"`,
+        });
         toast({ title: "Success", description: "Salon updated successfully" });
       } else {
-        const { error } = await supabase.from("salons").insert([salonData]);
+        const { data: created, error } = await supabase
+          .from("salons")
+          .insert([salonData])
+          .select("id")
+          .single();
 
         if (error) throw error;
+        await logAudit({
+          action: "create",
+          entityType: "salon",
+          entityId: created?.id,
+          entityLabel: salonData.name,
+          summary: `Created salon "${salonData.name}"`,
+        });
         toast({ title: "Success", description: "Salon added successfully" });
       }
 
@@ -181,10 +202,18 @@ const Salons = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this salon?")) return;
 
+    const target = salons.find((s) => s.id === id);
     try {
       const { error } = await supabase.from("salons").delete().eq("id", id);
 
       if (error) throw error;
+      await logAudit({
+        action: "delete",
+        entityType: "salon",
+        entityId: id,
+        entityLabel: target?.name ?? "(unknown)",
+        summary: `Deleted salon "${target?.name ?? id}"`,
+      });
       toast({ title: "Success", description: "Salon deleted successfully" });
       fetchSalons();
     } catch (error: any) {
@@ -240,6 +269,13 @@ const Salons = () => {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your salon clients · <span className="font-semibold text-foreground">{salons.length}</span> registered</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            className="min-h-[44px] w-full sm:w-auto"
+            onClick={() => setIsImportOpen(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" /> Import CSV
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
@@ -494,6 +530,13 @@ const Salons = () => {
         salonName={selectedSalonForHistory?.name || ""}
         open={!!selectedSalonForHistory}
         onOpenChange={(open) => !open && setSelectedSalonForHistory(null)}
+      />
+
+      {/* Bulk CSV Import */}
+      <SalonImportDialog
+        isOpen={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        onImported={fetchSalons}
       />
     </div>
   );
