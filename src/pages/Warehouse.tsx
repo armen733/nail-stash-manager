@@ -50,6 +50,7 @@ interface StockLocation {
 interface LocationStats {
   units: number;
   value: number;
+  retail: number;
   skus: number;
   lowSkus: number;
 }
@@ -163,10 +164,13 @@ export default function Warehouse() {
       const qty = Number(row.quantity ?? 0);
       if (qty <= 0) return;
       const prod = productMap.get(row.product_id);
-      const valuePer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
-      const cur = aggregated[row.location_id] ?? { units: 0, value: 0, skus: 0, lowSkus: 0 };
+      const costPer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
+      const retailPer = prod?.price ?? 0;
+      const cur =
+        aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
       cur.units += qty;
-      cur.value += qty * valuePer;
+      cur.value += qty * costPer;
+      cur.retail += qty * retailPer;
       cur.skus += 1;
       if (prod && prod.reorder > 0 && qty <= prod.reorder) cur.lowSkus += 1;
       aggregated[row.location_id] = cur;
@@ -243,8 +247,12 @@ export default function Warehouse() {
   };
 
   const totals = Object.values(stats).reduce(
-    (acc, s) => ({ units: acc.units + s.units, value: acc.value + s.value }),
-    { units: 0, value: 0 }
+    (acc, s) => ({
+      units: acc.units + s.units,
+      value: acc.value + s.value,
+      retail: acc.retail + s.retail,
+    }),
+    { units: 0, value: 0, retail: 0 }
   );
 
   const filtered = useMemo(() => {
@@ -280,7 +288,7 @@ export default function Warehouse() {
   const renderCard = (loc: StockLocation) => {
     const meta = TYPE_META[loc.type];
     const Icon = meta.icon;
-    const s = stats[loc.id] ?? { units: 0, value: 0, skus: 0, lowSkus: 0 };
+    const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
     const assignedName =
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
@@ -350,7 +358,7 @@ export default function Warehouse() {
               Empty — receive stock to begin
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-1 pt-2 border-t">
+            <div className="grid grid-cols-4 gap-1 pt-2 border-t">
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase">Units</div>
                 <div className="font-semibold text-sm">{s.units.toLocaleString()}</div>
@@ -360,9 +368,15 @@ export default function Warehouse() {
                 <div className="font-semibold text-sm">{s.skus.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground uppercase">Value</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Cost</div>
                 <div className="font-semibold text-sm">
                   ${s.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase">Retail</div>
+                <div className="font-semibold text-sm text-primary">
+                  ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               </div>
             </div>
@@ -408,7 +422,14 @@ export default function Warehouse() {
               <span className="font-semibold">
                 ${totals.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
-              <span className="text-muted-foreground text-xs">value</span>
+              <span className="text-muted-foreground text-xs">cost</span>
+            </div>
+            <div className="h-4 w-px bg-border hidden sm:block" />
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-primary">
+                ${totals.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-muted-foreground text-xs">retail</span>
             </div>
             <div className="h-4 w-px bg-border hidden sm:block" />
             <div className="flex items-center gap-1">
