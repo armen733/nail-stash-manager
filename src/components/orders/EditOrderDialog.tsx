@@ -87,6 +87,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [notes, setNotes] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
+  const [loyalty, setLoyalty] = useState<{ available: number; perDollar: number; minRedeem: number; redeemValue: number } | null>(null);
 
   // Detect Stripe orders: no created_by + has customer_email
   const isStripeOrder = useMemo(() => {
@@ -115,7 +117,24 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setNotes(order.notes || "");
     setDiscountCode(order.discount_code || "");
     setDiscountAmount(Number(order.discount_amount || 0));
+    setPointsRedeemed(Number((order as any).points_redeemed || 0));
     setWarningAccepted(false);
+  }, [order, open]);
+
+  // Load loyalty info for the order's customer
+  useEffect(() => {
+    if (!order || !open || !order.profile_id) { setLoyalty(null); return; }
+    (async () => {
+      const [profileRes, settingsRes] = await Promise.all([
+        supabase.from("profiles").select("loyalty_points").eq("id", order.profile_id!).maybeSingle(),
+        supabase.from("loyalty_settings").select("points_per_dollar, points_required_for_redemption, redemption_value_usd").maybeSingle(),
+      ]);
+      const available = Number(profileRes.data?.loyalty_points ?? 0);
+      const perDollar = Number(settingsRes.data?.points_per_dollar ?? 1);
+      const minRedeem = Number(settingsRes.data?.points_required_for_redemption ?? 100);
+      const redeemValue = Number(settingsRes.data?.redemption_value_usd ?? 5);
+      setLoyalty({ available, perDollar, minRedeem, redeemValue });
+    })();
   }, [order, open]);
 
   // Check warning on open for sensitive statuses
@@ -129,7 +148,12 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
     [items]
   );
-  const taxableSubtotal = Math.max(0, subtotal - discountAmount);
+  const loyaltyDiscount = useMemo(() => {
+    if (!loyalty || !pointsRedeemed) return 0;
+    const blocks = Math.floor(pointsRedeemed / loyalty.minRedeem);
+    return blocks * loyalty.redeemValue;
+  }, [loyalty, pointsRedeemed]);
+  const taxableSubtotal = Math.max(0, subtotal - discountAmount - loyaltyDiscount);
   const tax = calculateTax(taxableSubtotal);
   const total = taxableSubtotal + tax;
 

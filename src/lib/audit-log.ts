@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type AuditAction = "create" | "update" | "delete" | "export" | "import" | "payout" | "other";
+export type AuditAction = "create" | "update" | "delete" | "export" | "import" | "payout" | "payment" | "other";
 export type AuditEntity =
   | "order"
   | "product"

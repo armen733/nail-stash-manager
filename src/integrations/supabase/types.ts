@@ -458,6 +458,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount_paid: number
+          balance_due: number
           created_at: string
           created_by: string | null
           customer_address: string | null
@@ -467,6 +469,7 @@ export type Database = {
           discount_amount: number | null
           discount_code: string | null
           id: string
+          invoice_number: string | null
           notes: string | null
           order_date: string
           points_earned: number | null
@@ -482,6 +485,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          amount_paid?: number
+          balance_due?: number
           created_at?: string
           created_by?: string | null
           customer_address?: string | null
@@ -491,6 +496,7 @@ export type Database = {
           discount_amount?: number | null
           discount_code?: string | null
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           order_date?: string
           points_earned?: number | null
@@ -506,6 +512,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          amount_paid?: number
+          balance_due?: number
           created_at?: string
           created_by?: string | null
           customer_address?: string | null
@@ -515,6 +523,7 @@ export type Database = {
           discount_amount?: number | null
           discount_code?: string | null
           id?: string
+          invoice_number?: string | null
           notes?: string | null
           order_date?: string
           points_earned?: number | null
@@ -582,6 +591,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          method: string
+          notes: string | null
+          order_id: string
+          paid_at: string
+          reference: string | null
+          salon_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          order_id: string
+          paid_at?: string
+          reference?: string | null
+          salon_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          order_id?: string
+          paid_at?: string
+          reference?: string | null
+          salon_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_images: {
         Row: {
