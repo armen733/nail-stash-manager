@@ -5,7 +5,8 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2 } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -891,17 +892,11 @@ const Orders = () => {
       </tr>
     `).join('');
 
-    // Use window.open for better mobile compatibility
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({ title: "Error", description: "Please allow popups to print", variant: "destructive" });
-      return;
-    }
-
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="utf-8" />
         <title>Packing Slip - Order ${order.id.slice(0, 8)}</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #000; background: #fff; }
@@ -929,7 +924,7 @@ const Orders = () => {
           .status-Shipped { background: #e9d5ff; color: #7c3aed; }
           .status-Delivered { background: #d1fae5; color: #065f46; }
           .status-Paid { background: #d1fae5; color: #065f46; }
-          @media print { body { padding: 20px; } }
+          @media print { body { padding: 20px; } .no-print { display: none !important; } }
         </style>
       </head>
       <body>
@@ -941,7 +936,7 @@ const Orders = () => {
             <div style="margin-top: 8px;"><span class="status-badge status-${order.status}">${order.status}</span></div>
           </div>
         </div>
-        
+
         <div class="addresses">
           <div class="address-block">
             <h3>Ship To</h3>
@@ -973,18 +968,90 @@ const Orders = () => {
         </div>
 
         ${order.notes ? `<div class="notes"><h3>Notes</h3><p>${order.notes}</p></div>` : ''}
-        
+
         <div style="text-align:center;margin-top:24px;" class="no-print">
-          <button onclick="window.close()" style="padding:10px 24px;font-size:14px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:8px;">← Go Back</button>
+          <button onclick="window.close()" style="padding:10px 24px;font-size:14px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:8px;">← Close</button>
           <button onclick="window.print()" style="padding:10px 24px;font-size:14px;background:#10b981;color:white;border:none;border-radius:6px;cursor:pointer;">🖨 Print</button>
         </div>
-        <style>.no-print { display: block; } @media print { .no-print { display: none !important; } }</style>
       </body>
       </html>
     `;
 
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Use a Blob URL instead of about:blank — prevents Safari/Chrome from
+    // auto-closing the new tab when document.write races with the navigation.
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, '_blank');
+    if (!printWindow) {
+      URL.revokeObjectURL(url);
+      toast({ title: "Popup blocked", description: "Please allow popups to print the packing slip.", variant: "destructive" });
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const buildReceiptText = (order: Order) => {
+    const itemsText = (order.order_items || [])
+      .map(it => `• ${it.products?.name || 'Item'} × ${it.quantity} — $${(it.quantity * it.unit_price).toFixed(2)}`)
+      .join('\n');
+    const orderNo = order.id.slice(0, 8).toUpperCase();
+    const dateStr = new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const recipient = order.customer_name || order.salons?.name || 'Customer';
+    const subject = `Receipt — Order #${orderNo}`;
+    const body =
+`Hi ${recipient},
+
+Here is your receipt from NERA Beauty.
+
+Order #${orderNo}
+Date: ${dateStr}
+Status: ${order.status}
+
+${itemsText}
+
+Subtotal: $${order.subtotal.toFixed(2)}
+Tax: $${order.tax.toFixed(2)}
+Total: $${order.total.toFixed(2)}
+
+Thank you!`;
+    return { subject, body };
+  };
+
+  const shareOrder = async (order: Order, channel: 'native' | 'email' | 'sms' | 'whatsapp' | 'copy') => {
+    const { subject, body } = buildReceiptText(order);
+
+    if (channel === 'native' && typeof (navigator as any).share === 'function') {
+      try {
+        await (navigator as any).share({ title: subject, text: body });
+      } catch { /* user cancelled */ }
+      return;
+    }
+    if (channel === 'email') {
+      const to = order.customer_email ? encodeURIComponent(order.customer_email) : '';
+      window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    if (channel === 'sms') {
+      const to = order.customer_phone ? encodeURIComponent(order.customer_phone.replace(/\s+/g, '')) : '';
+      window.location.href = `sms:${to}?&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    if (channel === 'whatsapp') {
+      const phone = (order.customer_phone || '').replace(/[^\d]/g, '');
+      const url = phone
+        ? `https://wa.me/${phone}?text=${encodeURIComponent(body)}`
+        : `https://wa.me/?text=${encodeURIComponent(body)}`;
+      window.open(url, '_blank');
+      return;
+    }
+    if (channel === 'copy') {
+      try {
+        await navigator.clipboard.writeText(body);
+        toast({ title: "Copied", description: "Receipt copied to clipboard." });
+      } catch {
+        toast({ title: "Copy failed", description: "Couldn't copy to clipboard.", variant: "destructive" });
+      }
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -1751,6 +1818,41 @@ const Orders = () => {
                   <Printer className="h-4 w-4 mr-2" />
                   Print Packing Slip
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Receipt
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
+                    <DropdownMenuLabel>Send receipt via</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {typeof (navigator as any).share === 'function' && (
+                      <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'native')}>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Device share…
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'email')}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email{viewOrder.customer_email ? ` (${viewOrder.customer_email})` : ''}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'sms')}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      SMS{viewOrder.customer_phone ? ` (${viewOrder.customer_phone})` : ''}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'whatsapp')}>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy to clipboard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           )}
