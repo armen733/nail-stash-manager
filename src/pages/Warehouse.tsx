@@ -247,8 +247,12 @@ export default function Warehouse() {
   };
 
   const totals = Object.values(stats).reduce(
-    (acc, s) => ({ units: acc.units + s.units, value: acc.value + s.value }),
-    { units: 0, value: 0 }
+    (acc, s) => ({
+      units: acc.units + s.units,
+      value: acc.value + s.value,
+      retail: acc.retail + s.retail,
+    }),
+    { units: 0, value: 0, retail: 0 }
   );
 
   const filtered = useMemo(() => {
