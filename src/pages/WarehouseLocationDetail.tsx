@@ -18,6 +18,8 @@ import {
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
+import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
@@ -35,6 +37,7 @@ interface StockRow {
   product_id: string;
   quantity: number;
   reserved: number;
+  override_price: number | null;
   product: {
     name: string;
     sku: string;
@@ -68,7 +71,7 @@ export default function WarehouseLocationDetail() {
   const load = async () => {
     if (!id) return;
     setLoading(true);
-    const [locRes, stockRes, allLocRes] = await Promise.all([
+    const [locRes, stockRes, allLocRes, overrideRes] = await Promise.all([
       supabase.from("stock_locations").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("product_stock")
@@ -83,11 +86,23 @@ export default function WarehouseLocationDetail() {
         .select("id, name, type, is_active")
         .eq("is_active", true)
         .order("name"),
+      supabase
+        .from("location_product_prices")
+        .select("product_id, price_usd")
+        .eq("location_id", id),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
     setLocation((locRes.data ?? null) as StockLocation | null);
-    setRows((stockRes.data ?? []) as any);
+    const overrideMap = new Map<string, number>();
+    ((overrideRes.data ?? []) as any[]).forEach((r) =>
+      overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
+    );
+    const stockRows = ((stockRes.data ?? []) as any[]).map((r) => ({
+      ...r,
+      override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
+    }));
+    setRows(stockRows as StockRow[]);
     setOtherLocations(
       ((allLocRes.data ?? []) as any[]).filter((l) => l.id !== id).map((l) => ({
         id: l.id,
@@ -123,8 +138,10 @@ export default function WarehouseLocationDetail() {
       : Number(r.product.price_usd);
     return s + r.quantity * v;
   }, 0);
+  // Retail value uses per-location override if set, falling back to product default.
   const totalRetail = rows.reduce(
-    (s, r) => s + r.quantity * Number(r.product.price_usd ?? 0),
+    (s, r) =>
+      s + r.quantity * Number(r.override_price ?? r.product.price_usd ?? 0),
     0
   );
 
@@ -210,52 +227,78 @@ export default function WarehouseLocationDetail() {
         </CardContent></Card>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {rows.length === 0 ? (
-            <div className="py-12 px-4 text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                No stock at this location yet.
-              </p>
-              <Button size="sm" onClick={() => setAction("receive")}>
-                <PackagePlus className="h-4 w-4 mr-1" /> Receive your first stock
-              </Button>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {rows.map((r) => {
-                const low = r.product.reorder_level && r.quantity <= r.product.reorder_level;
-                const imgs = r.product.product_images ?? [];
-                const sorted = [...imgs].sort(
-                  (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
-                );
-                const thumb = r.product.image_url || sorted[0]?.image_url || null;
-                return (
-                  <div key={r.product_id} className="flex items-center gap-3 p-3">
-                    {thumb ? (
-                      <img src={thumb} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="h-10 w-10 rounded bg-muted flex-shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate">{r.product.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{r.product.sku}</div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
-                        {r.quantity}
+      <Tabs defaultValue="stock" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="stock">Stock</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stock" className="mt-3">
+          <Card>
+            <CardContent className="p-0">
+              {rows.length === 0 ? (
+                <div className="py-12 px-4 text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    No stock at this location yet.
+                  </p>
+                  <Button size="sm" onClick={() => setAction("receive")}>
+                    <PackagePlus className="h-4 w-4 mr-1" /> Receive your first stock
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {rows.map((r) => {
+                    const low = r.product.reorder_level && r.quantity <= r.product.reorder_level;
+                    const imgs = r.product.product_images ?? [];
+                    const sorted = [...imgs].sort(
+                      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+                    );
+                    const thumb = r.product.image_url || sorted[0]?.image_url || null;
+                    const effectivePrice = r.override_price ?? Number(r.product.price_usd ?? 0);
+                    const hasOverride = r.override_price !== null;
+                    return (
+                      <div key={r.product_id} className="flex items-center gap-3 p-3">
+                        {thumb ? (
+                          <img src={thumb} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex-shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium truncate">{r.product.name}</div>
+                          <div className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                            <span>{r.product.sku}</span>
+                            <span>·</span>
+                            <span className={hasOverride ? "text-primary font-medium" : ""}>
+                              ${effectivePrice.toFixed(2)}
+                            </span>
+                            {hasOverride && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1">
+                                Custom
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
+                            {r.quantity}
+                          </div>
+                          {r.reserved > 0 && (
+                            <div className="text-[10px] text-muted-foreground">{r.reserved} reserved</div>
+                          )}
+                        </div>
                       </div>
-                      {r.reserved > 0 && (
-                        <div className="text-[10px] text-muted-foreground">{r.reserved} reserved</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="mt-3">
+          <LocationPricingTab locationId={location.id} />
+        </TabsContent>
+      </Tabs>
 
       {action && (
         <StockActionDialog

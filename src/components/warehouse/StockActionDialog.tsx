@@ -118,8 +118,8 @@ export function StockActionDialog({
 
   const loadProducts = async () => {
     setLoadingProducts(true);
-    // For receive: show all products. For transfer/adjust: only products with stock here.
-    const [prodRes, stockRes] = await Promise.all([
+    // Fetch products + stock at this location + per-location price overrides.
+    const [prodRes, stockRes, overrideRes] = await Promise.all([
       supabase
         .from("products")
         .select(
@@ -131,6 +131,10 @@ export function StockActionDialog({
         .from("product_stock")
         .select("product_id, quantity")
         .eq("location_id", locationId),
+      supabase
+        .from("location_product_prices")
+        .select("product_id, price_usd")
+        .eq("location_id", locationId),
     ]);
 
     if (prodRes.error) {
@@ -140,18 +144,24 @@ export function StockActionDialog({
     }
     const stockMap = new Map<string, number>();
     (stockRes.data ?? []).forEach((r: any) => stockMap.set(r.product_id, Number(r.quantity ?? 0)));
+    const overrideMap = new Map<string, number>();
+    (overrideRes.data ?? []).forEach((r: any) =>
+      overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
+    );
 
     const rows: ProductRow[] = (prodRes.data ?? []).map((p: any) => {
       const sorted = [...(p.product_images ?? [])].sort(
         (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
       );
       const thumb = p.image_url || sorted[0]?.image_url || null;
+      // Effective selling price: per-location override → product default
+      const effectivePrice = overrideMap.get(p.id) ?? Number(p.price_usd ?? 0);
       return {
         id: p.id,
         name: p.name,
         sku: p.sku,
         cost_usd: p.cost_usd,
-        price_usd: Number(p.price_usd ?? 0),
+        price_usd: effectivePrice,
         image_url: thumb,
         stockHere: stockMap.get(p.id) ?? 0,
       };

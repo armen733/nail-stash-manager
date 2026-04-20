@@ -208,6 +208,51 @@ export type Database = {
         }
         Relationships: []
       }
+      location_product_prices: {
+        Row: {
+          created_at: string
+          id: string
+          location_id: string
+          notes: string | null
+          price_usd: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_id: string
+          notes?: string | null
+          price_usd: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_id?: string
+          notes?: string | null
+          price_usd?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_product_prices_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_settings: {
         Row: {
           created_at: string

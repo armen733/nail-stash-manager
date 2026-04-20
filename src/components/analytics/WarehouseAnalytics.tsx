@@ -38,6 +38,8 @@ interface SalesRow {
   revenue: number;
   orders: number;
   prevRevenue: number;
+  cogs: number; // total cost of goods sold (sum quantity * product.cost_usd)
+  marginPct: number | null; // (revenue - cogs) / revenue * 100
 }
 
 interface StockValueRow {
@@ -79,7 +81,7 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
         supabase.from("stock_locations").select("id, name, type, is_default, is_active"),
         supabase
           .from("stock_movements")
-          .select("from_location_id, quantity, unit_cost, created_at, reference_id")
+          .select("from_location_id, product_id, quantity, unit_cost, created_at, reference_id")
           .eq("movement_type", "sale")
           .gte("created_at", periodStartIso)
           .lte("created_at", periodEndIso),
@@ -97,17 +99,29 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
       setLocations(locs);
       const locById = new Map(locs.map((l) => [l.id, l]));
 
-      // Sales aggregation
-      const salesAgg = new Map<string, { units: number; revenue: number; orders: Set<string> }>();
+      // Build product cost map up-front for COGS calc
+      const costMap = new Map<string, number>();
+      ((productsRes.data ?? []) as any[]).forEach((p) => {
+        costMap.set(p.id, Number(p.cost_usd ?? 0));
+      });
+
+      // Sales aggregation (revenue + COGS for margin)
+      const salesAgg = new Map<
+        string,
+        { units: number; revenue: number; cogs: number; orders: Set<string> }
+      >();
       ((currentMovesRes.data ?? []) as any[]).forEach((m) => {
         if (!m.from_location_id) return;
         const cur = salesAgg.get(m.from_location_id) ?? {
           units: 0,
           revenue: 0,
+          cogs: 0,
           orders: new Set<string>(),
         };
-        cur.units += Number(m.quantity ?? 0);
-        cur.revenue += Number(m.quantity ?? 0) * Number(m.unit_cost ?? 0);
+        const qty = Number(m.quantity ?? 0);
+        cur.units += qty;
+        cur.revenue += qty * Number(m.unit_cost ?? 0);
+        cur.cogs += qty * (costMap.get(m.product_id) ?? 0);
         if (m.reference_id) cur.orders.add(m.reference_id);
         salesAgg.set(m.from_location_id, cur);
       });
@@ -125,14 +139,18 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
       locs.forEach((l) => {
         const cur = salesAgg.get(l.id);
         if (!cur && !prevAgg.get(l.id)) return;
+        const revenue = cur?.revenue ?? 0;
+        const cogs = cur?.cogs ?? 0;
         salesRows.push({
           warehouse: l.name,
           warehouseId: l.id,
           type: l.type,
           units: cur?.units ?? 0,
-          revenue: cur?.revenue ?? 0,
+          revenue,
           orders: cur?.orders.size ?? 0,
           prevRevenue: prevAgg.get(l.id) ?? 0,
+          cogs,
+          marginPct: revenue > 0 && cogs > 0 ? ((revenue - cogs) / revenue) * 100 : null,
         });
       });
       salesRows.sort((a, b) => b.revenue - a.revenue);
@@ -302,15 +320,36 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
                           {s.type}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {s.units.toLocaleString()} units · {s.orders} orders ·{" "}
-                        {share.toFixed(1)}% of total
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          {s.units.toLocaleString()} units · {s.orders} orders ·{" "}
+                          {share.toFixed(1)}% of total
+                        </span>
+                        {s.marginPct !== null && (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-4 px-1.5 ${
+                              s.marginPct >= 30
+                                ? "border-emerald-500/40 text-emerald-600"
+                                : s.marginPct >= 10
+                                ? ""
+                                : "border-destructive/40 text-destructive"
+                            }`}
+                          >
+                            {s.marginPct.toFixed(0)}% margin
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="font-bold text-sm">
                         ${s.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </div>
+                      {s.cogs > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          ${(s.revenue - s.cogs).toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+                        </div>
+                      )}
                       <div
                         className={`text-[11px] flex items-center justify-end gap-0.5 ${
                           change > 0
