@@ -2157,8 +2157,19 @@ const Orders = () => {
                             </button>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                                <span className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  {editedOrderIds.has(order.id) && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                      onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
+                                    >
+                                      Edited
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground flex-shrink-0">
                                   {new Date(order.order_date).toLocaleDateString()}
                                 </span>
                               </div>
@@ -2243,7 +2254,18 @@ const Orders = () => {
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                              {editedOrderIds.has(order.id) && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                  onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
+                                >
+                                  Edited
+                                </Badge>
+                              )}
+                            </div>
                             {getStatusBadge(order.status)}
                           </div>
                           <div className="text-sm text-muted-foreground">
