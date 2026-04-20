@@ -1268,17 +1268,19 @@ const Analytics = () => {
 
       {/* Tabs for different analytics sections */}
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 h-auto">
-          <TabsTrigger value="sales" className="text-xs sm:text-sm py-2">Sales</TabsTrigger>
-          <TabsTrigger value="products" className="text-xs sm:text-sm py-2">Products</TabsTrigger>
-          <TabsTrigger value="customers" className="text-xs sm:text-sm py-2">Customers</TabsTrigger>
-          <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2">Inventory</TabsTrigger>
-          <TabsTrigger value="warehouses" className="text-xs sm:text-sm py-2">
-            <Warehouse className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
-            Warehouses
-          </TabsTrigger>
-          <TabsTrigger value="salons" className="text-xs sm:text-sm py-2">Salons</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-1 px-1 scrollbar-thin">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-6 h-auto gap-1">
+            <TabsTrigger value="sales" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Sales</TabsTrigger>
+            <TabsTrigger value="products" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Products</TabsTrigger>
+            <TabsTrigger value="customers" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Customers</TabsTrigger>
+            <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Inventory</TabsTrigger>
+            <TabsTrigger value="warehouses" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">
+              <Warehouse className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+              Warehouses
+            </TabsTrigger>
+            <TabsTrigger value="salons" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Salons</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Sales Tab */}
         <TabsContent value="sales" className="mt-4 space-y-4">
