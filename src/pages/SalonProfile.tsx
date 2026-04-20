@@ -672,6 +672,13 @@ export default function SalonProfile() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <RecordPaymentDialog
+        order={paymentTarget}
+        open={!!paymentTarget}
+        onOpenChange={(o) => !o && setPaymentTarget(null)}
+        onRecorded={refresh}
+      />
     </div>
   );
 }
