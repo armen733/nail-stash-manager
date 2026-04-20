@@ -54,6 +54,7 @@ const LowStock = () => {
   const [newStock, setNewStock] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [variantFilter, setVariantFilter] = useState<string>("all");
+  const [hideCopies, setHideCopies] = useState<boolean>(true);
   const { toast } = useToast();
 
   useEffect(() => {
