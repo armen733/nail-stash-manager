@@ -11,12 +11,11 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, Mail, MapPin, ShoppingCart,
-  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil, FileText, Wallet,
+  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil, FileText,
 } from "lucide-react";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { generateSalonStatementPDF } from "@/lib/statement-pdf";
-import { RecordPaymentDialog, PayableOrder } from "@/components/payments/RecordPaymentDialog";
 
 interface SalonData {
   id: string;
@@ -39,15 +38,6 @@ interface OrderWithItems {
   status: string;
   notes: string | null;
   order_items: { product_id: string; quantity: number; unit_price: number; line_total: number }[];
-}
-
-interface PaymentRow {
-  id: string;
-  amount: number;
-  method: string;
-  reference: string | null;
-  paid_at: string;
-  order_id: string;
 }
 
 interface ProductInfo {
@@ -79,41 +69,31 @@ export default function SalonProfile() {
   });
   const [saving, setSaving] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
-  const [payments, setPayments] = useState<PaymentRow[]>([]);
-  const [paymentTarget, setPaymentTarget] = useState<PayableOrder | null>(null);
 
   const refresh = async () => {
     if (!id) return;
-    const [ordersRes, paysRes] = await Promise.all([
-      supabase.from("orders")
-        .select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)")
-        .eq("salon_id", id)
-        .order("order_date", { ascending: false }),
-      supabase.from("payments")
-        .select("id, amount, method, reference, paid_at, order_id")
-        .eq("salon_id", id)
-        .order("paid_at", { ascending: false }),
-    ]);
+    const ordersRes = await supabase.from("orders")
+      .select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)")
+      .eq("salon_id", id)
+      .order("order_date", { ascending: false });
     setOrders((ordersRes.data || []) as OrderWithItems[]);
-    setPayments((paysRes.data || []) as PaymentRow[]);
   };
 
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [salonRes, ordersRes, visitsRes, paysRes] = await Promise.all([
+      const [salonRes, ordersRes, visitsRes] = await Promise.all([
         supabase.from("salons").select("*").eq("id", id).single(),
         supabase.from("orders").select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)").eq("salon_id", id).order("order_date", { ascending: false }),
         supabase.from("salon_visits").select("id, visited_at, visit_type, notes").eq("salon_id", id).order("visited_at", { ascending: false }),
-        supabase.from("payments").select("id, amount, method, reference, paid_at, order_id").eq("salon_id", id).order("paid_at", { ascending: false }),
       ]);
 
       if (salonRes.data) setSalon(salonRes.data);
       const ordersData = (ordersRes.data || []) as OrderWithItems[];
       setOrders(ordersData);
       setVisits((visitsRes.data || []) as VisitRecord[]);
-      setPayments((paysRes.data || []) as PaymentRow[]);
+      
 
       // Fetch product info + images for all ordered products
       const productIds = new Set<string>();
@@ -279,14 +259,7 @@ export default function SalonProfile() {
                   balance_due: Number(o.balance_due),
                   status: o.status,
                 })),
-                payments: payments.map((p) => ({
-                  id: p.id,
-                  paid_at: p.paid_at,
-                  amount: Number(p.amount),
-                  method: p.method,
-                  reference: p.reference,
-                  order_invoice: orders.find((o) => o.id === p.order_id)?.invoice_number ?? null,
-                })),
+                payments: [],
               });
             }}
           >
@@ -438,31 +411,7 @@ export default function SalonProfile() {
         </CardContent>
       </Card>
 
-      {/* AR summary */}
-      {(() => {
-        const totalDue = orders.reduce((s, o) => s + Number(o.balance_due), 0);
-        const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
-        const openCount = orders.filter((o) => Number(o.balance_due) > 0).length;
-        return (
-          <Card className={totalDue > 0 ? "border-primary/40 bg-primary/5" : undefined}>
-            <CardContent className="p-4 grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3" /> Balance due</div>
-                <div className={`text-lg font-bold ${totalDue > 0 ? "text-primary" : ""}`}>${totalDue.toFixed(2)}</div>
-                <div className="text-[10px] text-muted-foreground">{openCount} open</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Lifetime paid</div>
-                <div className="text-lg font-bold">${totalPaid.toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Lifetime billed</div>
-                <div className="text-lg font-bold">${totalRevenue.toFixed(2)}</div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+
 
       {/* Order History */}
       <Card>
@@ -476,94 +425,34 @@ export default function SalonProfile() {
             <p className="text-sm text-muted-foreground py-4 text-center">No orders yet.</p>
           ) : (
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {orders.slice(0, 30).map(o => {
-                const balance = Number(o.balance_due);
-                return (
-                  <div
-                    key={o.id}
-                    className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedOrder(o)}>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium">{format(new Date(o.order_date), "MMM d, yyyy")}</p>
-                        {o.invoice_number && (
-                          <span className="text-[10px] text-muted-foreground">{o.invoice_number}</span>
-                        )}
-                        <Badge variant={o.status === "Paid" || o.status === "Delivered" ? "default" : "secondary"} className="text-[10px]">
-                          {o.status}
-                        </Badge>
-                        {balance > 0 && (
-                          <Badge variant="outline" className="text-[10px] border-primary/40 text-primary">
-                            ${balance.toFixed(2)} due
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {o.order_items?.length || 0} items
-                        {o.notes ? ` · ${o.notes}` : ""}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">${Number(o.total).toFixed(2)}</p>
-                      {balance > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-[10px]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPaymentTarget({
-                              id: o.id,
-                              invoice_number: o.invoice_number,
-                              total: Number(o.total),
-                              amount_paid: Number(o.amount_paid),
-                              balance_due: balance,
-                              salon_id: salon?.id ?? null,
-                            });
-                          }}
-                        >
-                          Record payment
-                        </Button>
+              {orders.slice(0, 30).map(o => (
+                <div
+                  key={o.id}
+                  className="flex items-center gap-3 py-2 border-b border-border last:border-0 hover:bg-muted/50 rounded-md px-1 -mx-1 transition-colors cursor-pointer"
+                  onClick={() => setSelectedOrder(o)}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium">{format(new Date(o.order_date), "MMM d, yyyy")}</p>
+                      {o.invoice_number && (
+                        <span className="text-[10px] text-muted-foreground">{o.invoice_number}</span>
                       )}
+                      <Badge variant="default" className="text-[10px]">{o.status}</Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      {o.order_items?.length || 0} items
+                      {o.notes ? ` · ${o.notes}` : ""}
+                    </p>
                   </div>
-                );
-              })}
+                  <div className="text-right">
+                    <p className="text-sm font-bold">${Number(o.total).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Payments History */}
-      {payments.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2 px-3 pt-3 sm:px-6 sm:pt-6">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Wallet className="h-4 w-4" /> Payments Received
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 sm:px-6 sm:pb-6">
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {payments.map((p) => {
-                const inv = orders.find((o) => o.id === p.order_id)?.invoice_number;
-                return (
-                  <div key={p.id} className="flex items-center gap-3 py-1.5 border-b border-border last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{format(new Date(p.paid_at), "MMM d, yyyy")}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {p.method}{inv ? ` · ${inv}` : ""}{p.reference ? ` · ${p.reference}` : ""}
-                      </p>
-                    </div>
-                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                      +${Number(p.amount).toFixed(2)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Notes */}
       {salon.notes && (
@@ -673,12 +562,8 @@ export default function SalonProfile() {
         </DialogContent>
       </Dialog>
 
-      <RecordPaymentDialog
-        order={paymentTarget}
-        open={!!paymentTarget}
-        onOpenChange={(o) => !o && setPaymentTarget(null)}
-        onRecorded={refresh}
-      />
+
+
     </div>
   );
 }
