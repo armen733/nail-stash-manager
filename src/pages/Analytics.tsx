@@ -1919,6 +1919,14 @@ const Analytics = () => {
           </Card>
         </TabsContent>
 
+        {/* Warehouses Tab */}
+        <TabsContent value="warehouses" className="mt-4 space-y-4">
+          <WarehouseAnalytics
+            periodStart={getPeriodDates().periodStart}
+            periodEnd={getPeriodDates().periodEnd}
+          />
+        </TabsContent>
+
         {/* Salons Tab */}
         <TabsContent value="salons" className="mt-4 space-y-4">
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
