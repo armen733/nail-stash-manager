@@ -2463,6 +2463,46 @@ Thank you!`;
                                 <Printer className="h-4 w-4 mr-1" />
                                 Print
                               </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-9"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Share2 className="h-4 w-4 mr-1" />
+                                    Share
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52 bg-popover z-50" onClick={(e) => e.stopPropagation()}>
+                                  <DropdownMenuLabel>Send receipt via</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {typeof (navigator as any).share === 'function' && (
+                                    <DropdownMenuItem onClick={() => shareOrder(order, 'native')}>
+                                      <Share2 className="h-4 w-4 mr-2" />
+                                      Device share…
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => shareOrder(order, 'email')}>
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    Email
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => shareOrder(order, 'sms')}>
+                                    <Phone className="h-4 w-4 mr-2" />
+                                    SMS
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => shareOrder(order, 'whatsapp')}>
+                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                    WhatsApp
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy to clipboard
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                               <Button
                                 size="sm"
                                 variant="destructive"
