@@ -211,10 +211,15 @@ export default function WarehouseLocationDetail() {
             <div className="divide-y">
               {rows.map((r) => {
                 const low = r.product.reorder_level && r.quantity <= r.product.reorder_level;
+                const imgs = r.product.product_images ?? [];
+                const sorted = [...imgs].sort(
+                  (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+                );
+                const thumb = r.product.image_url || sorted[0]?.image_url || null;
                 return (
                   <div key={r.product_id} className="flex items-center gap-3 p-3">
-                    {r.product.image_url ? (
-                      <img src={r.product.image_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
+                    {thumb ? (
+                      <img src={thumb} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" loading="lazy" />
                     ) : (
                       <div className="h-10 w-10 rounded bg-muted flex-shrink-0" />
                     )}
