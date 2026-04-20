@@ -1818,6 +1818,41 @@ Thank you!`;
                   <Printer className="h-4 w-4 mr-2" />
                   Print Packing Slip
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share Receipt
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52 bg-popover z-50">
+                    <DropdownMenuLabel>Send receipt via</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {typeof (navigator as any).share === 'function' && (
+                      <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'native')}>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Device share…
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'email')}>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email{viewOrder.customer_email ? ` (${viewOrder.customer_email})` : ''}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'sms')}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      SMS{viewOrder.customer_phone ? ` (${viewOrder.customer_phone})` : ''}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'whatsapp')}>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy to clipboard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           )}
