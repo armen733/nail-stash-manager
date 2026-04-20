@@ -320,15 +320,36 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
                           {s.type}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {s.units.toLocaleString()} units · {s.orders} orders ·{" "}
-                        {share.toFixed(1)}% of total
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          {s.units.toLocaleString()} units · {s.orders} orders ·{" "}
+                          {share.toFixed(1)}% of total
+                        </span>
+                        {s.marginPct !== null && (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] h-4 px-1.5 ${
+                              s.marginPct >= 30
+                                ? "border-emerald-500/40 text-emerald-600"
+                                : s.marginPct >= 10
+                                ? ""
+                                : "border-destructive/40 text-destructive"
+                            }`}
+                          >
+                            {s.marginPct.toFixed(0)}% margin
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="font-bold text-sm">
                         ${s.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </div>
+                      {s.cogs > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          ${(s.revenue - s.cogs).toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+                        </div>
+                      )}
                       <div
                         className={`text-[11px] flex items-center justify-end gap-0.5 ${
                           change > 0
