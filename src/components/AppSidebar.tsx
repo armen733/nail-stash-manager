@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle, Users, Percent, CalendarCheck, Share2 } from "lucide-react";
+import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, AlertTriangle, Users, Percent, CalendarCheck, Share2, Warehouse } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -22,12 +22,13 @@ import neraLogoDark from "@/assets/nera-logo-dark.png";
 import { prefetchRoute } from "@/lib/prefetch";
 
 // Manager-only routes
-const MANAGER_ONLY_ROUTES = ["/", "/products", "/low-stock", "/salons", "/users", "/promotions", "/analytics", "/visit-tracker", "/referrals"];
+const MANAGER_ONLY_ROUTES = ["/", "/products", "/low-stock", "/warehouse", "/salons", "/users", "/promotions", "/analytics", "/visit-tracker", "/referrals"];
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, managerOnly: true },
   { title: "Products", url: "/products", icon: Package, managerOnly: true },
   { title: "Low Stock", url: "/low-stock", icon: AlertTriangle, managerOnly: true },
+  { title: "Warehouse", url: "/warehouse", icon: Warehouse, managerOnly: true },
   { title: "Salons", url: "/salons", icon: Building2, managerOnly: true },
   { title: "Orders", url: "/orders", icon: ShoppingCart, managerOnly: false },
   { title: "Users", url: "/users", icon: Users, managerOnly: true },

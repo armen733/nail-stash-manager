@@ -24,6 +24,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const LowStock = lazy(() => import("./pages/LowStock"));
+const Warehouse = lazy(() => import("./pages/Warehouse"));
 const Users = lazy(() => import("./pages/Users"));
 const Promotions = lazy(() => import("./pages/Promotions"));
 const VisitTracker = lazy(() => import("./pages/VisitTracker"));
@@ -164,6 +165,16 @@ const App = () => (
                 <ManagerRoute>
                   <AppLayout>
                     <LowStock />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/warehouse"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <Warehouse />
                   </AppLayout>
                 </ManagerRoute>
               }
