@@ -2278,8 +2278,7 @@ Thank you!`;
                                   <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
                                   {editedOrderIds.has(order.id) && (
                                     <Badge
-                                      variant="outline"
-                                      className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer bg-warning text-warning-foreground hover:bg-warning/90 border-transparent"
                                       onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
                                     >
                                       Edited
@@ -2415,8 +2414,7 @@ Thank you!`;
                               <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
                               {editedOrderIds.has(order.id) && (
                                 <Badge
-                                  variant="outline"
-                                  className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                  className="text-[10px] h-5 px-1.5 cursor-pointer bg-warning text-warning-foreground hover:bg-warning/90 border-transparent"
                                   onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
                                 >
                                   Edited
