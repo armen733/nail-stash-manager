@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Minus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export type StockAction = "receive" | "transfer" | "adjust";
+export type StockAction = "receive" | "transfer" | "adjust" | "sale";
 
 interface LocationOption {
   id: string;
@@ -48,6 +48,8 @@ interface LineItem {
   stockHere: number;
   quantity: string;
   unit_cost: string;
+  unit_price: string;
+  default_price: number;
 }
 
 interface Props {
@@ -76,6 +78,11 @@ const ACTION_META: Record<StockAction, { title: string; verb: string; submit: st
     title: "Adjust stock",
     verb: "Correct on-hand counts at",
     submit: "Save adjustment",
+  },
+  sale: {
+    title: "Record sale",
+    verb: "Log units sold from",
+    submit: "Record sale",
   },
 };
 
@@ -181,6 +188,8 @@ export function StockActionDialog({
         stockHere: p.stockHere,
         quantity: "1",
         unit_cost: p.cost_usd ? String(p.cost_usd) : "",
+        unit_price: p.price_usd ? String(p.price_usd) : "",
+        default_price: p.price_usd,
       },
     ]);
   };
@@ -239,6 +248,26 @@ export function StockActionDialog({
           to_location_id: locationId,
           unit_cost: unitCost,
           reason: reason.trim() || null,
+        });
+      } else if (action === "sale") {
+        if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+          toast.error(`Invalid quantity for ${l.name}`);
+          return;
+        }
+        if (qtyNum > l.stockHere) {
+          toast.error(`Only ${l.stockHere} available for ${l.name}`);
+          return;
+        }
+        const priceNum = l.unit_price ? Number(l.unit_price) : l.default_price;
+        movements.push({
+          product_id: l.product_id,
+          movement_type: "sale",
+          quantity: qtyNum,
+          from_location_id: locationId,
+          to_location_id: null,
+          unit_cost: Number.isFinite(priceNum) ? priceNum : null,
+          reason: reason.trim() || "Manual sale",
+          reference_type: "manual_sale",
         });
       } else {
         // transfer
@@ -466,17 +495,19 @@ export function StockActionDialog({
                       </div>
                       <div>
                         <Label className="text-[10px] uppercase text-muted-foreground">
-                          Unit cost (opt.)
+                          {action === "sale" ? "Unit price" : "Unit cost (opt.)"}
                         </Label>
                         <Input
                           inputMode="decimal"
                           placeholder="0.00"
-                          value={l.unit_cost}
-                          onChange={(e) =>
-                            updateLine(l.product_id, {
-                              unit_cost: e.target.value.replace(/[^0-9.]/g, ""),
-                            })
-                          }
+                          value={action === "sale" ? l.unit_price : l.unit_cost}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9.]/g, "");
+                            updateLine(
+                              l.product_id,
+                              action === "sale" ? { unit_price: v } : { unit_cost: v }
+                            );
+                          }}
                           className="h-8"
                         />
                       </div>
@@ -485,6 +516,15 @@ export function StockActionDialog({
                       <div className="text-[11px] text-muted-foreground">
                         Change: {Number(l.quantity || 0) - l.stockHere > 0 ? "+" : ""}
                         {Number(l.quantity || 0) - l.stockHere}
+                      </div>
+                    )}
+                    {action === "sale" && (
+                      <div className="text-[11px] text-muted-foreground">
+                        Line total: $
+                        {(
+                          Number(l.quantity || 0) *
+                          Number(l.unit_price || l.default_price || 0)
+                        ).toFixed(2)}
                       </div>
                     )}
                   </div>
@@ -503,6 +543,8 @@ export function StockActionDialog({
                   ? "PO #, supplier shipment…"
                   : action === "transfer"
                   ? "Why you're moving this stock…"
+                  : action === "sale"
+                  ? "Customer name, channel (in-person, phone)…"
                   : "Reason for adjustment (count, damage, theft…)"
               }
               rows={2}
