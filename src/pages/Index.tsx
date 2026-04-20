@@ -1246,6 +1246,7 @@ const Index = () => {
               </Button>
             </div>
           </CardHeader>
+          {topProductsOpen && (
           <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
