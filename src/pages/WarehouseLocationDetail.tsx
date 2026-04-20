@@ -71,7 +71,7 @@ export default function WarehouseLocationDetail() {
   const load = async () => {
     if (!id) return;
     setLoading(true);
-    const [locRes, stockRes, allLocRes] = await Promise.all([
+    const [locRes, stockRes, allLocRes, overrideRes] = await Promise.all([
       supabase.from("stock_locations").select("*").eq("id", id).maybeSingle(),
       supabase
         .from("product_stock")
@@ -86,11 +86,23 @@ export default function WarehouseLocationDetail() {
         .select("id, name, type, is_active")
         .eq("is_active", true)
         .order("name"),
+      supabase
+        .from("location_product_prices")
+        .select("product_id, price_usd")
+        .eq("location_id", id),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
     setLocation((locRes.data ?? null) as StockLocation | null);
-    setRows((stockRes.data ?? []) as any);
+    const overrideMap = new Map<string, number>();
+    ((overrideRes.data ?? []) as any[]).forEach((r) =>
+      overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
+    );
+    const stockRows = ((stockRes.data ?? []) as any[]).map((r) => ({
+      ...r,
+      override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
+    }));
+    setRows(stockRows as StockRow[]);
     setOtherLocations(
       ((allLocRes.data ?? []) as any[]).filter((l) => l.id !== id).map((l) => ({
         id: l.id,
