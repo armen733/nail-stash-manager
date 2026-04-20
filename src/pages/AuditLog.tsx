@@ -236,6 +236,7 @@ const AuditLog = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">When</TableHead>
+                  <TableHead>Severity</TableHead>
                   <TableHead>User</TableHead>
                   <TableHead>Action</TableHead>
                   <TableHead>Entity</TableHead>
@@ -245,50 +246,58 @@ const AuditLog = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Loading…
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No audit entries match your filters yet. Activity will be recorded as users
                       create, update, or delete records across the app.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((e) => (
-                    <TableRow key={e.id}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(e.created_at), "MMM dd, HH:mm:ss")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-sm">{e.actor_name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {e.actor_email ?? ""}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={`capitalize ${ACTION_VARIANTS[e.action] ?? ""}`}
-                        >
-                          {e.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="capitalize text-xs text-muted-foreground">
-                          {e.entity_type}
-                        </div>
-                        <div className="font-medium text-sm truncate max-w-[200px]">
-                          {e.entity_label ?? "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[400px]">
-                        {e.summary ?? "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((e) => {
+                    const sev = getSeverity(e);
+                    return (
+                      <TableRow key={e.id} className={SEVERITY_ROW[sev]}>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(e.created_at), "MMM dd, HH:mm:ss")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`capitalize text-[10px] ${SEVERITY_BADGE[sev]}`}>
+                            {sev}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-sm">{e.actor_name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {e.actor_email ?? ""}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={`capitalize ${ACTION_VARIANTS[e.action] ?? ""}`}
+                          >
+                            {e.action}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="capitalize text-xs text-muted-foreground">
+                            {e.entity_type}
+                          </div>
+                          <div className="font-medium text-sm truncate max-w-[200px]">
+                            {e.entity_label ?? "—"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[400px]">
+                          {e.summary ?? "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
