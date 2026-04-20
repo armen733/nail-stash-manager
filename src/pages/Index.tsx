@@ -1430,6 +1430,7 @@ const Index = () => {
             Export
           </Button>
         </CardHeader>
+        {stockValueOpen && (
         <CardContent className="overflow-x-auto">
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
