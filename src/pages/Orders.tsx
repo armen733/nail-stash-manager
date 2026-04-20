@@ -9,6 +9,7 @@ import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, Chec
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
+import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Calendar } from "@/components/ui/calendar";
@@ -393,21 +394,25 @@ const Orders = () => {
       
       if (fetchError) throw fetchError;
 
-      // Restore stock for each product
+      // Restore stock by inserting reverse "return" movements into Main Warehouse.
+      // The DB trigger recalculates products.stock_on_hand automatically.
       if (orderItems && orderItems.length > 0) {
-        for (const item of orderItems) {
-          const { data: product } = await supabase
-            .from("products")
-            .select("stock_on_hand")
-            .eq("id", item.product_id)
-            .single();
-          
-          if (product) {
-            await supabase
-              .from("products")
-              .update({ stock_on_hand: (product.stock_on_hand ?? 0) + item.quantity })
-              .eq("id", item.product_id);
-          }
+        const defaultLocId = await getDefaultLocationId();
+        if (defaultLocId) {
+          const { data: userData } = await supabase.auth.getUser();
+          const reverseRows = orderItems.map((item) => ({
+            product_id: item.product_id,
+            movement_type: "return" as const,
+            quantity: item.quantity,
+            from_location_id: null,
+            to_location_id: defaultLocId,
+            unit_cost: null,
+            reason: `Order deleted ${deleteOrderId.slice(0, 8)}`,
+            reference_type: "order_delete",
+            reference_id: deleteOrderId,
+            created_by: userData.user?.id ?? null,
+          }));
+          await supabase.from("stock_movements").insert(reverseRows);
         }
       }
 
@@ -616,19 +621,27 @@ const Orders = () => {
 
       if (itemsError) throw itemsError;
 
-      // Update stock for each product
-      for (const item of orderItems) {
-        const product = products.find(p => p.id === item.product_id);
-        if (product && product.stock_on_hand !== null) {
-          const newStock = product.stock_on_hand - item.quantity;
-          
-          const { error: stockError } = await supabase
-            .from("products")
-            .update({ stock_on_hand: newStock })
-            .eq("id", item.product_id);
-
-          if (stockError) throw stockError;
-        }
+      // Deduct stock from the default (Main) warehouse via stock_movements.
+      // The DB trigger keeps products.stock_on_hand in sync.
+      const defaultLocId = await getDefaultLocationId();
+      if (defaultLocId) {
+        const { data: userData } = await supabase.auth.getUser();
+        const movementRows = orderItems.map((item) => ({
+          product_id: item.product_id,
+          movement_type: "sale" as const,
+          quantity: item.quantity,
+          from_location_id: defaultLocId,
+          to_location_id: null,
+          unit_cost: item.unit_price,
+          reason: `Order ${order.id.slice(0, 8)}`,
+          reference_type: "order",
+          reference_id: order.id,
+          created_by: userData.user?.id ?? null,
+        }));
+        const { error: moveErr } = await supabase
+          .from("stock_movements")
+          .insert(movementRows);
+        if (moveErr) throw moveErr;
       }
 
       // Get customer/salon info for notification
