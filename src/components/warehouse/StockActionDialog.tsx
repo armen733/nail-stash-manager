@@ -115,7 +115,9 @@ export function StockActionDialog({
     const [prodRes, stockRes] = await Promise.all([
       supabase
         .from("products")
-        .select("id, name, sku, cost_usd, price_usd, image_url")
+        .select(
+          "id, name, sku, cost_usd, price_usd, image_url, product_images(image_url, display_order)"
+        )
         .order("name")
         .limit(2000),
       supabase
@@ -132,15 +134,21 @@ export function StockActionDialog({
     const stockMap = new Map<string, number>();
     (stockRes.data ?? []).forEach((r: any) => stockMap.set(r.product_id, Number(r.quantity ?? 0)));
 
-    const rows: ProductRow[] = (prodRes.data ?? []).map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      sku: p.sku,
-      cost_usd: p.cost_usd,
-      price_usd: Number(p.price_usd ?? 0),
-      image_url: p.image_url,
-      stockHere: stockMap.get(p.id) ?? 0,
-    }));
+    const rows: ProductRow[] = (prodRes.data ?? []).map((p: any) => {
+      const sorted = [...(p.product_images ?? [])].sort(
+        (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      );
+      const thumb = p.image_url || sorted[0]?.image_url || null;
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        cost_usd: p.cost_usd,
+        price_usd: Number(p.price_usd ?? 0),
+        image_url: thumb,
+        stockHere: stockMap.get(p.id) ?? 0,
+      };
+    });
     setProducts(rows);
     setLoadingProducts(false);
   };
