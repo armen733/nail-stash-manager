@@ -297,6 +297,33 @@ export type Database = {
         }
         Relationships: []
       }
+      order_edit_history: {
+        Row: {
+          created_at: string
+          edited_at: string
+          edited_by: string | null
+          id: string
+          order_id: string
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          edited_at?: string
+          edited_by?: string | null
+          id?: string
+          order_id: string
+          snapshot: Json
+        }
+        Update: {
+          created_at?: string
+          edited_at?: string
+          edited_by?: string | null
+          id?: string
+          order_id?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string

@@ -59,6 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
+import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -147,6 +148,8 @@ const Orders = () => {
   const [editTaxRate, setEditTaxRate] = useState("");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
+  const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -320,6 +323,14 @@ const Orders = () => {
       setSalons(salonsRes.data || []);
       setProducts(productsRes.data || []);
       setProfiles(profilesRes.data || []);
+
+      // Load which orders have edit history (for "Edited" badge)
+      const { data: editedRows } = await (supabase as any)
+        .from("order_edit_history")
+        .select("order_id");
+      if (editedRows) {
+        setEditedOrderIds(new Set((editedRows as any[]).map((r) => r.order_id)));
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -1718,6 +1729,15 @@ const Orders = () => {
               
               {/* Actions */}
               <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
+                {editedOrderIds.has(viewOrder.id) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setHistoryOrderId(viewOrder.id)}
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    View History
+                  </Button>
+                )}
                 <Button
                   variant="default"
                   onClick={() => {
@@ -1747,6 +1767,12 @@ const Orders = () => {
           fetchData();
           queryClient.invalidateQueries({ queryKey: ["products"] });
         }}
+      />
+
+      <OrderHistoryDialog
+        orderId={historyOrderId}
+        open={!!historyOrderId}
+        onOpenChange={(o) => !o && setHistoryOrderId(null)}
       />
 
       {/* Order Status Breakdown */}
@@ -2146,8 +2172,19 @@ const Orders = () => {
                             </button>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
-                                <span className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  {editedOrderIds.has(order.id) && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                      onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
+                                    >
+                                      Edited
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground flex-shrink-0">
                                   {new Date(order.order_date).toLocaleDateString()}
                                 </span>
                               </div>
@@ -2232,7 +2269,18 @@ const Orders = () => {
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-base">{order.salons?.name || order.customer_name || "—"}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                              {editedOrderIds.has(order.id) && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] h-5 px-1.5 cursor-pointer hover:bg-accent"
+                                  onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
+                                >
+                                  Edited
+                                </Badge>
+                              )}
+                            </div>
                             {getStatusBadge(order.status)}
                           </div>
                           <div className="text-sm text-muted-foreground">
