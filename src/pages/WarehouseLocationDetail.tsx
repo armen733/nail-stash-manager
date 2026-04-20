@@ -165,7 +165,8 @@ export default function WarehouseLocationDetail() {
         </Button>
         <Button
           onClick={() => setAction("sale")}
-          className="h-auto py-2.5 flex-col gap-1 bg-green-600 hover:bg-green-700 text-white"
+          variant="secondary"
+          className="h-auto py-2.5 flex-col gap-1"
           disabled={rows.length === 0}
         >
           <ShoppingCart className="h-4 w-4" />
