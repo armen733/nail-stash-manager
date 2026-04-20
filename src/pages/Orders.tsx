@@ -58,6 +58,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
+import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -145,6 +146,7 @@ const Orders = () => {
   const [isTaxSettingsOpen, setIsTaxSettingsOpen] = useState(false);
   const [editTaxRate, setEditTaxRate] = useState("");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -1715,7 +1717,16 @@ const Orders = () => {
               </div>
               
               {/* Actions */}
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex flex-wrap justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    setEditOrder(viewOrder);
+                    setViewOrder(null);
+                  }}
+                >
+                  Edit Order
+                </Button>
                 <Button variant="outline" onClick={() => printPackingSlip(viewOrder)}>
                   <Printer className="h-4 w-4 mr-2" />
                   Print Packing Slip
@@ -1725,6 +1736,18 @@ const Orders = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <EditOrderDialog
+        order={editOrder as any}
+        open={!!editOrder}
+        onOpenChange={(o) => !o && setEditOrder(null)}
+        products={products as any}
+        salons={salons as any}
+        onSaved={() => {
+          fetchData();
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        }}
+      />
 
       {/* Order Status Breakdown */}
       <Card className="shadow-[var(--shadow-card)]">
