@@ -38,6 +38,8 @@ interface SalesRow {
   revenue: number;
   orders: number;
   prevRevenue: number;
+  cogs: number; // total cost of goods sold (sum quantity * product.cost_usd)
+  marginPct: number | null; // (revenue - cogs) / revenue * 100
 }
 
 interface StockValueRow {
