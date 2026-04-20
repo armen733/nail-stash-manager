@@ -313,131 +313,177 @@ const LowStock = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {filteredProducts.map((product) => {
-            const status = getStockStatus(product.stock_on_hand);
-            return (
-              <Card key={product.id} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
-                <CardHeader className="pb-3 p-4 sm:p-6 sm:pb-3">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                    <div className="flex gap-3 flex-1 min-w-0">
-                      {/* Product Thumbnail */}
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground/50" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2">
-                          <span className="truncate">{product.name}</span>
-                          {product.variant_name && (
-                            <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                              ({product.variant_name})
-                            </span>
-                          )}
-                        </CardTitle>
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">{product.category}</Badge>
-                          <Badge variant="outline" className="text-xs">SKU: {product.sku}</Badge>
-                          {product.supplier && (
-                            <Badge variant="outline" className="text-xs">{product.supplier}</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant={status.variant} className="self-start flex-shrink-0">{status.label}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Current Stock</p>
-                      <p className="text-lg sm:text-2xl font-bold text-destructive">
-                        {product.stock_on_hand}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Reorder Level</p>
-                      <p className="text-lg sm:text-2xl font-bold">{product.reorder_level}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Unit Price</p>
-                      <p className="text-lg sm:text-2xl font-bold">${product.price_usd.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">Shortage</p>
-                      <p className="text-lg sm:text-2xl font-bold text-destructive">
-                        {product.reorder_level - product.stock_on_hand}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="default"
-                          className="h-11 min-h-[44px]"
-                          onClick={() => {
-                            setEditingProduct(product);
-                            setNewStock(product.stock_on_hand.toString());
-                          }}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Update Stock
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-[95vw] sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle className="text-lg sm:text-xl">Update Stock Level</DialogTitle>
-                          <DialogDescription className="text-sm">
-                            Update the current stock for {product.name}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="stock">New Stock Quantity</Label>
-                            <Input
-                              id="stock"
-                              type="number"
-                              min="0"
-                              value={newStock}
-                              onChange={(e) => setNewStock(e.target.value)}
-                              placeholder="Enter new stock quantity"
-                              className="h-11 min-h-[44px]"
-                            />
-                          </div>
-                          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-                            <Button
-                              variant="outline"
-                              className="h-11 min-h-[44px]"
-                              onClick={() => {
-                                setEditingProduct(null);
-                                setNewStock("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                            <Button onClick={handleUpdateStock} className="h-11 min-h-[44px]">
-                              Update Stock
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="space-y-6">
+          {outOfStock.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-destructive">
+                  Out of Stock
+                </h2>
+                <Badge variant="destructive" className="text-xs">{outOfStock.length}</Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {outOfStock.map((product) => renderCompactCard(product))}
+              </div>
+            </section>
+          )}
+
+          {lowStock.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-2.5 w-2.5 rounded-full bg-warning" />
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-warning">
+                  Low Stock
+                </h2>
+                <Badge className="bg-warning text-warning-foreground hover:bg-warning/90 border-transparent text-xs">
+                  {lowStock.length}
+                </Badge>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {lowStock.map((product) => renderCompactCard(product))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* Update Stock dialog (single instance, controlled) */}
+      <Dialog open={!!editingProduct} onOpenChange={(o) => { if (!o) { setEditingProduct(null); setNewStock(""); } }}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Update Stock Level</DialogTitle>
+            <DialogDescription className="text-sm">
+              {editingProduct ? `Update the current stock for ${editingProduct.name}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="stock">New Stock Quantity</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                value={newStock}
+                onChange={(e) => setNewStock(e.target.value)}
+                placeholder="Enter new stock quantity"
+                className="h-11 min-h-[44px]"
+              />
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <Button
+                variant="outline"
+                className="h-11 min-h-[44px]"
+                onClick={() => { setEditingProduct(null); setNewStock(""); }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateStock} className="h-11 min-h-[44px]">
+                Update Stock
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+  function renderCompactCard(product: LowStockProduct) {
+    const status = getStockStatus(product.stock_on_hand);
+    const shortage = product.reorder_level - product.stock_on_hand;
+    const isOut = product.stock_on_hand === 0;
+    return (
+      <Card
+        key={product.id}
+        className={`overflow-hidden border-l-4 ${
+          isOut ? "border-l-destructive" : "border-l-warning"
+        } shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow`}
+      >
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex gap-3">
+            {/* Thumbnail */}
+            <div className="w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
+              {product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
+                </div>
+              )}
+            </div>
+
+            {/* Main content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base leading-tight truncate">
+                    {product.name}
+                    {product.variant_name && (
+                      <span className="font-normal text-muted-foreground ml-1">
+                        ({product.variant_name})
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                    {product.category} · SKU {product.sku}
+                  </p>
+                </div>
+                <Badge
+                  variant={status.variant}
+                  className={`flex-shrink-0 text-[10px] h-5 px-1.5 ${
+                    !isOut ? "bg-warning text-warning-foreground hover:bg-warning/90 border-transparent" : ""
+                  }`}
+                >
+                  {status.label}
+                </Badge>
+              </div>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                <Stat label="Stock" value={product.stock_on_hand} accent="destructive" />
+                <Stat label="Reorder" value={product.reorder_level} />
+                <Stat label="Short" value={shortage} accent="destructive" />
+                <Stat label="Price" value={`$${product.price_usd.toFixed(2)}`} />
+              </div>
+
+              {/* Action */}
+              <div className="mt-3">
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-9 w-full sm:w-auto"
+                  onClick={() => {
+                    setEditingProduct(product);
+                    setNewStock(product.stock_on_hand.toString());
+                  }}
+                >
+                  <Edit className="mr-2 h-3.5 w-3.5" />
+                  Update Stock
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+};
+
+function Stat({ label, value, accent }: { label: string; value: string | number; accent?: "destructive" }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-base sm:text-lg font-bold leading-tight ${accent === "destructive" ? "text-destructive" : ""}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
         </div>
       )}
     </div>
