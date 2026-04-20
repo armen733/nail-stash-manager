@@ -13,9 +13,11 @@ import {
   PackagePlus,
   ArrowLeftRight,
   ClipboardEdit,
+  ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
+import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
@@ -128,9 +130,12 @@ export default function WarehouseLocationDetail() {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/warehouse")} className="-ml-2">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
-      </Button>
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/warehouse")} className="-ml-2">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        </Button>
+        <ExportMenu locationId={location?.id} scopeName={location?.name} />
+      </div>
 
       <div className="flex items-start gap-3">
         {location.type === "fba" ? (
@@ -153,10 +158,18 @@ export default function WarehouseLocationDetail() {
       </div>
 
       {/* Action buttons */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button onClick={() => setAction("receive")} className="h-auto py-2.5 flex-col gap-1">
           <PackagePlus className="h-4 w-4" />
           <span className="text-xs">Receive</span>
+        </Button>
+        <Button
+          onClick={() => setAction("sale")}
+          className="h-auto py-2.5 flex-col gap-1 bg-green-600 hover:bg-green-700 text-white"
+          disabled={rows.length === 0}
+        >
+          <ShoppingCart className="h-4 w-4" />
+          <span className="text-xs">Record sale</span>
         </Button>
         <Button
           onClick={() => setAction("transfer")}

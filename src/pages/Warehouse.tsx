@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
+import { ExportMenu } from "@/components/warehouse/ExportMenu";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -406,10 +407,17 @@ export default function Warehouse() {
             Track inventory across warehouses, FBA, drivers, and consignment.
           </p>
         </div>
-        {/* Desktop Add button */}
-        <Button onClick={openCreate} className="hidden md:inline-flex">
-          <Plus className="h-4 w-4 mr-2" /> Add location
-        </Button>
+        {/* Desktop actions */}
+        <div className="hidden md:flex items-center gap-2">
+          <ExportMenu />
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" /> Add location
+          </Button>
+        </div>
+        {/* Mobile export (Add is FAB) */}
+        <div className="md:hidden">
+          <ExportMenu />
+        </div>
       </div>
 
       {/* Horizontal summary strip */}
