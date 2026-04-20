@@ -11,10 +11,12 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { toast } from "sonner";
 import {
   ArrowLeft, Phone, Mail, MapPin, ShoppingCart,
-  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil,
+  DollarSign, Package, CalendarDays, Clock, TrendingUp, Pencil, FileText, Wallet,
 } from "lucide-react";
 import { format, differenceInDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { generateSalonStatementPDF } from "@/lib/statement-pdf";
+import { RecordPaymentDialog, PayableOrder } from "@/components/payments/RecordPaymentDialog";
 
 interface SalonData {
   id: string;
@@ -29,11 +31,23 @@ interface SalonData {
 
 interface OrderWithItems {
   id: string;
+  invoice_number: string | null;
   order_date: string;
   total: number;
+  amount_paid: number;
+  balance_due: number;
   status: string;
   notes: string | null;
   order_items: { product_id: string; quantity: number; unit_price: number; line_total: number }[];
+}
+
+interface PaymentRow {
+  id: string;
+  amount: number;
+  method: string;
+  reference: string | null;
+  paid_at: string;
+  order_id: string;
 }
 
 interface ProductInfo {
