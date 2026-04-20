@@ -411,31 +411,7 @@ export default function SalonProfile() {
         </CardContent>
       </Card>
 
-      {/* AR summary */}
-      {(() => {
-        const totalDue = orders.reduce((s, o) => s + Number(o.balance_due), 0);
-        const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
-        const openCount = orders.filter((o) => Number(o.balance_due) > 0).length;
-        return (
-          <Card className={totalDue > 0 ? "border-primary/40 bg-primary/5" : undefined}>
-            <CardContent className="p-4 grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Wallet className="h-3 w-3" /> Balance due</div>
-                <div className={`text-lg font-bold ${totalDue > 0 ? "text-primary" : ""}`}>${totalDue.toFixed(2)}</div>
-                <div className="text-[10px] text-muted-foreground">{openCount} open</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Lifetime paid</div>
-                <div className="text-lg font-bold">${totalPaid.toFixed(2)}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Lifetime billed</div>
-                <div className="text-lg font-bold">${totalRevenue.toFixed(2)}</div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+
 
       {/* Order History */}
       <Card>
