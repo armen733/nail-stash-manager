@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, AlertTriangle, Loader2, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 
@@ -228,19 +229,45 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
       });
       const allPids = new Set<string>([...originalById.keys(), ...newById.keys()]);
 
-      // 2) Apply stock adjustments by delta
+      // 2) Apply stock deltas via stock_movements (Main Warehouse). Trigger syncs stock_on_hand.
+      const defaultLocId = await getDefaultLocationId();
+      const { data: userData } = await supabase.auth.getUser();
+      const editorId = userData.user?.id ?? null;
+      const moveRows: any[] = [];
       for (const pid of allPids) {
         const delta = (newById.get(pid) || 0) - (originalById.get(pid) || 0);
-        if (delta === 0) continue;
-        const { data: prod } = await supabase
-          .from("products")
-          .select("stock_on_hand")
-          .eq("id", pid)
-          .single();
-        if (prod && prod.stock_on_hand !== null) {
-          const newStock = (prod.stock_on_hand ?? 0) - delta; // delta>0 reduces stock
-          await supabase.from("products").update({ stock_on_hand: newStock }).eq("id", pid);
+        if (delta === 0 || !defaultLocId) continue;
+        if (delta > 0) {
+          // more units sold -> deduct from main
+          moveRows.push({
+            product_id: pid,
+            movement_type: "sale",
+            quantity: delta,
+            from_location_id: defaultLocId,
+            to_location_id: null,
+            reason: `Order edit ${order.id.slice(0, 8)}`,
+            reference_type: "order_edit",
+            reference_id: order.id,
+            created_by: editorId,
+          });
+        } else {
+          // fewer units -> return to main
+          moveRows.push({
+            product_id: pid,
+            movement_type: "return",
+            quantity: Math.abs(delta),
+            from_location_id: null,
+            to_location_id: defaultLocId,
+            reason: `Order edit ${order.id.slice(0, 8)}`,
+            reference_type: "order_edit",
+            reference_id: order.id,
+            created_by: editorId,
+          });
         }
+      }
+      if (moveRows.length > 0) {
+        const { error: mvErr } = await supabase.from("stock_movements").insert(moveRows);
+        if (mvErr) throw mvErr;
       }
 
       // 3) Replace order_items: delete all then insert new
