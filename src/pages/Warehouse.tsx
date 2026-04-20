@@ -50,6 +50,7 @@ interface StockLocation {
 interface LocationStats {
   units: number;
   value: number;
+  retail: number;
   skus: number;
   lowSkus: number;
 }
