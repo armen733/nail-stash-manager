@@ -83,12 +83,16 @@ export default function WarehouseLocationDetail() {
 
   const Icon = TYPE_ICON[location.type];
   const totalUnits = rows.reduce((s, r) => s + r.quantity, 0);
-  const totalValue = rows.reduce((s, r) => {
+  const totalCost = rows.reduce((s, r) => {
     const v = r.product.cost_usd && Number(r.product.cost_usd) > 0
       ? Number(r.product.cost_usd)
       : Number(r.product.price_usd);
     return s + r.quantity * v;
   }, 0);
+  const totalRetail = rows.reduce(
+    (s, r) => s + r.quantity * Number(r.product.price_usd ?? 0),
+    0
+  );
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
@@ -110,7 +114,7 @@ export default function WarehouseLocationDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Units</div>
           <div className="text-xl font-bold">{totalUnits.toLocaleString()}</div>
@@ -120,8 +124,12 @@ export default function WarehouseLocationDetail() {
           <div className="text-xl font-bold">{rows.length}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">Value</div>
-          <div className="text-xl font-bold">${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
+          <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4 pb-3">
+          <div className="text-[10px] text-muted-foreground uppercase">Retail value</div>
+          <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
       </div>
 
