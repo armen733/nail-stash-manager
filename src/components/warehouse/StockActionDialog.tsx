@@ -495,17 +495,19 @@ export function StockActionDialog({
                       </div>
                       <div>
                         <Label className="text-[10px] uppercase text-muted-foreground">
-                          Unit cost (opt.)
+                          {action === "sale" ? "Unit price" : "Unit cost (opt.)"}
                         </Label>
                         <Input
                           inputMode="decimal"
                           placeholder="0.00"
-                          value={l.unit_cost}
-                          onChange={(e) =>
-                            updateLine(l.product_id, {
-                              unit_cost: e.target.value.replace(/[^0-9.]/g, ""),
-                            })
-                          }
+                          value={action === "sale" ? l.unit_price : l.unit_cost}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9.]/g, "");
+                            updateLine(
+                              l.product_id,
+                              action === "sale" ? { unit_price: v } : { unit_cost: v }
+                            );
+                          }}
                           className="h-8"
                         />
                       </div>
@@ -514,6 +516,15 @@ export function StockActionDialog({
                       <div className="text-[11px] text-muted-foreground">
                         Change: {Number(l.quantity || 0) - l.stockHere > 0 ? "+" : ""}
                         {Number(l.quantity || 0) - l.stockHere}
+                      </div>
+                    )}
+                    {action === "sale" && (
+                      <div className="text-[11px] text-muted-foreground">
+                        Line total: $
+                        {(
+                          Number(l.quantity || 0) *
+                          Number(l.unit_price || l.default_price || 0)
+                        ).toFixed(2)}
                       </div>
                     )}
                   </div>
@@ -532,6 +543,8 @@ export function StockActionDialog({
                   ? "PO #, supplier shipment…"
                   : action === "transfer"
                   ? "Why you're moving this stock…"
+                  : action === "sale"
+                  ? "Customer name, channel (in-person, phone)…"
                   : "Reason for adjustment (count, damage, theft…)"
               }
               rows={2}
