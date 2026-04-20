@@ -83,11 +83,10 @@ export default function SalonProfile() {
     if (!id) return;
     const fetchAll = async () => {
       setLoading(true);
-      const [salonRes, ordersRes, visitsRes, paysRes] = await Promise.all([
+      const [salonRes, ordersRes, visitsRes] = await Promise.all([
         supabase.from("salons").select("*").eq("id", id).single(),
         supabase.from("orders").select("id, invoice_number, order_date, total, amount_paid, balance_due, status, notes, order_items(product_id, quantity, unit_price, line_total)").eq("salon_id", id).order("order_date", { ascending: false }),
         supabase.from("salon_visits").select("id, visited_at, visit_type, notes").eq("salon_id", id).order("visited_at", { ascending: false }),
-        supabase.from("payments").select("id, amount, method, reference, paid_at, order_id").eq("salon_id", id).order("paid_at", { ascending: false }),
       ]);
 
       if (salonRes.data) setSalon(salonRes.data);
