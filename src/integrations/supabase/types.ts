@@ -546,6 +546,48 @@ export type Database = {
         }
         Relationships: []
       }
+      product_stock: {
+        Row: {
+          id: string
+          location_id: string
+          product_id: string
+          quantity: number
+          reserved: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          location_id: string
+          product_id: string
+          quantity?: number
+          reserved?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          location_id?: string
+          product_id?: string
+          quantity?: number
+          reserved?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stock_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           bit_type: string | null
@@ -925,6 +967,134 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_locations: {
+        Row: {
+          assigned_user_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          notes: string | null
+          salon_id: string | null
+          type: Database["public"]["Enums"]["location_type"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          notes?: string | null
+          salon_id?: string | null
+          type?: Database["public"]["Enums"]["location_type"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          notes?: string | null
+          salon_id?: string | null
+          type?: Database["public"]["Enums"]["location_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_locations_assigned_user_id_fkey"
+            columns: ["assigned_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_locations_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_location_id: string | null
+          id: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          product_id: string
+          quantity: number
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+          to_location_id: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          product_id: string
+          quantity: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_location_id?: string | null
+          id?: string
+          movement_type?: Database["public"]["Enums"]["movement_type"]
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_settings: {
         Row: {
           created_at: string
@@ -1026,6 +1196,14 @@ export type Database = {
     }
     Enums: {
       app_role: "Owner" | "Sales Rep" | "Customer"
+      location_type: "warehouse" | "fba" | "consignment" | "driver"
+      movement_type:
+        | "receive"
+        | "transfer"
+        | "sale"
+        | "adjustment"
+        | "return"
+        | "initial"
       order_status: "Draft" | "Confirmed" | "Shipped" | "Delivered" | "Paid"
     }
     CompositeTypes: {
@@ -1155,6 +1333,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["Owner", "Sales Rep", "Customer"],
+      location_type: ["warehouse", "fba", "consignment", "driver"],
+      movement_type: [
+        "receive",
+        "transfer",
+        "sale",
+        "adjustment",
+        "return",
+        "initial",
+      ],
       order_status: ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"],
     },
   },
