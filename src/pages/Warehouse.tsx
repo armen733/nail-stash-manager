@@ -358,7 +358,7 @@ export default function Warehouse() {
               Empty — receive stock to begin
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-1 pt-2 border-t">
+            <div className="grid grid-cols-4 gap-1 pt-2 border-t">
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase">Units</div>
                 <div className="font-semibold text-sm">{s.units.toLocaleString()}</div>
@@ -368,9 +368,15 @@ export default function Warehouse() {
                 <div className="font-semibold text-sm">{s.skus.toLocaleString()}</div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground uppercase">Value</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Cost</div>
                 <div className="font-semibold text-sm">
                   ${s.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase">Retail</div>
+                <div className="font-semibold text-sm text-primary">
+                  ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               </div>
             </div>
