@@ -311,8 +311,8 @@ export default function Warehouse() {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {loc.type === "fba" ? (
-                <div className="p-1 rounded-md bg-white border flex-shrink-0">
-                  <img src={amazonLogo} alt="Amazon" className="h-4 w-4 object-contain" loading="lazy" />
+                <div className="px-1.5 py-1 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
+                  <img src={amazonLogoFull} alt="Amazon" className="h-4 w-auto object-contain" loading="lazy" />
                 </div>
               ) : (
                 <div className={`p-1.5 rounded-md ${meta.color} flex-shrink-0`}>
