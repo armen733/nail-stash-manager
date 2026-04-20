@@ -288,7 +288,7 @@ export default function Warehouse() {
   const renderCard = (loc: StockLocation) => {
     const meta = TYPE_META[loc.type];
     const Icon = meta.icon;
-    const s = stats[loc.id] ?? { units: 0, value: 0, skus: 0, lowSkus: 0 };
+    const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
     const assignedName =
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
