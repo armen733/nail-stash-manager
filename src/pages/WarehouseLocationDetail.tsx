@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
-import amazonLogo from "@/assets/amazon-logo.png";
+import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -134,7 +134,9 @@ export default function WarehouseLocationDetail() {
 
       <div className="flex items-start gap-3">
         {location.type === "fba" ? (
-          <img src={amazonLogo} alt="Amazon" className="h-10 w-10 object-contain flex-shrink-0" loading="lazy" />
+          <div className="px-2 py-1.5 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
+            <img src={amazonLogoFull} alt="Amazon" className="h-7 w-auto object-contain" loading="lazy" />
+          </div>
         ) : (
           <div className="p-2.5 rounded-md bg-primary/10 text-primary flex-shrink-0">
             <Icon className="h-6 w-6" />
