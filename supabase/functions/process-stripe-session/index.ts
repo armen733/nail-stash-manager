@@ -177,39 +177,45 @@ serve(async (req: Request) => {
       }
     }
 
-    // Reduce stock for each product
-    for (const item of orderItemsInfo) {
-      if (item.product_id) {
-        try {
-          // First get current stock
-          const { data: product, error: fetchError } = await supabase
-            .from('products')
-            .select('stock_on_hand')
-            .eq('id', item.product_id)
-            .single();
-          
-          if (fetchError) {
-            logStep('Failed to fetch product stock', { productId: item.product_id, error: fetchError.message });
-            continue;
-          }
-          
-          const currentStock = product?.stock_on_hand ?? 0;
-          const newStock = Math.max(0, currentStock - item.quantity);
-          
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ stock_on_hand: newStock })
-            .eq('id', item.product_id);
-          
-          if (updateError) {
-            logStep('Failed to update product stock', { productId: item.product_id, error: updateError.message });
+    // Reduce stock from default (Main) warehouse via stock_movements.
+    // The DB trigger keeps products.stock_on_hand in sync.
+    try {
+      const { data: defaultLoc } = await supabase
+        .from('stock_locations')
+        .select('id')
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const fromLocId = defaultLoc?.id ?? null;
+      if (fromLocId) {
+        const movementRows = orderItemsInfo
+          .filter((it: any) => it.product_id)
+          .map((it: any) => ({
+            product_id: it.product_id,
+            movement_type: 'sale',
+            quantity: it.quantity,
+            from_location_id: fromLocId,
+            to_location_id: null,
+            unit_cost: it.unit_price ?? null,
+            reason: `Stripe order ${orderId.slice(0, 8)}`,
+            reference_type: 'stripe_order',
+            reference_id: orderId,
+          }));
+
+        if (movementRows.length > 0) {
+          const { error: mvErr } = await supabase.from('stock_movements').insert(movementRows);
+          if (mvErr) {
+            logStep('Failed to insert stock movements', { error: mvErr.message });
           } else {
-            logStep('Stock reduced', { productId: item.product_id, oldStock: currentStock, newStock, quantity: item.quantity });
+            logStep('Stock movements inserted', { count: movementRows.length });
           }
-        } catch (stockErr) {
-          logStep('Stock update error', { productId: item.product_id, error: stockErr });
         }
+      } else {
+        logStep('No default warehouse found; skipping stock deduction');
       }
+    } catch (stockErr) {
+      logStep('Stock movement error', { error: stockErr });
     }
 
     // Check for referral and create commission
