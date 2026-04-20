@@ -1023,6 +1023,116 @@ export type Database = {
           },
         ]
       }
+      return_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_total: number
+          order_item_id: string | null
+          product_id: string
+          quantity: number
+          return_id: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          order_item_id?: string | null
+          product_id: string
+          quantity: number
+          return_id: string
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_total?: number
+          order_item_id?: string | null
+          product_id?: string
+          quantity?: number
+          return_id?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      returns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          reason: string | null
+          refund_amount: number
+          refund_method: string
+          salon_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          reason?: string | null
+          refund_amount?: number
+          refund_method: string
+          salon_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          reason?: string | null
+          refund_amount?: number
+          refund_method?: string
+          salon_id?: string | null
+        }
+        Relationships: []
+      }
+      salon_credits: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          reference_id: string | null
+          salon_id: string
+          source: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          salon_id: string
+          source?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          reference_id?: string | null
+          salon_id?: string
+          source?: string
+        }
+        Relationships: []
+      }
       salon_visits: {
         Row: {
           created_at: string
