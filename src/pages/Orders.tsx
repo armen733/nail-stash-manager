@@ -64,6 +64,7 @@ import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
+import { logAudit } from "@/lib/audit-log";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 
@@ -432,6 +433,16 @@ const Orders = () => {
       
       if (orderError) throw orderError;
 
+      const deletedOrder = orders.find((o) => o.id === deleteOrderId);
+      await logAudit({
+        action: "delete",
+        entityType: "order",
+        entityId: deleteOrderId,
+        entityLabel: (deletedOrder as any)?.invoice_number ?? deleteOrderId.slice(0, 8),
+        summary: `Deleted order${deletedOrder ? ` ($${Number(deletedOrder.total).toFixed(2)})` : ""}; stock restored`,
+        metadata: deletedOrder ? { total: deletedOrder.total, status: deletedOrder.status } : undefined,
+      });
+
       toast({ title: "Success", description: "Order deleted and stock restored" });
       setDeleteOrderId(null);
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -718,6 +729,22 @@ const Orders = () => {
         }
       }
 
+      // Audit log
+      const customerLabel = selectedProfile?.full_name || selectedSalon?.name || "Walk-in";
+      await logAudit({
+        action: "create",
+        entityType: "order",
+        entityId: order.id,
+        entityLabel: (order as any).invoice_number ?? order.id.slice(0, 8),
+        summary: `Created order for ${customerLabel} (${orderItems.length} items, $${total.toFixed(2)})`,
+        metadata: {
+          customer: customerLabel,
+          item_count: orderItems.length,
+          subtotal,
+          total,
+        },
+      });
+
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "" });
@@ -840,6 +867,17 @@ const Orders = () => {
         .eq("id", orderId);
       
       if (error) throw error;
+
+      const ord = orders.find((o) => o.id === orderId);
+      await logAudit({
+        action: "update",
+        entityType: "order",
+        entityId: orderId,
+        entityLabel: (ord as any)?.invoice_number ?? orderId.slice(0, 8),
+        summary: `Status changed${ord ? ` from ${ord.status}` : ""} → ${newStatus}`,
+        metadata: { status_before: ord?.status, status_after: newStatus },
+      });
+
       toast({ title: "Success", description: `Order status updated to ${newStatus}` });
       fetchData();
     } catch (error: any) {
@@ -857,7 +895,15 @@ const Orders = () => {
         .in("id", Array.from(selectedOrders));
       
       if (error) throw error;
-      
+
+      await logAudit({
+        action: "update",
+        entityType: "order",
+        entityLabel: `${selectedOrders.size} orders`,
+        summary: `Bulk status update → ${bulkStatus} (${selectedOrders.size} orders)`,
+        metadata: { status_after: bulkStatus, count: selectedOrders.size, ids: Array.from(selectedOrders) },
+      });
+
       toast({ 
         title: "Success", 
         description: `${selectedOrders.size} orders updated to ${bulkStatus}` 

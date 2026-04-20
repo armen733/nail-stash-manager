@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Minus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/audit-log";
 
 export type StockAction = "receive" | "transfer" | "adjust" | "sale";
 
@@ -318,6 +319,36 @@ export function StockActionDialog({
       toast.error(error.message);
       return;
     }
+
+    // Audit log: one entry summarizing the whole batch
+    const totalUnits = movements.reduce((s, m) => s + Number(m.quantity), 0);
+    const destName = action === "transfer"
+      ? otherLocations.find((l) => l.id === destLocationId)?.name ?? "another location"
+      : null;
+    await logAudit({
+      action: action === "sale" ? "other" : (action === "receive" ? "create" : "update"),
+      entityType: "stock",
+      entityLabel: locationName,
+      summary:
+        action === "transfer"
+          ? `Transferred ${totalUnits} units from ${locationName} → ${destName} (${movements.length} products)`
+          : action === "receive"
+          ? `Received ${totalUnits} units into ${locationName} (${movements.length} products)`
+          : action === "sale"
+          ? `Recorded sale of ${totalUnits} units from ${locationName} (${movements.length} products)`
+          : `Adjusted stock at ${locationName} (${movements.length} products)`,
+      metadata: {
+        action,
+        location_id: locationId,
+        location_name: locationName,
+        destination_location_id: destLocationId || null,
+        destination_location_name: destName,
+        total_units: totalUnits,
+        line_count: movements.length,
+        reason: reason.trim() || null,
+      },
+    });
+
     toast.success(
       `${meta.submit} complete (${movements.length} ${movements.length === 1 ? "item" : "items"})`
     );

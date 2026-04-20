@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { logAudit } from "@/lib/audit-log";
 import {
   Select,
   SelectContent,
@@ -240,6 +241,19 @@ export default function Users() {
           await supabase.from("referrers").update({ total_referred: count || 0 }).eq("id", formData.referrer_id);
         }
       }
+
+      await logAudit({
+        action: "create",
+        entityType: "user",
+        entityId: data.user?.id ?? null,
+        entityLabel: formData.full_name,
+        summary: `Created customer ${formData.full_name}${formData.email ? ` (${formData.email})` : ""}${formData.referrer_id ? " with referrer link" : ""}`,
+        metadata: {
+          email: emailToUse,
+          phone: formData.phone || null,
+          referrer_id: formData.referrer_id || null,
+        },
+      });
 
       toast({
         title: "Success",

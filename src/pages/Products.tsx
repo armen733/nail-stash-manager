@@ -77,6 +77,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAbandonedCart } from "@/hooks/useAbandonedCart";
+import { logAudit } from "@/lib/audit-log";
 
 const Products = () => {
   const navigate = useNavigate();
@@ -433,7 +434,32 @@ const Products = () => {
         
         // Upload new images
         await uploadImages(productId);
-        
+
+        // Detect price changes for richer audit summary
+        const priceChanges: string[] = [];
+        if (Number(editingProduct.price_usd) !== Number(productData.price_usd)) {
+          priceChanges.push(`price $${Number(editingProduct.price_usd).toFixed(2)} → $${Number(productData.price_usd).toFixed(2)}`);
+        }
+        if (Number(editingProduct.salon_price_usd ?? 0) !== Number(productData.salon_price_usd ?? 0)) {
+          priceChanges.push(`salon $${Number(editingProduct.salon_price_usd ?? 0).toFixed(2)} → $${Number(productData.salon_price_usd ?? 0).toFixed(2)}`);
+        }
+        if (Number(editingProduct.wholesale_price_usd ?? 0) !== Number(productData.wholesale_price_usd ?? 0)) {
+          priceChanges.push(`wholesale $${Number(editingProduct.wholesale_price_usd ?? 0).toFixed(2)} → $${Number(productData.wholesale_price_usd ?? 0).toFixed(2)}`);
+        }
+        if (Number(editingProduct.cost_usd ?? 0) !== Number(productData.cost_usd ?? 0)) {
+          priceChanges.push(`cost $${Number(editingProduct.cost_usd ?? 0).toFixed(2)} → $${Number(productData.cost_usd ?? 0).toFixed(2)}`);
+        }
+        await logAudit({
+          action: "update",
+          entityType: "product",
+          entityId: productId,
+          entityLabel: `${productData.name} (${productData.sku})`,
+          summary: priceChanges.length > 0
+            ? `Updated product: ${priceChanges.join(", ")}`
+            : `Updated product`,
+          metadata: { sku: productData.sku, price_changes: priceChanges },
+        });
+
         toast({ title: "Success", description: "Product updated successfully" });
       } else {
         const { data, error } = await supabase
@@ -447,7 +473,16 @@ const Products = () => {
         
         // Upload images for new product
         await uploadImages(productId);
-        
+
+        await logAudit({
+          action: "create",
+          entityType: "product",
+          entityId: productId,
+          entityLabel: `${productData.name} (${productData.sku})`,
+          summary: `Created product at $${Number(productData.price_usd).toFixed(2)}`,
+          metadata: { sku: productData.sku, category: productData.category, price: productData.price_usd },
+        });
+
         toast({ title: "Success", description: "Product added successfully" });
       }
 
@@ -465,6 +500,9 @@ const Products = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
+
+    const target = allProducts.find((p) => p.id === id);
+    const label = target ? `${target.name} (${target.sku})` : id.slice(0, 8);
 
     try {
       const { error } = await supabase.from("products").delete().eq("id", id);
@@ -494,6 +532,14 @@ const Products = () => {
             
             if (deleteProductError) throw deleteProductError;
 
+            await logAudit({
+              action: "delete",
+              entityType: "product",
+              entityId: id,
+              entityLabel: label,
+              summary: `Force-deleted product (also removed from existing order history)`,
+            });
+
             toast({ title: "Success", description: "Product and related order items deleted successfully" });
             refreshProducts();
             return;
@@ -502,7 +548,15 @@ const Products = () => {
         }
         throw error;
       }
-      
+
+      await logAudit({
+        action: "delete",
+        entityType: "product",
+        entityId: id,
+        entityLabel: label,
+        summary: `Deleted product`,
+      });
+
       toast({ title: "Success", description: "Product deleted successfully" });
       refreshProducts();
     } catch (error: any) {
