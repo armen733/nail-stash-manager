@@ -1457,6 +1457,7 @@ const Index = () => {
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* New Analytics Row */}
