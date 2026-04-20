@@ -5,7 +5,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
@@ -1875,6 +1875,16 @@ Thank you!`;
                 >
                   Edit Order
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReturnOrder(viewOrder);
+                    setViewOrder(null);
+                  }}
+                >
+                  <Undo2 className="h-4 w-4 mr-2" />
+                  Return Items
+                </Button>
                 <Button variant="outline" onClick={() => printPackingSlip(viewOrder)}>
                   <Printer className="h-4 w-4 mr-2" />
                   Print Packing Slip
@@ -1936,6 +1946,16 @@ Thank you!`;
         orderId={historyOrderId}
         open={!!historyOrderId}
         onOpenChange={(o) => !o && setHistoryOrderId(null)}
+      />
+
+      <ReturnDialog
+        order={returnOrder as any}
+        open={!!returnOrder}
+        onOpenChange={(o) => !o && setReturnOrder(null)}
+        onCompleted={() => {
+          fetchData();
+          queryClient.invalidateQueries({ queryKey: ["products"] });
+        }}
       />
 
       {/* Order Status Breakdown */}
