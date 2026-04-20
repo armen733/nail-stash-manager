@@ -1104,7 +1104,17 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
+            <button
+              type="button"
+              onClick={() => setTopProductsOpen((v) => !v)}
+              className="flex items-center gap-2 text-left flex-1 min-w-0"
+            >
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topProductsOpen ? "" : "-rotate-90"}`} />
+              <CardTitle className="text-base sm:text-lg truncate">Top Products</CardTitle>
+              {!topProductsOpen && topProducts.length > 0 && (
+                <span className="text-xs text-muted-foreground ml-1">({topProducts.length})</span>
+              )}
+            </button>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
