@@ -62,6 +62,7 @@ import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
+import { ReturnDialog } from "@/components/orders/ReturnDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { logAudit } from "@/lib/audit-log";
@@ -152,6 +153,7 @@ const Orders = () => {
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
+  const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
