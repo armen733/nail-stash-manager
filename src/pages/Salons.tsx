@@ -145,12 +145,35 @@ const Salons = () => {
           .eq("id", editingSalon.id);
 
         if (error) throw error;
+
+        // Build a field-by-field diff
+        const fieldLabels: Record<string, string> = {
+          name: "name",
+          contact_name: "contact",
+          phone: "phone",
+          email: "email",
+          address: "address",
+          city: "city",
+          notes: "notes",
+        };
+        const changes: string[] = [];
+        for (const [key, label] of Object.entries(fieldLabels)) {
+          const oldVal = ((editingSalon as any)[key] ?? "") + "";
+          const newVal = ((salonData as any)[key] ?? "") + "";
+          if (oldVal !== newVal) {
+            changes.push(`${label} "${oldVal || "—"}" → "${newVal || "—"}"`);
+          }
+        }
+
         await logAudit({
           action: "update",
           entityType: "salon",
           entityId: editingSalon.id,
           entityLabel: salonData.name,
-          summary: `Updated salon "${salonData.name}"`,
+          summary: changes.length > 0
+            ? `Updated salon "${salonData.name}": ${changes.join(", ")}`
+            : `Updated salon "${salonData.name}" (no field changes)`,
+          metadata: { changes },
         });
         toast({ title: "Success", description: "Salon updated successfully" });
       } else {
