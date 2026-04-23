@@ -284,15 +284,15 @@ const AuditLog = () => {
                             {e.action}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="min-w-[200px] align-top">
                           <div className="capitalize text-xs text-muted-foreground">
                             {e.entity_type}
                           </div>
-                          <div className="font-medium text-sm truncate max-w-[200px]">
+                          <div className="font-medium text-sm break-words whitespace-normal">
                             {e.entity_label ?? "—"}
                           </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-xs text-muted-foreground max-w-[400px]">
+                        <TableCell className="hidden md:table-cell text-xs text-muted-foreground min-w-[280px] break-words whitespace-normal align-top">
                           {e.summary ?? "—"}
                         </TableCell>
                       </TableRow>
