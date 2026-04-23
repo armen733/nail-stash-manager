@@ -11,55 +11,51 @@ export interface ProductsData {
   maxPrice: number;
 }
 
-const fetchProductsData = async (): Promise<ProductsData> => {
-  // Fetch all products with pagination to bypass 1000 row limit
+// Fetch products + images in parallel, both page-by-page.
+// Products and images requests run concurrently (was sequential).
+async function fetchAllPages<T>(table: string, orderBy: string): Promise<T[]> {
   const PAGE_SIZE = 1000;
-  let allProductsData: any[] = [];
+  let all: T[] = [];
   let page = 0;
+  // Fetch first page
+  const { data, error } = await (supabase as any)
+    .from(table)
+    .select("*")
+    .order(orderBy)
+    .range(0, PAGE_SIZE - 1);
+  if (error) throw error;
+  if (!data || data.length === 0) return all;
+  all = data as T[];
+  if (data.length < PAGE_SIZE) return all;
+  // Continue fetching subsequent pages
+  page = 1;
   let hasMore = true;
-
   while (hasMore) {
-    const { data, error } = await supabase
-      .from("products")
+    const { data: more, error: moreErr } = await (supabase as any)
+      .from(table)
       .select("*")
-      .order("name")
+      .order(orderBy)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-    if (error) throw error;
-
-    if (data && data.length > 0) {
-      allProductsData = [...allProductsData, ...data];
-      hasMore = data.length === PAGE_SIZE;
+    if (moreErr) throw moreErr;
+    if (more && more.length > 0) {
+      all = [...all, ...(more as T[])];
+      hasMore = more.length === PAGE_SIZE;
       page++;
     } else {
       hasMore = false;
     }
   }
+  return all;
+}
+
+const fetchProductsData = async (): Promise<ProductsData> => {
+  // Run products + images requests in parallel instead of sequentially.
+  const [allProductsData, allImagesData] = await Promise.all([
+    fetchAllPages<any>("products", "name"),
+    fetchAllPages<any>("product_images", "display_order"),
+  ]);
 
   const allProducts = allProductsData as Product[];
-
-  // Fetch all product images with pagination
-  let allImagesData: any[] = [];
-  page = 0;
-  hasMore = true;
-
-  while (hasMore) {
-    const { data: imagesData, error: imagesError } = await (supabase as any)
-      .from("product_images")
-      .select("*")
-      .order("display_order")
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-    if (imagesError) throw imagesError;
-
-    if (imagesData && imagesData.length > 0) {
-      allImagesData = [...allImagesData, ...imagesData];
-      hasMore = imagesData.length === PAGE_SIZE;
-      page++;
-    } else {
-      hasMore = false;
-    }
-  }
 
   // Group variants under their parent products and attach images
   const parentProducts = allProductsData.filter(p => p.is_parent || !p.parent_product_id);
