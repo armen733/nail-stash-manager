@@ -152,8 +152,8 @@ export function ReturnDialog({ order, open, onOpenChange, onCompleted }: Props) 
         if (credErr) throw credErr;
       }
 
-      // 4) Audit log
-      const label = order.invoice_number ?? order.id.slice(0, 8);
+      // 4) Audit log — use short order id for consistency in the audit log
+      const label = order.id.slice(0, 8);
       const summary =
         refundMethod === "cash"
           ? `Cash refund $${refundTotal.toFixed(2)} on order ${label} (${itemsToInsert.length} line${itemsToInsert.length === 1 ? "" : "s"}, items not restocked)`

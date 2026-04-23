@@ -101,7 +101,7 @@ async function syncOne(q: QueuedOrder): Promise<boolean> {
       action: "create",
       entityType: "order",
       entityId: order.id,
-      entityLabel: (order as any).invoice_number ?? order.id.slice(0, 8),
+      entityLabel: order.id.slice(0, 8),
       summary: `Synced offline order for ${q.customer_label} (${q.items.length} items, $${q.total.toFixed(2)})`,
       metadata: {
         offline_synced: true,

@@ -379,7 +379,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
         action: "update",
         entityType: "order",
         entityId: order.id,
-        entityLabel: (order as any).invoice_number ?? order.id.slice(0, 8),
+        entityLabel: order.id.slice(0, 8),
         summary: summaryParts.length > 0
           ? `Edited order: ${summaryParts.join(", ")}`
           : "Edited order",

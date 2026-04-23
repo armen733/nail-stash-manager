@@ -442,7 +442,7 @@ const Orders = () => {
         action: "delete",
         entityType: "order",
         entityId: deleteOrderId,
-        entityLabel: (deletedOrder as any)?.invoice_number ?? deleteOrderId.slice(0, 8),
+        entityLabel: deleteOrderId.slice(0, 8),
         summary: `Deleted order${deletedOrder ? ` ($${Number(deletedOrder.total).toFixed(2)})` : ""}; stock restored`,
         metadata: deletedOrder ? { total: deletedOrder.total, status: deletedOrder.status } : undefined,
       });
@@ -779,7 +779,7 @@ const Orders = () => {
         action: "create",
         entityType: "order",
         entityId: order.id,
-        entityLabel: (order as any).invoice_number ?? order.id.slice(0, 8),
+        entityLabel: order.id.slice(0, 8),
         summary: `Created order for ${customerLabel} (${orderItems.length} items, $${total.toFixed(2)})`,
         metadata: {
           customer: customerLabel,
@@ -917,7 +917,7 @@ const Orders = () => {
         action: "update",
         entityType: "order",
         entityId: orderId,
-        entityLabel: (ord as any)?.invoice_number ?? orderId.slice(0, 8),
+        entityLabel: orderId.slice(0, 8),
         summary: `Status changed${ord ? ` from ${ord.status}` : ""} → ${newStatus}`,
         metadata: { status_before: ord?.status, status_after: newStatus },
       });
