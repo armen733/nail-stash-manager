@@ -7,11 +7,11 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 // Precache build assets
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Never cache OAuth or Supabase auth/storage callbacks
+// Navigation: serve cached shell instantly, update in background.
+// Much snappier on flaky mobile networks vs NetworkFirst.
 const navigationRoute = new NavigationRoute(
-  new NetworkFirst({
+  new StaleWhileRevalidate({
     cacheName: 'app-shell',
-    networkTimeoutSeconds: 4,
   }),
   {
     denylist: [/^\/~oauth/, /^\/auth\/callback/],
@@ -19,7 +19,8 @@ const navigationRoute = new NavigationRoute(
 );
 registerRoute(navigationRoute);
 
-// Cache product/salon GETs from Supabase REST so the app can browse offline
+// Cache product/salon GETs from Supabase REST so the app can browse offline.
+// Reduced timeout (4s -> 2s) so slow networks fall back to cache faster.
 registerRoute(
   ({ url, request }) =>
     request.method === 'GET' &&
@@ -30,7 +31,7 @@ registerRoute(
     ),
   new NetworkFirst({
     cacheName: 'supabase-data',
-    networkTimeoutSeconds: 4,
+    networkTimeoutSeconds: 2,
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 24 * 60 * 60 }),
@@ -52,7 +53,7 @@ registerRoute(
   })
 );
 
-// Cache fonts/css
+// Cache fonts/css/js
 registerRoute(
   ({ request }) => ['style', 'font', 'script'].includes(request.destination),
   new StaleWhileRevalidate({ cacheName: 'static-assets' })
@@ -63,7 +64,7 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
-// === Push notifications (existing) ===
+// === Push notifications ===
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
   const title = data.title || 'New Order';

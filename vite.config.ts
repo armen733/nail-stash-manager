@@ -47,7 +47,10 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Trim precache: skip source maps and fonts (none shipped).
+        // Lazy chunks are picked up at runtime by the static-assets route.
+        globPatterns: ['index.html', 'assets/index-*.{js,css}', '*.{ico,png,svg}'],
+        globIgnores: ['**/*.map', '**/sw.js'],
       }
     })
   ].filter(Boolean),

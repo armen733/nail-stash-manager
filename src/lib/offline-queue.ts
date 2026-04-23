@@ -2,12 +2,15 @@
  * Offline order queue.
  * When the device is offline, new orders are stashed in IndexedDB (via idb-keyval)
  * and silently flushed to Supabase the moment we go back online.
+ *
+ * Uses a dedicated idb-keyval store so queue lookups don't scan unrelated keys.
  */
-import { get, set, del, keys } from "idb-keyval";
+import { get, set, del, keys, createStore } from "idb-keyval";
 import { supabase } from "@/integrations/supabase/client";
 import { logAudit } from "@/lib/audit-log";
 
-const QUEUE_PREFIX = "offline-order:";
+// Dedicated store — keys() only returns queued orders, not unrelated app data.
+const queueStore = createStore("offline-orders-db", "orders");
 
 export interface QueuedOrderItem {
   product_id: string;
@@ -18,7 +21,7 @@ export interface QueuedOrderItem {
 }
 
 export interface QueuedOrder {
-  localId: string;          // uuid generated client-side
+  localId: string;
   queuedAt: number;
   salon_id: string | null;
   profile_id: string | null;
@@ -36,36 +39,31 @@ export function isOnline(): boolean {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
-function makeKey(localId: string) {
-  return `${QUEUE_PREFIX}${localId}`;
-}
-
 export async function enqueueOrder(order: Omit<QueuedOrder, "localId" | "queuedAt">): Promise<QueuedOrder> {
   const localId =
     typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
   const queued: QueuedOrder = { ...order, localId, queuedAt: Date.now() };
-  await set(makeKey(localId), queued);
+  await set(localId, queued, queueStore);
   return queued;
 }
 
 export async function getQueuedOrders(): Promise<QueuedOrder[]> {
-  const all = await keys();
-  const queueKeys = (all as string[]).filter((k) => typeof k === "string" && k.startsWith(QUEUE_PREFIX));
+  const queueKeys = await keys(queueStore);
   const results: QueuedOrder[] = [];
   for (const k of queueKeys) {
-    const v = await get<QueuedOrder>(k);
+    const v = await get<QueuedOrder>(k as string, queueStore);
     if (v) results.push(v);
   }
   return results.sort((a, b) => a.queuedAt - b.queuedAt);
 }
 
 export async function removeQueuedOrder(localId: string): Promise<void> {
-  await del(makeKey(localId));
+  await del(localId, queueStore);
 }
 
 export async function queueLength(): Promise<number> {
-  const all = await keys();
-  return (all as string[]).filter((k) => typeof k === "string" && k.startsWith(QUEUE_PREFIX)).length;
+  const queueKeys = await keys(queueStore);
+  return queueKeys.length;
 }
 
 /** Push a single queued order to Supabase. Returns true on success. */
