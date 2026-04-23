@@ -435,29 +435,96 @@ const Products = () => {
         // Upload new images
         await uploadImages(productId);
 
-        // Detect price changes for richer audit summary
-        const priceChanges: string[] = [];
-        if (Number(editingProduct.price_usd) !== Number(productData.price_usd)) {
-          priceChanges.push(`price $${Number(editingProduct.price_usd).toFixed(2)} → $${Number(productData.price_usd).toFixed(2)}`);
+        // Build a detailed change list comparing old product vs new productData
+        const changes: string[] = [];
+        const ep: any = editingProduct;
+        const pd: any = productData;
+
+        // Text fields
+        const textFields: Array<[string, string]> = [
+          ["name", "name"],
+          ["sku", "SKU"],
+          ["category", "category"],
+          ["variant_name", "variant"],
+          ["bit_type", "bit type"],
+          ["material", "material"],
+          ["shape", "shape"],
+          ["grit", "grit"],
+          ["direction", "direction"],
+          ["unit", "unit"],
+          ["supplier", "supplier"],
+          ["supplier_sku", "supplier SKU"],
+        ];
+        for (const [key, label] of textFields) {
+          const oldVal = (ep[key] ?? "") + "";
+          const newVal = (pd[key] ?? "") + "";
+          if (oldVal !== newVal) {
+            changes.push(`${label} "${oldVal || "—"}" → "${newVal || "—"}"`);
+          }
         }
-        if (Number(editingProduct.salon_price_usd ?? 0) !== Number(productData.salon_price_usd ?? 0)) {
-          priceChanges.push(`salon $${Number(editingProduct.salon_price_usd ?? 0).toFixed(2)} → $${Number(productData.salon_price_usd ?? 0).toFixed(2)}`);
+
+        // Numeric / price fields
+        const numericFields: Array<[string, string, boolean]> = [
+          ["price_usd", "price", true],
+          ["salon_price_usd", "salon price", true],
+          ["wholesale_price_usd", "wholesale price", true],
+          ["cost_usd", "cost", true],
+          ["stock_on_hand", "stock", false],
+          ["reorder_level", "reorder level", false],
+        ];
+        for (const [key, label, isMoney] of numericFields) {
+          const oldNum = Number(ep[key] ?? 0);
+          const newNum = Number(pd[key] ?? 0);
+          if (oldNum !== newNum) {
+            const fmt = (n: number) => isMoney ? `$${n.toFixed(2)}` : String(n);
+            changes.push(`${label} ${fmt(oldNum)} → ${fmt(newNum)}`);
+          }
         }
-        if (Number(editingProduct.wholesale_price_usd ?? 0) !== Number(productData.wholesale_price_usd ?? 0)) {
-          priceChanges.push(`wholesale $${Number(editingProduct.wholesale_price_usd ?? 0).toFixed(2)} → $${Number(productData.wholesale_price_usd ?? 0).toFixed(2)}`);
+
+        // Boolean / link fields
+        if (Boolean(ep.is_parent) !== Boolean(pd.is_parent)) {
+          changes.push(pd.is_parent ? "marked as parent" : "unmarked as parent");
         }
-        if (Number(editingProduct.cost_usd ?? 0) !== Number(productData.cost_usd ?? 0)) {
-          priceChanges.push(`cost $${Number(editingProduct.cost_usd ?? 0).toFixed(2)} → $${Number(productData.cost_usd ?? 0).toFixed(2)}`);
+        if ((ep.parent_product_id ?? null) !== (pd.parent_product_id ?? null)) {
+          changes.push(pd.parent_product_id ? "linked to parent" : "unlinked from parent");
         }
+        if ((ep.sibling_group_id ?? null) !== (pd.sibling_group_id ?? null)) {
+          changes.push(pd.sibling_group_id ? "joined sibling group" : "left sibling group");
+        }
+
+        // category_attributes (JSONB) — list changed keys
+        const oldAttrs = (ep.category_attributes ?? {}) as Record<string, unknown>;
+        const newAttrs = (pd.category_attributes ?? {}) as Record<string, unknown>;
+        const attrKeys = new Set([...Object.keys(oldAttrs), ...Object.keys(newAttrs)]);
+        const changedAttrKeys: string[] = [];
+        attrKeys.forEach((k) => {
+          if (JSON.stringify(oldAttrs[k] ?? null) !== JSON.stringify(newAttrs[k] ?? null)) {
+            changedAttrKeys.push(k);
+          }
+        });
+        if (changedAttrKeys.length > 0) {
+          changes.push(`attributes updated (${changedAttrKeys.join(", ")})`);
+        }
+
+        // Image add / remove
+        const originalImageCount = (editingProduct.images ?? []).length;
+        const removedImageCount = originalImageCount - existingImages.length;
+        if (removedImageCount > 0) {
+          changes.push(`removed ${removedImageCount} photo${removedImageCount === 1 ? "" : "s"}`);
+        }
+        if (imageFiles.length > 0) {
+          changes.push(`added ${imageFiles.length} photo${imageFiles.length === 1 ? "" : "s"}`);
+        }
+
         await logAudit({
           action: "update",
           entityType: "product",
           entityId: productId,
           entityLabel: `${productData.name} (${productData.sku})`,
-          summary: priceChanges.length > 0
-            ? `Updated product: ${priceChanges.join(", ")}`
-            : `Updated product`,
-          metadata: { sku: productData.sku, price_changes: priceChanges },
+          summary: changes.length > 0
+            ? `Updated product: ${changes.join(", ")}`
+            : `Updated product (no field changes)`,
+          metadata: { sku: productData.sku, changes },
         });
 
         toast({ title: "Success", description: "Product updated successfully" });
