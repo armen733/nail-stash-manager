@@ -1,52 +1,69 @@
 
 
-## Performance fixes — zero feature loss, zero risk to thumbnails
+## Make audit Entity & Details actually informative
 
-You're right to be cautious. Here's exactly what I'll do and what I will NOT touch.
+Two problems on `/audit-log`:
+1. **Entity column truncates product names** — you can't see what was edited (`Carbide Nail Drill Blt (CADB...`)
+2. **Details just says "Updated product"** — doesn't tell you *what* changed (photo? stock? name? category?)
 
-### What I will NOT touch (your guarantees)
+### Fix 1 — Entity column shows full text
 
-- **Image / thumbnail loading logic** — `LazyImage`, `ProductCard`, `ImageCarousel`, and the `image_url` / `product_images` / `images` handling stay exactly as they are. (This is also a hard rule in project memory.)
-- **Offline mode, PWA install, push notifications, returns, audit log** — all keep working identically.
-- **Any business logic** in Orders, Returns, Stock, Auth.
+`src/pages/AuditLog.tsx`:
+- Remove `truncate max-w-[200px]` on the entity label cell. Let it wrap to 2-3 lines instead so the full `name (SKU)` is always readable.
+- Same treatment for the Details column: remove `max-w-[400px]` clip, allow wrapping. Keep min-width so the column doesn't get crushed.
 
-### What I WILL change (all safe, all reversible)
+### Fix 2 — Detailed change tracking on product update
 
-1. **Stop scanning IndexedDB on every page navigation**
-   `useOnlineStatus` currently runs on every page because `OfflineIndicator` lives in the global header. I'll make it cheap: skip the auto-flush when the queue is empty, and debounce the queue-length check. Result: ~200–400ms faster page transitions on mobile. No behavior change.
+`src/pages/Products.tsx` — replace the current "price-only diff" logic with a full field-by-field diff before calling `logAudit`. Build a `changes[]` array by comparing `editingProduct` vs `productData`:
 
-2. **Faster page loads from the service worker**
-   Switch navigation from "wait up to 4s for network, then cache" → "show cache instantly, update in background." Pages render immediately even on flaky mobile networks. The app still updates when a new version ships.
+| Field changed | Summary fragment |
+|---|---|
+| `name` | `name "Old" → "New"` |
+| `sku` | `SKU OLD → NEW` |
+| `category` / `subcategory` / `variant_name` / `bit_type` / `material` / `shape` / `grit` / `direction` / `unit` | `category "Old" → "New"` (etc.) |
+| `price_usd` / `salon_price_usd` / `wholesale_price_usd` / `cost_usd` | `price $X → $Y` (already done — keep) |
+| `stock_on_hand` | `stock 5 → 12` |
+| `reorder_level` | `reorder level 10 → 20` |
+| `supplier` / `supplier_sku` | `supplier "Old" → "New"` |
+| `is_parent` / `parent_product_id` / `sibling_group_id` | `linked to parent / sibling group` |
+| `category_attributes` (JSONB) | `attributes updated` (which keys changed) |
+| **New image uploaded** (`imageFiles.length > 0`) | `added N photo(s)` |
+| **Existing image removed** (compare `existingImages` length to original) | `removed N photo(s)` |
 
-3. **Smaller offline queue lookups**
-   Move the offline order queue into its own dedicated IndexedDB store instead of sharing the default one. Lookups become O(queue size) instead of O(everything in IndexedDB).
+Final summary becomes e.g.
+- `Updated product: price $12.05 → $12.04, added 1 photo`
+- `Updated product: name "Carbide" → "Carbide Pro", stock 5 → 12`
+- `Updated product: added 2 photo(s)`
 
-4. **Trim the service worker precache**
-   Stop precaching source maps and font files we don't ship. Smaller first-visit download on mobile (~30–50KB less).
+If nothing diffs (rare — re-save without changes), keep `Updated product (no field changes)` so it's obvious.
 
-5. **Faster Products page on large catalogs**
-   `useProducts` currently fetches ALL products in 1000-row chunks before showing anything. I'll show the first 1000 immediately and load the rest in the background. **Thumbnails are unaffected** — they load the same way, just per-card as they appear (which is already how `LazyImage` works).
+### Fix 3 — Same richer detail for other entities (light pass)
 
-### Will this impact thumbnails?
+While I'm in there, do the same diff approach for these existing `update` calls so Details is never just "Updated":
+- **Salon** (`src/pages/Salons.tsx`) — diff name/address/phone/owner
+- **Stock** (`src/components/warehouse/StockActionDialog.tsx`) — already mentions action; add `qty X → Y` and location name
+- **Order edits** (`src/components/orders/EditOrderDialog.tsx`) — already mentions total diff; add line-item count change if items added/removed
 
-**No.** The image loading code is untouched. The only related change is that on the Products page, products beyond the first 1000 appear progressively instead of all at once — the thumbnails for visible products still load the exact same way through `LazyImage` with the same lazy-load + cache behavior.
+(Order create/delete and returns already have good summaries — leave alone.)
 
 ### Files changed
+- `src/pages/AuditLog.tsx` — column wrapping
+- `src/pages/Products.tsx` — full diff builder for product update + image add/remove tracking
+- `src/pages/Salons.tsx` — diff salon fields
+- `src/components/warehouse/StockActionDialog.tsx` — qty/location in summary
+- `src/components/orders/EditOrderDialog.tsx` — item count change in summary
 
-- `src/hooks/useOnlineStatus.ts` — guard mount-time work, debounce
-- `src/lib/offline-queue.ts` — dedicated idb store
-- `public/sw.js` — StaleWhileRevalidate for navigation, 2s timeout
-- `vite.config.ts` — trim precache globs
-- `src/hooks/useProducts.ts` — first page eager, rest lazy
+### Not touched
+- Image rendering / `LazyImage` / thumbnail logic (per project memory rule)
+- Database schema, RLS, edge functions — none needed
+- The `entity_label` format (kept as `name (SKU)` for products, short order ID for orders)
 
-### Expected impact
+### Result
 
-- Page navigation on mobile: **300–500ms faster**
-- First load on mobile: **30–50KB smaller**
-- Products page TTI on accounts with >1000 products: **1–3s faster**
-- Thumbnails: **unchanged** (same lazy load, same cache)
+After these changes, your screenshot row would read:
 
-### Rollback
+> **Entity:** Product · Carbide Nail Drill Bit (CADB033)
+> **Details:** Updated product: price $8.50 → $9.00, added 1 photo
 
-If anything feels off, each change is in its own file and can be reverted independently. No database migrations, no schema changes, no API changes.
+Instead of generic "Updated product".
 
