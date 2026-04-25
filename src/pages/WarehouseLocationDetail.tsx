@@ -88,6 +88,7 @@ export default function WarehouseLocationDetail() {
     city: string | null;
     address: string | null;
     notes: string | null;
+    logo_url: string | null;
   } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
@@ -125,7 +126,7 @@ export default function WarehouseLocationDetail() {
       const { data: storeData } = await supabase
         .from("supply_stores")
         .select(
-          "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, default_discount_percent, default_markup_percent",
+          "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, logo_url, default_discount_percent, default_markup_percent",
         )
         .eq("id", loc.supply_store_id)
         .maybeSingle();
@@ -146,6 +147,7 @@ export default function WarehouseLocationDetail() {
           city: storeData.city ?? null,
           address: storeData.address ?? null,
           notes: storeData.notes ?? null,
+          logo_url: (storeData as any).logo_url ?? null,
         });
       } else {
         setStoreDefaults(null);
@@ -224,6 +226,15 @@ export default function WarehouseLocationDetail() {
         {location.type === "fba" ? (
           <div className="px-2 py-1.5 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
             <img src={amazonLogoFull} alt="Amazon" className="h-7 w-auto object-contain" loading="lazy" />
+          </div>
+        ) : storeInfo?.logo_url ? (
+          <div className="h-12 w-12 rounded-md border bg-white flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img
+              src={storeInfo.logo_url}
+              alt={storeInfo.name}
+              className="h-full w-full object-contain"
+              loading="lazy"
+            />
           </div>
         ) : (
           <div className="p-2.5 rounded-md bg-primary/10 text-primary flex-shrink-0">
