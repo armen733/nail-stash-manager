@@ -65,8 +65,51 @@ const TYPE_META: Record<MovementRow["movement_type"], { label: string; icon: any
   return: { label: "Returned", icon: RotateCcw, tone: "text-orange-500" },
 };
 
-type RangeKey = "7d" | "30d" | "90d" | "all";
+type RangeKey =
+  | "7d"
+  | "30d"
+  | "90d"
+  | "this_month"
+  | "last_month"
+  | "last_3_months"
+  | "last_6_months"
+  | "this_year"
+  | "all";
 type FilterKey = "all" | "receive" | "sale";
+
+/** Returns ISO since-date for a range key, or null for all-time. */
+function rangeSince(key: RangeKey): string | null {
+  const now = new Date();
+  if (key === "all") return null;
+  if (key === "7d") return new Date(Date.now() - 7 * 86400000).toISOString();
+  if (key === "30d") return new Date(Date.now() - 30 * 86400000).toISOString();
+  if (key === "90d") return new Date(Date.now() - 90 * 86400000).toISOString();
+  if (key === "this_month") {
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  }
+  if (key === "last_month") {
+    return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  }
+  if (key === "last_3_months") {
+    return new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
+  }
+  if (key === "last_6_months") {
+    return new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString();
+  }
+  if (key === "this_year") {
+    return new Date(now.getFullYear(), 0, 1).toISOString();
+  }
+  return null;
+}
+
+/** Returns ISO until-date (exclusive) for ranges that have an upper bound. */
+function rangeUntil(key: RangeKey): string | null {
+  const now = new Date();
+  if (key === "last_month") {
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  }
+  return null;
+}
 
 export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false, onStockChanged }: Props) {
   const [loading, setLoading] = useState(true);
@@ -78,18 +121,16 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
   const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [locationNameMap, setLocationNameMap] = useState<Map<string, string>>(
+    new Map(),
+  );
 
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
-      const since =
-        range === "all"
-          ? null
-          : new Date(
-              Date.now() -
-                ({ "7d": 7, "30d": 30, "90d": 90 } as Record<RangeKey, number>)[range] * 86400000,
-            ).toISOString();
+      const since = rangeSince(range);
+      const until = rangeUntil(range);
 
       let q = supabase
         .from("stock_movements")
@@ -100,6 +141,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         .order("created_at", { ascending: false })
         .limit(500);
       if (since) q = q.gte("created_at", since);
+      if (until) q = q.lt("created_at", until);
 
       // Look up supply_store_id (if any) so we can fetch markup overrides
       const { data: locRow } = await supabase
@@ -140,7 +182,31 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       });
       setMarkupOverrideMap(mMap);
 
-      setRows(((movRes.data ?? []) as any[]) as MovementRow[]);
+      const movs = ((movRes.data ?? []) as any[]) as MovementRow[];
+
+      // Resolve names for the OTHER side of each movement so we can show
+      // "From: Main Warehouse" etc. in the entry list.
+      const otherIds = new Set<string>();
+      movs.forEach((m) => {
+        if (m.from_location_id && m.from_location_id !== locationId) {
+          otherIds.add(m.from_location_id);
+        }
+        if (m.to_location_id && m.to_location_id !== locationId) {
+          otherIds.add(m.to_location_id);
+        }
+      });
+      const nameMap = new Map<string, string>();
+      if (otherIds.size > 0) {
+        const { data: locs } = await supabase
+          .from("stock_locations")
+          .select("id, name")
+          .in("id", Array.from(otherIds));
+        ((locs ?? []) as any[]).forEach((l) => nameMap.set(l.id, l.name));
+      }
+      if (!active) return;
+      setLocationNameMap(nameMap);
+
+      setRows(movs);
       setLoading(false);
     })();
     return () => {
@@ -286,13 +352,18 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-[160px] h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Last 7 days</SelectItem>
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
+            <SelectItem value="this_month">This month</SelectItem>
+            <SelectItem value="last_month">Last month</SelectItem>
+            <SelectItem value="last_3_months">Last 3 months</SelectItem>
+            <SelectItem value="last_6_months">Last 6 months</SelectItem>
+            <SelectItem value="this_year">This year</SelectItem>
             <SelectItem value="all">All time</SelectItem>
           </SelectContent>
         </Select>
@@ -458,6 +529,23 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
                               </>
                             )}
                           </div>
+                          {(() => {
+                            const otherId = incoming
+                              ? r.from_location_id
+                              : r.to_location_id;
+                            const otherName = otherId
+                              ? locationNameMap.get(otherId)
+                              : null;
+                            if (!otherName) return null;
+                            return (
+                              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                {incoming ? "From: " : "To: "}
+                                <span className="text-foreground font-medium">
+                                  {otherName}
+                                </span>
+                              </div>
+                            );
+                          })()}
                           {showProfit && (
                             <div className="text-[11px] mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                               <span className="text-muted-foreground">
