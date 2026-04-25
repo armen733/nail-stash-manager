@@ -5,7 +5,7 @@ import { MapPin, Loader2 } from "lucide-react";
 
 interface AddressAutocompleteProps {
   value: string;
-  onChange: (address: string, city?: string) => void;
+  onChange: (address: string, city?: string, lat?: number, lng?: number) => void;
   placeholder?: string;
   className?: string;
 }
@@ -14,6 +14,7 @@ interface MapboxFeature {
   id: string;
   place_name: string;
   text: string;
+  center?: [number, number]; // [lng, lat]
   context?: Array<{
     id: string;
     text: string;
@@ -104,12 +105,13 @@ export const AddressAutocomplete = ({
     const address = feature.place_name;
     setQuery(address);
     setShowSuggestions(false);
-    
+
     // Extract city from context
     const cityContext = feature.context?.find(c => c.id.startsWith('place.'));
     const city = cityContext?.text || '';
-    
-    onChange(address, city);
+
+    const [lng, lat] = feature.center ?? [];
+    onChange(address, city, lat, lng);
   };
 
   return (

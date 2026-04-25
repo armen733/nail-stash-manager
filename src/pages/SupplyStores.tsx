@@ -287,57 +287,71 @@ export default function SupplyStores() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <AddressAutocomplete
-                  value={form.address}
-                  onChange={(address, city) => {
-                    setForm((f) => ({
-                      ...f,
-                      address,
-                      ...(city ? { city } : {}),
-                    }));
-                  }}
-                  placeholder="Start typing address..."
-                  className="min-h-[44px]"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Pick a suggestion to capture the address. Set lat/lng below if you want a map pin.
+              <div className="space-y-3 rounded-md border-2 border-primary/30 p-3 bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-semibold">Store location</Label>
+                </div>
+                <p className="text-[11px] text-muted-foreground -mt-1">
+                  Required to show this store on the map and enable directions from the warehouse.
                 </p>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  <Label htmlFor="address" className="text-xs">Address</Label>
+                  <AddressAutocomplete
+                    value={form.address}
+                    onChange={(address, city, lat, lng) => {
+                      setForm((f) => ({
+                        ...f,
+                        address,
+                        ...(city ? { city } : {}),
+                        ...(lat !== undefined ? { latitude: String(lat) } : {}),
+                        ...(lng !== undefined ? { longitude: String(lng) } : {}),
+                      }));
+                    }}
+                    placeholder="Start typing address…"
                     className="min-h-[44px]"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lat">Latitude</Label>
-                  <Input
-                    id="lat"
-                    type="number"
-                    step="any"
-                    value={form.latitude}
-                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                    className="min-h-[44px]"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="city" className="text-xs">City</Label>
+                    <Input
+                      id="city"
+                      value={form.city}
+                      onChange={(e) => setForm({ ...form, city: e.target.value })}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lat" className="text-xs">Latitude</Label>
+                    <Input
+                      id="lat"
+                      type="number"
+                      step="any"
+                      value={form.latitude}
+                      onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                      className="min-h-[44px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lng" className="text-xs">Longitude</Label>
+                    <Input
+                      id="lng"
+                      type="number"
+                      step="any"
+                      value={form.longitude}
+                      onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                      className="min-h-[44px]"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lng">Longitude</Label>
-                  <Input
-                    id="lng"
-                    type="number"
-                    step="any"
-                    value={form.longitude}
-                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                    className="min-h-[44px]"
-                  />
-                </div>
+                {(form.latitude === "" || form.longitude === "") && (
+                  <p className="text-[11px] text-destructive">
+                    Tip: pick an address suggestion above to auto-fill latitude/longitude.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-md border border-border p-3 bg-muted/30">
