@@ -5,7 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package } from "lucide-react";
-import { formatInPacific } from "@/lib/timezone";
+
+const TZ = "America/Los_Angeles";
+const formatInPacific = (utc: string, opts: Intl.DateTimeFormatOptions) =>
+  new Date(utc).toLocaleString("en-US", { timeZone: TZ, ...opts });
 
 interface Props {
   locationId: string;
