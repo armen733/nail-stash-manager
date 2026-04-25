@@ -15,11 +15,12 @@ interface ProductRow {
   name: string;
   sku: string;
   unitsSold: number;
-  storePaid: number;
-  ourCost: number;
-  profit: number;
+  storeRevenue: number; // what store earns selling to customers (retail × units)
+  storeCost: number; // what store paid us (wholesale)
+  profit: number; // storeRevenue - storeCost
   marginPct: number;
-  avgSellPrice: number;
+  avgRetailPrice: number;
+  avgWholesalePrice: number;
 }
 
 const formatMoney = (n: number) => {
