@@ -27,6 +27,7 @@ import { StockActionDialog, type StockAction } from "@/components/warehouse/Stoc
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
 import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
+import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
@@ -611,10 +612,15 @@ export default function WarehouseLocationDetail() {
       )}
 
       <Tabs defaultValue="stock" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList
+          className={`grid w-full ${isSupplyStoreView ? "grid-cols-4" : "grid-cols-3"}`}
+        >
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          {isSupplyStoreView && (
+            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="stock" className="mt-3">
@@ -749,6 +755,12 @@ export default function WarehouseLocationDetail() {
         <TabsContent value="pricing" className="mt-3">
           <LocationPricingTab locationId={location.id} />
         </TabsContent>
+
+        {isSupplyStoreView && (
+          <TabsContent value="earnings" className="mt-3">
+            <LocationFinancialsTab locationId={location.id} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {action && (
