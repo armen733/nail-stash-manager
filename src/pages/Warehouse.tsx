@@ -678,46 +678,49 @@ export default function Warehouse() {
       </Card>
 
       {/* List / Map tabs */}
-      <Tabs defaultValue="list" className="w-full">
-        <TabsList>
-          <TabsTrigger value="list" className="gap-1.5">
-            <List className="h-3.5 w-3.5" /> List
-          </TabsTrigger>
-          <TabsTrigger value="map" className="gap-1.5">
-            <MapIcon className="h-3.5 w-3.5" /> Map
-            {mapPins.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-1">
-                {mapPins.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "map")} className="w-full">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <TabsList className="flex-shrink-0">
+            <TabsTrigger value="list" className="gap-1.5">
+              <List className="h-3.5 w-3.5" /> List
+            </TabsTrigger>
+            <TabsTrigger value="map" className="gap-1.5">
+              <MapIcon className="h-3.5 w-3.5" /> Map
+              {mapPins.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-1">
+                  {mapPins.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          {activeTab === "list" && (
+            <>
+              <div className="relative flex-1 min-w-[140px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search locations…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                <SelectTrigger className="w-[110px] sm:w-[140px] h-9 flex-shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All types</SelectItem>
+                  <SelectItem value="warehouse">Warehouse</SelectItem>
+                  <SelectItem value="fba">Amazon FBA</SelectItem>
+                  <SelectItem value="driver">Drivers</SelectItem>
+                  <SelectItem value="consignment">Supply Store</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
+        </div>
 
         <TabsContent value="list" className="mt-3 space-y-3">
-          {/* Search + filter */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search locations…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="warehouse">Warehouse</SelectItem>
-                <SelectItem value="fba">Amazon FBA</SelectItem>
-                <SelectItem value="driver">Drivers</SelectItem>
-                <SelectItem value="consignment">Supply Store</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           {/* Grouped sections */}
           {loading ? (
