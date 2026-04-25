@@ -325,14 +325,6 @@ export default function WarehouseLocationDetail() {
                   )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs flex-shrink-0"
-                onClick={() => navigate(`/supply-stores/${storeInfo.id}`)}
-              >
-                Open profile <ExternalLink className="h-3 w-3 ml-1" />
-              </Button>
             </div>
 
             {/* Contact actions — clickable */}
