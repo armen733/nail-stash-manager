@@ -146,6 +146,9 @@ export default function Warehouse() {
     supply_store_city: string;
     supply_store_lat: number | null;
     supply_store_lng: number | null;
+    supply_store_contact_name: string;
+    supply_store_phone: string;
+    supply_store_email: string;
   }>({
     name: "",
     type: "warehouse",
@@ -158,6 +161,9 @@ export default function Warehouse() {
     supply_store_city: "",
     supply_store_lat: null,
     supply_store_lng: null,
+    supply_store_contact_name: "",
+    supply_store_phone: "",
+    supply_store_email: "",
   });
 
   const loadData = async () => {
