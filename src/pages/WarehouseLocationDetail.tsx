@@ -482,6 +482,8 @@ export default function WarehouseLocationDetail() {
           action={action}
           locationId={location.id}
           locationName={location.name}
+          locationType={location.type}
+          storeDiscountPercent={storeDefaults?.discount ?? 0}
           otherLocations={otherLocations}
           onDone={load}
         />
