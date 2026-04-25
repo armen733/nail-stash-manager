@@ -124,6 +124,7 @@ export default function Warehouse() {
   const [stats, setStats] = useState<Record<string, LocationStats>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [supplyStores, setSupplyStores] = useState<SupplyStoreLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
