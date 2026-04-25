@@ -50,14 +50,17 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
     .filter(Boolean);
 
   const brandLines = [
-    brand.address,
-    ...phoneLines,
-    brand.contact_email,
-    brand.website,
-    brand.instagram ? `@${brand.instagram.replace(/^@/, "")}` : null,
+    { text: brand.address, nowrap: false },
+    ...phoneLines.map((p) => ({ text: p, nowrap: true })),
+    { text: brand.contact_email, nowrap: true },
+    { text: brand.website, nowrap: true },
+    { text: brand.instagram ? `@${brand.instagram.replace(/^@/, "")}` : null, nowrap: true },
   ]
-    .filter(Boolean)
-    .map((l) => `<div>${escapeHtml(l!)}</div>`)
+    .filter((l) => !!l.text)
+    .map(
+      (l) =>
+        `<div${l.nowrap ? ' style="white-space:nowrap"' : ""}>${escapeHtml(l.text!)}</div>`,
+    )
     .join("");
 
   const html = `<!doctype html>
