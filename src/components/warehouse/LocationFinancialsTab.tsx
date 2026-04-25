@@ -35,7 +35,7 @@ const formatMoney = (n: number) => {
   })}`;
 };
 
-export function LocationFinancialsTab({ locationId }: Props) {
+export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeMarkupPercent = 0 }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [search, setSearch] = useState("");
