@@ -337,7 +337,9 @@ export default function WarehouseLocationDetail() {
           <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">Retail value</div>
+          <div className="text-[10px] text-muted-foreground uppercase">
+            {isSupplyStoreView ? "Store pays us" : "Retail value"}
+          </div>
           <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
       </div>
