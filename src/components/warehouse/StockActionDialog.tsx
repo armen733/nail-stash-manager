@@ -175,6 +175,7 @@ export function StockActionDialog({
         sku: p.sku,
         cost_usd: p.cost_usd,
         price_usd: effectivePrice,
+        wholesale_price_usd: p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : null,
         image_url: thumb,
         stockHere: stockMap.get(p.id) ?? 0,
       };
@@ -202,6 +203,11 @@ export function StockActionDialog({
       toast.info("Already in list");
       return;
     }
+    // Suggested store sell price: wholesale × (1 - discount%) when receiving into a supply store
+    const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const suggestedStorePrice = isConsignmentReceive
+      ? Math.max(0, wholesale * (1 - (storeDiscountPercent || 0) / 100))
+      : null;
     setLines((prev) => [
       ...prev,
       {
@@ -210,9 +216,16 @@ export function StockActionDialog({
         sku: p.sku,
         stockHere: p.stockHere,
         quantity: "1",
-        unit_cost: p.cost_usd ? String(p.cost_usd) : "",
+        unit_cost:
+          suggestedStorePrice != null
+            ? suggestedStorePrice.toFixed(2)
+            : p.cost_usd
+            ? String(p.cost_usd)
+            : "",
         unit_price: p.price_usd ? String(p.price_usd) : "",
         default_price: p.price_usd,
+        product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
+        wholesale_baseline: wholesale || null,
       },
     ]);
   };
