@@ -14,6 +14,9 @@ import {
   ArrowLeftRight,
   ClipboardEdit,
   ShoppingCart,
+  Pencil,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
