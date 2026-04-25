@@ -38,6 +38,7 @@ interface ProductRow {
   sku: string;
   cost_usd: number | null;
   price_usd: number;
+  wholesale_price_usd: number | null;
   image_url: string | null;
   stockHere: number;
 }
@@ -51,6 +52,10 @@ interface LineItem {
   unit_cost: string;
   unit_price: string;
   default_price: number;
+  /** Our cost per unit — used to compute profit on consignment receive */
+  product_cost: number | null;
+  /** Wholesale baseline used to compute the suggested store sell price */
+  wholesale_baseline: number | null;
 }
 
 interface Props {
@@ -59,6 +64,10 @@ interface Props {
   action: StockAction;
   locationId: string;
   locationName: string;
+  /** Type of the location we're acting on (warehouse | fba | consignment | driver) */
+  locationType?: string;
+  /** Default % discount this supply store gets off wholesale price */
+  storeDiscountPercent?: number;
   /** For transfer: the OTHER locations to choose from */
   otherLocations?: LocationOption[];
   onDone: () => void;
