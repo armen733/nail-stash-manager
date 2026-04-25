@@ -156,33 +156,52 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
     let unitsReceived = 0;
     let unitsSold = 0;
     let costReceived = 0; // our cost outlay on goods received
-    let revenueIfSold = 0; // potential revenue at agreed store price for received goods
-    let projectedProfit = 0;
+    let weChargeStore = 0; // total $ the store owes us for received goods
+    let ourProfit = 0; // weChargeStore - costReceived
+    let storeRevenueIfSold = 0; // store's revenue if they sell at suggested resell
+    let storeEarning = 0; // storeRevenueIfSold - weChargeStore
 
     rows.forEach((r) => {
       if (!r.product) return;
-      const cost =
-        r.unit_cost != null
-          ? Number(r.unit_cost)
-          : Number(r.product.cost_usd ?? 0);
+      const cost = Number(r.product.cost_usd ?? 0);
       const wholesale = Number(r.product.wholesale_price_usd ?? r.product.price_usd ?? 0);
+      const retail = Number(r.product.price_usd ?? 0);
       const fallbackStorePrice = wholesale * (1 - (storeDiscountPercent || 0) / 100);
       const storePrice = overrideMap.get(r.product.id) ?? fallbackStorePrice;
+
+      // Suggested resell: if we've set a markup, store sells at storePrice * (1+markup%)
+      // Otherwise default = our regular retail price.
+      const markupPct = markupOverrideMap.get(r.product.id) ?? storeMarkupPercent ?? 0;
+      const suggestedResell =
+        markupPct > 0 ? storePrice * (1 + markupPct / 100) : retail;
 
       if (r.movement_type === "receive" && r.to_location_id === locationId) {
         unitsReceived += r.quantity;
         costReceived += cost * r.quantity;
-        revenueIfSold += storePrice * r.quantity;
-        projectedProfit += (storePrice - cost) * r.quantity;
+        weChargeStore += storePrice * r.quantity;
+        ourProfit += (storePrice - cost) * r.quantity;
+        storeRevenueIfSold += suggestedResell * r.quantity;
+        storeEarning += (suggestedResell - storePrice) * r.quantity;
       }
       if (r.movement_type === "sale" && r.from_location_id === locationId) {
         unitsSold += r.quantity;
       }
     });
 
-    const margin = revenueIfSold > 0 ? (projectedProfit / revenueIfSold) * 100 : 0;
-    return { unitsReceived, unitsSold, costReceived, revenueIfSold, projectedProfit, margin };
-  }, [rows, overrideMap, locationId, storeDiscountPercent]);
+    const margin = costReceived > 0 ? (ourProfit / costReceived) * 100 : 0;
+    const storeMargin = weChargeStore > 0 ? (storeEarning / weChargeStore) * 100 : 0;
+    return {
+      unitsReceived,
+      unitsSold,
+      costReceived,
+      weChargeStore,
+      ourProfit,
+      margin,
+      storeRevenueIfSold,
+      storeEarning,
+      storeMargin,
+    };
+  }, [rows, overrideMap, markupOverrideMap, locationId, storeDiscountPercent, storeMarkupPercent]);
 
   // Group by date (Pacific time, day-bucket)
   const grouped = useMemo(() => {
