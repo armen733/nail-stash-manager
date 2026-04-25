@@ -1279,6 +1279,7 @@ export type Database = {
           name: string
           notes: string | null
           salon_id: string | null
+          supply_store_id: string | null
           type: Database["public"]["Enums"]["location_type"]
           updated_at: string
         }
@@ -1291,6 +1292,7 @@ export type Database = {
           name: string
           notes?: string | null
           salon_id?: string | null
+          supply_store_id?: string | null
           type?: Database["public"]["Enums"]["location_type"]
           updated_at?: string
         }
@@ -1303,6 +1305,7 @@ export type Database = {
           name?: string
           notes?: string | null
           salon_id?: string | null
+          supply_store_id?: string | null
           type?: Database["public"]["Enums"]["location_type"]
           updated_at?: string
         }
@@ -1319,6 +1322,13 @@ export type Database = {
             columns: ["salon_id"]
             isOneToOne: false
             referencedRelation: "salons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_locations_supply_store_id_fkey"
+            columns: ["supply_store_id"]
+            isOneToOne: false
+            referencedRelation: "supply_stores"
             referencedColumns: ["id"]
           },
         ]

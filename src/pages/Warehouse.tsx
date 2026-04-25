@@ -17,7 +17,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -45,6 +47,7 @@ interface StockLocation {
   type: LocationType;
   assigned_user_id: string | null;
   salon_id: string | null;
+  supply_store_id: string | null;
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
@@ -65,6 +68,11 @@ interface Profile {
 }
 
 interface Salon {
+  id: string;
+  name: string;
+}
+
+interface SupplyStore {
   id: string;
   name: string;
 }
@@ -111,6 +119,7 @@ export default function Warehouse() {
   const [stats, setStats] = useState<Record<string, LocationStats>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
+  const [supplyStores, setSupplyStores] = useState<SupplyStore[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
@@ -122,21 +131,21 @@ export default function Warehouse() {
     name: string;
     type: LocationType;
     assigned_user_id: string;
-    salon_id: string;
+    consignment_target: string; // "salon:<id>" | "supply:<id>" | ""
     notes: string;
     is_active: boolean;
   }>({
     name: "",
     type: "warehouse",
     assigned_user_id: "",
-    salon_id: "",
+    consignment_target: "",
     notes: "",
     is_active: true,
   });
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, stockRes, prodRes] = await Promise.all([
+    const [locRes, profRes, salRes, supRes, stockRes, prodRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -144,6 +153,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
+      supabase.from("supply_stores").select("id, name").order("name"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -152,6 +162,7 @@ export default function Warehouse() {
     setLocations((locRes.data ?? []) as StockLocation[]);
     setProfiles((profRes.data ?? []) as Profile[]);
     setSalons((salRes.data ?? []) as Salon[]);
+    setSupplyStores((supRes.data ?? []) as SupplyStore[]);
 
     const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
@@ -192,7 +203,7 @@ export default function Warehouse() {
       name: "",
       type: "warehouse",
       assigned_user_id: "",
-      salon_id: "",
+      consignment_target: "",
       notes: "",
       is_active: true,
     });
@@ -206,7 +217,11 @@ export default function Warehouse() {
       name: loc.name,
       type: loc.type,
       assigned_user_id: loc.assigned_user_id ?? "",
-      salon_id: loc.salon_id ?? "",
+      consignment_target: loc.salon_id
+        ? `salon:${loc.salon_id}`
+        : loc.supply_store_id
+          ? `supply:${loc.supply_store_id}`
+          : "",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
     });
@@ -222,16 +237,21 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-    if (form.type === "consignment" && !form.salon_id) {
-      toast.error("Pick a salon for this consignment location");
-      return;
+
+    let salon_id: string | null = null;
+    let supply_store_id: string | null = null;
+    if (form.type === "consignment" && form.consignment_target) {
+      const [kind, id] = form.consignment_target.split(":");
+      if (kind === "salon") salon_id = id;
+      else if (kind === "supply") supply_store_id = id;
     }
 
     const payload = {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id: form.type === "consignment" ? form.salon_id : null,
+      salon_id,
+      supply_store_id,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
@@ -267,7 +287,9 @@ export default function Warehouse() {
         l.type === "driver"
           ? profiles.find((p) => p.id === l.assigned_user_id)?.full_name ?? ""
           : l.type === "consignment"
-          ? salons.find((s) => s.id === l.salon_id)?.name ?? ""
+          ? (salons.find((s) => s.id === l.salon_id)?.name ??
+              supplyStores.find((s) => s.id === l.supply_store_id)?.name ??
+              "")
           : "";
       return (
         l.name.toLowerCase().includes(q) ||
@@ -275,7 +297,7 @@ export default function Warehouse() {
         (l.notes ?? "").toLowerCase().includes(q)
       );
     });
-  }, [locations, search, typeFilter, profiles, salons]);
+  }, [locations, search, typeFilter, profiles, salons, supplyStores]);
 
   const grouped = useMemo(() => {
     const g: Record<LocationType, StockLocation[]> = {
@@ -296,7 +318,9 @@ export default function Warehouse() {
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
         : loc.type === "consignment"
-        ? salons.find((sa) => sa.id === loc.salon_id)?.name
+        ? (salons.find((sa) => sa.id === loc.salon_id)?.name ??
+            supplyStores.find((sa) => sa.id === loc.supply_store_id)?.name ??
+            null)
         : null;
     const isEmpty = s.units === 0;
 
@@ -600,22 +624,43 @@ export default function Warehouse() {
 
             {form.type === "consignment" && (
               <div className="space-y-2">
-                <Label>Salon / supply store</Label>
+                <Label>Salon / supply store (optional)</Label>
                 <Select
-                  value={form.salon_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
+                  value={form.consignment_target || "none"}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, consignment_target: v === "none" ? "" : v }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pick a salon" />
+                    <SelectValue placeholder="Pick a salon or supply store" />
                   </SelectTrigger>
                   <SelectContent>
-                    {salons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">— No link —</SelectItem>
+                    {salons.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Salons</SelectLabel>
+                        {salons.map((s) => (
+                          <SelectItem key={`salon-${s.id}`} value={`salon:${s.id}`}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {supplyStores.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Supply stores</SelectLabel>
+                        {supplyStores.map((s) => (
+                          <SelectItem key={`supply-${s.id}`} value={`supply:${s.id}`}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Optional — link this consignment location to a salon or supply store partner, or leave unlinked.
+                </p>
               </div>
             )}
 
