@@ -260,15 +260,28 @@ export default function WarehouseLocationDetail() {
       let units = 0;
       let storePaid = 0;
       let ourCost = 0;
+      const perProduct = new Map<
+        string,
+        { units: number; storePaid: number; ourCost: number }
+      >();
       for (const m of lifeRows) {
         const qty = Number(m.quantity ?? 0);
+        const paid = qty * Number(m.unit_cost ?? 0);
+        const cst = qty * (costMap.get(m.product_id) ?? 0);
         units += qty;
-        storePaid += qty * Number(m.unit_cost ?? 0);
-        ourCost += qty * (costMap.get(m.product_id) ?? 0);
+        storePaid += paid;
+        ourCost += cst;
+        const cur = perProduct.get(m.product_id) ?? { units: 0, storePaid: 0, ourCost: 0 };
+        cur.units += qty;
+        cur.storePaid += paid;
+        cur.ourCost += cst;
+        perProduct.set(m.product_id, cur);
       }
       setLifetime({ units, storePaid, ourCost });
+      setLifetimeByProduct(perProduct);
     } else {
       setLifetime({ units: 0, storePaid: 0, ourCost: 0 });
+      setLifetimeByProduct(new Map());
     }
 
     setLoading(false);
