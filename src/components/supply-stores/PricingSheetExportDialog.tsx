@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Loader2 } from "lucide-react";
+import { Search, Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csv-export";
+import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 
 interface Product {
   id: string;
@@ -24,6 +25,14 @@ interface Product {
   price_usd: number;
 }
 
+interface StoreInfo {
+  name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +40,7 @@ interface Props {
   defaultDiscount?: number;
   defaultMarkup?: number;
   preselectedProductIds?: string[];
+  storeInfo?: StoreInfo;
 }
 
 export const PricingSheetExportDialog = ({
@@ -40,6 +50,7 @@ export const PricingSheetExportDialog = ({
   defaultDiscount = 0,
   defaultMarkup = 0,
   preselectedProductIds,
+  storeInfo,
 }: Props) => {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -47,6 +58,7 @@ export const PricingSheetExportDialog = ({
   const [search, setSearch] = useState("");
   const [discount, setDiscount] = useState<number>(defaultDiscount);
   const [markup, setMarkup] = useState<number>(defaultMarkup);
+  const [brand, setBrand] = useState<CompanyBrand | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -56,12 +68,16 @@ export const PricingSheetExportDialog = ({
 
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, sku, name, category, price_usd")
-        .order("sku");
-      if (error) toast.error(error.message);
-      setProducts((data ?? []) as Product[]);
+      const [productsRes, brandRes] = await Promise.all([
+        supabase.from("products").select("id, sku, name, category, price_usd").order("sku"),
+        supabase
+          .from("company_settings")
+          .select("company_name, logo_url, contact_phone, contact_email, website, instagram, address, tagline")
+          .maybeSingle(),
+      ]);
+      if (productsRes.error) toast.error(productsRes.error.message);
+      setProducts((productsRes.data ?? []) as Product[]);
+      setBrand((brandRes.data ?? null) as CompanyBrand | null);
       setLoading(false);
     };
     load();
@@ -128,6 +144,43 @@ export const PricingSheetExportDialog = ({
       .replace(/^-|-$/g, "");
     downloadCSV(rows, `${safeName}-pricing`);
     toast.success(`Exported ${rows.length} product${rows.length === 1 ? "" : "s"}`);
+    onOpenChange(false);
+  };
+
+  const handlePrint = () => {
+    const picked = products.filter((p) => selected.has(p.id));
+    if (picked.length === 0) {
+      toast.error("Pick at least one product");
+      return;
+    }
+    const rows = picked.map((p) => ({
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      basePrice: Number(p.price_usd ?? 0),
+      discountPercent: discount,
+      markupPercent: markup,
+    }));
+    openPrintableCatalog({
+      brand: brand ?? {
+        company_name: "",
+        logo_url: null,
+        contact_phone: null,
+        contact_email: null,
+        website: null,
+        instagram: null,
+        address: null,
+        tagline: null,
+      },
+      store: {
+        name: storeInfo?.name ?? scopeName ?? "Wholesale Partner",
+        contact_name: storeInfo?.contact_name ?? null,
+        phone: storeInfo?.phone ?? null,
+        email: storeInfo?.email ?? null,
+        address: storeInfo?.address ?? null,
+      },
+      rows,
+    });
     onOpenChange(false);
   };
 
@@ -238,9 +291,13 @@ export const PricingSheetExportDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-2 flex-col sm:flex-row">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
+          </Button>
+          <Button variant="secondary" onClick={handlePrint} disabled={selected.size === 0}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print branded sheet
           </Button>
           <Button onClick={handleExport} disabled={selected.size === 0}>
             <Download className="h-4 w-4 mr-2" />

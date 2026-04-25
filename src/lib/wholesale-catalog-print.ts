@@ -44,9 +44,14 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
     })
     .join("");
 
+  const phoneLines = (brand.contact_phone ?? "")
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const brandLines = [
     brand.address,
-    brand.contact_phone,
+    ...phoneLines,
     brand.contact_email,
     brand.website,
     brand.instagram ? `@${brand.instagram.replace(/^@/, "")}` : null,

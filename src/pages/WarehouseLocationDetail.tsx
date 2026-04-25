@@ -506,6 +506,17 @@ export default function WarehouseLocationDetail() {
         defaultDiscount={storeDefaults?.discount ?? 0}
         defaultMarkup={storeDefaults?.markup ?? 0}
         preselectedProductIds={rows.map((r) => r.product_id)}
+        storeInfo={
+          storeInfo
+            ? {
+                name: storeInfo.name,
+                contact_name: storeInfo.contact_name,
+                phone: storeInfo.phone,
+                email: storeInfo.email,
+                address: storeInfo.address,
+              }
+            : undefined
+        }
       />
     </div>
   );
