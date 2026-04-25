@@ -169,6 +169,48 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          instagram: string | null
+          logo_url: string | null
+          tagline: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          tagline?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          tagline?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       customer_referrals: {
         Row: {
           created_at: string
@@ -1354,6 +1396,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supply_store_products: {
+        Row: {
+          created_at: string
+          discount_percent_override: number | null
+          id: string
+          markup_percent_override: number | null
+          notes: string | null
+          product_id: string
+          supply_store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percent_override?: number | null
+          id?: string
+          markup_percent_override?: number | null
+          notes?: string | null
+          product_id: string
+          supply_store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discount_percent_override?: number | null
+          id?: string
+          markup_percent_override?: number | null
+          notes?: string | null
+          product_id?: string
+          supply_store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_store_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_store_products_supply_store_id_fkey"
+            columns: ["supply_store_id"]
+            isOneToOne: false
+            referencedRelation: "supply_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supply_stores: {
+        Row: {
+          address: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          default_discount_percent: number
+          default_markup_percent: number
+          email: string | null
+          id: string
+          instagram: string | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          default_discount_percent?: number
+          default_markup_percent?: number
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          default_discount_percent?: number
+          default_markup_percent?: number
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       tax_settings: {
         Row: {
