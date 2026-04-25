@@ -27,6 +27,8 @@ interface Props {
   locationId: string;
   /** Per-store default discount (used as fallback when no per-product override exists). */
   storeDiscountPercent?: number;
+  /** Per-store default markup % the store applies on top of what they paid us. */
+  storeMarkupPercent?: number;
   /** Whether this location is a supply store (consignment) — controls profit columns. */
   isSupplyStore?: boolean;
 }
