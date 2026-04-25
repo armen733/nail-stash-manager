@@ -70,6 +70,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<MovementRow[]>([]);
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
+  const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
   const [range, setRange] = useState<RangeKey>("30d");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
@@ -98,12 +99,27 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         .limit(500);
       if (since) q = q.gte("created_at", since);
 
-      const [movRes, priceRes] = await Promise.all([
+      // Look up supply_store_id (if any) so we can fetch markup overrides
+      const { data: locRow } = await supabase
+        .from("stock_locations")
+        .select("type, supply_store_id")
+        .eq("id", locationId)
+        .maybeSingle();
+      const supplyStoreId =
+        locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
+
+      const [movRes, priceRes, markupRes] = await Promise.all([
         q,
         supabase
           .from("location_product_prices")
           .select("product_id, price_usd")
           .eq("location_id", locationId),
+        supplyStoreId
+          ? supabase
+              .from("supply_store_products")
+              .select("product_id, markup_percent_override")
+              .eq("supply_store_id", supplyStoreId)
+          : Promise.resolve({ data: [] as any[] } as any),
       ]);
 
       if (!active) return;
@@ -113,6 +129,15 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         map.set(r.product_id, Number(r.price_usd ?? 0)),
       );
       setOverrideMap(map);
+
+      const mMap = new Map<string, number>();
+      ((markupRes as any)?.data ?? []).forEach((r: any) => {
+        if (r.markup_percent_override != null) {
+          mMap.set(r.product_id, Number(r.markup_percent_override));
+        }
+      });
+      setMarkupOverrideMap(mMap);
+
       setRows(((movRes.data ?? []) as any[]) as MovementRow[]);
       setLoading(false);
     })();
