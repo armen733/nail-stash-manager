@@ -34,6 +34,8 @@ interface MovementRow {
     cost_usd: number | null;
     wholesale_price_usd: number | null;
     price_usd: number;
+    image_url: string | null;
+    product_images?: { image_url: string; display_order: number | null }[];
   } | null;
 }
 
