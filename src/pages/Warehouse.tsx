@@ -34,6 +34,8 @@ import {
   List,
   Map as MapIcon,
   FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
@@ -137,6 +139,7 @@ export default function Warehouse() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -599,7 +602,86 @@ export default function Warehouse() {
               </span>
               <span className="text-muted-foreground text-xs">active</span>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 ml-auto text-xs"
+              onClick={() => setShowBreakdown((v) => !v)}
+            >
+              {showBreakdown ? (
+                <>
+                  Hide <ChevronUp className="h-3.5 w-3.5 ml-1" />
+                </>
+              ) : (
+                <>
+                  By location <ChevronDown className="h-3.5 w-3.5 ml-1" />
+                </>
+              )}
+            </Button>
           </div>
+
+          {showBreakdown && (
+            <div className="mt-3 pt-3 border-t space-y-1">
+              {locations.length === 0 ? (
+                <div className="text-xs text-muted-foreground italic">No locations yet.</div>
+              ) : (
+                [...locations]
+                  .map((l) => {
+                    const s = stats[l.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+                    return { loc: l, s };
+                  })
+                  .sort((a, b) => b.s.retail - a.s.retail)
+                  .map(({ loc, s }) => {
+                    const meta = TYPE_META[loc.type];
+                    const Icon = meta.icon;
+                    return (
+                      <button
+                        key={loc.id}
+                        onClick={() => navigate(`/warehouse/${loc.id}`)}
+                        className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors"
+                      >
+                        {loc.type === "fba" ? (
+                          <img src={amazonLogo} alt="" className="h-4 w-4 object-contain flex-shrink-0" loading="lazy" />
+                        ) : (
+                          <div className={`p-1 rounded ${meta.color} flex-shrink-0`}>
+                            <Icon className="h-3 w-3" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium">
+                          {loc.name}
+                        </div>
+                        <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+                          <span>
+                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span> units
+                          </span>
+                          <span>
+                            <span className="font-semibold text-foreground">{s.skus.toLocaleString()}</span> SKUs
+                          </span>
+                          <span>
+                            <span className="font-semibold text-foreground">
+                              ${s.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </span> cost
+                          </span>
+                          <span>
+                            <span className="font-semibold text-primary">
+                              ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </span> retail
+                          </span>
+                        </div>
+                        <div className="sm:hidden flex flex-col items-end text-[11px] text-muted-foreground flex-shrink-0">
+                          <span>
+                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span>u ·{" "}
+                            <span className="font-semibold text-primary">
+                              ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </span>
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
