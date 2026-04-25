@@ -216,36 +216,38 @@ export function LocationFinancialsTab({ locationId }: Props) {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Total revenue
+              <DollarSign className="h-3 w-3" /> Store revenue
             </div>
             <div className="text-xl font-bold text-primary">
               {formatMoney(totals.revenue)}
             </div>
-            <div className="text-[10px] text-muted-foreground">store paid us</div>
+            <div className="text-[10px] text-muted-foreground">
+              retail × units sold
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingDown className="h-3 w-3" /> Our expenses
+              <TrendingDown className="h-3 w-3" /> Store expenses
             </div>
             <div className="text-xl font-bold">{formatMoney(totals.cost)}</div>
             <div className="text-[10px] text-muted-foreground">
-              factory cost of units sold
+              what they paid us (wholesale)
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Net profit
+              <TrendingUp className="h-3 w-3" /> Store profit
             </div>
             <div
               className={`text-xl font-bold ${totals.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
             >
               {formatMoney(totals.profit)}
             </div>
-            <div className="text-[10px] text-muted-foreground">revenue − cost</div>
+            <div className="text-[10px] text-muted-foreground">revenue − expenses</div>
           </CardContent>
         </Card>
         <Card>
