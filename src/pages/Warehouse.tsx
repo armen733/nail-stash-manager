@@ -491,6 +491,10 @@ export default function Warehouse() {
                 <div className="px-1.5 py-1 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
                   <img src={amazonLogoFull} alt="Amazon" className="h-4 w-auto object-contain" loading="lazy" />
                 </div>
+              ) : loc.type === "consignment" && supplyLogoByLocationId[loc.id] ? (
+                <div className="h-7 w-7 rounded-md bg-white border flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  <img src={supplyLogoByLocationId[loc.id] as string} alt={loc.name} className="h-full w-full object-contain" loading="lazy" />
+                </div>
               ) : (
                 <div className={`p-1.5 rounded-md ${meta.color} flex-shrink-0`}>
                   <Icon className="h-4 w-4" />
