@@ -140,7 +140,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
         markupPct > 0 ? info.retailPrice * (1 + markupPct / 100) : info.retailPrice;
       const storeRevenue = unitsSold * suggestedRetail; // store earns at suggested retail
       const profit = storeRevenue - storeCost;
-      const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
+      const marginPct = storeRevenue > 0 ? (profit / storeRevenue) * 100 : 0;
       const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
       result.push({
         product_id: pid,
@@ -174,7 +174,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       cost += r.storeCost;
     });
     const profit = revenue - cost;
-    const margin = cost > 0 ? (profit / cost) * 100 : 0;
+    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
     return { units, revenue, cost, profit, margin, skus: rows.length };
   }, [rows]);
 
