@@ -281,6 +281,9 @@ export default function SupplyStoreProfile() {
             <Button size="sm" variant="outline" onClick={handlePrint}>
               <Printer className="h-3.5 w-3.5 mr-1.5" /> Print
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
+              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" /> Pricing sheet
+            </Button>
             <Button size="sm" onClick={() => setPickerOpen(true)}>
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
             </Button>
