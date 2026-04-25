@@ -425,6 +425,18 @@ export default function Warehouse() {
     return g;
   }, [filtered]);
 
+  const supplyLogoByLocationId = useMemo(() => {
+    const supplyMap = new Map(supplyStores.map((s) => [s.id, s]));
+    const out: Record<string, string | null> = {};
+    locations.forEach((l) => {
+      if (l.type === "consignment" && l.supply_store_id) {
+        const sup = supplyMap.get(l.supply_store_id);
+        out[l.id] = sup?.logo_url ?? null;
+      }
+    });
+    return out;
+  }, [locations, supplyStores]);
+
   const mapPins: WarehousePin[] = useMemo(() => {
     const supplyMap = new Map(supplyStores.map((s) => [s.id, s]));
     return locations
