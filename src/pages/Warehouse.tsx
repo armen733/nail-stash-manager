@@ -34,6 +34,8 @@ import {
   List,
   Map as MapIcon,
   FileSpreadsheet,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
