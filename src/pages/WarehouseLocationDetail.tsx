@@ -280,6 +280,12 @@ export default function WarehouseLocationDetail() {
       )
     : 0;
   const profitMarginPct = totalCost > 0 ? (ourProfit / totalCost) * 100 : 0;
+  // Show cents for small totals so users see the real number; round larger totals.
+  const formatMoney = (n: number) => {
+    const abs = Math.abs(n);
+    const digits = abs > 0 && abs < 1000 ? 2 : 0;
+    return `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  };
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
