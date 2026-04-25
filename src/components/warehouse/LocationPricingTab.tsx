@@ -273,19 +273,35 @@ export function LocationPricingTab({ locationId }: Props) {
                   <div className="text-sm font-medium truncate">{r.name}</div>
                   <div className="text-xs text-muted-foreground truncate flex items-center gap-2 flex-wrap">
                     <span>{r.sku}</span>
-                    <span>·</span>
-                    <span>Default ${r.defaultPrice.toFixed(2)}</span>
-                    {r.cost > 0 && (
-                      <>
-                        <span>·</span>
-                        <span>Cost ${r.cost.toFixed(2)}</span>
-                      </>
-                    )}
                     {r.stockHere > 0 && (
                       <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
                         {r.stockHere} on hand
                       </Badge>
                     )}
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px]">
+                    {r.cost > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="h-5 px-1.5 font-normal border-muted-foreground/30"
+                      >
+                        Our cost <span className="ml-1 font-semibold text-foreground">${r.cost.toFixed(2)}</span>
+                      </Badge>
+                    )}
+                    {r.ourSalePrice > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="h-5 px-1.5 font-normal border-primary/40 text-primary"
+                      >
+                        We sold @ <span className="ml-1 font-semibold">${r.ourSalePrice.toFixed(2)}</span>
+                      </Badge>
+                    )}
+                    <Badge
+                      variant="outline"
+                      className="h-5 px-1.5 font-normal border-muted-foreground/30"
+                    >
+                      Retail <span className="ml-1 font-semibold text-foreground">${r.defaultPrice.toFixed(2)}</span>
+                    </Badge>
                   </div>
                 </div>
 
