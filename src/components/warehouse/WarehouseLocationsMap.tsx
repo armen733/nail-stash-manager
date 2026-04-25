@@ -45,7 +45,7 @@ const TYPE_COLOR: Record<WarehousePin["type"], { bg: string; ring: string }> = {
   driver: { bg: "#7c3aed", ring: "#c4b5fd" },
 };
 
-export default function WarehouseLocationsMap({ pins, className }: Props) {
+export default function WarehouseLocationsMap({ pins, className, fullscreen: fullscreenProp, onExitFullscreen }: Props) {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -56,7 +56,20 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const [mapReady, setMapReady] = useState(0);
   const [showControls, setShowControls] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const isControlled = fullscreenProp !== undefined;
+  const isFullscreen = isControlled ? !!fullscreenProp : internalFullscreen;
+  const exitFullscreen = () => {
+    if (isControlled) onExitFullscreen?.();
+    else setInternalFullscreen(false);
+  };
+  const toggleFullscreen = () => {
+    if (isControlled) {
+      if (isFullscreen) onExitFullscreen?.();
+    } else {
+      setInternalFullscreen((v) => !v);
+    }
+  };
 
   // Resize map when entering/exiting fullscreen
   useEffect(() => {
