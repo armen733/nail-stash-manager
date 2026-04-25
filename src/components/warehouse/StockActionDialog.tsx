@@ -681,11 +681,11 @@ export function StockActionDialog({
                         </div>
                       </div>
                       <div>
-                        <Label className="text-[10px] uppercase text-muted-foreground">
+                        <Label className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">
                           {action === "sale"
                             ? "Unit price"
                             : isConsignmentReceive
-                            ? "Sell to store ($/unit)"
+                            ? "Sell to store ($)"
                             : "Unit cost (opt.)"}
                         </Label>
                         <Input
@@ -706,8 +706,8 @@ export function StockActionDialog({
                     {isConsignmentReceive && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label className="text-[10px] uppercase text-muted-foreground">
-                            Discount % (off list)
+                          <Label className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">
+                            Discount % off list
                           </Label>
                           <Input
                             inputMode="decimal"
@@ -727,8 +727,8 @@ export function StockActionDialog({
                           />
                         </div>
                         <div>
-                          <Label className="text-[10px] uppercase text-muted-foreground">
-                            Suggested markup % (on list)
+                          <Label className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">
+                            Markup % on list
                           </Label>
                           <Input
                             inputMode="decimal"
