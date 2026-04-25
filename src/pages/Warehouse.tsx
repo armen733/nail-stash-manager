@@ -618,22 +618,43 @@ export default function Warehouse() {
 
             {form.type === "consignment" && (
               <div className="space-y-2">
-                <Label>Salon / supply store</Label>
+                <Label>Salon / supply store (optional)</Label>
                 <Select
-                  value={form.salon_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
+                  value={form.consignment_target || "none"}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, consignment_target: v === "none" ? "" : v }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pick a salon" />
+                    <SelectValue placeholder="Pick a salon or supply store" />
                   </SelectTrigger>
                   <SelectContent>
-                    {salons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">— No link —</SelectItem>
+                    {salons.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Salons</SelectLabel>
+                        {salons.map((s) => (
+                          <SelectItem key={`salon-${s.id}`} value={`salon:${s.id}`}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
+                    {supplyStores.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Supply stores</SelectLabel>
+                        {supplyStores.map((s) => (
+                          <SelectItem key={`supply-${s.id}`} value={`supply:${s.id}`}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Optional — link this consignment location to a salon or supply store partner, or leave unlinked.
+                </p>
               </div>
             )}
 
