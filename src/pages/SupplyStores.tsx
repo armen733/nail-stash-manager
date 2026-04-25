@@ -216,9 +216,9 @@ export default function SupplyStores() {
               <Plus className="mr-2 h-4 w-4" /> Add Supply Store
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editing ? "Edit Supply Store" : "Add Supply Store"}</DialogTitle>
+              <DialogTitle>{editing ? "Edit Supply Store" : "Add New Supply Store"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -232,16 +232,17 @@ export default function SupplyStores() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="contact_name">Contact Name</Label>
-                  <Input
-                    id="contact_name"
-                    value={form.contact_name}
-                    onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-                    className="min-h-[44px]"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact_name">Contact Name</Label>
+                <Input
+                  id="contact_name"
+                  value={form.contact_name}
+                  onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
+                  className="min-h-[44px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <Input
@@ -251,9 +252,6 @@ export default function SupplyStores() {
                     className="min-h-[44px]"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -264,6 +262,9 @@ export default function SupplyStores() {
                     className="min-h-[44px]"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
                   <Input
@@ -274,17 +275,16 @@ export default function SupplyStores() {
                     className="min-h-[44px]"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="instagram">Instagram handle</Label>
-                <Input
-                  id="instagram"
-                  placeholder="@store"
-                  value={form.instagram}
-                  onChange={(e) => setForm({ ...form, instagram: e.target.value })}
-                  className="min-h-[44px]"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="instagram">Instagram</Label>
+                  <Input
+                    id="instagram"
+                    placeholder="@store"
+                    value={form.instagram}
+                    onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+                    className="min-h-[44px]"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -303,48 +303,21 @@ export default function SupplyStores() {
                   placeholder="Start typing address..."
                   className="min-h-[44px]"
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  Pick a suggestion — coordinates will be captured automatically so the store appears on the map.
-                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    className="min-h-[44px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lat">Latitude</Label>
-                  <Input
-                    id="lat"
-                    type="number"
-                    step="any"
-                    value={form.latitude}
-                    onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                    className="min-h-[44px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lng">Longitude</Label>
-                  <Input
-                    id="lng"
-                    type="number"
-                    step="any"
-                    value={form.longitude}
-                    onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                    className="min-h-[44px]"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="min-h-[44px]"
+                />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-md border border-border p-3 bg-muted/30">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-md border border-border p-3 bg-muted/30">
                 <div className="space-y-2">
-                  <Label htmlFor="discount">Default discount % off our wholesale</Label>
+                  <Label htmlFor="discount">Discount % off wholesale</Label>
                   <Input
                     id="discount"
                     type="number"
@@ -368,27 +341,24 @@ export default function SupplyStores() {
                     className="min-h-[44px]"
                   />
                 </div>
-                <p className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  These defaults apply to every product assigned to this store. Per-product overrides can be set on the store profile.
-                </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea
+                <Input
                   id="notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
+                  className="min-h-[44px]"
                 />
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="min-h-[44px]">
                   Cancel
                 </Button>
                 <Button type="submit" className="min-h-[44px]">
-                  {editing ? "Update" : "Add"}
+                  {editing ? "Update Store" : "Add Store"}
                 </Button>
               </div>
             </form>
