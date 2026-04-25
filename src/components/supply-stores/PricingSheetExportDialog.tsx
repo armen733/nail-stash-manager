@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, Loader2 } from "lucide-react";
+import { Search, Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csv-export";
+import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 
 interface Product {
   id: string;
