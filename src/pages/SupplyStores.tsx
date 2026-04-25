@@ -30,6 +30,7 @@ interface SupplyStore {
   default_discount_percent: number;
   default_markup_percent: number;
   status: string;
+  logo_url: string | null;
 }
 
 const emptyForm = {
@@ -46,6 +47,7 @@ const emptyForm = {
   notes: "",
   default_discount_percent: "0",
   default_markup_percent: "0",
+  logo_url: "",
 };
 
 export default function SupplyStores() {
@@ -104,6 +106,7 @@ export default function SupplyStores() {
       notes: s.notes ?? "",
       default_discount_percent: String(s.default_discount_percent ?? 0),
       default_markup_percent: String(s.default_markup_percent ?? 0),
+      logo_url: s.logo_url ?? "",
     });
     setDialogOpen(true);
   };
@@ -128,6 +131,7 @@ export default function SupplyStores() {
       notes: form.notes || null,
       default_discount_percent: Number(form.default_discount_percent) || 0,
       default_markup_percent: Number(form.default_markup_percent) || 0,
+      logo_url: form.logo_url.trim() || null,
     };
 
     if (editing) {
