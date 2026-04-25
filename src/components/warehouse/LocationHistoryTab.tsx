@@ -529,6 +529,23 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
                               </>
                             )}
                           </div>
+                          {(() => {
+                            const otherId = incoming
+                              ? r.from_location_id
+                              : r.to_location_id;
+                            const otherName = otherId
+                              ? locationNameMap.get(otherId)
+                              : null;
+                            if (!otherName) return null;
+                            return (
+                              <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                {incoming ? "From: " : "To: "}
+                                <span className="text-foreground font-medium">
+                                  {otherName}
+                                </span>
+                              </div>
+                            );
+                          })()}
                           {showProfit && (
                             <div className="text-[11px] mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                               <span className="text-muted-foreground">
