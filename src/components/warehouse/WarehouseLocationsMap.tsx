@@ -292,7 +292,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
       {pins.length > 0 && (
         <div className="absolute top-3 left-3 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border text-[11px] space-y-1">
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
-            const count = pins.filter((p) => p.type === key && (p.lowSkus ?? 0) === 0).length;
+            const count = pins.filter((p) => p.type === key && (p.lowUnits ?? 0) === 0).length;
             if (count === 0) return null;
             const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
