@@ -33,6 +33,7 @@ interface StockLocation {
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
+  supply_store_id: string | null;
 }
 
 interface StockRow {
