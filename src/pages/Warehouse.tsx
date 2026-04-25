@@ -33,7 +33,6 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
-  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
@@ -41,7 +40,7 @@ import amazonLogoFull from "@/assets/amazon-logo-full.png";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
-import WholesaleDefaultsDialog from "@/components/warehouse/WholesaleDefaultsDialog";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -130,7 +129,6 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
-  const [defaultsOpen, setDefaultsOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -140,15 +138,25 @@ export default function Warehouse() {
     type: LocationType;
     assigned_user_id: string;
     salon_id: string;
+    supply_store_id: string;
+    consignment_kind: "salon" | "supply_store";
     notes: string;
     is_active: boolean;
+    supply_store_address: string;
+    supply_store_lat: number | null;
+    supply_store_lng: number | null;
   }>({
     name: "",
     type: "warehouse",
     assigned_user_id: "",
     salon_id: "",
+    supply_store_id: "",
+    consignment_kind: "supply_store",
     notes: "",
     is_active: true,
+    supply_store_address: "",
+    supply_store_lat: null,
+    supply_store_lng: null,
   });
 
   const loadData = async () => {
@@ -212,8 +220,13 @@ export default function Warehouse() {
       type: "warehouse",
       assigned_user_id: "",
       salon_id: "",
+      supply_store_id: "",
+      consignment_kind: "supply_store",
       notes: "",
       is_active: true,
+      supply_store_address: "",
+      supply_store_lat: null,
+      supply_store_lng: null,
     });
     setDialogOpen(true);
   };
@@ -221,13 +234,21 @@ export default function Warehouse() {
   const openEdit = (loc: StockLocation, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditing(loc);
+    const linkedStore = loc.supply_store_id
+      ? supplyStores.find((s) => s.id === loc.supply_store_id)
+      : null;
     setForm({
       name: loc.name,
       type: loc.type,
       assigned_user_id: loc.assigned_user_id ?? "",
       salon_id: loc.salon_id ?? "",
+      supply_store_id: loc.supply_store_id ?? "",
+      consignment_kind: loc.supply_store_id ? "supply_store" : loc.salon_id ? "salon" : "supply_store",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
+      supply_store_address: linkedStore?.address ?? "",
+      supply_store_lat: linkedStore?.latitude ?? null,
+      supply_store_lng: linkedStore?.longitude ?? null,
     });
     setDialogOpen(true);
   };
@@ -241,16 +262,48 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-    if (form.type === "consignment" && !form.salon_id) {
-      toast.error("Pick a salon for this consignment location");
-      return;
+    if (form.type === "consignment") {
+      if (form.consignment_kind === "salon" && !form.salon_id) {
+        toast.error("Pick a salon for this consignment location");
+        return;
+      }
+      if (form.consignment_kind === "supply_store" && !form.supply_store_id) {
+        toast.error("Pick a supply store for this consignment location");
+        return;
+      }
+    }
+
+    // If linking to a supply store and address/coords were edited, push them onto the supply_stores row
+    if (
+      form.type === "consignment" &&
+      form.consignment_kind === "supply_store" &&
+      form.supply_store_id &&
+      form.supply_store_address.trim()
+    ) {
+      const { error: storeErr } = await supabase
+        .from("supply_stores")
+        .update({
+          address: form.supply_store_address.trim(),
+          latitude: form.supply_store_lat,
+          longitude: form.supply_store_lng,
+        })
+        .eq("id", form.supply_store_id);
+      if (storeErr) {
+        toast.error(`Could not save store location: ${storeErr.message}`);
+        return;
+      }
     }
 
     const payload = {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id: form.type === "consignment" ? form.salon_id : null,
+      salon_id:
+        form.type === "consignment" && form.consignment_kind === "salon" ? form.salon_id : null,
+      supply_store_id:
+        form.type === "consignment" && form.consignment_kind === "supply_store"
+          ? form.supply_store_id
+          : null,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
@@ -454,19 +507,13 @@ export default function Warehouse() {
         </div>
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2">
-          <Button variant="outline" onClick={() => setDefaultsOpen(true)}>
-            <Percent className="h-4 w-4 mr-2" /> Wholesale defaults
-          </Button>
           <ExportMenu />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Add location
           </Button>
         </div>
-        {/* Mobile actions (Add is FAB) */}
-        <div className="md:hidden flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setDefaultsOpen(true)}>
-            <Percent className="h-3.5 w-3.5 mr-1.5" /> Defaults
-          </Button>
+        {/* Mobile export (Add is FAB) */}
+        <div className="md:hidden">
           <ExportMenu />
         </div>
       </div>
@@ -612,8 +659,6 @@ export default function Warehouse() {
         <Plus className="h-6 w-6" />
       </Button>
 
-      <WholesaleDefaultsDialog open={defaultsOpen} onOpenChange={setDefaultsOpen} />
-
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -678,24 +723,97 @@ export default function Warehouse() {
             )}
 
             {form.type === "consignment" && (
-              <div className="space-y-2">
-                <Label>Salon / supply store</Label>
-                <Select
-                  value={form.salon_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pick a salon" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {salons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Linked to</Label>
+                  <Select
+                    value={form.consignment_kind}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, consignment_kind: v as "salon" | "supply_store" }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="supply_store">Supply store</SelectItem>
+                      <SelectItem value="salon">Salon</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.consignment_kind === "salon" ? (
+                  <div className="space-y-2">
+                    <Label>Salon</Label>
+                    <Select
+                      value={form.salon_id}
+                      onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pick a salon" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {salons.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Supply store</Label>
+                      <Select
+                        value={form.supply_store_id}
+                        onValueChange={(v) => {
+                          const store = supplyStores.find((s) => s.id === v);
+                          setForm((f) => ({
+                            ...f,
+                            supply_store_id: v,
+                            supply_store_address: store?.address ?? "",
+                            supply_store_lat: store?.latitude ?? null,
+                            supply_store_lng: store?.longitude ?? null,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pick a supply store" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {supplyStores.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {form.supply_store_id && (
+                      <div className="space-y-2">
+                        <Label>Store location</Label>
+                        <AddressAutocomplete
+                          value={form.supply_store_address}
+                          onChange={(address, _city, lat, lng) =>
+                            setForm((f) => ({
+                              ...f,
+                              supply_store_address: address,
+                              supply_store_lat: lat ?? f.supply_store_lat,
+                              supply_store_lng: lng ?? f.supply_store_lng,
+                            }))
+                          }
+                          placeholder="Search store address..."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Updating here also updates the supply store profile and map pin.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
 
             <div className="space-y-2">

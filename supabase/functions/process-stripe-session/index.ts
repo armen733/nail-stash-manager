@@ -198,9 +198,9 @@ serve(async (req: Request) => {
             from_location_id: fromLocId,
             to_location_id: null,
             unit_cost: it.unit_price ?? null,
-            reason: `Stripe order ${order.id.slice(0, 8)}`,
+            reason: `Stripe order ${orderId.slice(0, 8)}`,
             reference_type: 'stripe_order',
-            reference_id: order.id,
+            reference_id: orderId,
           }));
 
         if (movementRows.length > 0) {
