@@ -304,6 +304,32 @@ export default function Warehouse() {
     return g;
   }, [filtered]);
 
+  const mapPins: WarehousePin[] = useMemo(() => {
+    const supplyMap = new Map(supplyStores.map((s) => [s.id, s]));
+    return locations
+      .map<WarehousePin | null>((loc) => {
+        if (!loc.is_active) return null;
+        // Only consignment locations linked to a supply store with coords are shown.
+        // (Salons + warehouses + drivers + FBA have no lat/lng in the schema.)
+        if (loc.type !== "consignment" || !loc.supply_store_id) return null;
+        const sup = supplyMap.get(loc.supply_store_id);
+        if (!sup || sup.latitude === null || sup.longitude === null) return null;
+        const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+        return {
+          id: loc.id,
+          name: loc.name,
+          type: loc.type,
+          address: sup.address,
+          lat: Number(sup.latitude),
+          lng: Number(sup.longitude),
+          supplyStoreId: sup.id,
+          units: s.units,
+          skus: s.skus,
+        };
+      })
+      .filter((p): p is WarehousePin => p !== null);
+  }, [locations, supplyStores, stats]);
+
   const renderCard = (loc: StockLocation) => {
     const meta = TYPE_META[loc.type];
     const Icon = meta.icon;
