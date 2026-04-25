@@ -169,6 +169,7 @@ export default function Warehouse() {
     supply_store_contact_name: "",
     supply_store_phone: "",
     supply_store_email: "",
+    supply_store_website: "",
   });
 
   const loadData = async () => {
