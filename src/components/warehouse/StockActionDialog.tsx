@@ -401,9 +401,22 @@ export function StockActionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{meta.title}</DialogTitle>
+          <DialogTitle>
+            {isConsignmentReceive ? "Give stock to supply store" : meta.title}
+          </DialogTitle>
           <DialogDescription>
-            {meta.verb} <span className="font-medium text-foreground">{locationName}</span>.
+            {isConsignmentReceive ? (
+              <>
+                Send units to{" "}
+                <span className="font-medium text-foreground">{locationName}</span> at a
+                discounted store price. We track your profit per unit.
+              </>
+            ) : (
+              <>
+                {meta.verb}{" "}
+                <span className="font-medium text-foreground">{locationName}</span>.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
