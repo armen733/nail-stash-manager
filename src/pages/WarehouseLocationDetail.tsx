@@ -16,6 +16,12 @@ import {
   ShoppingCart,
   FileSpreadsheet,
   ExternalLink,
+  Phone,
+  Mail,
+  MapPin,
+  Globe,
+  Instagram,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
@@ -290,69 +296,125 @@ export default function WarehouseLocationDetail() {
       {storeInfo && (
         <Card>
           <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold flex items-center gap-2">
-                <Store className="h-4 w-4 text-primary" /> Store information
+            {/* Header row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  <Store className="h-4 w-4 text-primary" /> {storeInfo.name}
+                  {storeInfo.status && (
+                    <Badge
+                      variant={storeInfo.status === "active" ? "default" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {storeInfo.status}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                  {storeInfo.city && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {storeInfo.city}
+                    </span>
+                  )}
+                  {storeInfo.contact_name && (
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {storeInfo.contact_name}
+                    </span>
+                  )}
+                </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-xs flex-shrink-0"
                 onClick={() => navigate(`/supply-stores/${storeInfo.id}`)}
               >
                 Open profile <ExternalLink className="h-3 w-3 ml-1" />
               </Button>
             </div>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Name</dt>
-                <dd className="font-medium">{storeInfo.name}</dd>
-              </div>
-              {storeInfo.status && (
-                <div>
-                  <dt className="text-[10px] uppercase text-muted-foreground">Status</dt>
-                  <dd>
-                    <Badge variant={storeInfo.status === "active" ? "default" : "secondary"} className="text-[10px]">
-                      {storeInfo.status}
-                    </Badge>
-                  </dd>
-                </div>
+
+            {/* Contact actions — clickable */}
+            <div className="flex flex-wrap gap-2">
+              {storeInfo.phone && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`tel:${storeInfo.phone}`}>
+                    <Phone className="h-3.5 w-3.5 mr-1.5" />
+                    {storeInfo.phone}
+                  </a>
+                </Button>
               )}
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Contact</dt>
-                <dd className="font-medium">{storeInfo.contact_name || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Phone</dt>
-                <dd className="font-medium">{storeInfo.phone || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Email</dt>
-                <dd className="font-medium break-all">{storeInfo.email || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Website</dt>
-                <dd className="font-medium break-all">{storeInfo.website || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">Instagram</dt>
-                <dd className="font-medium">{storeInfo.instagram ? `@${storeInfo.instagram.replace(/^@/, "")}` : <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase text-muted-foreground">City</dt>
-                <dd className="font-medium">{storeInfo.city || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-[10px] uppercase text-muted-foreground">Address</dt>
-                <dd className="font-medium">{storeInfo.address || <span className="text-muted-foreground">—</span>}</dd>
-              </div>
-              {storeInfo.notes && (
-                <div className="sm:col-span-2">
-                  <dt className="text-[10px] uppercase text-muted-foreground">Notes</dt>
-                  <dd className="whitespace-pre-wrap text-sm">{storeInfo.notes}</dd>
-                </div>
+              {storeInfo.email && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={`mailto:${storeInfo.email}`}>
+                    <Mail className="h-3.5 w-3.5 mr-1.5" />
+                    Email
+                  </a>
+                </Button>
               )}
-            </dl>
+              {storeInfo.website && (
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={storeInfo.website.startsWith("http") ? storeInfo.website : `https://${storeInfo.website}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Globe className="h-3.5 w-3.5 mr-1.5" />
+                    Website
+                  </a>
+                </Button>
+              )}
+              {storeInfo.instagram && (
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={`https://instagram.com/${storeInfo.instagram.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Instagram className="h-3.5 w-3.5 mr-1.5" />
+                    @{storeInfo.instagram.replace(/^@/, "")}
+                  </a>
+                </Button>
+              )}
+              {storeInfo.address && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const encoded = encodeURIComponent(storeInfo.address!);
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    window.open(
+                      isIOS
+                        ? `maps://maps.apple.com/?q=${encoded}`
+                        : `https://maps.google.com/?q=${encoded}`,
+                      "_blank",
+                    );
+                  }}
+                >
+                  <MapPin className="h-3.5 w-3.5 mr-1.5" />
+                  Directions
+                </Button>
+              )}
+            </div>
+
+            {/* Address + notes */}
+            {(storeInfo.address || storeInfo.notes) && (
+              <div className="space-y-2 pt-1 border-t border-border">
+                {storeInfo.address && (
+                  <div>
+                    <div className="text-[10px] uppercase text-muted-foreground">Address</div>
+                    <div className="text-sm">{storeInfo.address}</div>
+                  </div>
+                )}
+                {storeInfo.notes && (
+                  <div>
+                    <div className="text-[10px] uppercase text-muted-foreground">Notes</div>
+                    <div className="text-sm whitespace-pre-wrap">{storeInfo.notes}</div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
