@@ -103,6 +103,10 @@ export default function WarehouseLocationDetail() {
     storePaid: number; // sum of qty * unit_cost (what they paid us)
     ourCost: number; // sum of qty * product.cost_usd
   }>({ units: 0, storePaid: 0, ourCost: 0 });
+  // Per-product lifetime totals for this location (units delivered + revenue + cost).
+  const [lifetimeByProduct, setLifetimeByProduct] = useState<
+    Map<string, { units: number; storePaid: number; ourCost: number }>
+  >(new Map());
 
   const [action, setAction] = useState<StockAction | null>(null);
 
@@ -256,15 +260,28 @@ export default function WarehouseLocationDetail() {
       let units = 0;
       let storePaid = 0;
       let ourCost = 0;
+      const perProduct = new Map<
+        string,
+        { units: number; storePaid: number; ourCost: number }
+      >();
       for (const m of lifeRows) {
         const qty = Number(m.quantity ?? 0);
+        const paid = qty * Number(m.unit_cost ?? 0);
+        const cst = qty * (costMap.get(m.product_id) ?? 0);
         units += qty;
-        storePaid += qty * Number(m.unit_cost ?? 0);
-        ourCost += qty * (costMap.get(m.product_id) ?? 0);
+        storePaid += paid;
+        ourCost += cst;
+        const cur = perProduct.get(m.product_id) ?? { units: 0, storePaid: 0, ourCost: 0 };
+        cur.units += qty;
+        cur.storePaid += paid;
+        cur.ourCost += cst;
+        perProduct.set(m.product_id, cur);
       }
       setLifetime({ units, storePaid, ourCost });
+      setLifetimeByProduct(perProduct);
     } else {
       setLifetime({ units: 0, storePaid: 0, ourCost: 0 });
+      setLifetimeByProduct(new Map());
     }
 
     setLoading(false);
@@ -694,27 +711,36 @@ export default function WarehouseLocationDetail() {
                               </span>
                             </div>
                           )}
-                          {showProfit && r.quantity > 0 && (
-                            <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
-                              <span className="text-muted-foreground">
-                                Store pays{" "}
-                                <span className="text-foreground font-medium">
-                                  ${(effectivePrice * r.quantity).toFixed(2)}
+                          {showProfit && (() => {
+                            const lt = lifetimeByProduct.get(r.product_id);
+                            if (!lt || lt.units === 0) return null;
+                            const totalProfit = lt.storePaid - lt.ourCost;
+                            return (
+                              <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-muted-foreground">
+                                  Sold{" "}
+                                  <span className="text-foreground font-medium">
+                                    {lt.units}
+                                  </span>{" "}
+                                  · Paid{" "}
+                                  <span className="text-foreground font-medium">
+                                    ${lt.storePaid.toFixed(2)}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="text-muted-foreground">·</span>
-                              <span className="text-muted-foreground">
-                                Profit{" "}
-                                <span
-                                  className={
-                                    lineProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
-                                  }
-                                >
-                                  ${lineProfit.toFixed(2)}
+                                <span className="text-muted-foreground">·</span>
+                                <span className="text-muted-foreground">
+                                  Total profit{" "}
+                                  <span
+                                    className={
+                                      totalProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
+                                    }
+                                  >
+                                    ${totalProfit.toFixed(2)}
+                                  </span>
                                 </span>
-                              </span>
-                            </div>
-                          )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
