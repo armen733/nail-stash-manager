@@ -497,13 +497,14 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                             </div>
                             <div className="text-[10px] text-muted-foreground">units</div>
                           </div>
-                          {isSupplyStore && r.movement_type === "receive" && incoming && (
+                          {isSupplyStore && incoming && (r.movement_type === "receive" || r.movement_type === "transfer" || r.movement_type === "initial") && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-border"
                               onClick={() => setConfirmDelete(r)}
                               aria-label="Return units to main warehouse"
+                              title="Return units to main warehouse"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
