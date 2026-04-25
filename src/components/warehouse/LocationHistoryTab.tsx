@@ -171,11 +171,11 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       const fallbackStorePrice = wholesale * (1 - (storeDiscountPercent || 0) / 100);
       const storePrice = overrideMap.get(r.product.id) ?? fallbackStorePrice;
 
-      // Suggested resell: if we've set a markup, store sells at storePrice * (1+markup%)
-      // Otherwise default = our regular retail price.
+      // Suggested resell: markup is applied to OUR LIST price (not to the discounted store cost),
+      // so the store's earnings reflect the catalog price. If no markup is set, default to retail.
       const markupPct = markupOverrideMap.get(r.product.id) ?? storeMarkupPercent ?? 0;
       const suggestedResell =
-        markupPct > 0 ? storePrice * (1 + markupPct / 100) : retail;
+        markupPct > 0 ? retail * (1 + markupPct / 100) : retail;
 
       if (r.movement_type === "receive" && r.to_location_id === locationId) {
         unitsReceived += r.quantity;
