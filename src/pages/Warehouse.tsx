@@ -79,6 +79,7 @@ interface SupplyStoreLite {
   id: string;
   name: string;
   address: string | null;
+  city: string | null;
   latitude: number | null;
   longitude: number | null;
 }
@@ -139,10 +140,10 @@ export default function Warehouse() {
     assigned_user_id: string;
     salon_id: string;
     supply_store_id: string;
-    consignment_kind: "salon" | "supply_store";
     notes: string;
     is_active: boolean;
     supply_store_address: string;
+    supply_store_city: string;
     supply_store_lat: number | null;
     supply_store_lng: number | null;
   }>({
@@ -151,10 +152,10 @@ export default function Warehouse() {
     assigned_user_id: "",
     salon_id: "",
     supply_store_id: "",
-    consignment_kind: "supply_store",
     notes: "",
     is_active: true,
     supply_store_address: "",
+    supply_store_city: "",
     supply_store_lat: null,
     supply_store_lng: null,
   });
@@ -169,7 +170,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, address, latitude, longitude"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -221,10 +222,10 @@ export default function Warehouse() {
       assigned_user_id: "",
       salon_id: "",
       supply_store_id: "",
-      consignment_kind: "supply_store",
       notes: "",
       is_active: true,
       supply_store_address: "",
+      supply_store_city: "",
       supply_store_lat: null,
       supply_store_lng: null,
     });
@@ -243,10 +244,10 @@ export default function Warehouse() {
       assigned_user_id: loc.assigned_user_id ?? "",
       salon_id: loc.salon_id ?? "",
       supply_store_id: loc.supply_store_id ?? "",
-      consignment_kind: loc.supply_store_id ? "supply_store" : loc.salon_id ? "salon" : "supply_store",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
       supply_store_address: linkedStore?.address ?? "",
+      supply_store_city: linkedStore?.city ?? "",
       supply_store_lat: linkedStore?.latitude ?? null,
       supply_store_lng: linkedStore?.longitude ?? null,
     });
@@ -262,35 +263,52 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-    if (form.type === "consignment") {
-      if (form.consignment_kind === "salon" && !form.salon_id) {
-        toast.error("Pick a salon for this consignment location");
-        return;
-      }
-      if (form.consignment_kind === "supply_store" && !form.supply_store_id) {
-        toast.error("Pick a supply store for this consignment location");
-        return;
-      }
-    }
 
-    // If linking to a supply store and address/coords were edited, push them onto the supply_stores row
-    if (
-      form.type === "consignment" &&
-      form.consignment_kind === "supply_store" &&
-      form.supply_store_id &&
-      form.supply_store_address.trim()
-    ) {
-      const { error: storeErr } = await supabase
-        .from("supply_stores")
-        .update({
-          address: form.supply_store_address.trim(),
-          latitude: form.supply_store_lat,
-          longitude: form.supply_store_lng,
-        })
-        .eq("id", form.supply_store_id);
-      if (storeErr) {
-        toast.error(`Could not save store location: ${storeErr.message}`);
+    let linkedSupplyStoreId: string | null =
+      form.type === "consignment" ? form.supply_store_id || null : null;
+
+    if (form.type === "consignment") {
+      if (!form.supply_store_address.trim()) {
+        toast.error("Add the store location");
         return;
+      }
+
+      if (form.supply_store_lat === null || form.supply_store_lng === null) {
+        toast.error("Pick the location from suggestions so it appears on the map");
+        return;
+      }
+
+      const storePayload = {
+        name: form.name.trim(),
+        address: form.supply_store_address.trim(),
+        city: form.supply_store_city.trim() || null,
+        latitude: form.supply_store_lat,
+        longitude: form.supply_store_lng,
+      };
+
+      if (linkedSupplyStoreId) {
+        const { error: storeErr } = await supabase
+          .from("supply_stores")
+          .update(storePayload)
+          .eq("id", linkedSupplyStoreId);
+
+        if (storeErr) {
+          toast.error(`Could not save store location: ${storeErr.message}`);
+          return;
+        }
+      } else {
+        const { data: createdStore, error: storeErr } = await supabase
+          .from("supply_stores")
+          .insert(storePayload)
+          .select("id")
+          .single();
+
+        if (storeErr || !createdStore) {
+          toast.error(storeErr?.message ?? "Could not create linked supply store");
+          return;
+        }
+
+        linkedSupplyStoreId = createdStore.id;
       }
     }
 
@@ -298,12 +316,8 @@ export default function Warehouse() {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id:
-        form.type === "consignment" && form.consignment_kind === "salon" ? form.salon_id : null,
-      supply_store_id:
-        form.type === "consignment" && form.consignment_kind === "supply_store"
-          ? form.supply_store_id
-          : null,
+      salon_id: null,
+      supply_store_id: form.type === "consignment" ? linkedSupplyStoreId : null,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
@@ -723,97 +737,25 @@ export default function Warehouse() {
             )}
 
             {form.type === "consignment" && (
-              <>
-                <div className="space-y-2">
-                  <Label>Linked to</Label>
-                  <Select
-                    value={form.consignment_kind}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, consignment_kind: v as "salon" | "supply_store" }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="supply_store">Supply store</SelectItem>
-                      <SelectItem value="salon">Salon</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {form.consignment_kind === "salon" ? (
-                  <div className="space-y-2">
-                    <Label>Salon</Label>
-                    <Select
-                      value={form.salon_id}
-                      onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pick a salon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {salons.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Supply store</Label>
-                      <Select
-                        value={form.supply_store_id}
-                        onValueChange={(v) => {
-                          const store = supplyStores.find((s) => s.id === v);
-                          setForm((f) => ({
-                            ...f,
-                            supply_store_id: v,
-                            supply_store_address: store?.address ?? "",
-                            supply_store_lat: store?.latitude ?? null,
-                            supply_store_lng: store?.longitude ?? null,
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pick a supply store" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {supplyStores.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {form.supply_store_id && (
-                      <div className="space-y-2">
-                        <Label>Store location</Label>
-                        <AddressAutocomplete
-                          value={form.supply_store_address}
-                          onChange={(address, _city, lat, lng) =>
-                            setForm((f) => ({
-                              ...f,
-                              supply_store_address: address,
-                              supply_store_lat: lat ?? f.supply_store_lat,
-                              supply_store_lng: lng ?? f.supply_store_lng,
-                            }))
-                          }
-                          placeholder="Search store address..."
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Updating here also updates the supply store profile and map pin.
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <AddressAutocomplete
+                  value={form.supply_store_address}
+                  onChange={(address, city, lat, lng) =>
+                    setForm((f) => ({
+                      ...f,
+                      supply_store_address: address,
+                      supply_store_city: city ?? f.supply_store_city,
+                      supply_store_lat: lat ?? f.supply_store_lat,
+                      supply_store_lng: lng ?? f.supply_store_lng,
+                    }))
+                  }
+                  placeholder="Search supply store address..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pick a suggestion to save the supply store location and show it on the map.
+                </p>
+              </div>
             )}
 
             <div className="space-y-2">
