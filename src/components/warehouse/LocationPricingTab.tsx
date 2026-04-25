@@ -182,10 +182,13 @@ export function LocationPricingTab({ locationId }: Props) {
       ) : (
         <div className="border rounded-md divide-y">
           {visible.map((r) => {
-            const hasWholesale = r.ourSalePrice > 0;
-            const sellPrice = hasWholesale ? r.ourSalePrice : 0;
-            const profit = hasWholesale && r.cost > 0 ? sellPrice - r.cost : null;
-            const profitPct = profit !== null && r.cost > 0 ? (profit / r.cost) * 100 : null;
+            const hasSale = r.ourSalePrice > 0;
+            const sellPrice = hasSale ? r.ourSalePrice : 0;
+            const profitPerUnit = hasSale && r.cost > 0 ? sellPrice - r.cost : null;
+            const profitPct =
+              profitPerUnit !== null && r.cost > 0 ? (profitPerUnit / r.cost) * 100 : null;
+            const totalEarned =
+              profitPerUnit !== null && r.stockHere > 0 ? profitPerUnit * r.stockHere : null;
             return (
               <div key={r.product_id} className="p-3 space-y-2">
                 {/* Header: name, sku, stock */}
@@ -214,28 +217,42 @@ export function LocationPricingTab({ locationId }: Props) {
                   <div className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1.5">
                     <div className="text-primary/80 leading-none">Store pays us</div>
                     <div className="mt-1 font-semibold text-primary">
-                      {hasWholesale ? `$${sellPrice.toFixed(2)}` : "—"}
+                      {hasSale ? `$${sellPrice.toFixed(2)}` : "—"}
                     </div>
                   </div>
                   <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                    <div className="text-muted-foreground leading-none">Retail</div>
+                    <div className="text-muted-foreground leading-none">Suggested resell</div>
                     <div className="mt-1 font-semibold text-foreground">
-                      ${r.defaultPrice.toFixed(2)}
+                      {r.suggestedResell > 0 ? `$${r.suggestedResell.toFixed(2)}` : "—"}
                     </div>
                   </div>
                 </div>
 
-                {profit !== null && (
-                  <div className="text-[11px] text-muted-foreground">
-                    Profit per unit:{" "}
-                    <span
-                      className={`font-medium ${
-                        profit >= 0 ? "text-emerald-600" : "text-destructive"
-                      }`}
-                    >
-                      ${profit.toFixed(2)}
-                      {profitPct !== null && ` (${profitPct.toFixed(0)}%)`}
-                    </span>
+                {profitPerUnit !== null && (
+                  <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px]">
+                    <div className="text-muted-foreground">
+                      We earn:{" "}
+                      <span
+                        className={`font-medium ${
+                          profitPerUnit >= 0 ? "text-emerald-600" : "text-destructive"
+                        }`}
+                      >
+                        ${profitPerUnit.toFixed(2)}/unit
+                        {profitPct !== null && ` (${profitPct.toFixed(0)}%)`}
+                      </span>
+                    </div>
+                    {totalEarned !== null && (
+                      <div className="text-muted-foreground">
+                        Total on {r.stockHere}:{" "}
+                        <span
+                          className={`font-medium ${
+                            totalEarned >= 0 ? "text-emerald-600" : "text-destructive"
+                          }`}
+                        >
+                          ${totalEarned.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
