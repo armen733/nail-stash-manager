@@ -529,6 +529,7 @@ export default function WarehouseLocationDetail() {
             storeDiscountPercent={storeDefaults?.discount ?? 0}
             storeMarkupPercent={storeDefaults?.markup ?? 0}
             isSupplyStore={location.type === "consignment"}
+            onStockChanged={load}
           />
         </TabsContent>
 

@@ -31,6 +31,8 @@ interface Props {
   storeMarkupPercent?: number;
   /** Whether this location is a supply store (consignment) — controls profit columns. */
   isSupplyStore?: boolean;
+  /** Lets the parent refresh current stock after a delivery is removed from the store. */
+  onStockChanged?: () => void;
 }
 
 interface MovementRow {
@@ -66,7 +68,7 @@ const TYPE_META: Record<MovementRow["movement_type"], { label: string; icon: any
 type RangeKey = "7d" | "30d" | "90d" | "all";
 type FilterKey = "all" | "receive" | "sale";
 
-export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false }: Props) {
+export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false, onStockChanged }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<MovementRow[]>([]);
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
@@ -272,6 +274,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       toast.success(`Returned ${r.quantity} unit${r.quantity === 1 ? "" : "s"} to ${defaultLoc.name}`);
       setConfirmDelete(null);
       setReloadKey((k) => k + 1);
+      onStockChanged?.();
     } catch (e: any) {
       toast.error(e.message ?? "Failed to revert delivery");
     } finally {
