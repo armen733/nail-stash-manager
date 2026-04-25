@@ -670,6 +670,8 @@ export default function Warehouse() {
                       >
                         {loc.type === "fba" ? (
                           <img src={amazonLogo} alt="" className="h-4 w-4 object-contain flex-shrink-0" loading="lazy" />
+                        ) : loc.type === "consignment" && supplyLogoByLocationId[loc.id] ? (
+                          <img src={supplyLogoByLocationId[loc.id] as string} alt="" className="h-4 w-4 object-contain flex-shrink-0 rounded-sm bg-white" loading="lazy" />
                         ) : (
                           <div className={`p-0.5 sm:p-1 rounded ${meta.color} flex-shrink-0`}>
                             <Icon className="h-3 w-3" />
