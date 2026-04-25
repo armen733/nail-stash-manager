@@ -457,7 +457,7 @@ export default function WarehouseLocationDetail() {
           </div>
         )}
         <div
-          className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-4"}`}
+          className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "" : "sm:grid-cols-4"}`}
         >
           <Card><CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase">Units</div>
@@ -467,39 +467,16 @@ export default function WarehouseLocationDetail() {
             <div className="text-[10px] text-muted-foreground uppercase">SKUs</div>
             <div className="text-xl font-bold">{rows.length}</div>
           </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
-            <div className="text-xl font-bold">{formatMoney(totalCost)}</div>
-            <div className="text-[10px] text-muted-foreground">what these cost us</div>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase">
-              {isSupplyStoreView ? "Store owes (on hand)" : "Retail value"}
-            </div>
-            <div className="text-xl font-bold text-primary">{formatMoney(totalRetail)}</div>
-            {isSupplyStoreView && (
-              <div className="text-[10px] text-muted-foreground">if they pay for what's left</div>
-            )}
-          </CardContent></Card>
-          {isSupplyStoreView && (
+          {!isSupplyStoreView && (
             <>
               <Card><CardContent className="pt-4 pb-3">
-                <div className="text-[10px] text-muted-foreground uppercase">Profit (on hand)</div>
-                <div
-                  className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-                >
-                  {formatMoney(ourProfit)}
-                </div>
-                <div className="text-[10px] text-muted-foreground">
-                  paid − cost ({profitMarginPct.toFixed(0)}%)
-                </div>
+                <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
+                <div className="text-xl font-bold">{formatMoney(totalCost)}</div>
+                <div className="text-[10px] text-muted-foreground">what these cost us</div>
               </CardContent></Card>
               <Card><CardContent className="pt-4 pb-3">
-                <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
-                <div className="text-xl font-bold text-primary">
-                  {formatMoney(storeEarns)}
-                </div>
-                <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
+                <div className="text-[10px] text-muted-foreground uppercase">Retail value</div>
+                <div className="text-xl font-bold text-primary">{formatMoney(totalRetail)}</div>
               </CardContent></Card>
             </>
           )}
