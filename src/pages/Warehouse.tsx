@@ -31,11 +31,15 @@ import {
   Pencil,
   Search,
   ChevronRight,
+  List,
+  Map as MapIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
