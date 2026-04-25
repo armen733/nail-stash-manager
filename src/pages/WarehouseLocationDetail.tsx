@@ -34,6 +34,18 @@ interface StockLocation {
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
+  supply_store_id: string | null;
+  salon_id: string | null;
+}
+
+interface LinkedSupplyStore {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
 }
 
 interface StockRow {
