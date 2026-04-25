@@ -14,11 +14,13 @@ import {
   ArrowLeftRight,
   ClipboardEdit,
   ShoppingCart,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
+import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
