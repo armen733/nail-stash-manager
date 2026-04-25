@@ -500,72 +500,98 @@ export default function Warehouse() {
         </CardContent>
       </Card>
 
-      {/* Search + filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search locations…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9"
-          />
-        </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="warehouse">Warehouse</SelectItem>
-            <SelectItem value="fba">Amazon FBA</SelectItem>
-            <SelectItem value="driver">Drivers</SelectItem>
-            <SelectItem value="consignment">Consignment</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* List / Map tabs */}
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list" className="gap-1.5">
+            <List className="h-3.5 w-3.5" /> List
+          </TabsTrigger>
+          <TabsTrigger value="map" className="gap-1.5">
+            <MapIcon className="h-3.5 w-3.5" /> Map
+            {mapPins.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-1">
+                {mapPins.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Grouped sections */}
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading…</div>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            {locations.length === 0
-              ? 'No locations yet. Tap "Add location" to get started.'
-              : "No locations match your filters."}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-5">
-          {TYPE_ORDER.map((type) => {
-            const items = grouped[type];
-            if (items.length === 0) return null;
-            const meta = TYPE_META[type];
-            const Icon = meta.icon;
-            return (
-              <section key={type} className="space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  {type === "fba" ? (
-                    <img src={amazonLogo} alt="" className="h-5 w-5 object-contain" loading="lazy" />
-                  ) : (
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    {meta.plural}
-                  </h2>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                    {items.length}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                  {items.map(renderCard)}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      )}
+        <TabsContent value="list" className="mt-3 space-y-3">
+          {/* Search + filter */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search locations…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="warehouse">Warehouse</SelectItem>
+                <SelectItem value="fba">Amazon FBA</SelectItem>
+                <SelectItem value="driver">Drivers</SelectItem>
+                <SelectItem value="consignment">Consignment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Grouped sections */}
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground text-sm">
+                {locations.length === 0
+                  ? 'No locations yet. Tap "Add location" to get started.'
+                  : "No locations match your filters."}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-5">
+              {TYPE_ORDER.map((type) => {
+                const items = grouped[type];
+                if (items.length === 0) return null;
+                const meta = TYPE_META[type];
+                const Icon = meta.icon;
+                return (
+                  <section key={type} className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      {type === "fba" ? (
+                        <img src={amazonLogo} alt="" className="h-5 w-5 object-contain" loading="lazy" />
+                      ) : (
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        {meta.plural}
+                      </h2>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                        {items.length}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                      {items.map(renderCard)}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="map" className="mt-3">
+          <WarehouseLocationsMap pins={mapPins} />
+          <p className="text-[11px] text-muted-foreground mt-2 px-1">
+            Pins show consignment locations linked to supply stores that have coordinates set on their profile.
+          </p>
+        </TabsContent>
+      </Tabs>
 
       {/* Mobile FAB */}
       <Button
