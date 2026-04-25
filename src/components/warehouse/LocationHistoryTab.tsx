@@ -408,10 +408,10 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                               </span>
                               <span
                                 className={
-                                  lineProfit >= 0 ? "text-emerald-500" : "text-destructive"
+                                  storePrice - cost >= 0 ? "text-emerald-500" : "text-destructive"
                                 }
                               >
-                                Profit ${lineProfit.toFixed(2)}
+                                Profit ${(storePrice - cost).toFixed(2)}
                               </span>
                             </div>
                           )}
