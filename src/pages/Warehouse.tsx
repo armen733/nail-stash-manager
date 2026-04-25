@@ -79,6 +79,7 @@ interface SupplyStoreLite {
   id: string;
   name: string;
   address: string | null;
+  city: string | null;
   latitude: number | null;
   longitude: number | null;
 }
