@@ -297,7 +297,16 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
               <div className="text-xl font-bold">
                 ${stats.costReceived.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
-              <div className="text-[10px] text-muted-foreground">our cost</div>
+              <div className="text-[10px] text-muted-foreground">what these cost us</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-[10px] uppercase text-muted-foreground">Store pays us</div>
+              <div className="text-xl font-bold text-primary">
+                ${stats.weChargeStore.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[10px] text-muted-foreground">our sale total</div>
             </CardContent>
           </Card>
           <Card>
