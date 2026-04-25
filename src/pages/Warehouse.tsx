@@ -33,6 +33,7 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
@@ -41,6 +42,7 @@ import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -134,6 +136,7 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -545,13 +548,19 @@ export default function Warehouse() {
         </div>
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Pricing sheet
+          </Button>
           <ExportMenu />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Add location
           </Button>
         </div>
         {/* Mobile export (Add is FAB) */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Pricing
+          </Button>
           <ExportMenu />
         </div>
       </div>
@@ -863,6 +872,12 @@ export default function Warehouse() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName="All products"
+      />
     </div>
   );
 }
