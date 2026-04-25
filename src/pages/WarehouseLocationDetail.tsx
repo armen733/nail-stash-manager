@@ -128,6 +128,7 @@ export default function WarehouseLocationDetail() {
     let storeDiscount = 0;
     let storeMarkup = 0;
     const productDiscountOverrides = new Map<string, number>();
+    const productMarkupOverrides = new Map<string, number>();
 
     if (loc?.type === "consignment" && loc.supply_store_id) {
       const [{ data: storeData }, { data: ssp }] = await Promise.all([
@@ -140,7 +141,7 @@ export default function WarehouseLocationDetail() {
           .maybeSingle(),
         supabase
           .from("supply_store_products")
-          .select("product_id, discount_percent_override")
+          .select("product_id, discount_percent_override, markup_percent_override")
           .eq("supply_store_id", loc.supply_store_id),
       ]);
       if (storeData) {
