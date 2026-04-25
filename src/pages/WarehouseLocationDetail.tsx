@@ -117,7 +117,9 @@ export default function WarehouseLocationDetail() {
     if (loc?.type === "consignment" && loc.supply_store_id) {
       const { data: storeData } = await supabase
         .from("supply_stores")
-        .select("default_discount_percent, default_markup_percent")
+        .select(
+          "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, default_discount_percent, default_markup_percent",
+        )
         .eq("id", loc.supply_store_id)
         .maybeSingle();
       if (storeData) {
@@ -125,11 +127,26 @@ export default function WarehouseLocationDetail() {
           discount: Number(storeData.default_discount_percent ?? 0),
           markup: Number(storeData.default_markup_percent ?? 0),
         });
+        setStoreInfo({
+          id: storeData.id,
+          name: storeData.name,
+          status: storeData.status ?? null,
+          contact_name: storeData.contact_name ?? null,
+          phone: storeData.phone ?? null,
+          email: storeData.email ?? null,
+          website: storeData.website ?? null,
+          instagram: storeData.instagram ?? null,
+          city: storeData.city ?? null,
+          address: storeData.address ?? null,
+          notes: storeData.notes ?? null,
+        });
       } else {
         setStoreDefaults(null);
+        setStoreInfo(null);
       }
     } else {
       setStoreDefaults(null);
+      setStoreInfo(null);
     }
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
