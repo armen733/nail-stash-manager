@@ -85,6 +85,7 @@ interface SupplyStoreLite {
   contact_name: string | null;
   phone: string | null;
   email: string | null;
+  website: string | null;
 }
 
 const TYPE_META: Record<
@@ -152,6 +153,7 @@ export default function Warehouse() {
     supply_store_contact_name: string;
     supply_store_phone: string;
     supply_store_email: string;
+    supply_store_website: string;
   }>({
     name: "",
     type: "warehouse",
@@ -167,6 +169,7 @@ export default function Warehouse() {
     supply_store_contact_name: "",
     supply_store_phone: "",
     supply_store_email: "",
+    supply_store_website: "",
   });
 
   const loadData = async () => {
@@ -179,7 +182,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -240,6 +243,7 @@ export default function Warehouse() {
       supply_store_contact_name: "",
       supply_store_phone: "",
       supply_store_email: "",
+      supply_store_website: "",
     });
     setDialogOpen(true);
   };
@@ -265,6 +269,7 @@ export default function Warehouse() {
       supply_store_contact_name: linkedStore?.contact_name ?? "",
       supply_store_phone: linkedStore?.phone ?? "",
       supply_store_email: linkedStore?.email ?? "",
+      supply_store_website: linkedStore?.website ?? "",
     });
     setDialogOpen(true);
   };
@@ -302,6 +307,7 @@ export default function Warehouse() {
         contact_name: form.supply_store_contact_name.trim() || null,
         phone: form.supply_store_phone.trim() || null,
         email: form.supply_store_email.trim() || null,
+        website: form.supply_store_website.trim() || null,
       };
 
       if (linkedSupplyStoreId) {
@@ -692,11 +698,11 @@ export default function Warehouse() {
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col gap-0 p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editing ? "Edit location" : "Add location"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 min-h-0">
             <div className="space-y-2">
               <Label>Type</Label>
               <Select
@@ -810,6 +816,17 @@ export default function Warehouse() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <Input
+                    placeholder="https://store.example.com"
+                    value={form.supply_store_website}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, supply_store_website: e.target.value }))
+                    }
+                  />
+                </div>
               </>
             )}
 
@@ -838,7 +855,7 @@ export default function Warehouse() {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 border-t">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
