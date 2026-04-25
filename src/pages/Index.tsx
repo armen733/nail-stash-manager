@@ -1231,15 +1231,39 @@ const Index = () => {
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base sm:text-lg">Top Salons</CardTitle>
-            {allSalons.length > 5 && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAllSalons(true)} className="text-xs text-primary">
-                View All ({allSalons.length})
-                <ChevronRight className="h-3 w-3 ml-1" />
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg truncate">Top Salons</CardTitle>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const csvHeader = "Salon,Orders,Revenue\n";
+                  const csvRows = (allSalons.length > 0 ? allSalons : topSalons)
+                    .map((s) => `"${(s.salon_name || "").replace(/"/g, '""')}",${s.order_count},${s.total_revenue.toFixed(2)}`)
+                    .join("\n");
+                  const blob = new Blob([csvHeader + csvRows], { type: "text/csv" });
+                  const link = document.createElement("a");
+                  link.download = `top-salons-${new Date().toISOString().split("T")[0]}.csv`;
+                  link.href = URL.createObjectURL(blob);
+                  link.click();
+                  URL.revokeObjectURL(link.href);
+                  toast({ title: "Success", description: "Top salons exported as CSV" });
+                }}
+                disabled={topSalons.length === 0}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                CSV
               </Button>
-            )}
+              {allSalons.length > 5 && (
+                <Button variant="ghost" size="sm" onClick={() => setShowAllSalons(true)} className="text-xs text-primary">
+                  View All ({allSalons.length})
+                  <ChevronRight className="h-3 w-3 ml-1" />
+                </Button>
+              )}
+            </div>
           </CardHeader>
+
           <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -1333,19 +1357,20 @@ const Index = () => {
         </Card>
 
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 items-stretch">
             <button
               type="button"
               onClick={() => setTopProductsOpen((v) => !v)}
-              className="flex items-center gap-2 text-left flex-1 min-w-0"
+              className="flex items-center gap-2 text-left w-full"
             >
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topProductsOpen ? "" : "-rotate-90"}`} />
-              <CardTitle className="text-base sm:text-lg truncate">Top Products</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
               {!topProductsOpen && topProducts.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({topProducts.length})</span>
               )}
             </button>
-            <div className="flex gap-2">
+            {topProductsOpen && (
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -1475,6 +1500,7 @@ const Index = () => {
                 PNG
               </Button>
             </div>
+            )}
           </CardHeader>
           {topProductsOpen && (
           <CardContent className="overflow-x-auto">
