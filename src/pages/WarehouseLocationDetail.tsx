@@ -96,6 +96,13 @@ export default function WarehouseLocationDetail() {
     logo_url: string | null;
   } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
+  // Lifetime totals for everything ever delivered to this supply store
+  // (sum of all `receive` + `transfer` movements INTO this location).
+  const [lifetime, setLifetime] = useState<{
+    units: number;
+    storePaid: number; // sum of qty * unit_cost (what they paid us)
+    ourCost: number; // sum of qty * product.cost_usd
+  }>({ units: 0, storePaid: 0, ourCost: 0 });
 
   const [action, setAction] = useState<StockAction | null>(null);
 
