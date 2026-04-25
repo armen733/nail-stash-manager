@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { SupplyStoreStockHistory } from "@/components/supply-stores/SupplyStoreStockHistory";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
