@@ -26,6 +26,7 @@ interface SupplyStore {
   notes: string | null;
   default_discount_percent: number;
   default_markup_percent: number;
+  status: string;
 }
 
 interface Assignment {
