@@ -50,6 +50,8 @@ interface StockRow {
   override_price: number | null;
   /** What we sell this unit for at THIS location (supply store discount applied, or per-location override). */
   effective_unit_price: number;
+  /** Suggested resell price the store should charge (markup % over our regular price). */
+  suggested_resell_unit_price: number;
   product: {
     name: string;
     sku: string;
