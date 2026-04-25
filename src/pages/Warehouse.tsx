@@ -82,6 +82,9 @@ interface SupplyStoreLite {
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
 }
 
 const TYPE_META: Record<
