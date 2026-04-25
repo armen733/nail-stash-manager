@@ -83,16 +83,19 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       });
     }
 
-    // Get this store's specific retail price overrides (if any)
-    const locPriceMap = new Map<string, number>();
-    if (allPids.length > 0) {
-      const { data: locPrices } = await supabase
-        .from("location_product_prices")
-        .select("product_id, price_usd")
-        .eq("location_id", locationId)
+    // Per-product markup % overrides for this supply store (if any).
+    // Suggested retail = our list price × (1 + markup%).
+    const markupOverrideMap = new Map<string, number>();
+    if (supplyStoreId && allPids.length > 0) {
+      const { data: ssp } = await supabase
+        .from("supply_store_products")
+        .select("product_id, markup_percent_override")
+        .eq("supply_store_id", supplyStoreId)
         .in("product_id", allPids);
-      ((locPrices ?? []) as any[]).forEach((lp) => {
-        locPriceMap.set(lp.product_id, Number(lp.price_usd ?? 0));
+      ((ssp ?? []) as any[]).forEach((row) => {
+        if (row.markup_percent_override != null) {
+          markupOverrideMap.set(row.product_id, Number(row.markup_percent_override));
+        }
       });
     }
 
