@@ -129,7 +129,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
 
       popupNode.innerHTML = `
         <h3 style="font-weight: 700; font-size: 14px; color: #111; margin: 0 0 4px 0;">${pin.name}</h3>
-        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}${isLow ? ` · <span style="color:#dc2626; font-weight:600;">${pin.lowSkus} low SKU${(pin.lowSkus ?? 0) === 1 ? "" : "s"}</span>` : ""}</p>
+        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}${isLow ? ` · <span style="color:#dc2626; font-weight:600;">${lowUnits.toLocaleString()} low unit${lowUnits === 1 ? "" : "s"}</span>` : ""}</p>
         ${addrLine}
         <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: #4b5563;">
           <span><strong style="color: #111;">${pin.units.toLocaleString()}</strong> units</span>
