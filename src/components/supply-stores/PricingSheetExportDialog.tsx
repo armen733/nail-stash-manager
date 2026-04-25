@@ -16,6 +16,9 @@ import { Search, Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csv-export";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
+import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
+
+const BRAND_EMAIL = "info@nerabeautyus.com";
 
 interface Product {
   id: string;
@@ -161,16 +164,21 @@ export const PricingSheetExportDialog = ({
       discountPercent: discount,
       markupPercent: markup,
     }));
+    const baseBrand: CompanyBrand = brand ?? {
+      company_name: "",
+      logo_url: null,
+      contact_phone: null,
+      contact_email: null,
+      website: null,
+      instagram: null,
+      address: null,
+      tagline: null,
+    };
     openPrintableCatalog({
-      brand: brand ?? {
-        company_name: "",
-        logo_url: null,
-        contact_phone: null,
-        contact_email: null,
-        website: null,
-        instagram: null,
-        address: null,
-        tagline: null,
+      brand: {
+        ...baseBrand,
+        logo_url: new URL(neraBeautyLogo, window.location.origin).href,
+        contact_email: BRAND_EMAIL,
       },
       store: {
         name: storeInfo?.name ?? scopeName ?? "Wholesale Partner",
