@@ -348,7 +348,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
                   <div className="text-muted-foreground leading-none">Units sold</div>
                   <div className="mt-1 font-semibold">{r.unitsSold}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    retail ${r.avgRetailPrice.toFixed(2)}/u
+                    suggested ${r.avgRetailPrice.toFixed(2)}/u
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
