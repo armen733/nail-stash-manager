@@ -485,16 +485,29 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                             </div>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div
-                            className={`font-semibold text-sm ${
-                              incoming ? "text-emerald-500" : "text-destructive"
-                            }`}
-                          >
-                            {incoming ? "+" : "−"}
-                            {r.quantity}
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <div className="text-right">
+                            <div
+                              className={`font-semibold text-sm ${
+                                incoming ? "text-emerald-500" : "text-destructive"
+                              }`}
+                            >
+                              {incoming ? "+" : "−"}
+                              {r.quantity}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">units</div>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">units</div>
+                          {isSupplyStore && r.movement_type === "receive" && incoming && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={() => setConfirmDelete(r)}
+                              aria-label="Return units to main warehouse"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -507,6 +520,38 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Return units to main warehouse?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete && (
+                <>
+                  This will move <span className="font-semibold text-foreground">{confirmDelete.quantity} unit{confirmDelete.quantity === 1 ? "" : "s"}</span> of{" "}
+                  <span className="font-semibold text-foreground">{confirmDelete.product?.name}</span> ({confirmDelete.product?.sku}) back to the default warehouse and remove them from this store.
+                  <br />
+                  <br />
+                  This cannot be undone. If any of these units have already been sold, the action will be blocked.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDelete) handleDeleteReceive(confirmDelete);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Returning..." : "Return units"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
