@@ -184,7 +184,7 @@ export function LocationFinancialsTab({ locationId }: Props) {
         case "margin":
           return b.marginPct - a.marginPct;
         case "revenue":
-          return b.storePaid - a.storePaid;
+          return b.storeRevenue - a.storeRevenue;
         case "profit":
         default:
           return b.profit - a.profit;
