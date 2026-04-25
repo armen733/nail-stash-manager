@@ -636,6 +636,8 @@ export default function WarehouseLocationDetail() {
           locationName={location.name}
           locationType={location.type}
           storeDiscountPercent={storeDefaults?.discount ?? 0}
+          storeMarkupPercent={storeDefaults?.markup ?? 0}
+          supplyStoreId={location.supply_store_id ?? null}
           otherLocations={otherLocations}
           onDone={load}
         />

@@ -56,6 +56,10 @@ interface LineItem {
   product_cost: number | null;
   /** Wholesale baseline used to compute the suggested store sell price */
   wholesale_baseline: number | null;
+  /** Per-line discount % off our list price (consignment receive only) */
+  discount_pct: string;
+  /** Per-line suggested markup % the store applies on top of OUR LIST price (consignment receive only) */
+  markup_pct: string;
 }
 
 interface Props {
@@ -68,6 +72,10 @@ interface Props {
   locationType?: string;
   /** Default % discount this supply store gets off wholesale price */
   storeDiscountPercent?: number;
+  /** Default % markup the store should apply on top of OUR LIST price */
+  storeMarkupPercent?: number;
+  /** The supply_store_id (if locationType is consignment) so we can persist overrides */
+  supplyStoreId?: string | null;
   /** For transfer: the OTHER locations to choose from */
   otherLocations?: LocationOption[];
   onDone: () => void;
@@ -104,6 +112,8 @@ export function StockActionDialog({
   locationName,
   locationType,
   storeDiscountPercent = 0,
+  storeMarkupPercent = 0,
+  supplyStoreId = null,
   otherLocations = [],
   onDone,
 }: Props) {
@@ -117,6 +127,9 @@ export function StockActionDialog({
   const [reason, setReason] = useState("");
   const [destLocationId, setDestLocationId] = useState("");
   const [saving, setSaving] = useState(false);
+  // Per-product saved overrides for this supply store, used to seed lines
+  const [discountOverrideMap, setDiscountOverrideMap] = useState<Map<string, number>>(new Map());
+  const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
 
   // Reset on open
   useEffect(() => {
@@ -131,8 +144,8 @@ export function StockActionDialog({
 
   const loadProducts = async () => {
     setLoadingProducts(true);
-    // Fetch products + stock at this location + per-location price overrides.
-    const [prodRes, stockRes, overrideRes] = await Promise.all([
+    // Fetch products + stock at this location + per-location price overrides + (if consignment) per-product discount/markup overrides.
+    const [prodRes, stockRes, overrideRes, sspRes] = await Promise.all([
       supabase
         .from("products")
         .select(
@@ -148,6 +161,12 @@ export function StockActionDialog({
         .from("location_product_prices")
         .select("product_id, price_usd")
         .eq("location_id", locationId),
+      isConsignmentReceive && supplyStoreId
+        ? supabase
+            .from("supply_store_products")
+            .select("product_id, discount_percent_override, markup_percent_override")
+            .eq("supply_store_id", supplyStoreId)
+        : Promise.resolve({ data: [] as any[] } as any),
     ]);
 
     if (prodRes.error) {
@@ -161,6 +180,14 @@ export function StockActionDialog({
     (overrideRes.data ?? []).forEach((r: any) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
     );
+    const dMap = new Map<string, number>();
+    const mMap = new Map<string, number>();
+    (((sspRes as any)?.data ?? []) as any[]).forEach((r) => {
+      if (r.discount_percent_override != null) dMap.set(r.product_id, Number(r.discount_percent_override));
+      if (r.markup_percent_override != null) mMap.set(r.product_id, Number(r.markup_percent_override));
+    });
+    setDiscountOverrideMap(dMap);
+    setMarkupOverrideMap(mMap);
 
     const rows: ProductRow[] = (prodRes.data ?? []).map((p: any) => {
       const sorted = [...(p.product_images ?? [])].sort(
@@ -203,10 +230,17 @@ export function StockActionDialog({
       toast.info("Already in list");
       return;
     }
-    // Suggested store sell price: wholesale × (1 - discount%) when receiving into a supply store
+    // For consignment receive, derive sell price from per-product override → store default discount.
+    const list = p.price_usd; // list/retail price (or per-location override if set)
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const effectiveDiscount = isConsignmentReceive
+      ? discountOverrideMap.get(p.id) ?? storeDiscountPercent ?? 0
+      : 0;
+    const effectiveMarkup = isConsignmentReceive
+      ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
+      : 0;
     const suggestedStorePrice = isConsignmentReceive
-      ? Math.max(0, wholesale * (1 - (storeDiscountPercent || 0) / 100))
+      ? Math.max(0, list * (1 - effectiveDiscount / 100))
       : null;
     setLines((prev) => [
       ...prev,
@@ -226,6 +260,8 @@ export function StockActionDialog({
         default_price: p.price_usd,
         product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
         wholesale_baseline: wholesale || null,
+        discount_pct: isConsignmentReceive ? String(effectiveDiscount) : "",
+        markup_pct: isConsignmentReceive ? String(effectiveMarkup) : "",
       },
     ]);
   };
@@ -352,6 +388,30 @@ export function StockActionDialog({
         await supabase
           .from("location_product_prices")
           .upsert(priceRows, { onConflict: "location_id,product_id" });
+      }
+
+      // Persist per-product discount % and markup % overrides for this supply store
+      // so the History/Stock stats and pricing sheets all use the same numbers.
+      if (supplyStoreId) {
+        const sspRows = lines
+          .filter(
+            (l) =>
+              (l.discount_pct !== "" && Number.isFinite(Number(l.discount_pct))) ||
+              (l.markup_pct !== "" && Number.isFinite(Number(l.markup_pct))),
+          )
+          .map((l) => ({
+            supply_store_id: supplyStoreId,
+            product_id: l.product_id,
+            discount_percent_override:
+              l.discount_pct !== "" ? Number(l.discount_pct) : null,
+            markup_percent_override:
+              l.markup_pct !== "" ? Number(l.markup_pct) : null,
+          }));
+        if (sspRows.length > 0) {
+          await supabase
+            .from("supply_store_products")
+            .upsert(sspRows, { onConflict: "supply_store_id,product_id" });
+        }
       }
     }
     setSaving(false);
@@ -633,6 +693,46 @@ export function StockActionDialog({
                         />
                       </div>
                     </div>
+                    {isConsignmentReceive && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">
+                            Discount % (off list)
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={l.discount_pct}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "");
+                              const list = l.default_price || 0;
+                              const pct = Number(v || 0);
+                              const newSell = Math.max(0, list * (1 - pct / 100));
+                              updateLine(l.product_id, {
+                                discount_pct: v,
+                                unit_cost: newSell.toFixed(2),
+                              });
+                            }}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">
+                            Suggested markup % (on list)
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={l.markup_pct}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "");
+                              updateLine(l.product_id, { markup_pct: v });
+                            }}
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
+                    )}
                     {action === "adjust" && (
                       <div className="text-[11px] text-muted-foreground">
                         Change: {Number(l.quantity || 0) - l.stockHere > 0 ? "+" : ""}
@@ -652,10 +752,15 @@ export function StockActionDialog({
                       const qty = Number(l.quantity || 0);
                       const sell = Number(l.unit_cost || 0);
                       const cost = l.product_cost ?? 0;
+                      const list = l.default_price || 0;
+                      const markup = Number(l.markup_pct || 0);
+                      const suggestedRetail = list * (1 + markup / 100);
                       const profitPerUnit = sell - cost;
                       const totalRevenue = sell * qty;
                       const totalProfit = profitPerUnit * qty;
-                      const margin = sell > 0 ? (profitPerUnit / sell) * 100 : 0;
+                      const storeEarnPerUnit = suggestedRetail - sell;
+                      const storeEarnTotal = storeEarnPerUnit * qty;
+                      const margin = cost > 0 ? (profitPerUnit / cost) * 100 : 0;
                       return (
                         <div className="rounded-md bg-muted/40 p-2 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div>
@@ -673,17 +778,27 @@ export function StockActionDialog({
                             </div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Revenue</div>
+                            <div className="text-muted-foreground">Store pays us</div>
                             <div className="font-medium">${totalRevenue.toFixed(2)}</div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Total profit</div>
+                            <div className="text-muted-foreground">Our profit</div>
                             <div
                               className={`font-medium ${
                                 totalProfit < 0 ? "text-destructive" : "text-emerald-500"
                               }`}
                             >
                               ${totalProfit.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Sugg. retail</div>
+                            <div className="font-medium">${suggestedRetail.toFixed(2)}/u</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Store earns</div>
+                            <div className="font-medium text-primary">
+                              ${storeEarnTotal.toFixed(2)}
                             </div>
                           </div>
                         </div>
