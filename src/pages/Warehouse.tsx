@@ -153,6 +153,7 @@ export default function Warehouse() {
     supply_store_contact_name: string;
     supply_store_phone: string;
     supply_store_email: string;
+    supply_store_website: string;
   }>({
     name: "",
     type: "warehouse",
