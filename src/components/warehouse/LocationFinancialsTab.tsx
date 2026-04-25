@@ -8,6 +8,9 @@ import { Search, TrendingUp, TrendingDown, DollarSign, Package } from "lucide-re
 
 interface Props {
   locationId: string;
+  supplyStoreId?: string | null;
+  /** Store-level default markup % the store applies on top of our retail. */
+  storeMarkupPercent?: number;
 }
 
 interface ProductRow {
