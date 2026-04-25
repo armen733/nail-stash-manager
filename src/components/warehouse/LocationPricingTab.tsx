@@ -39,7 +39,7 @@ export function LocationPricingTab({ locationId }: Props) {
     const supplyStoreId =
       locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
 
-    const [prodRes, stockRes, storeRes, discountOverridesRes] = await Promise.all([
+    const [prodRes, stockRes, storeRes, overridesRes] = await Promise.all([
       supabase
         .from("products")
         .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
@@ -52,14 +52,14 @@ export function LocationPricingTab({ locationId }: Props) {
       supplyStoreId
         ? supabase
             .from("supply_stores")
-            .select("default_discount_percent")
+            .select("default_discount_percent, default_markup_percent")
             .eq("id", supplyStoreId)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null } as any),
       supplyStoreId
         ? supabase
             .from("supply_store_products")
-            .select("product_id, discount_percent_override")
+            .select("product_id, discount_percent_override, markup_percent_override")
             .eq("supply_store_id", supplyStoreId)
         : Promise.resolve({ data: [], error: null } as any),
     ]);
@@ -77,10 +77,17 @@ export function LocationPricingTab({ locationId }: Props) {
     const defaultDiscountPct = Number(
       (storeRes as any)?.data?.default_discount_percent ?? 0
     );
+    const defaultMarkupPct = Number(
+      (storeRes as any)?.data?.default_markup_percent ?? 0
+    );
     const discountOverrideMap = new Map<string, number>();
-    ((discountOverridesRes as any)?.data ?? []).forEach((r: any) => {
+    const markupOverrideMap = new Map<string, number>();
+    ((overridesRes as any)?.data ?? []).forEach((r: any) => {
       if (r.discount_percent_override != null) {
         discountOverrideMap.set(r.product_id, Number(r.discount_percent_override));
+      }
+      if (r.markup_percent_override != null) {
+        markupOverrideMap.set(r.product_id, Number(r.markup_percent_override));
       }
     });
 
@@ -92,9 +99,14 @@ export function LocationPricingTab({ locationId }: Props) {
       const discountPct = discountOverrideMap.has(p.id)
         ? discountOverrideMap.get(p.id)!
         : defaultDiscountPct;
-      // Always compute "store pays us" for supply stores using whatever wholesale basis we have
+      const markupPct = markupOverrideMap.has(p.id)
+        ? markupOverrideMap.get(p.id)!
+        : defaultMarkupPct;
       const ourSalePrice = supplyStoreId
         ? wholesalePrice * (1 - discountPct / 100)
+        : 0;
+      const suggestedResell = supplyStoreId
+        ? ourSalePrice * (1 + markupPct / 100)
         : 0;
       return {
         product_id: p.id,
@@ -104,6 +116,7 @@ export function LocationPricingTab({ locationId }: Props) {
         defaultPrice,
         wholesalePrice,
         ourSalePrice,
+        suggestedResell,
         stockHere: stockMap.get(p.id) ?? 0,
       };
     });
