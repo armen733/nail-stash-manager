@@ -136,6 +136,7 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -547,13 +548,19 @@ export default function Warehouse() {
         </div>
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Pricing sheet
+          </Button>
           <ExportMenu />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Add location
           </Button>
         </div>
         {/* Mobile export (Add is FAB) */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1" /> Pricing
+          </Button>
           <ExportMenu />
         </div>
       </div>
