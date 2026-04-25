@@ -85,7 +85,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
         ? `<p style="font-size: 12px; color: #4b5563; margin: 4px 0 0 0;">📍 ${pin.address}</p>`
         : "";
       const typeLabel =
-        pin.type === "warehouse" ? "Warehouse" : pin.type === "fba" ? "Amazon FBA" : pin.type === "consignment" ? "Consignment" : "Driver";
+        pin.type === "warehouse" ? "Warehouse" : pin.type === "fba" ? "Amazon FBA" : pin.type === "consignment" ? "Supply Store" : "Driver";
 
       popupNode.innerHTML = `
         <h3 style="font-weight: 700; font-size: 14px; color: #111; margin: 0 0 4px 0;">${pin.name}</h3>
