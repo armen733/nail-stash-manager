@@ -68,6 +68,8 @@ export default function WarehouseLocationDetail() {
     { id: string; name: string; type: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [storeDefaults, setStoreDefaults] = useState<{ discount: number; markup: number } | null>(null);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const [action, setAction] = useState<StockAction | null>(null);
 
