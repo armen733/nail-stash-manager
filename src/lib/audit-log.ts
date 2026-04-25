@@ -13,6 +13,7 @@ export type AuditEntity =
   | "promotion"
   | "tax"
   | "loyalty"
+  | "supply_store"
   | "other";
 
 interface LogParams {
