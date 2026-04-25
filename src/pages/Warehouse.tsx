@@ -91,6 +91,7 @@ interface SupplyStoreLite {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logo_url: string | null;
 }
 
 const TYPE_META: Record<
