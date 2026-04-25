@@ -98,7 +98,26 @@ export default function WarehouseLocationDetail() {
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
-    setLocation((locRes.data ?? null) as StockLocation | null);
+    const loc = (locRes.data ?? null) as StockLocation | null;
+    setLocation(loc);
+
+    if (loc?.type === "consignment" && loc.supply_store_id) {
+      const { data: storeData } = await supabase
+        .from("supply_stores")
+        .select("default_discount_percent, default_markup_percent")
+        .eq("id", loc.supply_store_id)
+        .maybeSingle();
+      if (storeData) {
+        setStoreDefaults({
+          discount: Number(storeData.default_discount_percent ?? 0),
+          markup: Number(storeData.default_markup_percent ?? 0),
+        });
+      } else {
+        setStoreDefaults(null);
+      }
+    } else {
+      setStoreDefaults(null);
+    }
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
