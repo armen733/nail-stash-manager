@@ -693,6 +693,46 @@ export function StockActionDialog({
                         />
                       </div>
                     </div>
+                    {isConsignmentReceive && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">
+                            Discount % (off list)
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={l.discount_pct}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "");
+                              const list = l.default_price || 0;
+                              const pct = Number(v || 0);
+                              const newSell = Math.max(0, list * (1 - pct / 100));
+                              updateLine(l.product_id, {
+                                discount_pct: v,
+                                unit_cost: newSell.toFixed(2),
+                              });
+                            }}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">
+                            Suggested markup % (on list)
+                          </Label>
+                          <Input
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={l.markup_pct}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.]/g, "");
+                              updateLine(l.product_id, { markup_pct: v });
+                            }}
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
+                    )}
                     {action === "adjust" && (
                       <div className="text-[11px] text-muted-foreground">
                         Change: {Number(l.quantity || 0) - l.stockHere > 0 ? "+" : ""}
@@ -712,10 +752,15 @@ export function StockActionDialog({
                       const qty = Number(l.quantity || 0);
                       const sell = Number(l.unit_cost || 0);
                       const cost = l.product_cost ?? 0;
+                      const list = l.default_price || 0;
+                      const markup = Number(l.markup_pct || 0);
+                      const suggestedRetail = list * (1 + markup / 100);
                       const profitPerUnit = sell - cost;
                       const totalRevenue = sell * qty;
                       const totalProfit = profitPerUnit * qty;
-                      const margin = sell > 0 ? (profitPerUnit / sell) * 100 : 0;
+                      const storeEarnPerUnit = suggestedRetail - sell;
+                      const storeEarnTotal = storeEarnPerUnit * qty;
+                      const margin = cost > 0 ? (profitPerUnit / cost) * 100 : 0;
                       return (
                         <div className="rounded-md bg-muted/40 p-2 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div>
@@ -733,17 +778,27 @@ export function StockActionDialog({
                             </div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Revenue</div>
+                            <div className="text-muted-foreground">Store pays us</div>
                             <div className="font-medium">${totalRevenue.toFixed(2)}</div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground">Total profit</div>
+                            <div className="text-muted-foreground">Our profit</div>
                             <div
                               className={`font-medium ${
                                 totalProfit < 0 ? "text-destructive" : "text-emerald-500"
                               }`}
                             >
                               ${totalProfit.toFixed(2)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Sugg. retail</div>
+                            <div className="font-medium">${suggestedRetail.toFixed(2)}/u</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Store earns</div>
+                            <div className="font-medium text-primary">
+                              ${storeEarnTotal.toFixed(2)}
                             </div>
                           </div>
                         </div>
