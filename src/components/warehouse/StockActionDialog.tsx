@@ -338,6 +338,22 @@ export function StockActionDialog({
     const payload = movements.map((m) => ({ ...m, created_by: userId }));
 
     const { error } = await supabase.from("stock_movements").insert(payload);
+
+    // For consignment receives: persist per-store sell prices so analytics & history match.
+    if (!error && isConsignmentReceive) {
+      const priceRows = lines
+        .filter((l) => Number(l.unit_cost) > 0)
+        .map((l) => ({
+          location_id: locationId,
+          product_id: l.product_id,
+          price_usd: Number(l.unit_cost),
+        }));
+      if (priceRows.length > 0) {
+        await supabase
+          .from("location_product_prices")
+          .upsert(priceRows, { onConflict: "location_id,product_id" });
+      }
+    }
     setSaving(false);
 
     if (error) {
