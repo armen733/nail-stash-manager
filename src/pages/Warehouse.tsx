@@ -692,11 +692,11 @@ export default function Warehouse() {
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col gap-0 p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editing ? "Edit location" : "Add location"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 min-h-0">
             <div className="space-y-2">
               <Label>Type</Label>
               <Select
