@@ -291,18 +291,20 @@ export default function SupplyStores() {
                 <Label htmlFor="address">Address</Label>
                 <AddressAutocomplete
                   value={form.address}
-                  onChange={(address, city) => {
+                  onChange={(address, city, lat, lng) => {
                     setForm((f) => ({
                       ...f,
                       address,
                       ...(city ? { city } : {}),
+                      ...(typeof lat === "number" ? { latitude: lat } : {}),
+                      ...(typeof lng === "number" ? { longitude: lng } : {}),
                     }));
                   }}
                   placeholder="Start typing address..."
                   className="min-h-[44px]"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Pick a suggestion to capture the address. Set lat/lng below if you want a map pin.
+                  Pick a suggestion — coordinates will be captured automatically so the store appears on the map.
                 </p>
               </div>
 
