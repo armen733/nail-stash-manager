@@ -759,7 +759,11 @@ export default function WarehouseLocationDetail() {
 
         {isSupplyStoreView && (
           <TabsContent value="earnings" className="mt-3">
-            <LocationFinancialsTab locationId={location.id} />
+            <LocationFinancialsTab
+              locationId={location.id}
+              supplyStoreId={location.supply_store_id ?? null}
+              storeMarkupPercent={storeDefaults?.markup ?? 0}
+            />
           </TabsContent>
         )}
       </Tabs>

@@ -8,6 +8,9 @@ import { Search, TrendingUp, TrendingDown, DollarSign, Package } from "lucide-re
 
 interface Props {
   locationId: string;
+  supplyStoreId?: string | null;
+  /** Store-level default markup % the store applies on top of our retail. */
+  storeMarkupPercent?: number;
 }
 
 interface ProductRow {
@@ -32,7 +35,7 @@ const formatMoney = (n: number) => {
   })}`;
 };
 
-export function LocationFinancialsTab({ locationId }: Props) {
+export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeMarkupPercent = 0 }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [search, setSearch] = useState("");
@@ -80,16 +83,19 @@ export function LocationFinancialsTab({ locationId }: Props) {
       });
     }
 
-    // Get this store's specific retail price overrides (if any)
-    const locPriceMap = new Map<string, number>();
-    if (allPids.length > 0) {
-      const { data: locPrices } = await supabase
-        .from("location_product_prices")
-        .select("product_id, price_usd")
-        .eq("location_id", locationId)
+    // Per-product markup % overrides for this supply store (if any).
+    // Suggested retail = our list price × (1 + markup%).
+    const markupOverrideMap = new Map<string, number>();
+    if (supplyStoreId && allPids.length > 0) {
+      const { data: ssp } = await supabase
+        .from("supply_store_products")
+        .select("product_id, markup_percent_override")
+        .eq("supply_store_id", supplyStoreId)
         .in("product_id", allPids);
-      ((locPrices ?? []) as any[]).forEach((lp) => {
-        locPriceMap.set(lp.product_id, Number(lp.price_usd ?? 0));
+      ((ssp ?? []) as any[]).forEach((row) => {
+        if (row.markup_percent_override != null) {
+          markupOverrideMap.set(row.product_id, Number(row.markup_percent_override));
+        }
       });
     }
 
@@ -128,8 +134,11 @@ export function LocationFinancialsTab({ locationId }: Props) {
       const unitsSold = a.unitsIn - a.unitsOut;
       if (unitsSold <= 0) continue;
       const storeCost = a.paidIn - a.paidOut; // what store paid us (their expense)
-      const retail = locPriceMap.get(pid) ?? info.retailPrice; // store's selling price
-      const storeRevenue = unitsSold * retail; // what store earns from customers
+      // Suggested retail = our list price × (1 + markup%); fall back to list price if no markup.
+      const markupPct = markupOverrideMap.get(pid) ?? storeMarkupPercent ?? 0;
+      const suggestedRetail =
+        markupPct > 0 ? info.retailPrice * (1 + markupPct / 100) : info.retailPrice;
+      const storeRevenue = unitsSold * suggestedRetail; // store earns at suggested retail
       const profit = storeRevenue - storeCost;
       const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
       const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
@@ -142,7 +151,7 @@ export function LocationFinancialsTab({ locationId }: Props) {
         storeCost,
         profit,
         marginPct,
-        avgRetailPrice: retail,
+        avgRetailPrice: suggestedRetail,
         avgWholesalePrice,
       });
     }
@@ -222,7 +231,7 @@ export function LocationFinancialsTab({ locationId }: Props) {
               {formatMoney(totals.revenue)}
             </div>
             <div className="text-[10px] text-muted-foreground">
-              retail × units sold
+              suggested retail × units
             </div>
           </CardContent>
         </Card>
@@ -339,7 +348,7 @@ export function LocationFinancialsTab({ locationId }: Props) {
                   <div className="text-muted-foreground leading-none">Units sold</div>
                   <div className="mt-1 font-semibold">{r.unitsSold}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    retail ${r.avgRetailPrice.toFixed(2)}/u
+                    suggested ${r.avgRetailPrice.toFixed(2)}/u
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
