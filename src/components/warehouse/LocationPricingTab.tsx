@@ -16,6 +16,8 @@ interface Row {
   sku: string;
   cost: number;
   defaultPrice: number;
+  wholesalePrice: number;
+  ourSalePrice: number; // wholesale * (1 - discount%)
   overridePrice: number | null;
   stockHere: number;
   draft: string; // input field value
