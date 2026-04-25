@@ -389,21 +389,13 @@ export default function WarehouseLocationDetail() {
               )}
             </div>
 
-            {/* Address + notes */}
-            {(storeInfo.address || storeInfo.notes) && (
+            {/* Notes */}
+            {storeInfo.notes && (
               <div className="space-y-2 pt-1 border-t border-border">
-                {storeInfo.address && (
-                  <div>
-                    <div className="text-[10px] uppercase text-muted-foreground">Address</div>
-                    <div className="text-sm">{storeInfo.address}</div>
-                  </div>
-                )}
-                {storeInfo.notes && (
-                  <div>
-                    <div className="text-[10px] uppercase text-muted-foreground">Notes</div>
-                    <div className="text-sm whitespace-pre-wrap">{storeInfo.notes}</div>
-                  </div>
-                )}
+                <div>
+                  <div className="text-[10px] uppercase text-muted-foreground">Notes</div>
+                  <div className="text-sm whitespace-pre-wrap">{storeInfo.notes}</div>
+                </div>
               </div>
             )}
           </CardContent>
