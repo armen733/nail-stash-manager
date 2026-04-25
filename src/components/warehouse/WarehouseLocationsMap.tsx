@@ -99,7 +99,8 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
     markersRef.current = [];
 
     pins.forEach((pin) => {
-      const colors = TYPE_COLOR[pin.type];
+      const isLow = (pin.lowSkus ?? 0) > 0;
+      const colors = isLow ? LOW_STOCK_COLOR : TYPE_COLOR[pin.type];
       const el = document.createElement("div");
       el.innerHTML = `
         <div style="
@@ -108,6 +109,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
           transition: transform 0.15s; color: white; font-size: 14px; font-weight: 700;
+          ${isLow ? "animation: pulse 1.6s ease-in-out infinite;" : ""}
         " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
           ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "S" : "D"}
         </div>
