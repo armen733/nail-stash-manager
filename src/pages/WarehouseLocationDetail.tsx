@@ -175,7 +175,12 @@ export default function WarehouseLocationDetail() {
         <Button variant="ghost" size="sm" onClick={() => navigate("/warehouse")} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <ExportMenu locationId={location?.id} scopeName={location?.name} />
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Pricing sheet
+          </Button>
+          <ExportMenu locationId={location?.id} scopeName={location?.name} />
+        </div>
       </div>
 
       <div className="flex items-start gap-3">
