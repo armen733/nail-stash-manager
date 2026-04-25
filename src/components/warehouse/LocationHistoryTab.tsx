@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package, Download } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package, Download, Trash2 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { toast } from "sonner";
 
@@ -60,6 +70,9 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
   const [range, setRange] = useState<RangeKey>("30d");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -104,7 +117,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
     return () => {
       active = false;
     };
-  }, [locationId, range]);
+  }, [locationId, range, reloadKey]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return rows;
@@ -155,6 +168,70 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
     });
     return Array.from(byDay.entries());
   }, [filtered]);
+
+  const handleDeleteReceive = async (r: MovementRow) => {
+    if (!r.product) return;
+    setDeleting(true);
+    try {
+      // Find the default warehouse to receive the returned units
+      const { data: defaultLoc, error: locErr } = await supabase
+        .from("stock_locations")
+        .select("id, name")
+        .eq("is_default", true)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (locErr) throw locErr;
+      if (!defaultLoc) {
+        toast.error("No default warehouse found to restore stock to");
+        setDeleting(false);
+        setConfirmDelete(null);
+        return;
+      }
+
+      // Make sure there's enough stock here to send back
+      const { data: stockRow } = await supabase
+        .from("product_stock")
+        .select("quantity")
+        .eq("product_id", r.product.id)
+        .eq("location_id", locationId)
+        .maybeSingle();
+      const available = Number(stockRow?.quantity ?? 0);
+      if (available < r.quantity) {
+        toast.error(
+          `Only ${available} unit${available === 1 ? "" : "s"} available here — some have already been sold.`,
+        );
+        setDeleting(false);
+        setConfirmDelete(null);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+
+      // Insert a transfer movement back to the default warehouse
+      const { error: movErr } = await supabase.from("stock_movements").insert({
+        product_id: r.product.id,
+        movement_type: "transfer",
+        quantity: r.quantity,
+        from_location_id: locationId,
+        to_location_id: defaultLoc.id,
+        unit_cost: r.unit_cost,
+        reason: `Reverted delivery (movement ${r.id.slice(0, 8)})`,
+        reference_type: "reversal",
+        reference_id: r.id,
+        created_by: userId,
+      });
+      if (movErr) throw movErr;
+
+      toast.success(`Returned ${r.quantity} unit${r.quantity === 1 ? "" : "s"} to ${defaultLoc.name}`);
+      setConfirmDelete(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to revert delivery");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -408,16 +485,29 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                             </div>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div
-                            className={`font-semibold text-sm ${
-                              incoming ? "text-emerald-500" : "text-destructive"
-                            }`}
-                          >
-                            {incoming ? "+" : "−"}
-                            {r.quantity}
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <div className="text-right">
+                            <div
+                              className={`font-semibold text-sm ${
+                                incoming ? "text-emerald-500" : "text-destructive"
+                              }`}
+                            >
+                              {incoming ? "+" : "−"}
+                              {r.quantity}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">units</div>
                           </div>
-                          <div className="text-[10px] text-muted-foreground">units</div>
+                          {isSupplyStore && r.movement_type === "receive" && incoming && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={() => setConfirmDelete(r)}
+                              aria-label="Return units to main warehouse"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
@@ -430,6 +520,38 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Return units to main warehouse?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete && (
+                <>
+                  This will move <span className="font-semibold text-foreground">{confirmDelete.quantity} unit{confirmDelete.quantity === 1 ? "" : "s"}</span> of{" "}
+                  <span className="font-semibold text-foreground">{confirmDelete.product?.name}</span> ({confirmDelete.product?.sku}) back to the default warehouse and remove them from this store.
+                  <br />
+                  <br />
+                  This cannot be undone. If any of these units have already been sold, the action will be blocked.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmDelete) handleDeleteReceive(confirmDelete);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Returning..." : "Return units"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
