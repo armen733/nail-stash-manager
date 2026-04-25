@@ -37,7 +37,10 @@ interface ProductRow {
   name: string;
   sku: string;
   cost_usd: number | null;
+  /** Product's real registered list/retail price (always from products.price_usd) */
   price_usd: number;
+  /** Optional per-location sell-price override (what we previously charged this location) */
+  location_price_override: number | null;
   wholesale_price_usd: number | null;
   image_url: string | null;
   stockHere: number;
@@ -194,14 +197,16 @@ export function StockActionDialog({
         (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
       );
       const thumb = p.image_url || sorted[0]?.image_url || null;
-      // Effective selling price: per-location override → product default
-      const effectivePrice = overrideMap.get(p.id) ?? Number(p.price_usd ?? 0);
+      // Always use the product's real list price for markup math.
+      const listPrice = Number(p.price_usd ?? 0);
+      const override = overrideMap.get(p.id);
       return {
         id: p.id,
         name: p.name,
         sku: p.sku,
         cost_usd: p.cost_usd,
-        price_usd: effectivePrice,
+        price_usd: listPrice,
+        location_price_override: override != null ? Number(override) : null,
         wholesale_price_usd: p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : null,
         image_url: thumb,
         stockHere: stockMap.get(p.id) ?? 0,
@@ -231,16 +236,21 @@ export function StockActionDialog({
       return;
     }
     // For consignment receive, derive sell price from per-product override → store default discount.
-    const list = p.price_usd; // list/retail price (or per-location override if set)
+    const list = p.price_usd; // product's real list/retail price
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const savedDiscount = discountOverrideMap.get(p.id);
     const effectiveDiscount = isConsignmentReceive
-      ? discountOverrideMap.get(p.id) ?? storeDiscountPercent ?? 0
+      ? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
     const effectiveMarkup = isConsignmentReceive
       ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
       : 0;
+    // Prefer an explicit per-location sell-price override only when no discount % is saved,
+    // otherwise compute from list * (1 - discount%) so list price drives the math.
     const suggestedStorePrice = isConsignmentReceive
-      ? Math.max(0, list * (1 - effectiveDiscount / 100))
+      ? savedDiscount == null && p.location_price_override != null
+        ? p.location_price_override
+        : Math.max(0, list * (1 - effectiveDiscount / 100))
       : null;
     setLines((prev) => [
       ...prev,
