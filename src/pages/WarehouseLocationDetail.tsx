@@ -16,6 +16,12 @@ import {
   ShoppingCart,
   FileSpreadsheet,
   ExternalLink,
+  Phone,
+  Mail,
+  MapPin,
+  Globe,
+  Instagram,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
