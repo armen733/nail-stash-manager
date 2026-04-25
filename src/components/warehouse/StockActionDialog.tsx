@@ -144,8 +144,8 @@ export function StockActionDialog({
 
   const loadProducts = async () => {
     setLoadingProducts(true);
-    // Fetch products + stock at this location + per-location price overrides.
-    const [prodRes, stockRes, overrideRes] = await Promise.all([
+    // Fetch products + stock at this location + per-location price overrides + (if consignment) per-product discount/markup overrides.
+    const [prodRes, stockRes, overrideRes, sspRes] = await Promise.all([
       supabase
         .from("products")
         .select(
@@ -161,6 +161,12 @@ export function StockActionDialog({
         .from("location_product_prices")
         .select("product_id, price_usd")
         .eq("location_id", locationId),
+      isConsignmentReceive && supplyStoreId
+        ? supabase
+            .from("supply_store_products")
+            .select("product_id, discount_percent_override, markup_percent_override")
+            .eq("supply_store_id", supplyStoreId)
+        : Promise.resolve({ data: [] as any[] } as any),
     ]);
 
     if (prodRes.error) {
@@ -174,6 +180,14 @@ export function StockActionDialog({
     (overrideRes.data ?? []).forEach((r: any) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
     );
+    const dMap = new Map<string, number>();
+    const mMap = new Map<string, number>();
+    (((sspRes as any)?.data ?? []) as any[]).forEach((r) => {
+      if (r.discount_percent_override != null) dMap.set(r.product_id, Number(r.discount_percent_override));
+      if (r.markup_percent_override != null) mMap.set(r.product_id, Number(r.markup_percent_override));
+    });
+    setDiscountOverrideMap(dMap);
+    setMarkupOverrideMap(mMap);
 
     const rows: ProductRow[] = (prodRes.data ?? []).map((p: any) => {
       const sorted = [...(p.product_images ?? [])].sort(
