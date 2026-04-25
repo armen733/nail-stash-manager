@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package, Download } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package, Download, Trash2 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { toast } from "sonner";
 
