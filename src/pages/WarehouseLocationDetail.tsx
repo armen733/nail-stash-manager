@@ -15,6 +15,7 @@ import {
   ClipboardEdit,
   ShoppingCart,
   FileSpreadsheet,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
@@ -69,6 +70,19 @@ export default function WarehouseLocationDetail() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [storeDefaults, setStoreDefaults] = useState<{ discount: number; markup: number } | null>(null);
+  const [storeInfo, setStoreInfo] = useState<{
+    id: string;
+    name: string;
+    status: string | null;
+    contact_name: string | null;
+    phone: string | null;
+    email: string | null;
+    website: string | null;
+    instagram: string | null;
+    city: string | null;
+    address: string | null;
+    notes: string | null;
+  } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const [action, setAction] = useState<StockAction | null>(null);
@@ -104,7 +118,9 @@ export default function WarehouseLocationDetail() {
     if (loc?.type === "consignment" && loc.supply_store_id) {
       const { data: storeData } = await supabase
         .from("supply_stores")
-        .select("default_discount_percent, default_markup_percent")
+        .select(
+          "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, default_discount_percent, default_markup_percent",
+        )
         .eq("id", loc.supply_store_id)
         .maybeSingle();
       if (storeData) {
@@ -112,11 +128,26 @@ export default function WarehouseLocationDetail() {
           discount: Number(storeData.default_discount_percent ?? 0),
           markup: Number(storeData.default_markup_percent ?? 0),
         });
+        setStoreInfo({
+          id: storeData.id,
+          name: storeData.name,
+          status: storeData.status ?? null,
+          contact_name: storeData.contact_name ?? null,
+          phone: storeData.phone ?? null,
+          email: storeData.email ?? null,
+          website: storeData.website ?? null,
+          instagram: storeData.instagram ?? null,
+          city: storeData.city ?? null,
+          address: storeData.address ?? null,
+          notes: storeData.notes ?? null,
+        });
       } else {
         setStoreDefaults(null);
+        setStoreInfo(null);
       }
     } else {
       setStoreDefaults(null);
+      setStoreInfo(null);
     }
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
@@ -255,6 +286,76 @@ export default function WarehouseLocationDetail() {
           <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
       </div>
+
+      {storeInfo && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" /> Store information
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => navigate(`/supply-stores/${storeInfo.id}`)}
+              >
+                Open profile <ExternalLink className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Name</dt>
+                <dd className="font-medium">{storeInfo.name}</dd>
+              </div>
+              {storeInfo.status && (
+                <div>
+                  <dt className="text-[10px] uppercase text-muted-foreground">Status</dt>
+                  <dd>
+                    <Badge variant={storeInfo.status === "active" ? "default" : "secondary"} className="text-[10px]">
+                      {storeInfo.status}
+                    </Badge>
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Contact</dt>
+                <dd className="font-medium">{storeInfo.contact_name || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Phone</dt>
+                <dd className="font-medium">{storeInfo.phone || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Email</dt>
+                <dd className="font-medium break-all">{storeInfo.email || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Website</dt>
+                <dd className="font-medium break-all">{storeInfo.website || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Instagram</dt>
+                <dd className="font-medium">{storeInfo.instagram ? `@${storeInfo.instagram.replace(/^@/, "")}` : <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">City</dt>
+                <dd className="font-medium">{storeInfo.city || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-[10px] uppercase text-muted-foreground">Address</dt>
+                <dd className="font-medium">{storeInfo.address || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              {storeInfo.notes && (
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] uppercase text-muted-foreground">Notes</dt>
+                  <dd className="whitespace-pre-wrap text-sm">{storeInfo.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="stock" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
