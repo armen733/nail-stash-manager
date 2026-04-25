@@ -304,7 +304,10 @@ const Index = () => {
       };
 
       const allSupplyMovements = (supplyMovementsRes.data || []).filter(
-        (m: any) => (m.movement_type === "transfer" || m.movement_type === "sale") && m.to_location_id && storeLocMap.has(m.to_location_id),
+        (m: any) =>
+          (m.movement_type === "transfer" || m.movement_type === "sale" || m.movement_type === "receive") &&
+          m.to_location_id &&
+          storeLocMap.has(m.to_location_id),
       );
       let supplyStoreRevenue = 0;
       let supplyStoreProfit = 0;
