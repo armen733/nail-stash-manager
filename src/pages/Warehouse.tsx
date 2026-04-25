@@ -85,6 +85,7 @@ interface SupplyStoreLite {
   contact_name: string | null;
   phone: string | null;
   email: string | null;
+  website: string | null;
 }
 
 const TYPE_META: Record<
