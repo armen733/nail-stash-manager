@@ -32,7 +32,11 @@ export interface WarehousePin {
 interface Props {
   pins: WarehousePin[];
   className?: string;
+  fullscreen?: boolean;
+  onExitFullscreen?: () => void;
 }
+
+const LOW_STOCK_COLOR = { bg: "#dc2626", ring: "#fca5a5" };
 
 const TYPE_COLOR: Record<WarehousePin["type"], { bg: string; ring: string }> = {
   warehouse: { bg: "#2563eb", ring: "#93c5fd" },
