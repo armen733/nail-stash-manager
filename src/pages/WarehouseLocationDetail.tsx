@@ -584,19 +584,41 @@ export default function WarehouseLocationDetail() {
                           </div>
                           {showProfit && (
                             <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span className="text-muted-foreground">
+                                Cost ${cost.toFixed(2)}
+                              </span>
+                              <span className="text-muted-foreground">→</span>
+                              <span className="text-foreground font-medium">
+                                Sell ${effectivePrice.toFixed(2)}
+                              </span>
+                              <span className="text-muted-foreground">·</span>
                               <span
                                 className={
                                   unitProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
                                 }
                               >
-                                +${unitProfit.toFixed(2)}/unit
+                                +${unitProfit.toFixed(2)} ({profitPct.toFixed(0)}%)
                               </span>
+                            </div>
+                          )}
+                          {showProfit && r.quantity > 0 && (
+                            <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
                               <span className="text-muted-foreground">
-                                ({profitPct.toFixed(0)}%)
+                                Store pays{" "}
+                                <span className="text-foreground font-medium">
+                                  ${(effectivePrice * r.quantity).toFixed(2)}
+                                </span>
                               </span>
                               <span className="text-muted-foreground">·</span>
                               <span className="text-muted-foreground">
-                                ${lineProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} total
+                                Profit{" "}
+                                <span
+                                  className={
+                                    lineProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
+                                  }
+                                >
+                                  ${lineProfit.toFixed(2)}
+                                </span>
                               </span>
                             </div>
                           )}
