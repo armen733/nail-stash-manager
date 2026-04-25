@@ -816,6 +816,17 @@ export default function Warehouse() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <Input
+                    placeholder="https://store.example.com"
+                    value={form.supply_store_website}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, supply_store_website: e.target.value }))
+                    }
+                  />
+                </div>
               </>
             )}
 
