@@ -1277,14 +1277,25 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base sm:text-lg">Top Supply Stores</CardTitle>
-            {allSupplyStores.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setTopSupplyStoresOpen((v) => !v)}
+              className="flex items-center gap-2 text-left flex-1 min-w-0"
+            >
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topSupplyStoresOpen ? "" : "-rotate-90"}`} />
+              <CardTitle className="text-base sm:text-lg truncate">Top Supply Stores</CardTitle>
+              {!topSupplyStoresOpen && topSupplyStores.length > 0 && (
+                <span className="text-xs text-muted-foreground ml-1">({topSupplyStores.length})</span>
+              )}
+            </button>
+            {topSupplyStoresOpen && allSupplyStores.length > 5 && (
               <Button variant="ghost" size="sm" onClick={() => setShowAllSupplyStores(true)} className="text-xs text-primary">
                 View All ({allSupplyStores.length})
                 <ChevronRight className="h-3 w-3 ml-1" />
               </Button>
             )}
           </CardHeader>
+          {topSupplyStoresOpen && (
           <CardContent className="overflow-x-auto">
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -1318,6 +1329,7 @@ const Index = () => {
               </div>
             )}
           </CardContent>
+          )}
         </Card>
 
         <Card className="shadow-[var(--shadow-card)]">
