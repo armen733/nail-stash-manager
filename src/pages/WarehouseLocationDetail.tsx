@@ -404,8 +404,9 @@ export default function WarehouseLocationDetail() {
       )}
 
       <Tabs defaultValue="stock" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="stock">Stock</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
         </TabsList>
 
@@ -469,6 +470,14 @@ export default function WarehouseLocationDetail() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-3">
+          <LocationHistoryTab
+            locationId={location.id}
+            storeDiscountPercent={storeDefaults?.discount ?? 0}
+            isSupplyStore={location.type === "consignment"}
+          />
         </TabsContent>
 
         <TabsContent value="pricing" className="mt-3">
