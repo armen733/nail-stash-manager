@@ -121,18 +121,16 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
   const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [locationNameMap, setLocationNameMap] = useState<Map<string, string>>(
+    new Map(),
+  );
 
   useEffect(() => {
     let active = true;
     (async () => {
       setLoading(true);
-      const since =
-        range === "all"
-          ? null
-          : new Date(
-              Date.now() -
-                ({ "7d": 7, "30d": 30, "90d": 90 } as Record<RangeKey, number>)[range] * 86400000,
-            ).toISOString();
+      const since = rangeSince(range);
+      const until = rangeUntil(range);
 
       let q = supabase
         .from("stock_movements")
@@ -143,6 +141,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         .order("created_at", { ascending: false })
         .limit(500);
       if (since) q = q.gte("created_at", since);
+      if (until) q = q.lt("created_at", until);
 
       // Look up supply_store_id (if any) so we can fetch markup overrides
       const { data: locRow } = await supabase
