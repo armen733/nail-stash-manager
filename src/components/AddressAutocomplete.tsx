@@ -105,12 +105,13 @@ export const AddressAutocomplete = ({
     const address = feature.place_name;
     setQuery(address);
     setShowSuggestions(false);
-    
+
     // Extract city from context
     const cityContext = feature.context?.find(c => c.id.startsWith('place.'));
     const city = cityContext?.text || '';
-    
-    onChange(address, city);
+
+    const [lng, lat] = feature.center ?? [];
+    onChange(address, city, lat, lng);
   };
 
   return (
