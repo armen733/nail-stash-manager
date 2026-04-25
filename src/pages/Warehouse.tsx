@@ -219,8 +219,13 @@ export default function Warehouse() {
       type: "warehouse",
       assigned_user_id: "",
       salon_id: "",
+      supply_store_id: "",
+      consignment_kind: "supply_store",
       notes: "",
       is_active: true,
+      supply_store_address: "",
+      supply_store_lat: null,
+      supply_store_lng: null,
     });
     setDialogOpen(true);
   };
@@ -228,13 +233,21 @@ export default function Warehouse() {
   const openEdit = (loc: StockLocation, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditing(loc);
+    const linkedStore = loc.supply_store_id
+      ? supplyStores.find((s) => s.id === loc.supply_store_id)
+      : null;
     setForm({
       name: loc.name,
       type: loc.type,
       assigned_user_id: loc.assigned_user_id ?? "",
       salon_id: loc.salon_id ?? "",
+      supply_store_id: loc.supply_store_id ?? "",
+      consignment_kind: loc.supply_store_id ? "supply_store" : loc.salon_id ? "salon" : "supply_store",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
+      supply_store_address: linkedStore?.address ?? "",
+      supply_store_lat: linkedStore?.latitude ?? null,
+      supply_store_lng: linkedStore?.longitude ?? null,
     });
     setDialogOpen(true);
   };
