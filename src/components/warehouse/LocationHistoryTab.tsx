@@ -182,7 +182,31 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       });
       setMarkupOverrideMap(mMap);
 
-      setRows(((movRes.data ?? []) as any[]) as MovementRow[]);
+      const movs = ((movRes.data ?? []) as any[]) as MovementRow[];
+
+      // Resolve names for the OTHER side of each movement so we can show
+      // "From: Main Warehouse" etc. in the entry list.
+      const otherIds = new Set<string>();
+      movs.forEach((m) => {
+        if (m.from_location_id && m.from_location_id !== locationId) {
+          otherIds.add(m.from_location_id);
+        }
+        if (m.to_location_id && m.to_location_id !== locationId) {
+          otherIds.add(m.to_location_id);
+        }
+      });
+      const nameMap = new Map<string, string>();
+      if (otherIds.size > 0) {
+        const { data: locs } = await supabase
+          .from("stock_locations")
+          .select("id, name")
+          .in("id", Array.from(otherIds));
+        ((locs ?? []) as any[]).forEach((l) => nameMap.set(l.id, l.name));
+      }
+      if (!active) return;
+      setLocationNameMap(nameMap);
+
+      setRows(movs);
       setLoading(false);
     })();
     return () => {
