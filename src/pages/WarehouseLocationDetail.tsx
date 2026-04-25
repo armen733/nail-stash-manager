@@ -50,6 +50,8 @@ interface StockRow {
   override_price: number | null;
   /** What we sell this unit for at THIS location (supply store discount applied, or per-location override). */
   effective_unit_price: number;
+  /** Suggested resell price the store should charge (markup % over our regular price). */
+  suggested_resell_unit_price: number;
   product: {
     name: string;
     sku: string;
@@ -128,6 +130,7 @@ export default function WarehouseLocationDetail() {
     let storeDiscount = 0;
     let storeMarkup = 0;
     const productDiscountOverrides = new Map<string, number>();
+    const productMarkupOverrides = new Map<string, number>();
 
     if (loc?.type === "consignment" && loc.supply_store_id) {
       const [{ data: storeData }, { data: ssp }] = await Promise.all([
@@ -140,7 +143,7 @@ export default function WarehouseLocationDetail() {
           .maybeSingle(),
         supabase
           .from("supply_store_products")
-          .select("product_id, discount_percent_override")
+          .select("product_id, discount_percent_override, markup_percent_override")
           .eq("supply_store_id", loc.supply_store_id),
       ]);
       if (storeData) {
@@ -169,6 +172,9 @@ export default function WarehouseLocationDetail() {
         if (r.discount_percent_override != null) {
           productDiscountOverrides.set(r.product_id, Number(r.discount_percent_override));
         }
+        if (r.markup_percent_override != null) {
+          productMarkupOverrides.set(r.product_id, Number(r.markup_percent_override));
+        }
       });
     } else {
       setStoreDefaults(null);
@@ -196,10 +202,19 @@ export default function WarehouseLocationDetail() {
           : storeDiscount;
         effective = wholesale * (1 - discountPct / 100);
       }
+      // Suggested resell = what the store should sell at (markup applied to our regular price).
+      let suggestedResell = retail;
+      if (isSupply) {
+        const markupPct = productMarkupOverrides.has(r.product_id)
+          ? productMarkupOverrides.get(r.product_id)!
+          : storeMarkup;
+        suggestedResell = markupPct > 0 ? retail * (1 + markupPct / 100) : retail;
+      }
       return {
         ...r,
         override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
         effective_unit_price: effective,
+        suggested_resell_unit_price: suggestedResell,
       };
     });
     setRows(stockRows as StockRow[]);
@@ -245,6 +260,26 @@ export default function WarehouseLocationDetail() {
     0
   );
   const isSupplyStoreView = location?.type === "consignment" && !!location.supply_store_id;
+  // Supply-store-only earnings projections on current on-hand stock.
+  const ourProfit = isSupplyStoreView
+    ? rows.reduce((s, r) => {
+        const cost =
+          r.product.cost_usd && Number(r.product.cost_usd) > 0
+            ? Number(r.product.cost_usd)
+            : 0;
+        return s + r.quantity * (Number(r.effective_unit_price ?? 0) - cost);
+      }, 0)
+    : 0;
+  const storeEarns = isSupplyStoreView
+    ? rows.reduce(
+        (s, r) =>
+          s +
+          r.quantity *
+            (Number(r.suggested_resell_unit_price ?? 0) - Number(r.effective_unit_price ?? 0)),
+        0,
+      )
+    : 0;
+  const profitMarginPct = totalCost > 0 ? (ourProfit / totalCost) * 100 : 0;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
@@ -323,7 +358,9 @@ export default function WarehouseLocationDetail() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div
+        className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-4"}`}
+      >
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Units</div>
           <div className="text-xl font-bold">{totalUnits.toLocaleString()}</div>
@@ -335,13 +372,39 @@ export default function WarehouseLocationDetail() {
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
           <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-[10px] text-muted-foreground">what these cost us</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">
             {isSupplyStoreView ? "Store pays us" : "Retail value"}
           </div>
           <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          {isSupplyStoreView && (
+            <div className="text-[10px] text-muted-foreground">our sale total</div>
+          )}
         </CardContent></Card>
+        {isSupplyStoreView && (
+          <>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Our profit</div>
+              <div
+                className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                ${ourProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {profitMarginPct.toFixed(0)}% on cost
+              </div>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
+              <div className="text-xl font-bold text-primary">
+                ${storeEarns.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
+            </CardContent></Card>
+          </>
+        )}
       </div>
 
       {storeInfo && (
