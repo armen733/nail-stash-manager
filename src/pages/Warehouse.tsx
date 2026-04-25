@@ -540,7 +540,7 @@ export default function Warehouse() {
             <WarehouseIcon className="h-6 w-6 md:h-7 md:w-7" /> Warehouse
           </h1>
           <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">
-            Track inventory across warehouses, FBA, drivers, and consignment.
+            Track inventory across warehouses, FBA, drivers, and supply stores.
           </p>
         </div>
         {/* Desktop actions */}
@@ -631,7 +631,7 @@ export default function Warehouse() {
                 <SelectItem value="warehouse">Warehouse</SelectItem>
                 <SelectItem value="fba">Amazon FBA</SelectItem>
                 <SelectItem value="driver">Drivers</SelectItem>
-                <SelectItem value="consignment">Consignment</SelectItem>
+                <SelectItem value="consignment">Supply Store</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -682,7 +682,7 @@ export default function Warehouse() {
         <TabsContent value="map" className="mt-3">
           <WarehouseLocationsMap pins={mapPins} />
           <p className="text-[11px] text-muted-foreground mt-2 px-1">
-            Pins show consignment locations linked to supply stores that have coordinates set on their profile.
+            Pins show supply store locations linked to stores that have coordinates set on their profile.
           </p>
         </TabsContent>
       </Tabs>
@@ -717,7 +717,7 @@ export default function Warehouse() {
                   <SelectItem value="warehouse">Warehouse / Office</SelectItem>
                   <SelectItem value="fba">Amazon FBA</SelectItem>
                   <SelectItem value="driver">Driver Van</SelectItem>
-                  <SelectItem value="consignment">Consignment (supply store)</SelectItem>
+                  <SelectItem value="consignment">Supply Store</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -731,7 +731,7 @@ export default function Warehouse() {
                     : form.type === "fba"
                     ? "e.g. Amazon FBA – US"
                     : form.type === "consignment"
-                    ? "e.g. Salon X consignment"
+                    ? "e.g. Universal Nail Supplies"
                     : "e.g. Main Warehouse"
                 }
                 value={form.name}
