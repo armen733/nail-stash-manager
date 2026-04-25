@@ -236,7 +236,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         return;
       }
 
-      // Make sure there's enough stock here to send back
+      // Return whatever stock is still available here; sold units stay sold.
       const { data: stockRow } = await supabase
         .from("product_stock")
         .select("quantity")
@@ -244,10 +244,9 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
         .eq("location_id", locationId)
         .maybeSingle();
       const available = Number(stockRow?.quantity ?? 0);
-      if (available < r.quantity) {
-        toast.error(
-          `Only ${available} unit${available === 1 ? "" : "s"} available here — some have already been sold.`,
-        );
+      const quantityToReturn = Math.min(available, r.quantity);
+      if (quantityToReturn <= 0) {
+        toast.info("No units left at this store to remove");
         setDeleting(false);
         setConfirmDelete(null);
         return;
@@ -260,7 +259,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       const { error: movErr } = await supabase.from("stock_movements").insert({
         product_id: r.product.id,
         movement_type: "transfer",
-        quantity: r.quantity,
+        quantity: quantityToReturn,
         from_location_id: locationId,
         to_location_id: defaultLoc.id,
         unit_cost: r.unit_cost,
@@ -271,7 +270,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       });
       if (movErr) throw movErr;
 
-      toast.success(`Returned ${r.quantity} unit${r.quantity === 1 ? "" : "s"} to ${defaultLoc.name}`);
+      toast.success(`Removed ${quantityToReturn} unit${quantityToReturn === 1 ? "" : "s"} from this store`);
       setConfirmDelete(null);
       setReloadKey((k) => k + 1);
       onStockChanged?.();
@@ -591,11 +590,10 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
             <AlertDialogDescription>
               {confirmDelete && (
                 <>
-                  This will move <span className="font-semibold text-foreground">{confirmDelete.quantity} unit{confirmDelete.quantity === 1 ? "" : "s"}</span> of{" "}
-                  <span className="font-semibold text-foreground">{confirmDelete.product?.name}</span> ({confirmDelete.product?.sku}) back to the default warehouse and remove them from this store.
+                  This will remove the remaining available units from this store and move them back to the default warehouse.
                   <br />
                   <br />
-                  This cannot be undone. If any of these units have already been sold, the action will be blocked.
+                  If some units were already sold, only the units still on hand will be removed.
                 </>
               )}
             </AlertDialogDescription>
