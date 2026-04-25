@@ -128,6 +128,14 @@ const TYPE_META: Record<
 
 const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "driver", "consignment"];
 
+function formatCompactUsd(n: number): string {
+  const v = Math.round(n);
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
+  if (v >= 10_000) return `$${(v / 1000).toFixed(0)}k`;
+  if (v >= 1_000) return `$${(v / 1000).toFixed(1)}k`;
+  return `$${v.toLocaleString()}`;
+}
+
 export default function Warehouse() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState<StockLocation[]>([]);
