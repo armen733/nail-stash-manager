@@ -161,8 +161,8 @@ export function LocationFinancialsTab({ locationId }: Props) {
     let cost = 0;
     rows.forEach((r) => {
       units += r.unitsSold;
-      revenue += r.storePaid;
-      cost += r.ourCost;
+      revenue += r.storeRevenue;
+      cost += r.storeCost;
     });
     const profit = revenue - cost;
     const margin = cost > 0 ? (profit / cost) * 100 : 0;
