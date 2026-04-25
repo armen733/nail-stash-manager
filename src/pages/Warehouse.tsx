@@ -139,6 +139,7 @@ export default function Warehouse() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
