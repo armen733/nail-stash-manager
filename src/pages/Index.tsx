@@ -22,6 +22,9 @@ interface Stats {
   totalProducts: number;
   monthlyRevenue: number;
   totalRevenue: number;
+  supplyStoreRevenue: number;
+  supplyStoreProfit: number;
+  supplyStoreUnits: number;
 }
 
 interface TopSalon {
@@ -109,6 +112,9 @@ const Index = () => {
     totalProducts: 0,
     monthlyRevenue: 0,
     totalRevenue: 0,
+    supplyStoreRevenue: 0,
+    supplyStoreProfit: 0,
+    supplyStoreUnits: 0,
   });
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
@@ -203,13 +209,18 @@ const Index = () => {
       }
 
       // Fetch all stats in parallel
-      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes] = await Promise.all([
+      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes] = await Promise.all([
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
+        supabase.from("supply_stores").select("id, name, default_discount_percent"),
+        supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
+        supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type"),
+        supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
+        supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -232,14 +243,86 @@ const Index = () => {
         return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
       });
 
+      // ===== Supply store revenue calculation =====
+      // Stock leaving our warehouse INTO a supply store location = a wholesale sale to that store.
+      // Revenue = qty * (per-product override OR wholesale_price * (1 - storeDiscount%))
+      // Profit = revenue - (qty * cost_usd or movement.unit_cost)
+      const storeLocMap = new Map<string, string>(); // location_id -> supply_store_id
+      (supplyStoreLocsRes.data || []).forEach((l: any) => {
+        if (l.supply_store_id) storeLocMap.set(l.id, l.supply_store_id);
+      });
+      const storeDiscountMap = new Map<string, number>();
+      (supplyStoresRes.data || []).forEach((s: any) => {
+        storeDiscountMap.set(s.id, Number(s.default_discount_percent) || 0);
+      });
+      const productPricingMap = new Map<string, { wholesale: number; retail: number; cost: number }>();
+      (productPricingRes.data || []).forEach((p: any) => {
+        productPricingMap.set(p.id, {
+          wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
+          retail: Number(p.price_usd ?? 0),
+          cost: Number(p.cost_usd ?? 0),
+        });
+      });
+      const overrideMap = new Map<string, number>(); // `${storeId}:${productId}` -> override discount %
+      (supplyOverridesRes.data || []).forEach((o: any) => {
+        if (o.discount_percent_override !== null && o.discount_percent_override !== undefined) {
+          overrideMap.set(`${o.supply_store_id}:${o.product_id}`, Number(o.discount_percent_override));
+        }
+      });
+
+      const computeSupplyMovementValue = (m: any) => {
+        const storeId = m.to_location_id ? storeLocMap.get(m.to_location_id) : null;
+        if (!storeId) return null;
+        const pricing = productPricingMap.get(m.product_id);
+        if (!pricing) return null;
+        const overrideKey = `${storeId}:${m.product_id}`;
+        const discountPct = overrideMap.has(overrideKey)
+          ? overrideMap.get(overrideKey)!
+          : (storeDiscountMap.get(storeId) ?? 0);
+        const sellPrice = pricing.wholesale * (1 - discountPct / 100);
+        const unitCost = m.unit_cost != null ? Number(m.unit_cost) : pricing.cost;
+        return {
+          revenue: sellPrice * m.quantity,
+          cost: unitCost * m.quantity,
+          units: m.quantity,
+        };
+      };
+
+      const allSupplyMovements = (supplyMovementsRes.data || []).filter(
+        (m: any) => (m.movement_type === "transfer" || m.movement_type === "sale") && m.to_location_id && storeLocMap.has(m.to_location_id),
+      );
+      let supplyStoreRevenue = 0;
+      let supplyStoreProfit = 0;
+      let supplyStoreUnits = 0;
+      allSupplyMovements.forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
+        const v = computeSupplyMovementValue(m);
+        if (!v) return;
+        supplyStoreRevenue += v.revenue;
+        supplyStoreProfit += v.revenue - v.cost;
+        supplyStoreUnits += v.units;
+      });
+
       // Calculate stats
+      const orderRevenuePeriod = periodOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+      const orderRevenueAll = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+      let supplyRevenueAll = 0;
+      allSupplyMovements.forEach((m: any) => {
+        const v = computeSupplyMovementValue(m);
+        if (v) supplyRevenueAll += v.revenue;
+      });
+
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
         totalProducts: productsRes.data?.length || 0,
-        monthlyRevenue: periodOrders.reduce((sum, order) => sum + (order.total || 0), 0),
-        totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
+        monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
+        totalRevenue: orderRevenueAll + supplyRevenueAll,
+        supplyStoreRevenue,
+        supplyStoreProfit,
+        supplyStoreUnits,
       };
       setStats(newStats);
 
@@ -601,9 +684,29 @@ const Index = () => {
       title: `${periodLabel} Revenue`,
       value: loading ? "..." : `$${stats.monthlyRevenue.toFixed(2)}`,
       icon: DollarSign,
-      description: `$${stats.totalRevenue.toFixed(2)} total`,
+      description: stats.supplyStoreRevenue > 0
+        ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores`
+        : `$${stats.totalRevenue.toFixed(2)} total`,
     },
   ];
+
+  // Extra row of supply-store-specific KPIs (only when there's activity)
+  const supplyStoreCards = stats.supplyStoreRevenue > 0 ? [
+    {
+      title: `${periodLabel} Supply Store Sales`,
+      value: `$${stats.supplyStoreRevenue.toFixed(2)}`,
+      icon: TrendingUp,
+      description: `${stats.supplyStoreUnits} units shipped to stores`,
+    },
+    {
+      title: `${periodLabel} Supply Store Profit`,
+      value: `$${stats.supplyStoreProfit.toFixed(2)}`,
+      icon: DollarSign,
+      description: stats.supplyStoreRevenue > 0
+        ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin`
+        : "—",
+    },
+  ] : [];
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -660,6 +763,27 @@ const Index = () => {
           </Card>
         ))}
       </div>
+
+      {supplyStoreCards.length > 0 && (
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+          {supplyStoreCards.map((stat, index) => (
+            <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow border-primary/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className="h-4 w-4 text-primary flex-shrink-0" />
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold truncate">{stat.value}</div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
+                  {stat.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Sales by Category - Pie Chart */}
       <Card className="shadow-[var(--shadow-card)] content-auto">
