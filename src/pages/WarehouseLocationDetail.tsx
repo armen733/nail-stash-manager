@@ -358,7 +358,9 @@ export default function WarehouseLocationDetail() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div
+        className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-4"}`}
+      >
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Units</div>
           <div className="text-xl font-bold">{totalUnits.toLocaleString()}</div>
@@ -370,13 +372,39 @@ export default function WarehouseLocationDetail() {
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
           <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-[10px] text-muted-foreground">what these cost us</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">
             {isSupplyStoreView ? "Store pays us" : "Retail value"}
           </div>
           <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          {isSupplyStoreView && (
+            <div className="text-[10px] text-muted-foreground">our sale total</div>
+          )}
         </CardContent></Card>
+        {isSupplyStoreView && (
+          <>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Our profit</div>
+              <div
+                className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                ${ourProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {profitMarginPct.toFixed(0)}% on cost
+              </div>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
+              <div className="text-xl font-bold text-primary">
+                ${storeEarns.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+              <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
+            </CardContent></Card>
+          </>
+        )}
       </div>
 
       {storeInfo && (
