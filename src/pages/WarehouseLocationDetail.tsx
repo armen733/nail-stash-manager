@@ -547,6 +547,14 @@ export default function WarehouseLocationDetail() {
                     const thumb = r.product.image_url || sorted[0]?.image_url || null;
                     const effectivePrice = Number(r.effective_unit_price ?? 0);
                     const hasOverride = r.override_price !== null;
+                    const cost =
+                      r.product.cost_usd && Number(r.product.cost_usd) > 0
+                        ? Number(r.product.cost_usd)
+                        : 0;
+                    const unitProfit = effectivePrice - cost;
+                    const lineProfit = unitProfit * r.quantity;
+                    const profitPct = cost > 0 ? (unitProfit / cost) * 100 : 0;
+                    const showProfit = isSupplyStoreView && cost > 0;
                     return (
                       <div key={r.product_id} className="flex items-center gap-3 p-3">
                         {thumb ? (
@@ -568,6 +576,24 @@ export default function WarehouseLocationDetail() {
                               </Badge>
                             )}
                           </div>
+                          {showProfit && (
+                            <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={
+                                  unitProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
+                                }
+                              >
+                                +${unitProfit.toFixed(2)}/unit
+                              </span>
+                              <span className="text-muted-foreground">
+                                ({profitPct.toFixed(0)}%)
+                              </span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-muted-foreground">
+                                ${lineProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })} total
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
