@@ -243,7 +243,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
       {/* Fullscreen / exit button */}
-      <div className="absolute top-3 right-3 z-30">
+      <div className={cn("absolute right-3 z-30", isFullscreen ? "top-3" : "top-32")}>
         <Button
           variant="secondary"
           size="sm"
