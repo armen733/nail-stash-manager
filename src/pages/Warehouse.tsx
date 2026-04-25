@@ -45,6 +45,7 @@ interface StockLocation {
   type: LocationType;
   assigned_user_id: string | null;
   salon_id: string | null;
+  supply_store_id: string | null;
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
