@@ -283,7 +283,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
     <div className="space-y-3">
       {/* Analytics summary */}
       {isSupplyStore ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           <Card>
             <CardContent className="pt-4 pb-3">
               <div className="text-[10px] uppercase text-muted-foreground">Received</div>
