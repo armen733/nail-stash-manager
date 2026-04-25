@@ -71,6 +71,19 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
     //   received qty (stock that came IN), sold qty (stock that went OUT as sale or transfer-to-supply-store),
     //   our unit cost, avg sale price, revenue, profit, profit %.
     // Falls back to per-movement rows when no location is selected (cross-location view).
+    // Look up the selected location to know if it's a supply-store/consignment location.
+    let scopedLocation: { id: string; type: string; supply_store_id: string | null } | null = null;
+    if (locationId) {
+      const { data: locRow } = await supabase
+        .from("stock_locations")
+        .select("id, type, supply_store_id")
+        .eq("id", locationId)
+        .maybeSingle();
+      if (locRow) scopedLocation = locRow as any;
+    }
+    const isSupplyStoreLocation =
+      scopedLocation?.type === "consignment" && !!scopedLocation?.supply_store_id;
+
     const [movementsRes, supplyStoresRes, overridesRes] = await Promise.all([
       (() => {
         const q = supabase
@@ -88,23 +101,156 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         if (endISO) q.lt("created_at", endISO);
         return q;
       })(),
-      supabase.from("supply_stores").select("id, name, default_discount_percent"),
-      supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+      supabase
+        .from("supply_stores")
+        .select("id, name, default_discount_percent, default_markup_percent"),
+      supabase
+        .from("supply_store_products")
+        .select(
+          "supply_store_id, product_id, discount_percent_override, markup_percent_override"
+        ),
     ]);
     if (movementsRes.error) throw movementsRes.error;
 
-    const storeById = new Map<string, { name: string; discount: number }>();
+    const storeById = new Map<
+      string,
+      { name: string; discount: number; markup: number }
+    >();
     (supplyStoresRes.data ?? []).forEach((s: any) =>
-      storeById.set(s.id, { name: s.name, discount: Number(s.default_discount_percent) || 0 }),
+      storeById.set(s.id, {
+        name: s.name,
+        discount: Number(s.default_discount_percent) || 0,
+        markup: Number(s.default_markup_percent) || 0,
+      }),
     );
-    const overrideMap = new Map<string, number>();
+    const overrideMap = new Map<
+      string,
+      { discount: number | null; markup: number | null }
+    >();
     (overridesRes.data ?? []).forEach((o: any) => {
-      if (o.discount_percent_override != null) {
-        overrideMap.set(`${o.supply_store_id}:${o.product_id}`, Number(o.discount_percent_override));
-      }
+      overrideMap.set(`${o.supply_store_id}:${o.product_id}`, {
+        discount: o.discount_percent_override != null ? Number(o.discount_percent_override) : null,
+        markup: o.markup_percent_override != null ? Number(o.markup_percent_override) : null,
+      });
     });
 
-    // Per-location per-product aggregation
+    // === Supply-store location: report what WE sold to this store ===
+    if (locationId && isSupplyStoreLocation && scopedLocation) {
+      const storeId = scopedLocation.supply_store_id!;
+      const store = storeById.get(storeId);
+
+      type Agg = {
+        sku: string;
+        product: string;
+        unit_cost: number;
+        wholesale: number;
+        retail: number;
+        discount_pct: number;
+        markup_pct: number;
+        sale_price_to_store: number;
+        recommended_resale_price: number;
+        received_qty: number; // qty we sold to the store (inbound transfers)
+        returned_qty: number; // qty returned from store back to us (outbound transfers)
+        sold_to_customer_qty: number; // qty the store sold to end customers (outbound sale)
+      };
+      const byProduct = new Map<string, Agg>();
+
+      const initAgg = (productId: string, prod: any): Agg => {
+        let a = byProduct.get(productId);
+        if (a) return a;
+        const cost = Number(prod?.cost_usd ?? 0);
+        const wholesale = Number(prod?.wholesale_price_usd ?? prod?.price_usd ?? 0);
+        const retail = Number(prod?.price_usd ?? 0);
+        const overrideKey = `${storeId}:${productId}`;
+        const ov = overrideMap.get(overrideKey);
+        const discountPct =
+          ov?.discount != null ? ov.discount : store?.discount ?? 0;
+        const markupPct = ov?.markup != null ? ov.markup : store?.markup ?? 0;
+        const salePriceToStore = wholesale * (1 - discountPct / 100);
+        const recommendedResale = wholesale * (1 + markupPct / 100);
+        a = {
+          sku: prod?.sku ?? "",
+          product: prod?.name ?? "",
+          unit_cost: cost,
+          wholesale,
+          retail,
+          discount_pct: discountPct,
+          markup_pct: markupPct,
+          sale_price_to_store: salePriceToStore,
+          recommended_resale_price: recommendedResale,
+          received_qty: 0,
+          returned_qty: 0,
+          sold_to_customer_qty: 0,
+        };
+        byProduct.set(productId, a);
+        return a;
+      };
+
+      for (const r of (movementsRes.data ?? []) as any[]) {
+        const pid = r.product_id;
+        if (!pid) continue;
+        const qty = Number(r.quantity) || 0;
+        const inbound = r.to_location_id === locationId;
+        const outbound = r.from_location_id === locationId;
+        const agg = initAgg(pid, r.product);
+
+        // Inbound transfer from our warehouse → this supply store = "we sold to them"
+        if (inbound && (r.movement_type === "transfer" || r.movement_type === "initial")) {
+          agg.received_qty += qty;
+        }
+        // Outbound transfer back to our warehouse = return from store
+        if (outbound && r.movement_type === "transfer") {
+          agg.returned_qty += qty;
+        }
+        // Outbound sale = the store sold to an end customer
+        if (outbound && r.movement_type === "sale") {
+          agg.sold_to_customer_qty += qty;
+        }
+      }
+
+      const rows = Array.from(byProduct.values())
+        .filter((a) => a.received_qty > 0 || a.returned_qty > 0 || a.sold_to_customer_qty > 0)
+        .sort(
+          (a, b) =>
+            b.sale_price_to_store * (b.received_qty - b.returned_qty) -
+            a.sale_price_to_store * (a.received_qty - a.returned_qty),
+        )
+        .map((a) => {
+          const netSoldToStore = a.received_qty - a.returned_qty;
+          const revenue = a.sale_price_to_store * netSoldToStore;
+          const totalCost = a.unit_cost * netSoldToStore;
+          const profit = revenue - totalCost;
+          const profitPct = revenue > 0 ? (profit / revenue) * 100 : 0;
+          const remainingAtStore = netSoldToStore - a.sold_to_customer_qty;
+          return {
+            sku: a.sku,
+            product: a.product,
+            qty_sold_to_store: netSoldToStore,
+            our_unit_cost: a.unit_cost ? a.unit_cost.toFixed(2) : "",
+            wholesale_price: a.wholesale ? a.wholesale.toFixed(2) : "",
+            discount_pct: `${a.discount_pct.toFixed(1)}%`,
+            our_sale_price_to_store: a.sale_price_to_store
+              ? a.sale_price_to_store.toFixed(2)
+              : "",
+            recommended_resale_price: a.recommended_resale_price
+              ? a.recommended_resale_price.toFixed(2)
+              : "",
+            markup_pct: `${a.markup_pct.toFixed(1)}%`,
+            revenue: revenue ? revenue.toFixed(2) : "0.00",
+            total_cost: totalCost ? totalCost.toFixed(2) : "0.00",
+            our_profit: netSoldToStore > 0 ? profit.toFixed(2) : "",
+            profit_pct: revenue > 0 ? `${profitPct.toFixed(1)}%` : "",
+            store_sold_to_customer_qty: a.sold_to_customer_qty,
+            remaining_at_store: remainingAtStore,
+          };
+        });
+
+      if (rows.length === 0) throw new Error("No activity in the selected range");
+      downloadCSV(rows, `sales-by-location-${scope}${dateSuffix(startDate, endDate)}`);
+      return rows.length;
+    }
+
+    // === Regular (warehouse / driver / FBA) per-product aggregation ===
     if (locationId) {
       type Agg = {
         sku: string;
@@ -150,13 +296,14 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
               unitRevenue = r.unit_cost ? Number(r.unit_cost) : Number(r.product?.price_usd ?? 0);
               agg.channels.add("Direct");
             } else if (isTransferToSupply) {
-              const storeId = r.to_loc.supply_store_id;
-              const store = storeById.get(storeId);
+              const toStoreId = r.to_loc.supply_store_id;
+              const toStore = storeById.get(toStoreId);
               const wholesale = Number(r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0);
-              const overrideKey = `${storeId}:${pid}`;
-              const discountPct = overrideMap.has(overrideKey) ? overrideMap.get(overrideKey)! : (store?.discount ?? 0);
+              const overrideKey = `${toStoreId}:${pid}`;
+              const ov = overrideMap.get(overrideKey);
+              const discountPct = ov?.discount != null ? ov.discount : (toStore?.discount ?? 0);
               unitRevenue = wholesale * (1 - discountPct / 100);
-              agg.channels.add(`Supply: ${store?.name ?? "Unknown"}`);
+              agg.channels.add(`Supply: ${toStore?.name ?? "Unknown"}`);
             }
             agg.sold_qty += qty;
             agg.revenue += unitRevenue * qty;
@@ -216,7 +363,8 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
           unitRevenue = r.unit_cost ? Number(r.unit_cost) : Number(r.product?.price_usd ?? 0);
         } else if (isTransferToStore && storeId) {
           const overrideKey = `${storeId}:${productId}`;
-          discountPct = overrideMap.has(overrideKey) ? overrideMap.get(overrideKey)! : (store?.discount ?? 0);
+          const ov = overrideMap.get(overrideKey);
+          discountPct = ov?.discount != null ? ov.discount : (store?.discount ?? 0);
           unitRevenue = wholesale * (1 - discountPct / 100);
         }
         const revenue = unitRevenue * Number(r.quantity);
