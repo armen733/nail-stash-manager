@@ -197,14 +197,16 @@ export function StockActionDialog({
         (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
       );
       const thumb = p.image_url || sorted[0]?.image_url || null;
-      // Effective selling price: per-location override → product default
-      const effectivePrice = overrideMap.get(p.id) ?? Number(p.price_usd ?? 0);
+      // Always use the product's real list price for markup math.
+      const listPrice = Number(p.price_usd ?? 0);
+      const override = overrideMap.get(p.id);
       return {
         id: p.id,
         name: p.name,
         sku: p.sku,
         cost_usd: p.cost_usd,
-        price_usd: effectivePrice,
+        price_usd: listPrice,
+        location_price_override: override != null ? Number(override) : null,
         wholesale_price_usd: p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : null,
         image_url: thumb,
         stockHere: stockMap.get(p.id) ?? 0,
