@@ -711,27 +711,36 @@ export default function WarehouseLocationDetail() {
                               </span>
                             </div>
                           )}
-                          {showProfit && r.quantity > 0 && (
-                            <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
-                              <span className="text-muted-foreground">
-                                Store pays{" "}
-                                <span className="text-foreground font-medium">
-                                  ${(effectivePrice * r.quantity).toFixed(2)}
+                          {showProfit && (() => {
+                            const lt = lifetimeByProduct.get(r.product_id);
+                            if (!lt || lt.units === 0) return null;
+                            const totalProfit = lt.storePaid - lt.ourCost;
+                            return (
+                              <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-muted-foreground">
+                                  Sold{" "}
+                                  <span className="text-foreground font-medium">
+                                    {lt.units}
+                                  </span>{" "}
+                                  · Paid{" "}
+                                  <span className="text-foreground font-medium">
+                                    ${lt.storePaid.toFixed(2)}
+                                  </span>
                                 </span>
-                              </span>
-                              <span className="text-muted-foreground">·</span>
-                              <span className="text-muted-foreground">
-                                Profit{" "}
-                                <span
-                                  className={
-                                    lineProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
-                                  }
-                                >
-                                  ${lineProfit.toFixed(2)}
+                                <span className="text-muted-foreground">·</span>
+                                <span className="text-muted-foreground">
+                                  Total profit{" "}
+                                  <span
+                                    className={
+                                      totalProfit >= 0 ? "text-emerald-500 font-medium" : "text-destructive font-medium"
+                                    }
+                                  >
+                                    ${totalProfit.toFixed(2)}
+                                  </span>
                                 </span>
-                              </span>
-                            </div>
-                          )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
