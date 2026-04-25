@@ -48,10 +48,13 @@ interface StockRow {
   quantity: number;
   reserved: number;
   override_price: number | null;
+  /** What we sell this unit for at THIS location (supply store discount applied, or per-location override). */
+  effective_unit_price: number;
   product: {
     name: string;
     sku: string;
     price_usd: number;
+    wholesale_price_usd: number | null;
     cost_usd: number | null;
     reorder_level: number | null;
     image_url: string | null;
