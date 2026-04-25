@@ -85,14 +85,14 @@ export function LocationPricingTab({ locationId }: Props) {
 
     const next: Row[] = (prodRes.data ?? []).map((p: any) => {
       const defaultPrice = Number(p.price_usd ?? 0);
-      const hasExplicitWholesale = p.wholesale_price_usd != null;
-      const wholesalePrice = hasExplicitWholesale
+      const wholesalePrice = p.wholesale_price_usd != null
         ? Number(p.wholesale_price_usd)
         : defaultPrice;
       const discountPct = discountOverrideMap.has(p.id)
         ? discountOverrideMap.get(p.id)!
         : defaultDiscountPct;
-      const ourSalePrice = supplyStoreId && hasExplicitWholesale
+      // Always compute "store pays us" for supply stores using whatever wholesale basis we have
+      const ourSalePrice = supplyStoreId
         ? wholesalePrice * (1 - discountPct / 100)
         : 0;
       return {
