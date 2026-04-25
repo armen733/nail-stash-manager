@@ -67,6 +67,7 @@ interface LocationStats {
   retail: number;
   skus: number;
   lowSkus: number;
+  lowUnits: number;
 }
 
 interface Profile {
@@ -229,12 +230,15 @@ export default function Warehouse() {
       const costPer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
       const retailPer = prod?.price ?? 0;
       const cur =
-        aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+        aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
       cur.units += qty;
       cur.value += qty * costPer;
       cur.retail += qty * retailPer;
       cur.skus += 1;
-      if (prod && prod.reorder > 0 && qty <= prod.reorder) cur.lowSkus += 1;
+      if (prod && prod.reorder > 0 && qty <= prod.reorder) {
+        cur.lowSkus += 1;
+        cur.lowUnits += qty;
+      }
       aggregated[row.location_id] = cur;
     });
     setStats(aggregated);
@@ -431,7 +435,7 @@ export default function Warehouse() {
         if (loc.type !== "consignment" || !loc.supply_store_id) return null;
         const sup = supplyMap.get(loc.supply_store_id);
         if (!sup || sup.latitude === null || sup.longitude === null) return null;
-        const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+        const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
         return {
           id: loc.id,
           name: loc.name,
@@ -451,7 +455,7 @@ export default function Warehouse() {
   const renderCard = (loc: StockLocation) => {
     const meta = TYPE_META[loc.type];
     const Icon = meta.icon;
-    const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+    const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
     const assignedName =
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
@@ -514,9 +518,9 @@ export default function Warehouse() {
                 Inactive
               </Badge>
             )}
-            {s.lowSkus > 0 && (
+            {s.lowUnits > 0 && (
               <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
-                {s.lowSkus} low
+                {s.lowUnits.toLocaleString()} low {s.lowUnits === 1 ? "unit" : "units"}
               </Badge>
             )}
           </div>
@@ -636,7 +640,7 @@ export default function Warehouse() {
               ) : (
                 [...locations]
                   .map((l) => {
-                    const s = stats[l.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+                    const s = stats[l.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
                     return { loc: l, s };
                   })
                   .sort((a, b) => b.s.retail - a.s.retail)
