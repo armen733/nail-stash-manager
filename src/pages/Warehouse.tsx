@@ -723,24 +723,97 @@ export default function Warehouse() {
             )}
 
             {form.type === "consignment" && (
-              <div className="space-y-2">
-                <Label>Salon / supply store</Label>
-                <Select
-                  value={form.salon_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pick a salon" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {salons.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Linked to</Label>
+                  <Select
+                    value={form.consignment_kind}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, consignment_kind: v as "salon" | "supply_store" }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="supply_store">Supply store</SelectItem>
+                      <SelectItem value="salon">Salon</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.consignment_kind === "salon" ? (
+                  <div className="space-y-2">
+                    <Label>Salon</Label>
+                    <Select
+                      value={form.salon_id}
+                      onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pick a salon" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {salons.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Supply store</Label>
+                      <Select
+                        value={form.supply_store_id}
+                        onValueChange={(v) => {
+                          const store = supplyStores.find((s) => s.id === v);
+                          setForm((f) => ({
+                            ...f,
+                            supply_store_id: v,
+                            supply_store_address: store?.address ?? "",
+                            supply_store_lat: store?.latitude ?? null,
+                            supply_store_lng: store?.longitude ?? null,
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pick a supply store" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {supplyStores.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {form.supply_store_id && (
+                      <div className="space-y-2">
+                        <Label>Store location</Label>
+                        <AddressAutocomplete
+                          value={form.supply_store_address}
+                          onChange={(address, _city, lat, lng) =>
+                            setForm((f) => ({
+                              ...f,
+                              supply_store_address: address,
+                              supply_store_lat: lat ?? f.supply_store_lat,
+                              supply_store_lng: lng ?? f.supply_store_lng,
+                            }))
+                          }
+                          placeholder="Search store address..."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Updating here also updates the supply store profile and map pin.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
 
             <div className="space-y-2">
