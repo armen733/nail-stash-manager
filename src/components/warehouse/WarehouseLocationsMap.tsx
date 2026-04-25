@@ -101,7 +101,8 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
     markersRef.current = [];
 
     pins.forEach((pin) => {
-      const isLow = (pin.lowSkus ?? 0) > 0;
+      const lowUnits = pin.lowUnits ?? 0;
+      const isLow = lowUnits > 0;
       const colors = isLow ? LOW_STOCK_COLOR : TYPE_COLOR[pin.type];
       const el = document.createElement("div");
       el.innerHTML = `
