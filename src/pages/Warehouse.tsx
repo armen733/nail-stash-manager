@@ -129,14 +129,14 @@ export default function Warehouse() {
     name: string;
     type: LocationType;
     assigned_user_id: string;
-    salon_id: string;
+    consignment_target: string; // "salon:<id>" | "supply:<id>" | ""
     notes: string;
     is_active: boolean;
   }>({
     name: "",
     type: "warehouse",
     assigned_user_id: "",
-    salon_id: "",
+    consignment_target: "",
     notes: "",
     is_active: true,
   });
