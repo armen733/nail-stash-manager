@@ -35,6 +35,14 @@ interface TopSalon {
   total_revenue: number;
 }
 
+interface TopSupplyStore {
+  store_id: string;
+  store_name: string;
+  shipment_count: number;
+  units: number;
+  revenue: number;
+}
+
 interface TopProduct {
   product_id: string;
   product_name: string;
