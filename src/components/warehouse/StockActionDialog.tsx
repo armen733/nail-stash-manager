@@ -236,16 +236,21 @@ export function StockActionDialog({
       return;
     }
     // For consignment receive, derive sell price from per-product override → store default discount.
-    const list = p.price_usd; // list/retail price (or per-location override if set)
+    const list = p.price_usd; // product's real list/retail price
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const savedDiscount = discountOverrideMap.get(p.id);
     const effectiveDiscount = isConsignmentReceive
-      ? discountOverrideMap.get(p.id) ?? storeDiscountPercent ?? 0
+      ? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
     const effectiveMarkup = isConsignmentReceive
       ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
       : 0;
+    // Prefer an explicit per-location sell-price override only when no discount % is saved,
+    // otherwise compute from list * (1 - discount%) so list price drives the math.
     const suggestedStorePrice = isConsignmentReceive
-      ? Math.max(0, list * (1 - effectiveDiscount / 100))
+      ? savedDiscount == null && p.location_price_override != null
+        ? p.location_price_override
+        : Math.max(0, list * (1 - effectiveDiscount / 100))
       : null;
     setLines((prev) => [
       ...prev,
