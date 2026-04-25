@@ -287,7 +287,9 @@ export default function Warehouse() {
         l.type === "driver"
           ? profiles.find((p) => p.id === l.assigned_user_id)?.full_name ?? ""
           : l.type === "consignment"
-          ? salons.find((s) => s.id === l.salon_id)?.name ?? ""
+          ? (salons.find((s) => s.id === l.salon_id)?.name ??
+              supplyStores.find((s) => s.id === l.supply_store_id)?.name ??
+              "")
           : "";
       return (
         l.name.toLowerCase().includes(q) ||
@@ -295,7 +297,7 @@ export default function Warehouse() {
         (l.notes ?? "").toLowerCase().includes(q)
       );
     });
-  }, [locations, search, typeFilter, profiles, salons]);
+  }, [locations, search, typeFilter, profiles, salons, supplyStores]);
 
   const grouped = useMemo(() => {
     const g: Record<LocationType, StockLocation[]> = {
