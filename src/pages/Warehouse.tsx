@@ -128,6 +128,14 @@ const TYPE_META: Record<
 
 const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "driver", "consignment"];
 
+function formatCompactUsd(n: number): string {
+  const v = Math.round(n);
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`;
+  if (v >= 10_000) return `$${(v / 1000).toFixed(0)}k`;
+  if (v >= 1_000) return `$${(v / 1000).toFixed(1)}k`;
+  return `$${v.toLocaleString()}`;
+}
+
 export default function Warehouse() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState<StockLocation[]>([]);
@@ -571,54 +579,44 @@ export default function Warehouse() {
 
       {/* Horizontal summary strip */}
       <Card>
-        <CardContent className="py-3 px-4">
+        <CardContent className="py-3 px-3 sm:px-4">
           <button
             type="button"
             onClick={() => setShowBreakdown((v) => !v)}
-            className="w-full flex items-center justify-between gap-2 text-sm flex-nowrap overflow-x-auto"
+            className="w-full flex items-center justify-between gap-1.5 text-xs sm:text-sm flex-wrap"
             aria-expanded={showBreakdown}
           >
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1">
               <span className="font-semibold">{locations.length}</span>
-              <span className="text-muted-foreground text-xs">locations</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">loc</span>
             </div>
-            <div className="h-4 w-px bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="h-3.5 w-px bg-border" />
+            <div className="flex items-center gap-1">
               <span className="font-semibold">{totals.units.toLocaleString()}</span>
-              <span className="text-muted-foreground text-xs">units</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">u</span>
             </div>
-            <div className="h-4 w-px bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="h-3.5 w-px bg-border" />
+            <div className="flex items-center gap-1">
               <span className="font-semibold">{totals.skus.toLocaleString()}</span>
-              <span className="text-muted-foreground text-xs">SKUs</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">SKU</span>
             </div>
-            <div className="h-4 w-px bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="font-semibold">
-                ${totals.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </span>
-              <span className="text-muted-foreground text-xs">cost</span>
+            <div className="h-3.5 w-px bg-border" />
+            <div className="flex items-center gap-1">
+              <span className="font-semibold">{formatCompactUsd(totals.value)}</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">cost</span>
             </div>
-            <div className="h-4 w-px bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="font-semibold text-primary">
-                ${totals.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </span>
-              <span className="text-muted-foreground text-xs">retail</span>
+            <div className="h-3.5 w-px bg-border" />
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-primary">{formatCompactUsd(totals.retail)}</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">retail</span>
             </div>
-            <div className="h-4 w-px bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="font-semibold">
-                {locations.filter((l) => l.is_active).length}
-              </span>
-              <span className="text-muted-foreground text-xs">active</span>
+            <div className="h-3.5 w-px bg-border" />
+            <div className="flex items-center gap-1">
+              <span className="font-semibold">{locations.filter((l) => l.is_active).length}</span>
+              <span className="text-muted-foreground text-[10px] sm:text-xs">active</span>
             </div>
-            <div className="flex-shrink-0 ml-1 text-muted-foreground">
-              {showBreakdown ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
+            <div className="ml-auto text-muted-foreground">
+              {showBreakdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </div>
           </button>
 
@@ -639,34 +637,34 @@ export default function Warehouse() {
                     return (
                       <div
                         key={loc.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm flex-nowrap overflow-x-auto"
+                        className="flex items-center gap-1.5 px-1 py-1.5 rounded-md text-xs sm:text-sm"
                       >
                         {loc.type === "fba" ? (
                           <img src={amazonLogo} alt="" className="h-4 w-4 object-contain flex-shrink-0" loading="lazy" />
                         ) : (
-                          <div className={`p-1 rounded ${meta.color} flex-shrink-0`}>
+                          <div className={`p-0.5 sm:p-1 rounded ${meta.color} flex-shrink-0`}>
                             <Icon className="h-3 w-3" />
                           </div>
                         )}
-                        <div className="min-w-0 truncate text-xs sm:text-sm font-medium flex-shrink-0 max-w-[40%]">
+                        <div className="min-w-0 truncate font-medium max-w-[28%] sm:max-w-[40%]">
                           {loc.name}
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground flex-shrink-0 ml-auto">
-                          <span>
-                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span> u
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs text-muted-foreground ml-auto">
+                          <span className="whitespace-nowrap">
+                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span>
+                            <span className="ml-0.5">u</span>
                           </span>
-                          <span>
-                            <span className="font-semibold text-foreground">{s.skus.toLocaleString()}</span> SKU
+                          <span className="whitespace-nowrap">
+                            <span className="font-semibold text-foreground">{s.skus.toLocaleString()}</span>
+                            <span className="ml-0.5">SKU</span>
                           </span>
-                          <span>
-                            <span className="font-semibold text-foreground">
-                              ${s.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span> cost
+                          <span className="whitespace-nowrap">
+                            <span className="font-semibold text-foreground">{formatCompactUsd(s.value)}</span>
+                            <span className="ml-0.5">cost</span>
                           </span>
-                          <span>
-                            <span className="font-semibold text-primary">
-                              ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span> retail
+                          <span className="whitespace-nowrap">
+                            <span className="font-semibold text-primary">{formatCompactUsd(s.retail)}</span>
+                            <span className="ml-0.5">retail</span>
                           </span>
                         </div>
                       </div>
