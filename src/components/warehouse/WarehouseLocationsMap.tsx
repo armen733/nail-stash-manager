@@ -74,7 +74,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
           transition: transform 0.15s; color: white; font-size: 14px; font-weight: 700;
         " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
-          ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "C" : "D"}
+          ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "S" : "D"}
         </div>
       `;
 
