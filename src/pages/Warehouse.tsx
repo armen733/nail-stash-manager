@@ -33,6 +33,7 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
@@ -40,6 +41,7 @@ import amazonLogoFull from "@/assets/amazon-logo-full.png";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
+import WholesaleDefaultsDialog from "@/components/warehouse/WholesaleDefaultsDialog";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -128,6 +130,7 @@ export default function Warehouse() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
+  const [defaultsOpen, setDefaultsOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -451,13 +454,19 @@ export default function Warehouse() {
         </div>
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setDefaultsOpen(true)}>
+            <Percent className="h-4 w-4 mr-2" /> Wholesale defaults
+          </Button>
           <ExportMenu />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Add location
           </Button>
         </div>
-        {/* Mobile export (Add is FAB) */}
-        <div className="md:hidden">
+        {/* Mobile actions (Add is FAB) */}
+        <div className="md:hidden flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDefaultsOpen(true)}>
+            <Percent className="h-3.5 w-3.5 mr-1.5" /> Defaults
+          </Button>
           <ExportMenu />
         </div>
       </div>
@@ -602,6 +611,8 @@ export default function Warehouse() {
       >
         <Plus className="h-6 w-6" />
       </Button>
+
+      <WholesaleDefaultsDialog open={defaultsOpen} onOpenChange={setDefaultsOpen} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
