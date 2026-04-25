@@ -307,6 +307,7 @@ export default function Warehouse() {
         contact_name: form.supply_store_contact_name.trim() || null,
         phone: form.supply_store_phone.trim() || null,
         email: form.supply_store_email.trim() || null,
+        website: form.supply_store_website.trim() || null,
       };
 
       if (linkedSupplyStoreId) {
