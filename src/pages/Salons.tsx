@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { LogoUploader } from "@/components/LogoUploader";
 
 interface Salon {
   id: string;
@@ -46,6 +47,7 @@ interface Salon {
   address: string | null;
   city: string | null;
   notes: string | null;
+  logo_url: string | null;
 }
 
 const Salons = () => {
@@ -85,6 +87,7 @@ const Salons = () => {
     address: "",
     city: "",
     notes: "",
+    logo_url: "",
   });
 
   useEffect(() => {
@@ -135,6 +138,7 @@ const Salons = () => {
       address: formData.address || null,
       city: formData.city || null,
       notes: formData.notes || null,
+      logo_url: formData.logo_url.trim() || null,
     };
 
     try {
@@ -216,6 +220,7 @@ const Salons = () => {
       address: salon.address || "",
       city: salon.city || "",
       notes: salon.notes || "",
+      logo_url: salon.logo_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -255,6 +260,7 @@ const Salons = () => {
       address: "",
       city: "",
       notes: "",
+      logo_url: "",
     });
     setEditingSalon(null);
   };
