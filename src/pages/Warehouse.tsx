@@ -201,7 +201,7 @@ export default function Warehouse() {
       name: "",
       type: "warehouse",
       assigned_user_id: "",
-      salon_id: "",
+      consignment_target: "",
       notes: "",
       is_active: true,
     });
@@ -215,7 +215,11 @@ export default function Warehouse() {
       name: loc.name,
       type: loc.type,
       assigned_user_id: loc.assigned_user_id ?? "",
-      salon_id: loc.salon_id ?? "",
+      consignment_target: loc.salon_id
+        ? `salon:${loc.salon_id}`
+        : loc.supply_store_id
+          ? `supply:${loc.supply_store_id}`
+          : "",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
     });
@@ -231,16 +235,21 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-    if (form.type === "consignment" && !form.salon_id) {
-      toast.error("Pick a salon for this consignment location");
-      return;
+
+    let salon_id: string | null = null;
+    let supply_store_id: string | null = null;
+    if (form.type === "consignment" && form.consignment_target) {
+      const [kind, id] = form.consignment_target.split(":");
+      if (kind === "salon") salon_id = id;
+      else if (kind === "supply") supply_store_id = id;
     }
 
     const payload = {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id: form.type === "consignment" ? form.salon_id : null,
+      salon_id,
+      supply_store_id,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
