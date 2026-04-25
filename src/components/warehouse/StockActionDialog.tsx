@@ -583,7 +583,11 @@ export function StockActionDialog({
                       </div>
                       <div>
                         <Label className="text-[10px] uppercase text-muted-foreground">
-                          {action === "sale" ? "Unit price" : "Unit cost (opt.)"}
+                          {action === "sale"
+                            ? "Unit price"
+                            : isConsignmentReceive
+                            ? "Sell to store ($/unit)"
+                            : "Unit cost (opt.)"}
                         </Label>
                         <Input
                           inputMode="decimal"
