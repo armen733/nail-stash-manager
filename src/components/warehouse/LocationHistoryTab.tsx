@@ -70,6 +70,9 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
   const [range, setRange] = useState<RangeKey>("30d");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
