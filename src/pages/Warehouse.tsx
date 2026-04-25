@@ -435,6 +435,7 @@ export default function Warehouse() {
           supplyStoreId: sup.id,
           units: s.units,
           skus: s.skus,
+          lowSkus: s.lowSkus,
         };
       })
       .filter((p): p is WarehousePin => p !== null);
