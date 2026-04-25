@@ -65,6 +65,7 @@ export default function SupplyStoreProfile() {
   const [brand, setBrand] = useState<CompanyBrand | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const load = async () => {
     if (!id) return;
