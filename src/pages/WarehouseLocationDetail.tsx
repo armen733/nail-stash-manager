@@ -48,10 +48,13 @@ interface StockRow {
   quantity: number;
   reserved: number;
   override_price: number | null;
+  /** What we sell this unit for at THIS location (supply store discount applied, or per-location override). */
+  effective_unit_price: number;
   product: {
     name: string;
     sku: string;
     price_usd: number;
+    wholesale_price_usd: number | null;
     cost_usd: number | null;
     reorder_level: number | null;
     image_url: string | null;
@@ -102,7 +105,7 @@ export default function WarehouseLocationDetail() {
       supabase
         .from("product_stock")
         .select(
-          "product_id, quantity, reserved, product:products(name, sku, price_usd, cost_usd, reorder_level, image_url, product_images(image_url, display_order))"
+          "product_id, quantity, reserved, product:products(name, sku, price_usd, wholesale_price_usd, cost_usd, reorder_level, image_url, product_images(image_url, display_order))"
         )
         .eq("location_id", id)
         .gt("quantity", 0)
@@ -122,19 +125,28 @@ export default function WarehouseLocationDetail() {
     const loc = (locRes.data ?? null) as StockLocation | null;
     setLocation(loc);
 
+    let storeDiscount = 0;
+    let storeMarkup = 0;
+    const productDiscountOverrides = new Map<string, number>();
+
     if (loc?.type === "consignment" && loc.supply_store_id) {
-      const { data: storeData } = await supabase
-        .from("supply_stores")
-        .select(
-          "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, logo_url, default_discount_percent, default_markup_percent",
-        )
-        .eq("id", loc.supply_store_id)
-        .maybeSingle();
+      const [{ data: storeData }, { data: ssp }] = await Promise.all([
+        supabase
+          .from("supply_stores")
+          .select(
+            "id, name, status, contact_name, phone, email, website, instagram, city, address, notes, logo_url, default_discount_percent, default_markup_percent",
+          )
+          .eq("id", loc.supply_store_id)
+          .maybeSingle(),
+        supabase
+          .from("supply_store_products")
+          .select("product_id, discount_percent_override")
+          .eq("supply_store_id", loc.supply_store_id),
+      ]);
       if (storeData) {
-        setStoreDefaults({
-          discount: Number(storeData.default_discount_percent ?? 0),
-          markup: Number(storeData.default_markup_percent ?? 0),
-        });
+        storeDiscount = Number(storeData.default_discount_percent ?? 0);
+        storeMarkup = Number(storeData.default_markup_percent ?? 0);
+        setStoreDefaults({ discount: storeDiscount, markup: storeMarkup });
         setStoreInfo({
           id: storeData.id,
           name: storeData.name,
@@ -153,18 +165,43 @@ export default function WarehouseLocationDetail() {
         setStoreDefaults(null);
         setStoreInfo(null);
       }
+      ((ssp ?? []) as any[]).forEach((r) => {
+        if (r.discount_percent_override != null) {
+          productDiscountOverrides.set(r.product_id, Number(r.discount_percent_override));
+        }
+      });
     } else {
       setStoreDefaults(null);
       setStoreInfo(null);
     }
+
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
     );
-    const stockRows = ((stockRes.data ?? []) as any[]).map((r) => ({
-      ...r,
-      override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
-    }));
+
+    const isSupply = loc?.type === "consignment" && !!loc.supply_store_id;
+    const stockRows = ((stockRes.data ?? []) as any[]).map((r) => {
+      const product = r.product ?? {};
+      const retail = Number(product.price_usd ?? 0);
+      const wholesale = Number(product.wholesale_price_usd ?? product.price_usd ?? 0);
+      // Effective unit price = what we charge at THIS location.
+      // Priority: per-location explicit price override > supply-store discount > regular retail.
+      let effective = retail;
+      if (overrideMap.has(r.product_id)) {
+        effective = overrideMap.get(r.product_id)!;
+      } else if (isSupply) {
+        const discountPct = productDiscountOverrides.has(r.product_id)
+          ? productDiscountOverrides.get(r.product_id)!
+          : storeDiscount;
+        effective = wholesale * (1 - discountPct / 100);
+      }
+      return {
+        ...r,
+        override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
+        effective_unit_price: effective,
+      };
+    });
     setRows(stockRows as StockRow[]);
     setOtherLocations(
       ((allLocRes.data ?? []) as any[]).filter((l) => l.id !== id).map((l) => ({
@@ -201,12 +238,13 @@ export default function WarehouseLocationDetail() {
       : Number(r.product.price_usd);
     return s + r.quantity * v;
   }, 0);
-  // Retail value uses per-location override if set, falling back to product default.
+  // "Sale value" = what we'd be paid for these units at this location's effective price
+  // (per-location override > supply-store discount > regular retail).
   const totalRetail = rows.reduce(
-    (s, r) =>
-      s + r.quantity * Number(r.override_price ?? r.product.price_usd ?? 0),
+    (s, r) => s + r.quantity * Number(r.effective_unit_price ?? 0),
     0
   );
+  const isSupplyStoreView = location?.type === "consignment" && !!location.supply_store_id;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
@@ -299,7 +337,9 @@ export default function WarehouseLocationDetail() {
           <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">Retail value</div>
+          <div className="text-[10px] text-muted-foreground uppercase">
+            {isSupplyStoreView ? "Store pays us" : "Retail value"}
+          </div>
           <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
         </CardContent></Card>
       </div>
@@ -442,7 +482,7 @@ export default function WarehouseLocationDetail() {
                       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
                     );
                     const thumb = r.product.image_url || sorted[0]?.image_url || null;
-                    const effectivePrice = r.override_price ?? Number(r.product.price_usd ?? 0);
+                    const effectivePrice = Number(r.effective_unit_price ?? 0);
                     const hasOverride = r.override_price !== null;
                     return (
                       <div key={r.product_id} className="flex items-center gap-3 p-3">

@@ -30,18 +30,73 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
     const query = supabase
       .from("product_stock")
       .select(
-        "quantity, reserved, location:stock_locations(name, type), product:products(name, sku, cost_usd, price_usd, reorder_level)"
+        "product_id, location_id, quantity, reserved, location:stock_locations(name, type, supply_store_id), product:products(name, sku, cost_usd, price_usd, wholesale_price_usd, reorder_level)"
       )
       .gt("quantity", 0)
       .order("quantity", { ascending: false });
     if (locationId) query.eq("location_id", locationId);
     const { data, error } = await query;
     if (error) throw error;
-    const rows = (data ?? []).map((r: any) => {
+    const stockRows = (data ?? []) as any[];
+
+    // For supply-store rows, the "sale price" is what the store pays us:
+    // wholesale × (1 − discount%), with per-product overrides winning.
+    const supplyStoreIds = Array.from(
+      new Set(
+        stockRows
+          .map((r) => r.location?.supply_store_id)
+          .filter((v) => !!v) as string[]
+      )
+    );
+
+    let storeDiscountById = new Map<string, number>();
+    let overrideMap = new Map<string, number>(); // key = `${storeId}:${productId}`
+    let supplyLocIds = new Set<string>();
+    if (supplyStoreIds.length > 0) {
+      const [storesRes, overridesRes] = await Promise.all([
+        supabase
+          .from("supply_stores")
+          .select("id, default_discount_percent")
+          .in("id", supplyStoreIds),
+        supabase
+          .from("supply_store_products")
+          .select("supply_store_id, product_id, discount_percent_override")
+          .in("supply_store_id", supplyStoreIds),
+      ]);
+      ((storesRes.data ?? []) as any[]).forEach((s) =>
+        storeDiscountById.set(s.id, Number(s.default_discount_percent) || 0)
+      );
+      ((overridesRes.data ?? []) as any[]).forEach((o) => {
+        if (o.discount_percent_override != null) {
+          overrideMap.set(
+            `${o.supply_store_id}:${o.product_id}`,
+            Number(o.discount_percent_override)
+          );
+        }
+      });
+      stockRows.forEach((r) => {
+        if (r.location?.supply_store_id) supplyLocIds.add(r.location_id);
+      });
+    }
+
+    const rows = stockRows.map((r: any) => {
       const cost = r.product?.cost_usd && Number(r.product.cost_usd) > 0
         ? Number(r.product.cost_usd)
         : Number(r.product?.price_usd ?? 0);
       const retail = Number(r.product?.price_usd ?? 0);
+      const isSupply = !!r.location?.supply_store_id;
+      let unitSale = retail;
+      if (isSupply) {
+        const storeId = r.location.supply_store_id;
+        const wholesale = Number(
+          r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0
+        );
+        const overrideKey = `${storeId}:${r.product_id}`;
+        const discountPct = overrideMap.has(overrideKey)
+          ? overrideMap.get(overrideKey)!
+          : storeDiscountById.get(storeId) ?? 0;
+        unitSale = wholesale * (1 - discountPct / 100);
+      }
       return {
         location: r.location?.name ?? "",
         location_type: r.location?.type ?? "",
@@ -50,9 +105,9 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         quantity: r.quantity,
         reserved: r.reserved,
         unit_cost: cost.toFixed(2),
-        unit_retail: retail.toFixed(2),
+        unit_sale_price: unitSale.toFixed(2),
         total_cost_value: (Number(r.quantity) * cost).toFixed(2),
-        total_retail_value: (Number(r.quantity) * retail).toFixed(2),
+        total_sale_value: (Number(r.quantity) * unitSale).toFixed(2),
         reorder_level: r.product?.reorder_level ?? "",
       };
     });
