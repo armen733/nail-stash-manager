@@ -339,23 +339,23 @@ export function LocationFinancialsTab({ locationId }: Props) {
                   <div className="text-muted-foreground leading-none">Units sold</div>
                   <div className="mt-1 font-semibold">{r.unitsSold}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    avg ${r.avgSellPrice.toFixed(2)}/u
+                    retail ${r.avgRetailPrice.toFixed(2)}/u
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
                   <div className="text-muted-foreground leading-none">Revenue</div>
                   <div className="mt-1 font-semibold text-primary">
-                    {formatMoney(r.storePaid)}
+                    {formatMoney(r.storeRevenue)}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    store paid
+                    store earns
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                  <div className="text-muted-foreground leading-none">Our cost</div>
-                  <div className="mt-1 font-semibold">{formatMoney(r.ourCost)}</div>
+                  <div className="text-muted-foreground leading-none">Expense</div>
+                  <div className="mt-1 font-semibold">{formatMoney(r.storeCost)}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    factory
+                    paid us ${r.avgWholesalePrice.toFixed(2)}/u
                   </div>
                 </div>
               </div>
