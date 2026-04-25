@@ -260,6 +260,26 @@ export default function WarehouseLocationDetail() {
     0
   );
   const isSupplyStoreView = location?.type === "consignment" && !!location.supply_store_id;
+  // Supply-store-only earnings projections on current on-hand stock.
+  const ourProfit = isSupplyStoreView
+    ? rows.reduce((s, r) => {
+        const cost =
+          r.product.cost_usd && Number(r.product.cost_usd) > 0
+            ? Number(r.product.cost_usd)
+            : 0;
+        return s + r.quantity * (Number(r.effective_unit_price ?? 0) - cost);
+      }, 0)
+    : 0;
+  const storeEarns = isSupplyStoreView
+    ? rows.reduce(
+        (s, r) =>
+          s +
+          r.quantity *
+            (Number(r.suggested_resell_unit_price ?? 0) - Number(r.effective_unit_price ?? 0)),
+        0,
+      )
+    : 0;
+  const profitMarginPct = totalCost > 0 ? (ourProfit / totalCost) * 100 : 0;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
