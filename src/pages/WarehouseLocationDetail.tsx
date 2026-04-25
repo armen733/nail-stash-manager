@@ -612,10 +612,15 @@ export default function WarehouseLocationDetail() {
       )}
 
       <Tabs defaultValue="stock" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList
+          className={`grid w-full ${isSupplyStoreView ? "grid-cols-4" : "grid-cols-3"}`}
+        >
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          {isSupplyStoreView && (
+            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="stock" className="mt-3">
