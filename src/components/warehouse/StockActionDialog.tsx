@@ -112,9 +112,24 @@ export function StockActionDialog({
   locationName,
   locationType,
   storeDiscountPercent = 0,
+  storeMarkupPercent = 0,
+  supplyStoreId = null,
   otherLocations = [],
   onDone,
 }: Props) {
+  const meta = ACTION_META[action];
+  const isConsignmentReceive = action === "receive" && locationType === "consignment";
+
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [search, setSearch] = useState("");
+  const [lines, setLines] = useState<LineItem[]>([]);
+  const [reason, setReason] = useState("");
+  const [destLocationId, setDestLocationId] = useState("");
+  const [saving, setSaving] = useState(false);
+  // Per-product saved overrides for this supply store, used to seed lines
+  const [discountOverrideMap, setDiscountOverrideMap] = useState<Map<string, number>>(new Map());
+  const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
   const meta = ACTION_META[action];
   const isConsignmentReceive = action === "receive" && locationType === "consignment";
 
