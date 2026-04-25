@@ -40,6 +40,7 @@ import amazonLogoFull from "@/assets/amazon-logo-full.png";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
