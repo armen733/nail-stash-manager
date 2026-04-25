@@ -82,6 +82,9 @@ interface SupplyStoreLite {
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
 }
 
 const TYPE_META: Record<
@@ -146,6 +149,9 @@ export default function Warehouse() {
     supply_store_city: string;
     supply_store_lat: number | null;
     supply_store_lng: number | null;
+    supply_store_contact_name: string;
+    supply_store_phone: string;
+    supply_store_email: string;
   }>({
     name: "",
     type: "warehouse",
@@ -158,6 +164,9 @@ export default function Warehouse() {
     supply_store_city: "",
     supply_store_lat: null,
     supply_store_lng: null,
+    supply_store_contact_name: "",
+    supply_store_phone: "",
+    supply_store_email: "",
   });
 
   const loadData = async () => {
@@ -170,7 +179,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -228,6 +237,9 @@ export default function Warehouse() {
       supply_store_city: "",
       supply_store_lat: null,
       supply_store_lng: null,
+      supply_store_contact_name: "",
+      supply_store_phone: "",
+      supply_store_email: "",
     });
     setDialogOpen(true);
   };
@@ -250,6 +262,9 @@ export default function Warehouse() {
       supply_store_city: linkedStore?.city ?? "",
       supply_store_lat: linkedStore?.latitude ?? null,
       supply_store_lng: linkedStore?.longitude ?? null,
+      supply_store_contact_name: linkedStore?.contact_name ?? "",
+      supply_store_phone: linkedStore?.phone ?? "",
+      supply_store_email: linkedStore?.email ?? "",
     });
     setDialogOpen(true);
   };
@@ -284,6 +299,9 @@ export default function Warehouse() {
         city: form.supply_store_city.trim() || null,
         latitude: form.supply_store_lat,
         longitude: form.supply_store_lng,
+        contact_name: form.supply_store_contact_name.trim() || null,
+        phone: form.supply_store_phone.trim() || null,
+        email: form.supply_store_email.trim() || null,
       };
 
       if (linkedSupplyStoreId) {
@@ -737,25 +755,62 @@ export default function Warehouse() {
             )}
 
             {form.type === "consignment" && (
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <AddressAutocomplete
-                  value={form.supply_store_address}
-                  onChange={(address, city, lat, lng) =>
-                    setForm((f) => ({
-                      ...f,
-                      supply_store_address: address,
-                      supply_store_city: city ?? f.supply_store_city,
-                      supply_store_lat: lat ?? f.supply_store_lat,
-                      supply_store_lng: lng ?? f.supply_store_lng,
-                    }))
-                  }
-                  placeholder="Search supply store address..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  Pick a suggestion to save the supply store location and show it on the map.
-                </p>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <AddressAutocomplete
+                    value={form.supply_store_address}
+                    onChange={(address, city, lat, lng) =>
+                      setForm((f) => ({
+                        ...f,
+                        supply_store_address: address,
+                        supply_store_city: city ?? f.supply_store_city,
+                        supply_store_lat: lat ?? f.supply_store_lat,
+                        supply_store_lng: lng ?? f.supply_store_lng,
+                      }))
+                    }
+                    placeholder="Search supply store address..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Pick a suggestion to save the supply store location and show it on the map.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Contact name</Label>
+                  <Input
+                    placeholder="Owner / manager"
+                    value={form.supply_store_contact_name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, supply_store_contact_name: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input
+                      placeholder="(555) 123-4567"
+                      value={form.supply_store_phone}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, supply_store_phone: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="store@example.com"
+                      value={form.supply_store_email}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, supply_store_email: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
