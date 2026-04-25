@@ -17,7 +17,8 @@ interface Row {
   cost: number;
   defaultPrice: number;
   wholesalePrice: number;
-  ourSalePrice: number; // wholesale * (1 - discount%)
+  ourSalePrice: number; // wholesale * (1 - discount%) — what the store pays us
+  suggestedResell: number; // ourSalePrice * (1 + markup%) — what we suggest store sells at
   stockHere: number;
 }
 
