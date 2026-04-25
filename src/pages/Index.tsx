@@ -1852,6 +1852,47 @@ const Index = () => {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <SupplyStoreStockHistory
+        storeId={selectedStoreId}
+        storeName={selectedStoreName}
+        open={!!selectedStoreId}
+        onOpenChange={(open) => { if (!open) setSelectedStoreId(null); }}
+      />
+
+      <Sheet open={showAllSupplyStores} onOpenChange={setShowAllSupplyStores}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>All Supply Stores Ranking</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+            <div className="space-y-2 pr-4">
+              {allSupplyStores.map((store, index) => (
+                <div
+                  key={store.store_id}
+                  className="flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setShowAllSupplyStores(false);
+                    setSelectedStoreId(store.store_id);
+                    setSelectedStoreName(store.store_name);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
+                    <div>
+                      <p className="font-medium">{store.store_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {store.shipment_count} {store.shipment_count === 1 ? "shipment" : "shipments"} · {store.units} units
+                      </p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-primary">${store.revenue.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
