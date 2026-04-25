@@ -1273,9 +1273,50 @@ const Index = () => {
 
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setTopProductsOpen((v) => !v)}
+            <CardTitle className="text-base sm:text-lg">Top Supply Stores</CardTitle>
+            {allSupplyStores.length > 5 && (
+              <Button variant="ghost" size="sm" onClick={() => setShowAllSupplyStores(true)} className="text-xs text-primary">
+                View All ({allSupplyStores.length})
+                <ChevronRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : topSupplyStores.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No stock has been sent to supply stores in this period.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {topSupplyStores.map((store) => (
+                  <div
+                    key={store.store_id}
+                    className="flex items-center justify-between border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                    onClick={() => {
+                      setSelectedStoreId(store.store_id);
+                      setSelectedStoreName(store.store_name);
+                    }}
+                  >
+                    <div>
+                      <p className="font-medium">{store.store_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {store.shipment_count} {store.shipment_count === 1 ? "shipment" : "shipments"} · {store.units} units
+                      </p>
+                    </div>
+                    <p className="font-semibold text-primary">${store.revenue.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-[var(--shadow-card)]">
               className="flex items-center gap-2 text-left flex-1 min-w-0"
             >
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topProductsOpen ? "" : "-rotate-90"}`} />
