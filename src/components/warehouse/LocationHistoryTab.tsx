@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package } from "lucide-react";
+import { PackagePlus, ShoppingCart, ArrowLeftRight, ClipboardEdit, RotateCcw, Package, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/csv-export";
+import { toast } from "sonner";
 
 const TZ = "America/Los_Angeles";
 const formatInPacific = (utc: string, opts: Intl.DateTimeFormatOptions) =>
@@ -235,6 +238,64 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
             <SelectItem value="sale">Sold only</SelectItem>
           </SelectContent>
         </Select>
+        {isSupplyStore && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={() => {
+              const receivedRows = rows.filter(
+                (r) => r.movement_type === "receive" && r.to_location_id === locationId && r.product,
+              );
+              if (receivedRows.length === 0) {
+                toast.error("No received entries to export in this range");
+                return;
+              }
+              const data = receivedRows.map((r) => {
+                const cost =
+                  r.unit_cost != null ? Number(r.unit_cost) : Number(r.product!.cost_usd ?? 0);
+                const wholesale = Number(
+                  r.product!.wholesale_price_usd ?? r.product!.price_usd ?? 0,
+                );
+                const recommendedRetail = Number(r.product!.price_usd ?? 0);
+                const fallbackStorePrice = wholesale * (1 - (storeDiscountPercent || 0) / 100);
+                const sellToStore = overrideMap.get(r.product!.id) ?? fallbackStorePrice;
+                const discountPct =
+                  wholesale > 0
+                    ? ((wholesale - sellToStore) / wholesale) * 100
+                    : storeDiscountPercent || 0;
+                const lineRevenue = sellToStore * r.quantity;
+                const lineCost = cost * r.quantity;
+                const lineProfit = lineRevenue - lineCost;
+                const margin = lineRevenue > 0 ? (lineProfit / lineRevenue) * 100 : 0;
+                return {
+                  Date: formatInPacific(r.created_at, {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                  }),
+                  SKU: r.product!.sku,
+                  Product: r.product!.name,
+                  Quantity: r.quantity,
+                  "Our Cost (unit)": cost.toFixed(2),
+                  "Wholesale (unit)": wholesale.toFixed(2),
+                  "Discount %": discountPct.toFixed(1),
+                  "Sell to Store (unit)": sellToStore.toFixed(2),
+                  "Recommended Retail (unit)": recommendedRetail.toFixed(2),
+                  "Total Cost": lineCost.toFixed(2),
+                  "Total Sell to Store": lineRevenue.toFixed(2),
+                  "Projected Profit": lineProfit.toFixed(2),
+                  "Margin %": margin.toFixed(1),
+                  Notes: r.reason ?? "",
+                };
+              });
+              downloadCSV(data, "supply-store-deliveries");
+              toast.success(`Exported ${data.length} delivery line${data.length === 1 ? "" : "s"}`);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1.5" /> Export
+          </Button>
+        )}
         <span className="text-xs text-muted-foreground ml-auto">
           {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}
         </span>
