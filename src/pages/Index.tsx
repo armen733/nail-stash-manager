@@ -112,6 +112,9 @@ const Index = () => {
     totalProducts: 0,
     monthlyRevenue: 0,
     totalRevenue: 0,
+    supplyStoreRevenue: 0,
+    supplyStoreProfit: 0,
+    supplyStoreUnits: 0,
   });
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
