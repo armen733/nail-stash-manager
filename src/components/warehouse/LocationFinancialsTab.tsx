@@ -151,7 +151,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
         storeCost,
         profit,
         marginPct,
-        avgRetailPrice: retail,
+        avgRetailPrice: suggestedRetail,
         avgWholesalePrice,
       });
     }
