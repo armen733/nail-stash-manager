@@ -311,6 +311,13 @@ const Salons = () => {
                 <DialogTitle>{editingSalon ? "Edit Salon" : "Add New Salon"}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <LogoUploader
+                  value={formData.logo_url}
+                  onChange={(url) => setFormData({ ...formData, logo_url: url })}
+                  folder="salons"
+                  label="Salon logo"
+                />
+
                 <div className="space-y-2">
                   <Label htmlFor="name">Salon Name *</Label>
                   <Input
@@ -389,13 +396,6 @@ const Salons = () => {
                     className="min-h-[44px]"
                   />
                 </div>
-
-                <LogoUploader
-                  value={formData.logo_url}
-                  onChange={(url) => setFormData({ ...formData, logo_url: url })}
-                  folder="salons"
-                  label="Salon logo"
-                />
 
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
