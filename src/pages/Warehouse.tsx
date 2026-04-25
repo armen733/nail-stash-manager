@@ -137,15 +137,25 @@ export default function Warehouse() {
     type: LocationType;
     assigned_user_id: string;
     salon_id: string;
+    supply_store_id: string;
+    consignment_kind: "salon" | "supply_store";
     notes: string;
     is_active: boolean;
+    supply_store_address: string;
+    supply_store_lat: number | null;
+    supply_store_lng: number | null;
   }>({
     name: "",
     type: "warehouse",
     assigned_user_id: "",
     salon_id: "",
+    supply_store_id: "",
+    consignment_kind: "supply_store",
     notes: "",
     is_active: true,
+    supply_store_address: "",
+    supply_store_lat: null,
+    supply_store_lng: null,
   });
 
   const loadData = async () => {
