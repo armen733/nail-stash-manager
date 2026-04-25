@@ -117,7 +117,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
     return () => {
       active = false;
     };
-  }, [locationId, range]);
+  }, [locationId, range, reloadKey]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return rows;
