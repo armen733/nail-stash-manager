@@ -232,7 +232,7 @@ export default function WarehouseLocationDetail() {
         <div className="min-w-0 flex-1">
           <h1 className="text-xl md:text-2xl font-bold truncate">{location.name}</h1>
           <div className="flex items-center gap-1 mt-1 flex-wrap">
-            <Badge variant="secondary" className="text-xs">{location.type}</Badge>
+            <Badge variant="secondary" className="text-xs">{location.type === "consignment" ? "supply store" : location.type}</Badge>
             {location.is_default && <Badge variant="outline" className="text-xs">Default</Badge>}
             {!location.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
           </div>
