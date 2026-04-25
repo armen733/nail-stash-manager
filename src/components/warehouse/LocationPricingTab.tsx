@@ -105,8 +105,10 @@ export function LocationPricingTab({ locationId }: Props) {
       const ourSalePrice = supplyStoreId
         ? wholesalePrice * (1 - discountPct / 100)
         : 0;
+      // Suggested resell is based on the product's regular retail price,
+      // not the discounted wholesale we charge the store.
       const suggestedResell = supplyStoreId
-        ? ourSalePrice * (1 + markupPct / 100)
+        ? defaultPrice * (1 + markupPct / 100)
         : 0;
       return {
         product_id: p.id,
