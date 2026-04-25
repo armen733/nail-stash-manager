@@ -487,6 +487,7 @@ export default function WarehouseLocationDetail() {
           <LocationHistoryTab
             locationId={location.id}
             storeDiscountPercent={storeDefaults?.discount ?? 0}
+            storeMarkupPercent={storeDefaults?.markup ?? 0}
             isSupplyStore={location.type === "consignment"}
           />
         </TabsContent>
