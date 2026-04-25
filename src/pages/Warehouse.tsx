@@ -269,6 +269,7 @@ export default function Warehouse() {
       supply_store_contact_name: linkedStore?.contact_name ?? "",
       supply_store_phone: linkedStore?.phone ?? "",
       supply_store_email: linkedStore?.email ?? "",
+      supply_store_website: linkedStore?.website ?? "",
     });
     setDialogOpen(true);
   };
