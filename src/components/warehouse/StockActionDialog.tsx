@@ -37,7 +37,10 @@ interface ProductRow {
   name: string;
   sku: string;
   cost_usd: number | null;
+  /** Product's real registered list/retail price (always from products.price_usd) */
   price_usd: number;
+  /** Optional per-location sell-price override (what we previously charged this location) */
+  location_price_override: number | null;
   wholesale_price_usd: number | null;
   image_url: string | null;
   stockHere: number;
