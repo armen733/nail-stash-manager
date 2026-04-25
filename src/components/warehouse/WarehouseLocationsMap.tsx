@@ -252,7 +252,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
             const count = pins.filter((p) => p.type === key).length;
             if (count === 0) return null;
-            const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Consignment" : "Driver";
+            const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
               <div key={key} className="flex items-center gap-1.5">
                 <span
