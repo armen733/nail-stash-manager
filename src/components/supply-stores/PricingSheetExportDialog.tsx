@@ -147,6 +147,43 @@ export const PricingSheetExportDialog = ({
     onOpenChange(false);
   };
 
+  const handlePrint = () => {
+    const picked = products.filter((p) => selected.has(p.id));
+    if (picked.length === 0) {
+      toast.error("Pick at least one product");
+      return;
+    }
+    const rows = picked.map((p) => ({
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      basePrice: Number(p.price_usd ?? 0),
+      discountPercent: discount,
+      markupPercent: markup,
+    }));
+    openPrintableCatalog({
+      brand: brand ?? {
+        company_name: "",
+        logo_url: null,
+        contact_phone: null,
+        contact_email: null,
+        website: null,
+        instagram: null,
+        address: null,
+        tagline: null,
+      },
+      store: {
+        name: storeInfo?.name ?? scopeName ?? "Wholesale Partner",
+        contact_name: storeInfo?.contact_name ?? null,
+        phone: storeInfo?.phone ?? null,
+        email: storeInfo?.email ?? null,
+        address: storeInfo?.address ?? null,
+      },
+      rows,
+    });
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
