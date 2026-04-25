@@ -363,6 +363,37 @@ const Index = () => {
       setAllSalons(allSalonsData);
       setTopSalons(allSalonsData.slice(0, 5));
 
+      // ===== Top supply stores (by revenue in selected period) =====
+      const storeNameMap = new Map<string, string>();
+      (supplyStoresRes.data || []).forEach((s: any) => storeNameMap.set(s.id, s.name));
+      const storeStats = new Map<string, { revenue: number; units: number; shipments: Set<string> }>();
+      allSupplyMovements.forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
+        const storeId = m.to_location_id ? storeLocMap.get(m.to_location_id) : null;
+        if (!storeId) return;
+        const v = computeSupplyMovementValue(m);
+        if (!v) return;
+        if (!storeStats.has(storeId)) {
+          storeStats.set(storeId, { revenue: 0, units: 0, shipments: new Set() });
+        }
+        const s = storeStats.get(storeId)!;
+        s.revenue += v.revenue;
+        s.units += v.units;
+        s.shipments.add(`${m.created_at.split("T")[0]}__${m.reason ?? ""}`);
+      });
+      const allSupplyStoresData: TopSupplyStore[] = Array.from(storeStats.entries())
+        .map(([id, s]) => ({
+          store_id: id,
+          store_name: storeNameMap.get(id) ?? "Unknown store",
+          shipment_count: s.shipments.size,
+          units: s.units,
+          revenue: s.revenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+      setAllSupplyStores(allSupplyStoresData);
+      setTopSupplyStores(allSupplyStoresData.slice(0, 5));
+
       // Calculate top products
       const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
         const productId = item.product_id;
