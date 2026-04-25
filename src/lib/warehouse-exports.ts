@@ -67,28 +67,28 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
   const endISO = endDate ? new Date(new Date(`${endDate}T00:00:00`).getTime() + 86400000).toISOString() : null;
 
   if (type === "sales") {
-    // "Sales" = stock leaving a location: movement_type 'sale' (sold to end customer) and 'transfer'
-    // (e.g., goods shipped to a supply store) are both relevant. We include both so a Main Warehouse
-    // export shows what left, and a supply-store export shows what we shipped to them.
-    // Need supply store info to compute per-store discounted price.
-    const [movementsRes, supplyStoresRes, supplyLocsRes, overridesRes] = await Promise.all([
+    // Per-product summary for the selected location:
+    //   received qty (stock that came IN), sold qty (stock that went OUT as sale or transfer-to-supply-store),
+    //   our unit cost, avg sale price, revenue, profit, profit %.
+    // Falls back to per-movement rows when no location is selected (cross-location view).
+    const [movementsRes, supplyStoresRes, overridesRes] = await Promise.all([
       (() => {
         const q = supabase
           .from("stock_movements")
           .select(
-            "created_at, quantity, unit_cost, reason, movement_type, from_location_id, to_location_id, product_id, from_loc:stock_locations!stock_movements_from_location_id_fkey(name, type, supply_store_id), to_loc:stock_locations!stock_movements_to_location_id_fkey(name, type, supply_store_id), product:products(name, sku, cost_usd, wholesale_price_usd, price_usd), creator:profiles!stock_movements_created_by_fkey(full_name)"
+            "created_at, quantity, unit_cost, movement_type, from_location_id, to_location_id, product_id, from_loc:stock_locations!stock_movements_from_location_id_fkey(name, supply_store_id), to_loc:stock_locations!stock_movements_to_location_id_fkey(name, supply_store_id), product:products(name, sku, cost_usd, wholesale_price_usd, price_usd)"
           )
-          .in("movement_type", ["sale", "transfer"])
           .order("created_at", { ascending: false });
         if (locationId) {
           q.or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`);
+        } else {
+          q.in("movement_type", ["sale", "transfer"]);
         }
         if (startISO) q.gte("created_at", startISO);
         if (endISO) q.lt("created_at", endISO);
         return q;
       })(),
       supabase.from("supply_stores").select("id, name, default_discount_percent"),
-      supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
     ]);
     if (movementsRes.error) throw movementsRes.error;
@@ -104,15 +104,103 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
       }
     });
 
+    // Per-location per-product aggregation
+    if (locationId) {
+      type Agg = {
+        sku: string;
+        product: string;
+        unit_cost: number;
+        received_qty: number;
+        sold_qty: number;
+        revenue: number;
+        sale_count: number;
+        channels: Set<string>;
+      };
+      const byProduct = new Map<string, Agg>();
+
+      const getAgg = (productId: string, sku: string, name: string, cost: number): Agg => {
+        let a = byProduct.get(productId);
+        if (!a) {
+          a = { sku, product: name, unit_cost: cost, received_qty: 0, sold_qty: 0, revenue: 0, sale_count: 0, channels: new Set() };
+          byProduct.set(productId, a);
+        }
+        return a;
+      };
+
+      for (const r of (movementsRes.data ?? []) as any[]) {
+        const pid = r.product_id;
+        if (!pid) continue;
+        const cost = Number(r.product?.cost_usd ?? 0);
+        const agg = getAgg(pid, r.product?.sku ?? "", r.product?.name ?? "", cost);
+        const qty = Number(r.quantity) || 0;
+        const inbound = r.to_location_id === locationId;
+        const outbound = r.from_location_id === locationId;
+
+        if (inbound && (r.movement_type === "receive" || r.movement_type === "transfer" || r.movement_type === "initial" || r.movement_type === "return")) {
+          agg.received_qty += qty;
+        }
+
+        if (outbound) {
+          // Direct sale from this location, OR transfer out to a supply store (wholesale "sale")
+          const isTransferToSupply = r.movement_type === "transfer" && !!r.to_loc?.supply_store_id;
+          const isSale = r.movement_type === "sale";
+          if (isSale || isTransferToSupply) {
+            let unitRevenue = 0;
+            if (isSale) {
+              unitRevenue = r.unit_cost ? Number(r.unit_cost) : Number(r.product?.price_usd ?? 0);
+              agg.channels.add("Direct");
+            } else if (isTransferToSupply) {
+              const storeId = r.to_loc.supply_store_id;
+              const store = storeById.get(storeId);
+              const wholesale = Number(r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0);
+              const overrideKey = `${storeId}:${pid}`;
+              const discountPct = overrideMap.has(overrideKey) ? overrideMap.get(overrideKey)! : (store?.discount ?? 0);
+              unitRevenue = wholesale * (1 - discountPct / 100);
+              agg.channels.add(`Supply: ${store?.name ?? "Unknown"}`);
+            }
+            agg.sold_qty += qty;
+            agg.revenue += unitRevenue * qty;
+            agg.sale_count += 1;
+          }
+        }
+      }
+
+      const rows = Array.from(byProduct.values())
+        .filter((a) => a.received_qty > 0 || a.sold_qty > 0)
+        .sort((a, b) => b.revenue - a.revenue)
+        .map((a) => {
+          const avgSalePrice = a.sold_qty > 0 ? a.revenue / a.sold_qty : 0;
+          const totalCost = a.unit_cost * a.sold_qty;
+          const profit = a.revenue - totalCost;
+          const profitPct = a.revenue > 0 ? (profit / a.revenue) * 100 : 0;
+          const remaining = a.received_qty - a.sold_qty;
+          return {
+            sku: a.sku,
+            product: a.product,
+            received_qty: a.received_qty,
+            sold_qty: a.sold_qty,
+            remaining_qty: remaining,
+            unit_cost: a.unit_cost ? a.unit_cost.toFixed(2) : "",
+            avg_sale_price: avgSalePrice ? avgSalePrice.toFixed(2) : "",
+            revenue: a.revenue ? a.revenue.toFixed(2) : "0.00",
+            total_cost: totalCost ? totalCost.toFixed(2) : "0.00",
+            profit: a.sold_qty > 0 ? profit.toFixed(2) : "",
+            profit_pct: a.sold_qty > 0 && a.revenue > 0 ? `${profitPct.toFixed(1)}%` : "",
+            channels: Array.from(a.channels).join(", "),
+          };
+        });
+
+      if (rows.length === 0) throw new Error("No activity in the selected range");
+      downloadCSV(rows, `sales-by-location-${scope}${dateSuffix(startDate, endDate)}`);
+      return rows.length;
+    }
+
+    // No location selected — keep per-movement detail across all locations
     const rows = (movementsRes.data ?? [])
-      // For 'transfer', only count those leaving toward an outside location (supply store).
-      // Skip pure internal warehouse-to-warehouse moves to avoid double-counting.
       .filter((r: any) => {
         if (r.movement_type === "sale") return true;
-        // transfer
         const toIsSupply = !!r.to_loc?.supply_store_id;
         const fromIsSupply = !!r.from_loc?.supply_store_id;
-        // export only when one side is a supply store (these are the "wholesale" sales)
         return toIsSupply || fromIsSupply;
       })
       .map((r: any) => {
@@ -122,9 +210,6 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         const wholesale = Number(r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0);
         const cost = Number(r.product?.cost_usd ?? 0);
         const productId = r.product_id;
-        // unit revenue:
-        // - 'sale' => unit_cost (we record the actual sale price there)
-        // - 'transfer' to supply store => discounted wholesale price (per-product override or store default)
         let unitRevenue = 0;
         let discountPct = 0;
         if (r.movement_type === "sale") {
@@ -136,9 +221,10 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         }
         const revenue = unitRevenue * Number(r.quantity);
         const totalCost = cost * Number(r.quantity);
+        const profit = revenue - totalCost;
+        const profitPct = revenue > 0 ? (profit / revenue) * 100 : 0;
         return {
           date: new Date(r.created_at).toISOString().split("T")[0],
-          time: new Date(r.created_at).toISOString().split("T")[1].slice(0, 5),
           channel: r.movement_type === "sale" ? "Direct sale" : (isTransferToStore ? `Supply store: ${store?.name ?? "Unknown"}` : "Transfer"),
           from_location: r.from_loc?.name ?? "",
           to_location: r.to_loc?.name ?? "",
@@ -146,12 +232,10 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
           product: r.product?.name ?? "",
           quantity: r.quantity,
           unit_cost: cost ? cost.toFixed(2) : "",
-          discount_pct: isTransferToStore ? discountPct.toFixed(1) : "",
           unit_price: unitRevenue ? unitRevenue.toFixed(2) : "",
           revenue: revenue ? revenue.toFixed(2) : "",
-          profit: revenue ? (revenue - totalCost).toFixed(2) : "",
-          sold_by: r.creator?.full_name ?? "",
-          note: r.reason ?? "",
+          profit: revenue ? profit.toFixed(2) : "",
+          profit_pct: revenue > 0 ? `${profitPct.toFixed(1)}%` : "",
         };
       });
 
