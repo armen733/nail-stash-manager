@@ -684,9 +684,29 @@ const Index = () => {
       title: `${periodLabel} Revenue`,
       value: loading ? "..." : `$${stats.monthlyRevenue.toFixed(2)}`,
       icon: DollarSign,
-      description: `$${stats.totalRevenue.toFixed(2)} total`,
+      description: stats.supplyStoreRevenue > 0
+        ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores`
+        : `$${stats.totalRevenue.toFixed(2)} total`,
     },
   ];
+
+  // Extra row of supply-store-specific KPIs (only when there's activity)
+  const supplyStoreCards = stats.supplyStoreRevenue > 0 ? [
+    {
+      title: `${periodLabel} Supply Store Sales`,
+      value: `$${stats.supplyStoreRevenue.toFixed(2)}`,
+      icon: TrendingUp,
+      description: `${stats.supplyStoreUnits} units shipped to stores`,
+    },
+    {
+      title: `${periodLabel} Supply Store Profit`,
+      value: `$${stats.supplyStoreProfit.toFixed(2)}`,
+      icon: DollarSign,
+      description: stats.supplyStoreRevenue > 0
+        ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin`
+        : "—",
+    },
+  ] : [];
 
   return (
     <div className="space-y-6 animate-fade-in">
