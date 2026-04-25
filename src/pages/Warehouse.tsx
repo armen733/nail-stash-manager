@@ -182,7 +182,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
