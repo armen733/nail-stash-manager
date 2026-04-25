@@ -389,6 +389,30 @@ export function StockActionDialog({
           .from("location_product_prices")
           .upsert(priceRows, { onConflict: "location_id,product_id" });
       }
+
+      // Persist per-product discount % and markup % overrides for this supply store
+      // so the History/Stock stats and pricing sheets all use the same numbers.
+      if (supplyStoreId) {
+        const sspRows = lines
+          .filter(
+            (l) =>
+              (l.discount_pct !== "" && Number.isFinite(Number(l.discount_pct))) ||
+              (l.markup_pct !== "" && Number.isFinite(Number(l.markup_pct))),
+          )
+          .map((l) => ({
+            supply_store_id: supplyStoreId,
+            product_id: l.product_id,
+            discount_percent_override:
+              l.discount_pct !== "" ? Number(l.discount_pct) : null,
+            markup_percent_override:
+              l.markup_pct !== "" ? Number(l.markup_pct) : null,
+          }));
+        if (sspRows.length > 0) {
+          await supabase
+            .from("supply_store_products")
+            .upsert(sspRows, { onConflict: "supply_store_id,product_id" });
+        }
+      }
     }
     setSaving(false);
 
