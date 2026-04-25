@@ -406,53 +406,104 @@ export default function WarehouseLocationDetail() {
         </Button>
       </div>
 
-      <div
-        className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-4"}`}
-      >
-        <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">Units</div>
-          <div className="text-xl font-bold">{totalUnits.toLocaleString()}</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">SKUs</div>
-          <div className="text-xl font-bold">{rows.length}</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
-          <div className="text-xl font-bold">{formatMoney(totalCost)}</div>
-          <div className="text-[10px] text-muted-foreground">what these cost us</div>
-        </CardContent></Card>
-        <Card><CardContent className="pt-4 pb-3">
-          <div className="text-[10px] text-muted-foreground uppercase">
-            {isSupplyStoreView ? "Store paid us" : "Retail value"}
+      {isSupplyStoreView && lifetime.units > 0 && (
+        <div className="space-y-1">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-1">
+            Lifetime — everything we've delivered to this store
           </div>
-          <div className="text-xl font-bold text-primary">{formatMoney(totalRetail)}</div>
-          {isSupplyStoreView && (
-            <div className="text-[10px] text-muted-foreground">total they owe / paid</div>
-          )}
-        </CardContent></Card>
-        {isSupplyStoreView && (
-          <>
+          <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Units sold</div>
+              <div className="text-xl font-bold">{lifetime.units.toLocaleString()}</div>
+              <div className="text-[10px] text-muted-foreground">total delivered</div>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Our cost</div>
+              <div className="text-xl font-bold">{formatMoney(lifetime.ourCost)}</div>
+              <div className="text-[10px] text-muted-foreground">factory cost × units</div>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">Store paid us</div>
+              <div className="text-xl font-bold text-primary">{formatMoney(lifetime.storePaid)}</div>
+              <div className="text-[10px] text-muted-foreground">discounted price × units</div>
+            </CardContent></Card>
             <Card><CardContent className="pt-4 pb-3">
               <div className="text-[10px] text-muted-foreground uppercase">Clean profit</div>
-              <div
-                className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-              >
-                {formatMoney(ourProfit)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">
-                paid − cost ({profitMarginPct.toFixed(0)}%)
-              </div>
+              {(() => {
+                const profit = lifetime.storePaid - lifetime.ourCost;
+                const pct = lifetime.ourCost > 0 ? (profit / lifetime.ourCost) * 100 : 0;
+                return (
+                  <>
+                    <div
+                      className={`text-xl font-bold ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                    >
+                      {formatMoney(profit)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      paid − cost ({pct.toFixed(0)}%)
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent></Card>
-            <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
-              <div className="text-xl font-bold text-primary">
-                {formatMoney(storeEarns)}
-              </div>
-              <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
-            </CardContent></Card>
-          </>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {isSupplyStoreView && (
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-1">
+            Current on hand
+          </div>
         )}
+        <div
+          className={`grid gap-2 grid-cols-2 ${isSupplyStoreView ? "sm:grid-cols-3 lg:grid-cols-6" : "sm:grid-cols-4"}`}
+        >
+          <Card><CardContent className="pt-4 pb-3">
+            <div className="text-[10px] text-muted-foreground uppercase">Units</div>
+            <div className="text-xl font-bold">{totalUnits.toLocaleString()}</div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-3">
+            <div className="text-[10px] text-muted-foreground uppercase">SKUs</div>
+            <div className="text-xl font-bold">{rows.length}</div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-3">
+            <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
+            <div className="text-xl font-bold">{formatMoney(totalCost)}</div>
+            <div className="text-[10px] text-muted-foreground">what these cost us</div>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-3">
+            <div className="text-[10px] text-muted-foreground uppercase">
+              {isSupplyStoreView ? "Store owes (on hand)" : "Retail value"}
+            </div>
+            <div className="text-xl font-bold text-primary">{formatMoney(totalRetail)}</div>
+            {isSupplyStoreView && (
+              <div className="text-[10px] text-muted-foreground">if they pay for what's left</div>
+            )}
+          </CardContent></Card>
+          {isSupplyStoreView && (
+            <>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Profit (on hand)</div>
+                <div
+                  className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                >
+                  {formatMoney(ourProfit)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  paid − cost ({profitMarginPct.toFixed(0)}%)
+                </div>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
+                <div className="text-xl font-bold text-primary">
+                  {formatMoney(storeEarns)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
+              </CardContent></Card>
+            </>
+          )}
+        </div>
       </div>
 
       {storeInfo && (
