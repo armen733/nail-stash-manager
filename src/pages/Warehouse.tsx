@@ -151,6 +151,7 @@ export default function Warehouse() {
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
+  const [activeTab, setActiveTab] = useState<"list" | "map">("list");
 
   const [form, setForm] = useState<{
     name: string;
