@@ -302,22 +302,26 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <div className="text-[10px] uppercase text-muted-foreground">Revenue (if sold)</div>
-              <div className="text-xl font-bold text-primary">
-                ${stats.revenueIfSold.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className="text-[10px] uppercase text-muted-foreground">Our profit</div>
+              <div
+                className={`text-xl font-bold ${stats.ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                ${stats.ourProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
-              <div className="text-[10px] text-muted-foreground">at store price</div>
+              <div className="text-[10px] text-muted-foreground">
+                {stats.margin.toFixed(0)}% on cost
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <div className="text-[10px] uppercase text-muted-foreground">Projected profit</div>
-              <div
-                className={`text-xl font-bold ${stats.projectedProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-              >
-                ${stats.projectedProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className="text-[10px] uppercase text-muted-foreground">Store earns</div>
+              <div className="text-xl font-bold text-primary">
+                ${stats.storeEarning.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
-              <div className="text-[10px] text-muted-foreground">{stats.margin.toFixed(1)}% margin</div>
+              <div className="text-[10px] text-muted-foreground">
+                if sold at suggested
+              </div>
             </CardContent>
           </Card>
         </div>
