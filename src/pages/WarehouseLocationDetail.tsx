@@ -204,6 +204,53 @@ export default function WarehouseLocationDetail() {
         </div>
       </div>
 
+      {/* Linked supply store: edit + directions */}
+      {supplyStore && (
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+              <MapPin className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{supplyStore.name}</div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {supplyStore.address || supplyStore.city || "No address on file"}
+                  {supplyStore.latitude === null || supplyStore.longitude === null ? (
+                    <span className="ml-2 text-amber-500">· Location missing</span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/supply-stores/${supplyStore.id}`)}
+                className="min-h-[40px]"
+              >
+                <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit store
+              </Button>
+              {supplyStore.latitude !== null && supplyStore.longitude !== null && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    const q = `${supplyStore.latitude},${supplyStore.longitude}`;
+                    const url = isIOS
+                      ? `maps://maps.apple.com/?daddr=${q}`
+                      : `https://maps.google.com/?daddr=${q}`;
+                    window.open(url, "_blank");
+                  }}
+                  className="min-h-[40px]"
+                >
+                  <Navigation className="h-3.5 w-3.5 mr-1.5" /> Directions
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Action buttons */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button onClick={() => setAction("receive")} className="h-auto py-2.5 flex-col gap-1">
