@@ -70,6 +70,11 @@ interface Salon {
   name: string;
 }
 
+interface SupplyStore {
+  id: string;
+  name: string;
+}
+
 const TYPE_META: Record<
   LocationType,
   { label: string; plural: string; icon: typeof WarehouseIcon; color: string; border: string }
