@@ -121,7 +121,7 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         const store = storeId ? storeById.get(storeId) : null;
         const wholesale = Number(r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0);
         const cost = Number(r.product?.cost_usd ?? 0);
-        const productId = (r as any).product_id;
+        const productId = r.product_id;
         // unit revenue:
         // - 'sale' => unit_cost (we record the actual sale price there)
         // - 'transfer' to supply store => discounted wholesale price (per-product override or store default)
