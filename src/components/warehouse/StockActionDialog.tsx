@@ -38,6 +38,7 @@ interface ProductRow {
   sku: string;
   cost_usd: number | null;
   price_usd: number;
+  wholesale_price_usd: number | null;
   image_url: string | null;
   stockHere: number;
 }
@@ -51,6 +52,10 @@ interface LineItem {
   unit_cost: string;
   unit_price: string;
   default_price: number;
+  /** Our cost per unit — used to compute profit on consignment receive */
+  product_cost: number | null;
+  /** Wholesale baseline used to compute the suggested store sell price */
+  wholesale_baseline: number | null;
 }
 
 interface Props {
@@ -59,6 +64,10 @@ interface Props {
   action: StockAction;
   locationId: string;
   locationName: string;
+  /** Type of the location we're acting on (warehouse | fba | consignment | driver) */
+  locationType?: string;
+  /** Default % discount this supply store gets off wholesale price */
+  storeDiscountPercent?: number;
   /** For transfer: the OTHER locations to choose from */
   otherLocations?: LocationOption[];
   onDone: () => void;
@@ -93,10 +102,13 @@ export function StockActionDialog({
   action,
   locationId,
   locationName,
+  locationType,
+  storeDiscountPercent = 0,
   otherLocations = [],
   onDone,
 }: Props) {
   const meta = ACTION_META[action];
+  const isConsignmentReceive = action === "receive" && locationType === "consignment";
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -124,7 +136,7 @@ export function StockActionDialog({
       supabase
         .from("products")
         .select(
-          "id, name, sku, cost_usd, price_usd, image_url, product_images(image_url, display_order)"
+          "id, name, sku, cost_usd, price_usd, wholesale_price_usd, image_url, product_images(image_url, display_order)"
         )
         .order("name")
         .limit(2000),
@@ -163,6 +175,7 @@ export function StockActionDialog({
         sku: p.sku,
         cost_usd: p.cost_usd,
         price_usd: effectivePrice,
+        wholesale_price_usd: p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : null,
         image_url: thumb,
         stockHere: stockMap.get(p.id) ?? 0,
       };
@@ -190,6 +203,11 @@ export function StockActionDialog({
       toast.info("Already in list");
       return;
     }
+    // Suggested store sell price: wholesale × (1 - discount%) when receiving into a supply store
+    const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const suggestedStorePrice = isConsignmentReceive
+      ? Math.max(0, wholesale * (1 - (storeDiscountPercent || 0) / 100))
+      : null;
     setLines((prev) => [
       ...prev,
       {
@@ -198,9 +216,16 @@ export function StockActionDialog({
         sku: p.sku,
         stockHere: p.stockHere,
         quantity: "1",
-        unit_cost: p.cost_usd ? String(p.cost_usd) : "",
+        unit_cost:
+          suggestedStorePrice != null
+            ? suggestedStorePrice.toFixed(2)
+            : p.cost_usd
+            ? String(p.cost_usd)
+            : "",
         unit_price: p.price_usd ? String(p.price_usd) : "",
         default_price: p.price_usd,
+        product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
+        wholesale_baseline: wholesale || null,
       },
     ]);
   };
@@ -313,6 +338,22 @@ export function StockActionDialog({
     const payload = movements.map((m) => ({ ...m, created_by: userId }));
 
     const { error } = await supabase.from("stock_movements").insert(payload);
+
+    // For consignment receives: persist per-store sell prices so analytics & history match.
+    if (!error && isConsignmentReceive) {
+      const priceRows = lines
+        .filter((l) => Number(l.unit_cost) > 0)
+        .map((l) => ({
+          location_id: locationId,
+          product_id: l.product_id,
+          price_usd: Number(l.unit_cost),
+        }));
+      if (priceRows.length > 0) {
+        await supabase
+          .from("location_product_prices")
+          .upsert(priceRows, { onConflict: "location_id,product_id" });
+      }
+    }
     setSaving(false);
 
     if (error) {
@@ -360,9 +401,22 @@ export function StockActionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>{meta.title}</DialogTitle>
+          <DialogTitle>
+            {isConsignmentReceive ? "Give stock to supply store" : meta.title}
+          </DialogTitle>
           <DialogDescription>
-            {meta.verb} <span className="font-medium text-foreground">{locationName}</span>.
+            {isConsignmentReceive ? (
+              <>
+                Send units to{" "}
+                <span className="font-medium text-foreground">{locationName}</span> at a
+                discounted store price. We track your profit per unit.
+              </>
+            ) : (
+              <>
+                {meta.verb}{" "}
+                <span className="font-medium text-foreground">{locationName}</span>.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -558,7 +612,11 @@ export function StockActionDialog({
                       </div>
                       <div>
                         <Label className="text-[10px] uppercase text-muted-foreground">
-                          {action === "sale" ? "Unit price" : "Unit cost (opt.)"}
+                          {action === "sale"
+                            ? "Unit price"
+                            : isConsignmentReceive
+                            ? "Sell to store ($/unit)"
+                            : "Unit cost (opt.)"}
                         </Label>
                         <Input
                           inputMode="decimal"
@@ -590,6 +648,47 @@ export function StockActionDialog({
                         ).toFixed(2)}
                       </div>
                     )}
+                    {isConsignmentReceive && (() => {
+                      const qty = Number(l.quantity || 0);
+                      const sell = Number(l.unit_cost || 0);
+                      const cost = l.product_cost ?? 0;
+                      const profitPerUnit = sell - cost;
+                      const totalRevenue = sell * qty;
+                      const totalProfit = profitPerUnit * qty;
+                      const margin = sell > 0 ? (profitPerUnit / sell) * 100 : 0;
+                      return (
+                        <div className="rounded-md bg-muted/40 p-2 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div>
+                            <div className="text-muted-foreground">Our cost</div>
+                            <div className="font-medium">${cost.toFixed(2)}/u</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Profit/unit</div>
+                            <div
+                              className={`font-medium ${
+                                profitPerUnit < 0 ? "text-destructive" : "text-emerald-500"
+                              }`}
+                            >
+                              ${profitPerUnit.toFixed(2)} ({margin.toFixed(0)}%)
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Revenue</div>
+                            <div className="font-medium">${totalRevenue.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Total profit</div>
+                            <div
+                              className={`font-medium ${
+                                totalProfit < 0 ? "text-destructive" : "text-emerald-500"
+                              }`}
+                            >
+                              ${totalProfit.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
