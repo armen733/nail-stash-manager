@@ -114,8 +114,8 @@ const TYPE_META: Record<
     border: "border-l-blue-500",
   },
   consignment: {
-    label: "Consignment",
-    plural: "Consignment Stores",
+    label: "Supply Store",
+    plural: "Supply Stores",
     icon: Store,
     color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     border: "border-l-purple-500",
