@@ -239,6 +239,13 @@ export default function SupplyStores() {
               <DialogTitle>{editing ? "Edit Supply Store" : "Add New Supply Store"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <LogoUploader
+                value={form.logo_url}
+                onChange={(url) => setForm({ ...form, logo_url: url })}
+                folder="supply-stores"
+                label="Store logo"
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="name">Store Name *</Label>
                 <Input
@@ -360,13 +367,6 @@ export default function SupplyStores() {
                   />
                 </div>
               </div>
-
-              <LogoUploader
-                value={form.logo_url}
-                onChange={(url) => setForm({ ...form, logo_url: url })}
-                folder="supply-stores"
-                label="Store logo"
-              />
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
