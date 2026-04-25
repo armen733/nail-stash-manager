@@ -200,10 +200,19 @@ export default function WarehouseLocationDetail() {
           : storeDiscount;
         effective = wholesale * (1 - discountPct / 100);
       }
+      // Suggested resell = what the store should sell at (markup applied to our regular price).
+      let suggestedResell = retail;
+      if (isSupply) {
+        const markupPct = productMarkupOverrides.has(r.product_id)
+          ? productMarkupOverrides.get(r.product_id)!
+          : storeMarkup;
+        suggestedResell = markupPct > 0 ? retail * (1 + markupPct / 100) : retail;
+      }
       return {
         ...r,
         override_price: overrideMap.has(r.product_id) ? overrideMap.get(r.product_id)! : null,
         effective_unit_price: effective,
+        suggested_resell_unit_price: suggestedResell,
       };
     });
     setRows(stockRows as StockRow[]);
