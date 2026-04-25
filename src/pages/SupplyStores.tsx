@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { LazySupplyStoresMap } from "@/components/lazy/LazySupplyStoresMap";
+import { LogoUploader } from "@/components/LogoUploader";
 import { Store, Plus, Pencil, Trash2, Phone, MapPin, Globe, Instagram, Search, Map as MapIcon, List, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit-log";
@@ -360,23 +361,12 @@ export default function SupplyStores() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="logo_url">Logo URL</Label>
-                <Input
-                  id="logo_url"
-                  placeholder="https://…"
-                  value={form.logo_url}
-                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                  className="min-h-[44px]"
-                />
-                {form.logo_url && (
-                  <img
-                    src={form.logo_url}
-                    alt="Logo preview"
-                    className="h-12 w-12 rounded-md object-contain border border-border bg-background"
-                  />
-                )}
-              </div>
+              <LogoUploader
+                value={form.logo_url}
+                onChange={(url) => setForm({ ...form, logo_url: url })}
+                folder="supply-stores"
+                label="Store logo"
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { LogoUploader } from "@/components/LogoUploader";
 
 interface Salon {
   id: string;
@@ -46,6 +47,7 @@ interface Salon {
   address: string | null;
   city: string | null;
   notes: string | null;
+  logo_url: string | null;
 }
 
 const Salons = () => {
@@ -85,6 +87,7 @@ const Salons = () => {
     address: "",
     city: "",
     notes: "",
+    logo_url: "",
   });
 
   useEffect(() => {
@@ -135,6 +138,7 @@ const Salons = () => {
       address: formData.address || null,
       city: formData.city || null,
       notes: formData.notes || null,
+      logo_url: formData.logo_url.trim() || null,
     };
 
     try {
@@ -216,6 +220,7 @@ const Salons = () => {
       address: salon.address || "",
       city: salon.city || "",
       notes: salon.notes || "",
+      logo_url: salon.logo_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -255,6 +260,7 @@ const Salons = () => {
       address: "",
       city: "",
       notes: "",
+      logo_url: "",
     });
     setEditingSalon(null);
   };
@@ -384,6 +390,13 @@ const Salons = () => {
                   />
                 </div>
 
+                <LogoUploader
+                  value={formData.logo_url}
+                  onChange={(url) => setFormData({ ...formData, logo_url: url })}
+                  folder="salons"
+                  label="Salon logo"
+                />
+
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                     Cancel
@@ -453,7 +466,16 @@ const Salons = () => {
                 }}>
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      {salon.logo_url ? (
+                        <img
+                          src={salon.logo_url}
+                          alt={`${salon.name} logo`}
+                          className="h-8 w-8 rounded-md object-contain bg-background border border-border flex-shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
                       <h3 className="font-semibold text-base sm:text-lg truncate">{salon.name}</h3>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
