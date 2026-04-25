@@ -134,8 +134,11 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       const unitsSold = a.unitsIn - a.unitsOut;
       if (unitsSold <= 0) continue;
       const storeCost = a.paidIn - a.paidOut; // what store paid us (their expense)
-      const retail = locPriceMap.get(pid) ?? info.retailPrice; // store's selling price
-      const storeRevenue = unitsSold * retail; // what store earns from customers
+      // Suggested retail = our list price × (1 + markup%); fall back to list price if no markup.
+      const markupPct = markupOverrideMap.get(pid) ?? storeMarkupPercent ?? 0;
+      const suggestedRetail =
+        markupPct > 0 ? info.retailPrice * (1 + markupPct / 100) : info.retailPrice;
+      const storeRevenue = unitsSold * suggestedRetail; // store earns at suggested retail
       const profit = storeRevenue - storeCost;
       const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
       const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
