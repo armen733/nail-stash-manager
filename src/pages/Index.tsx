@@ -1300,23 +1300,49 @@ const Index = () => {
         </Card>
 
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 items-stretch">
             <button
               type="button"
               onClick={() => setTopSupplyStoresOpen((v) => !v)}
-              className="flex items-center gap-2 text-left flex-1 min-w-0"
+              className="flex items-center gap-2 text-left w-full"
             >
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topSupplyStoresOpen ? "" : "-rotate-90"}`} />
-              <CardTitle className="text-base sm:text-lg truncate">Top Supply Stores</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Top Supply Stores</CardTitle>
               {!topSupplyStoresOpen && topSupplyStores.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({topSupplyStores.length})</span>
               )}
             </button>
-            {topSupplyStoresOpen && allSupplyStores.length > 5 && (
-              <Button variant="ghost" size="sm" onClick={() => setShowAllSupplyStores(true)} className="text-xs text-primary">
-                View All ({allSupplyStores.length})
-                <ChevronRight className="h-3 w-3 ml-1" />
-              </Button>
+            {topSupplyStoresOpen && (
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const rows = (allSupplyStores.length > 0 ? allSupplyStores : topSupplyStores);
+                    const csvHeader = "Supply Store,Shipments,Units,Revenue\n";
+                    const csvRows = rows
+                      .map((s) => `"${(s.store_name || "").replace(/"/g, '""')}",${s.shipment_count},${s.units},${s.revenue.toFixed(2)}`)
+                      .join("\n");
+                    const blob = new Blob([csvHeader + csvRows], { type: "text/csv" });
+                    const link = document.createElement("a");
+                    link.download = `top-supply-stores-${new Date().toISOString().split("T")[0]}.csv`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    toast({ title: "Success", description: "Top supply stores exported as CSV" });
+                  }}
+                  disabled={topSupplyStores.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  CSV
+                </Button>
+                {allSupplyStores.length > 5 && (
+                  <Button variant="ghost" size="sm" onClick={() => setShowAllSupplyStores(true)} className="text-xs text-primary">
+                    View All ({allSupplyStores.length})
+                    <ChevronRight className="h-3 w-3 ml-1" />
+                  </Button>
+                )}
+              </div>
             )}
           </CardHeader>
           {topSupplyStoresOpen && (
