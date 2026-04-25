@@ -264,81 +264,86 @@ export function LocationPricingTab({ locationId }: Props) {
               r.overridePrice !== null && r.defaultPrice > 0
                 ? ((r.overridePrice - r.defaultPrice) / r.defaultPrice) * 100
                 : 0;
+            const hasWholesale = r.ourSalePrice > 0;
             return (
-              <div
-                key={r.product_id}
-                className="p-2 sm:p-3 flex flex-col sm:flex-row sm:items-center gap-2"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate">{r.name}</div>
-                  <div className="text-xs text-muted-foreground truncate flex items-center gap-2 flex-wrap">
-                    <span>{r.sku}</span>
-                    {r.stockHere > 0 && (
-                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
-                        {r.stockHere} on hand
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px]">
-                    {r.cost > 0 && (
-                      <Badge
-                        variant="outline"
-                        className="h-5 px-1.5 font-normal border-muted-foreground/30"
-                      >
-                        Our cost <span className="ml-1 font-semibold text-foreground">${r.cost.toFixed(2)}</span>
-                      </Badge>
-                    )}
-                    {r.ourSalePrice > 0 && (
-                      <Badge
-                        variant="outline"
-                        className="h-5 px-1.5 font-normal border-primary/40 text-primary"
-                      >
-                        We sold @ <span className="ml-1 font-semibold">${r.ourSalePrice.toFixed(2)}</span>
-                      </Badge>
-                    )}
-                    <Badge
-                      variant="outline"
-                      className="h-5 px-1.5 font-normal border-muted-foreground/30"
-                    >
-                      Retail <span className="ml-1 font-semibold text-foreground">${r.defaultPrice.toFixed(2)}</span>
-                    </Badge>
+              <div key={r.product_id} className="p-3 space-y-2">
+                {/* Header: name, sku, stock */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium leading-tight truncate">{r.name}</div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-mono">{r.sku}</span>
+                      {r.stockHere > 0 && (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                          {r.stockHere} on hand
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="text-right">
-                    {margin !== null && (
-                      <div
-                        className={`text-[11px] font-medium ${
-                          margin >= 30
-                            ? "text-emerald-600"
-                            : margin >= 10
-                            ? "text-foreground"
-                            : "text-destructive"
-                        }`}
-                      >
-                        {margin.toFixed(0)}% margin
-                      </div>
-                    )}
-                    {r.overridePrice !== null && diffVsDefault !== 0 && (
-                      <div
-                        className={`text-[10px] flex items-center justify-end gap-0.5 ${
-                          diffVsDefault > 0 ? "text-emerald-600" : "text-destructive"
-                        }`}
-                      >
-                        {diffVsDefault > 0 ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        {diffVsDefault > 0 ? "+" : ""}
-                        {diffVsDefault.toFixed(0)}% vs default
-                      </div>
-                    )}
+                {/* Price grid: clear labels, no overlap */}
+                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                  <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                    <div className="text-muted-foreground leading-none">Our cost</div>
+                    <div className="mt-1 font-semibold text-foreground">
+                      {r.cost > 0 ? `$${r.cost.toFixed(2)}` : "—"}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1.5">
+                    <div className="text-primary/80 leading-none">Store pays us</div>
+                    <div className="mt-1 font-semibold text-primary">
+                      {hasWholesale ? `$${r.ourSalePrice.toFixed(2)}` : "—"}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                    <div className="text-muted-foreground leading-none">Retail</div>
+                    <div className="mt-1 font-semibold text-foreground">
+                      ${r.defaultPrice.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Override row: label + input + reset */}
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-muted-foreground leading-tight">
+                      Custom price for this location
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {margin !== null && (
+                        <span
+                          className={`text-[11px] font-medium ${
+                            margin >= 30
+                              ? "text-emerald-600"
+                              : margin >= 10
+                              ? "text-foreground"
+                              : "text-destructive"
+                          }`}
+                        >
+                          {margin.toFixed(0)}% margin
+                        </span>
+                      )}
+                      {r.overridePrice !== null && diffVsDefault !== 0 && (
+                        <span
+                          className={`text-[10px] flex items-center gap-0.5 ${
+                            diffVsDefault > 0 ? "text-emerald-600" : "text-destructive"
+                          }`}
+                        >
+                          {diffVsDefault > 0 ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3" />
+                          )}
+                          {diffVsDefault > 0 ? "+" : ""}
+                          {diffVsDefault.toFixed(0)}% vs default
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  <div className="relative flex-shrink-0">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                       $
                     </span>
                     <Input
@@ -370,7 +375,7 @@ export function LocationPricingTab({ locationId }: Props) {
                       <RotateCcw className="h-3.5 w-3.5" />
                     </Button>
                   ) : (
-                    <div className="w-9" />
+                    <div className="w-9 flex-shrink-0" />
                   )}
 
                   {r.saving && (
