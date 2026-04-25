@@ -454,13 +454,19 @@ export default function Warehouse() {
         </div>
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-2">
+          <Button variant="outline" onClick={() => setDefaultsOpen(true)}>
+            <Percent className="h-4 w-4 mr-2" /> Wholesale defaults
+          </Button>
           <ExportMenu />
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" /> Add location
           </Button>
         </div>
-        {/* Mobile export (Add is FAB) */}
-        <div className="md:hidden">
+        {/* Mobile actions (Add is FAB) */}
+        <div className="md:hidden flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setDefaultsOpen(true)}>
+            <Percent className="h-3.5 w-3.5 mr-1.5" /> Defaults
+          </Button>
           <ExportMenu />
         </div>
       </div>
