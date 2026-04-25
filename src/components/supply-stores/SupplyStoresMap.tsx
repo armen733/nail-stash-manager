@@ -92,8 +92,14 @@ export default function SupplyStoresMap({ stores, fullScreen }: Props) {
         ${phoneLine}
         <button data-store-id="${store.id}" style="margin-top: 8px; background: #16a34a; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; width: 100%;">View profile</button>
       `;
-      popupNode.querySelector("button")?.addEventListener("click", () => {
-        navigate(`/supply-stores/${store.id}`);
+      popupNode.querySelector("button")?.addEventListener("click", async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data } = await supabase
+          .from("stock_locations")
+          .select("id")
+          .eq("supply_store_id", store.id)
+          .maybeSingle();
+        if (data?.id) navigate(`/warehouse/${data.id}`);
       });
 
       const popup = new mapboxgl.Popup({ offset: 20 }).setDOMContent(popupNode);
