@@ -289,7 +289,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
       {pins.length > 0 && (
         <div className="absolute top-3 left-3 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border text-[11px] space-y-1">
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
-            const count = pins.filter((p) => p.type === key).length;
+            const count = pins.filter((p) => p.type === key && (p.lowSkus ?? 0) === 0).length;
             if (count === 0) return null;
             const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
@@ -302,6 +302,19 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
               </div>
             );
           })}
+          {(() => {
+            const lowCount = pins.filter((p) => (p.lowSkus ?? 0) > 0).length;
+            if (lowCount === 0) return null;
+            return (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-full border"
+                  style={{ background: LOW_STOCK_COLOR.bg, borderColor: LOW_STOCK_COLOR.ring }}
+                />
+                <span className="font-semibold text-destructive">Low stock ({lowCount})</span>
+              </div>
+            );
+          })()}
         </div>
       )}
 
