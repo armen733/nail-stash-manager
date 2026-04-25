@@ -266,7 +266,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
           variant="secondary"
           size="sm"
           className="shadow-lg h-8 w-8 p-0"
-          onClick={() => setIsFullscreen((v) => !v)}
+          onClick={toggleFullscreen}
           aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
