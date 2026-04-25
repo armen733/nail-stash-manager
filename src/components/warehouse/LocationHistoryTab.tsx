@@ -27,6 +27,8 @@ interface Props {
   locationId: string;
   /** Per-store default discount (used as fallback when no per-product override exists). */
   storeDiscountPercent?: number;
+  /** Per-store default markup % the store applies on top of what they paid us. */
+  storeMarkupPercent?: number;
   /** Whether this location is a supply store (consignment) — controls profit columns. */
   isSupplyStore?: boolean;
 }
@@ -64,10 +66,11 @@ const TYPE_META: Record<MovementRow["movement_type"], { label: string; icon: any
 type RangeKey = "7d" | "30d" | "90d" | "all";
 type FilterKey = "all" | "receive" | "sale";
 
-export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSupplyStore = false }: Props) {
+export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<MovementRow[]>([]);
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
+  const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
   const [range, setRange] = useState<RangeKey>("30d");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
@@ -96,12 +99,27 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
         .limit(500);
       if (since) q = q.gte("created_at", since);
 
-      const [movRes, priceRes] = await Promise.all([
+      // Look up supply_store_id (if any) so we can fetch markup overrides
+      const { data: locRow } = await supabase
+        .from("stock_locations")
+        .select("type, supply_store_id")
+        .eq("id", locationId)
+        .maybeSingle();
+      const supplyStoreId =
+        locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
+
+      const [movRes, priceRes, markupRes] = await Promise.all([
         q,
         supabase
           .from("location_product_prices")
           .select("product_id, price_usd")
           .eq("location_id", locationId),
+        supplyStoreId
+          ? supabase
+              .from("supply_store_products")
+              .select("product_id, markup_percent_override")
+              .eq("supply_store_id", supplyStoreId)
+          : Promise.resolve({ data: [] as any[] } as any),
       ]);
 
       if (!active) return;
@@ -111,6 +129,15 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
         map.set(r.product_id, Number(r.price_usd ?? 0)),
       );
       setOverrideMap(map);
+
+      const mMap = new Map<string, number>();
+      ((markupRes as any)?.data ?? []).forEach((r: any) => {
+        if (r.markup_percent_override != null) {
+          mMap.set(r.product_id, Number(r.markup_percent_override));
+        }
+      });
+      setMarkupOverrideMap(mMap);
+
       setRows(((movRes.data ?? []) as any[]) as MovementRow[]);
       setLoading(false);
     })();
@@ -129,33 +156,52 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
     let unitsReceived = 0;
     let unitsSold = 0;
     let costReceived = 0; // our cost outlay on goods received
-    let revenueIfSold = 0; // potential revenue at agreed store price for received goods
-    let projectedProfit = 0;
+    let weChargeStore = 0; // total $ the store owes us for received goods
+    let ourProfit = 0; // weChargeStore - costReceived
+    let storeRevenueIfSold = 0; // store's revenue if they sell at suggested resell
+    let storeEarning = 0; // storeRevenueIfSold - weChargeStore
 
     rows.forEach((r) => {
       if (!r.product) return;
-      const cost =
-        r.unit_cost != null
-          ? Number(r.unit_cost)
-          : Number(r.product.cost_usd ?? 0);
+      const cost = Number(r.product.cost_usd ?? 0);
       const wholesale = Number(r.product.wholesale_price_usd ?? r.product.price_usd ?? 0);
+      const retail = Number(r.product.price_usd ?? 0);
       const fallbackStorePrice = wholesale * (1 - (storeDiscountPercent || 0) / 100);
       const storePrice = overrideMap.get(r.product.id) ?? fallbackStorePrice;
+
+      // Suggested resell: if we've set a markup, store sells at storePrice * (1+markup%)
+      // Otherwise default = our regular retail price.
+      const markupPct = markupOverrideMap.get(r.product.id) ?? storeMarkupPercent ?? 0;
+      const suggestedResell =
+        markupPct > 0 ? storePrice * (1 + markupPct / 100) : retail;
 
       if (r.movement_type === "receive" && r.to_location_id === locationId) {
         unitsReceived += r.quantity;
         costReceived += cost * r.quantity;
-        revenueIfSold += storePrice * r.quantity;
-        projectedProfit += (storePrice - cost) * r.quantity;
+        weChargeStore += storePrice * r.quantity;
+        ourProfit += (storePrice - cost) * r.quantity;
+        storeRevenueIfSold += suggestedResell * r.quantity;
+        storeEarning += (suggestedResell - storePrice) * r.quantity;
       }
       if (r.movement_type === "sale" && r.from_location_id === locationId) {
         unitsSold += r.quantity;
       }
     });
 
-    const margin = revenueIfSold > 0 ? (projectedProfit / revenueIfSold) * 100 : 0;
-    return { unitsReceived, unitsSold, costReceived, revenueIfSold, projectedProfit, margin };
-  }, [rows, overrideMap, locationId, storeDiscountPercent]);
+    const margin = costReceived > 0 ? (ourProfit / costReceived) * 100 : 0;
+    const storeMargin = weChargeStore > 0 ? (storeEarning / weChargeStore) * 100 : 0;
+    return {
+      unitsReceived,
+      unitsSold,
+      costReceived,
+      weChargeStore,
+      ourProfit,
+      margin,
+      storeRevenueIfSold,
+      storeEarning,
+      storeMargin,
+    };
+  }, [rows, overrideMap, markupOverrideMap, locationId, storeDiscountPercent, storeMarkupPercent]);
 
   // Group by date (Pacific time, day-bucket)
   const grouped = useMemo(() => {
@@ -256,22 +302,26 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <div className="text-[10px] uppercase text-muted-foreground">Revenue (if sold)</div>
-              <div className="text-xl font-bold text-primary">
-                ${stats.revenueIfSold.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className="text-[10px] uppercase text-muted-foreground">Our profit</div>
+              <div
+                className={`text-xl font-bold ${stats.ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                ${stats.ourProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
-              <div className="text-[10px] text-muted-foreground">at store price</div>
+              <div className="text-[10px] text-muted-foreground">
+                {stats.margin.toFixed(0)}% on cost
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <div className="text-[10px] uppercase text-muted-foreground">Projected profit</div>
-              <div
-                className={`text-xl font-bold ${stats.projectedProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-              >
-                ${stats.projectedProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              <div className="text-[10px] uppercase text-muted-foreground">Store earns</div>
+              <div className="text-xl font-bold text-primary">
+                ${stats.storeEarning.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
-              <div className="text-[10px] text-muted-foreground">{stats.margin.toFixed(1)}% margin</div>
+              <div className="text-[10px] text-muted-foreground">
+                if sold at suggested
+              </div>
             </CardContent>
           </Card>
         </div>
