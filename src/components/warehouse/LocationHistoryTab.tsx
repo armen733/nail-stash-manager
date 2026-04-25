@@ -34,6 +34,8 @@ interface MovementRow {
     cost_usd: number | null;
     wholesale_price_usd: number | null;
     price_usd: number;
+    image_url: string | null;
+    product_images?: { image_url: string; display_order: number | null }[];
   } | null;
 }
 
@@ -71,7 +73,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
       let q = supabase
         .from("stock_movements")
         .select(
-          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd)",
+          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd, image_url, product_images(image_url, display_order))",
         )
         .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
         .order("created_at", { ascending: false })
@@ -253,10 +255,30 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
             </div>
           ) : (
             <div className="divide-y">
-              {grouped.map(([day, items]) => (
+              {grouped.map(([day, items]) => {
+                const skuSet = new Set<string>();
+                let inUnits = 0;
+                let outUnits = 0;
+                items.forEach((m) => {
+                  if (m.product?.id) skuSet.add(m.product.id);
+                  if (m.to_location_id === locationId) inUnits += m.quantity;
+                  if (m.from_location_id === locationId) outUnits += m.quantity;
+                });
+                return (
                 <div key={day}>
-                  <div className="px-3 py-1.5 bg-muted/30 text-[11px] uppercase tracking-wide font-medium text-muted-foreground">
-                    {day}
+                  <div className="px-3 py-1.5 bg-muted/30 flex items-center justify-between gap-2">
+                    <div className="text-[11px] uppercase tracking-wide font-medium text-muted-foreground">
+                      {day}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <span>{skuSet.size} SKU{skuSet.size === 1 ? "" : "s"}</span>
+                      {inUnits > 0 && (
+                        <span className="text-emerald-500 font-medium">+{inUnits} units</span>
+                      )}
+                      {outUnits > 0 && (
+                        <span className="text-destructive font-medium">−{outUnits} units</span>
+                      )}
+                    </div>
                   </div>
                   {items.map((r) => {
                     const meta = TYPE_META[r.movement_type];
@@ -276,17 +298,32 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                     const showProfit =
                       isSupplyStore && r.movement_type === "receive" && incoming;
                     const lineProfit = (storePrice - cost) * r.quantity;
+                    const imgs = r.product?.product_images ?? [];
+                    const sortedImgs = [...imgs].sort(
+                      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0),
+                    );
+                    const thumb = r.product?.image_url || sortedImgs[0]?.image_url || null;
                     return (
                       <div key={r.id} className="flex items-start gap-3 px-3 py-2.5">
-                        <div className={`mt-0.5 ${meta.tone}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt=""
+                            className="h-10 w-10 rounded object-cover flex-shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex-shrink-0 flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium truncate">
                               {r.product?.name ?? "—"}
                             </span>
-                            <Badge variant="outline" className="text-[9px] h-4 px-1">
+                            <Badge variant="outline" className="text-[9px] h-4 px-1 gap-1">
+                              <Icon className={`h-2.5 w-2.5 ${meta.tone}`} />
                               {meta.label}
                             </Badge>
                           </div>
@@ -328,12 +365,15 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                             {incoming ? "+" : "−"}
                             {r.quantity}
                           </div>
+                          <div className="text-[10px] text-muted-foreground">units</div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              ))}
+                );
+              })}
+
             </div>
           )}
         </CardContent>
