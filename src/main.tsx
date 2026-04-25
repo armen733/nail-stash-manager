@@ -7,7 +7,7 @@ import "./index.css";
 // When a lazy-loaded route chunk no longer exists (renamed by a new build),
 // the dynamic import throws. Reload once to fetch the fresh asset manifest.
 const isChunkLoadError = (msg: string) =>
-  /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(
+  /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|error loading dynamically imported module|Unable to preload CSS/i.test(
     msg
   );
 
