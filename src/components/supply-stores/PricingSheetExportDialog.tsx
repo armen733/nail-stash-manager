@@ -25,6 +25,14 @@ interface Product {
   price_usd: number;
 }
 
+interface StoreInfo {
+  name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +40,7 @@ interface Props {
   defaultDiscount?: number;
   defaultMarkup?: number;
   preselectedProductIds?: string[];
+  storeInfo?: StoreInfo;
 }
 
 export const PricingSheetExportDialog = ({
