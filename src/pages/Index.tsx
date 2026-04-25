@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { SupplyStoreStockHistory } from "@/components/supply-stores/SupplyStoreStockHistory";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
@@ -32,6 +33,14 @@ interface TopSalon {
   salon_name: string;
   order_count: number;
   total_revenue: number;
+}
+
+interface TopSupplyStore {
+  store_id: string;
+  store_name: string;
+  shipment_count: number;
+  units: number;
+  revenue: number;
 }
 
 interface TopProduct {
@@ -119,6 +128,11 @@ const Index = () => {
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [showAllSalons, setShowAllSalons] = useState(false);
+  const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
+  const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
+  const [showAllSupplyStores, setShowAllSupplyStores] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedStoreName, setSelectedStoreName] = useState("");
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
@@ -218,7 +232,7 @@ const Index = () => {
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
         supabase.from("supply_stores").select("id, name, default_discount_percent"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
-        supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type"),
+        supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
         supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       ]);
@@ -348,6 +362,37 @@ const Index = () => {
         }));
       setAllSalons(allSalonsData);
       setTopSalons(allSalonsData.slice(0, 5));
+
+      // ===== Top supply stores (by revenue in selected period) =====
+      const storeNameMap = new Map<string, string>();
+      (supplyStoresRes.data || []).forEach((s: any) => storeNameMap.set(s.id, s.name));
+      const storeStats = new Map<string, { revenue: number; units: number; shipments: Set<string> }>();
+      allSupplyMovements.forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
+        const storeId = m.to_location_id ? storeLocMap.get(m.to_location_id) : null;
+        if (!storeId) return;
+        const v = computeSupplyMovementValue(m);
+        if (!v) return;
+        if (!storeStats.has(storeId)) {
+          storeStats.set(storeId, { revenue: 0, units: 0, shipments: new Set() });
+        }
+        const s = storeStats.get(storeId)!;
+        s.revenue += v.revenue;
+        s.units += v.units;
+        s.shipments.add(`${m.created_at.split("T")[0]}__${m.reason ?? ""}`);
+      });
+      const allSupplyStoresData: TopSupplyStore[] = Array.from(storeStats.entries())
+        .map(([id, s]) => ({
+          store_id: id,
+          store_name: storeNameMap.get(id) ?? "Unknown store",
+          shipment_count: s.shipments.size,
+          units: s.units,
+          revenue: s.revenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue);
+      setAllSupplyStores(allSupplyStoresData);
+      setTopSupplyStores(allSupplyStoresData.slice(0, 5));
 
       // Calculate top products
       const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
@@ -1180,7 +1225,7 @@ const Index = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base sm:text-lg">Top Salons</CardTitle>
@@ -1219,6 +1264,51 @@ const Index = () => {
                       <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
                     </div>
                     <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-[var(--shadow-card)]">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base sm:text-lg">Top Supply Stores</CardTitle>
+            {allSupplyStores.length > 5 && (
+              <Button variant="ghost" size="sm" onClick={() => setShowAllSupplyStores(true)} className="text-xs text-primary">
+                View All ({allSupplyStores.length})
+                <ChevronRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : topSupplyStores.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No stock has been sent to supply stores in this period.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {topSupplyStores.map((store) => (
+                  <div
+                    key={store.store_id}
+                    className="flex items-center justify-between border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                    onClick={() => {
+                      setSelectedStoreId(store.store_id);
+                      setSelectedStoreName(store.store_name);
+                    }}
+                  >
+                    <div>
+                      <p className="font-medium">{store.store_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {store.shipment_count} {store.shipment_count === 1 ? "shipment" : "shipments"} · {store.units} units
+                      </p>
+                    </div>
+                    <p className="font-semibold text-primary">${store.revenue.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
@@ -1756,6 +1846,47 @@ const Index = () => {
                     </div>
                   </div>
                   <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+
+      <SupplyStoreStockHistory
+        storeId={selectedStoreId}
+        storeName={selectedStoreName}
+        open={!!selectedStoreId}
+        onOpenChange={(open) => { if (!open) setSelectedStoreId(null); }}
+      />
+
+      <Sheet open={showAllSupplyStores} onOpenChange={setShowAllSupplyStores}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>All Supply Stores Ranking</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
+            <div className="space-y-2 pr-4">
+              {allSupplyStores.map((store, index) => (
+                <div
+                  key={store.store_id}
+                  className="flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    setShowAllSupplyStores(false);
+                    setSelectedStoreId(store.store_id);
+                    setSelectedStoreName(store.store_name);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
+                    <div>
+                      <p className="font-medium">{store.store_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {store.shipment_count} {store.shipment_count === 1 ? "shipment" : "shipments"} · {store.units} units
+                      </p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-primary">${store.revenue.toFixed(2)}</p>
                 </div>
               ))}
             </div>
