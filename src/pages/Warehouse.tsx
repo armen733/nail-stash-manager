@@ -612,6 +612,8 @@ export default function Warehouse() {
         <Plus className="h-6 w-6" />
       </Button>
 
+      <WholesaleDefaultsDialog open={defaultsOpen} onOpenChange={setDefaultsOpen} />
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
