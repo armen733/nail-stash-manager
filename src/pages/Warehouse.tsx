@@ -872,6 +872,12 @@ export default function Warehouse() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName="All products"
+      />
     </div>
   );
 }
