@@ -261,16 +261,48 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-    if (form.type === "consignment" && !form.salon_id) {
-      toast.error("Pick a salon for this consignment location");
-      return;
+    if (form.type === "consignment") {
+      if (form.consignment_kind === "salon" && !form.salon_id) {
+        toast.error("Pick a salon for this consignment location");
+        return;
+      }
+      if (form.consignment_kind === "supply_store" && !form.supply_store_id) {
+        toast.error("Pick a supply store for this consignment location");
+        return;
+      }
+    }
+
+    // If linking to a supply store and address/coords were edited, push them onto the supply_stores row
+    if (
+      form.type === "consignment" &&
+      form.consignment_kind === "supply_store" &&
+      form.supply_store_id &&
+      form.supply_store_address.trim()
+    ) {
+      const { error: storeErr } = await supabase
+        .from("supply_stores")
+        .update({
+          address: form.supply_store_address.trim(),
+          latitude: form.supply_store_lat,
+          longitude: form.supply_store_lng,
+        })
+        .eq("id", form.supply_store_id);
+      if (storeErr) {
+        toast.error(`Could not save store location: ${storeErr.message}`);
+        return;
+      }
     }
 
     const payload = {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id: form.type === "consignment" ? form.salon_id : null,
+      salon_id:
+        form.type === "consignment" && form.consignment_kind === "salon" ? form.salon_id : null,
+      supply_store_id:
+        form.type === "consignment" && form.consignment_kind === "supply_store"
+          ? form.supply_store_id
+          : null,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
