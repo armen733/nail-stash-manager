@@ -66,7 +66,7 @@ const TYPE_META: Record<MovementRow["movement_type"], { label: string; icon: any
 type RangeKey = "7d" | "30d" | "90d" | "all";
 type FilterKey = "all" | "receive" | "sale";
 
-export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSupplyStore = false }: Props) {
+export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<MovementRow[]>([]);
   const [overrideMap, setOverrideMap] = useState<Map<string, number>>(new Map());
