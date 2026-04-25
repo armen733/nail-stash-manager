@@ -169,6 +169,70 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
     return Array.from(byDay.entries());
   }, [filtered]);
 
+  const handleDeleteReceive = async (r: MovementRow) => {
+    if (!r.product) return;
+    setDeleting(true);
+    try {
+      // Find the default warehouse to receive the returned units
+      const { data: defaultLoc, error: locErr } = await supabase
+        .from("stock_locations")
+        .select("id, name")
+        .eq("is_default", true)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (locErr) throw locErr;
+      if (!defaultLoc) {
+        toast.error("No default warehouse found to restore stock to");
+        setDeleting(false);
+        setConfirmDelete(null);
+        return;
+      }
+
+      // Make sure there's enough stock here to send back
+      const { data: stockRow } = await supabase
+        .from("product_stock")
+        .select("quantity")
+        .eq("product_id", r.product.id)
+        .eq("location_id", locationId)
+        .maybeSingle();
+      const available = Number(stockRow?.quantity ?? 0);
+      if (available < r.quantity) {
+        toast.error(
+          `Only ${available} unit${available === 1 ? "" : "s"} available here — some have already been sold.`,
+        );
+        setDeleting(false);
+        setConfirmDelete(null);
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? null;
+
+      // Insert a transfer movement back to the default warehouse
+      const { error: movErr } = await supabase.from("stock_movements").insert({
+        product_id: r.product.id,
+        movement_type: "transfer",
+        quantity: r.quantity,
+        from_location_id: locationId,
+        to_location_id: defaultLoc.id,
+        unit_cost: r.unit_cost,
+        reason: `Reverted delivery (movement ${r.id.slice(0, 8)})`,
+        reference_type: "reversal",
+        reference_id: r.id,
+        created_by: userId,
+      });
+      if (movErr) throw movErr;
+
+      toast.success(`Returned ${r.quantity} unit${r.quantity === 1 ? "" : "s"} to ${defaultLoc.name}`);
+      setConfirmDelete(null);
+      setReloadKey((k) => k + 1);
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to revert delivery");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {/* Analytics summary */}
