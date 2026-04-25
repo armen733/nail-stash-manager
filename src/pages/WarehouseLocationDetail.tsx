@@ -755,6 +755,12 @@ export default function WarehouseLocationDetail() {
         <TabsContent value="pricing" className="mt-3">
           <LocationPricingTab locationId={location.id} />
         </TabsContent>
+
+        {isSupplyStoreView && (
+          <TabsContent value="earnings" className="mt-3">
+            <LocationFinancialsTab locationId={location.id} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {action && (
