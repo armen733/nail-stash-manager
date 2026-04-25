@@ -299,6 +299,9 @@ export default function Warehouse() {
         city: form.supply_store_city.trim() || null,
         latitude: form.supply_store_lat,
         longitude: form.supply_store_lng,
+        contact_name: form.supply_store_contact_name.trim() || null,
+        phone: form.supply_store_phone.trim() || null,
+        email: form.supply_store_email.trim() || null,
       };
 
       if (linkedSupplyStoreId) {
