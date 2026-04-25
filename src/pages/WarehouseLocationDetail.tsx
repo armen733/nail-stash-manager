@@ -103,6 +103,10 @@ export default function WarehouseLocationDetail() {
     storePaid: number; // sum of qty * unit_cost (what they paid us)
     ourCost: number; // sum of qty * product.cost_usd
   }>({ units: 0, storePaid: 0, ourCost: 0 });
+  // Per-product lifetime totals for this location (units delivered + revenue + cost).
+  const [lifetimeByProduct, setLifetimeByProduct] = useState<
+    Map<string, { units: number; storePaid: number; ourCost: number }>
+  >(new Map());
 
   const [action, setAction] = useState<StockAction | null>(null);
 
