@@ -306,7 +306,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
             );
           })}
           {(() => {
-            const lowCount = pins.filter((p) => (p.lowSkus ?? 0) > 0).length;
+            const lowCount = pins.filter((p) => (p.lowUnits ?? 0) > 0).length;
             if (lowCount === 0) return null;
             return (
               <div className="flex items-center gap-1.5">
