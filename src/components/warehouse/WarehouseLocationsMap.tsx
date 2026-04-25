@@ -27,6 +27,8 @@ export interface WarehousePin {
   units: number;
   skus: number;
   lowSkus?: number;
+  lowUnits?: number;
+
 }
 
 interface Props {
@@ -99,7 +101,8 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
     markersRef.current = [];
 
     pins.forEach((pin) => {
-      const isLow = (pin.lowSkus ?? 0) > 0;
+      const lowUnits = pin.lowUnits ?? 0;
+      const isLow = lowUnits > 0;
       const colors = isLow ? LOW_STOCK_COLOR : TYPE_COLOR[pin.type];
       const el = document.createElement("div");
       el.innerHTML = `
@@ -126,7 +129,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
 
       popupNode.innerHTML = `
         <h3 style="font-weight: 700; font-size: 14px; color: #111; margin: 0 0 4px 0;">${pin.name}</h3>
-        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}${isLow ? ` · <span style="color:#dc2626; font-weight:600;">${pin.lowSkus} low SKU${(pin.lowSkus ?? 0) === 1 ? "" : "s"}</span>` : ""}</p>
+        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}${isLow ? ` · <span style="color:#dc2626; font-weight:600;">${lowUnits.toLocaleString()} low unit${lowUnits === 1 ? "" : "s"}</span>` : ""}</p>
         ${addrLine}
         <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: #4b5563;">
           <span><strong style="color: #111;">${pin.units.toLocaleString()}</strong> units</span>
@@ -289,7 +292,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
       {pins.length > 0 && (
         <div className="absolute top-3 left-3 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border text-[11px] space-y-1">
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
-            const count = pins.filter((p) => p.type === key && (p.lowSkus ?? 0) === 0).length;
+            const count = pins.filter((p) => p.type === key && (p.lowUnits ?? 0) === 0).length;
             if (count === 0) return null;
             const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
@@ -303,7 +306,7 @@ export default function WarehouseLocationsMap({ pins, className, fullscreen: ful
             );
           })}
           {(() => {
-            const lowCount = pins.filter((p) => (p.lowSkus ?? 0) > 0).length;
+            const lowCount = pins.filter((p) => (p.lowUnits ?? 0) > 0).length;
             if (lowCount === 0) return null;
             return (
               <div className="flex items-center gap-1.5">
