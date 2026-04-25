@@ -340,6 +340,15 @@ export default function WarehouseLocationDetail() {
           onDone={load}
         />
       )}
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName={location.name}
+        defaultDiscount={storeDefaults?.discount ?? 0}
+        defaultMarkup={storeDefaults?.markup ?? 0}
+        preselectedProductIds={rows.map((r) => r.product_id)}
+      />
     </div>
   );
 }
