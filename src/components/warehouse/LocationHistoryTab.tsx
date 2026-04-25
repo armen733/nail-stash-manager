@@ -345,10 +345,9 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                     const meta = TYPE_META[r.movement_type];
                     const Icon = meta.icon;
                     const incoming = r.to_location_id === locationId;
-                    const cost =
-                      r.unit_cost != null
-                        ? Number(r.unit_cost)
-                        : Number(r.product?.cost_usd ?? 0);
+                    // Always use the real product cost from the products catalog
+                    // (movement.unit_cost may store the price paid by the supply store).
+                    const cost = Number(r.product?.cost_usd ?? 0);
                     const wholesale = Number(
                       r.product?.wholesale_price_usd ?? r.product?.price_usd ?? 0,
                     );
@@ -409,10 +408,10 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                               </span>
                               <span
                                 className={
-                                  lineProfit >= 0 ? "text-emerald-500" : "text-destructive"
+                                  storePrice - cost >= 0 ? "text-emerald-500" : "text-destructive"
                                 }
                               >
-                                Profit ${lineProfit.toFixed(2)}
+                                Profit ${(storePrice - cost).toFixed(2)}
                               </span>
                             </div>
                           )}
