@@ -33,6 +33,7 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
@@ -41,6 +42,7 @@ import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
