@@ -170,6 +170,9 @@ export default function WarehouseLocationDetail() {
         if (r.discount_percent_override != null) {
           productDiscountOverrides.set(r.product_id, Number(r.discount_percent_override));
         }
+        if (r.markup_percent_override != null) {
+          productMarkupOverrides.set(r.product_id, Number(r.markup_percent_override));
+        }
       });
     } else {
       setStoreDefaults(null);
