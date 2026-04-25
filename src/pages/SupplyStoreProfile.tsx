@@ -246,6 +246,65 @@ export default function SupplyStoreProfile() {
         )}
       </div>
 
+      {/* Store information */}
+      <Card>
+        <CardHeader className="p-3 sm:p-4">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Store className="h-4 w-4" /> Store information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 sm:p-4 pt-0">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            <div>
+              <dt className="text-xs text-muted-foreground">Name</dt>
+              <dd className="font-medium">{store.name}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Status</dt>
+              <dd>
+                <Badge variant={store.status === "active" ? "default" : "secondary"} className="text-[10px]">
+                  {store.status}
+                </Badge>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Contact name</dt>
+              <dd className="font-medium">{store.contact_name || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Phone</dt>
+              <dd className="font-medium">{store.phone || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Email</dt>
+              <dd className="font-medium break-all">{store.email || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Website</dt>
+              <dd className="font-medium break-all">{store.website || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Instagram</dt>
+              <dd className="font-medium">{store.instagram ? `@${store.instagram.replace(/^@/, "")}` : <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">City</dt>
+              <dd className="font-medium">{store.city || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-muted-foreground">Address</dt>
+              <dd className="font-medium">{store.address || <span className="text-muted-foreground">—</span>}</dd>
+            </div>
+            {store.notes && (
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted-foreground">Notes</dt>
+                <dd className="whitespace-pre-wrap text-sm">{store.notes}</dd>
+              </div>
+            )}
+          </dl>
+        </CardContent>
+      </Card>
+
       {/* Pricing defaults */}
       <Card>
         <CardHeader className="p-3 sm:p-4">
