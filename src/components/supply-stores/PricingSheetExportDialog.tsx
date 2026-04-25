@@ -16,6 +16,7 @@ import { Search, Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCSV } from "@/lib/csv-export";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
+import { computePricing } from "@/lib/wholesale-pricing";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
 
 const BRAND_EMAIL = "info@nerabeautyus.com";
@@ -123,16 +124,21 @@ export const PricingSheetExportDialog = ({
     const rows = products
       .filter((p) => selected.has(p.id))
       .map((p) => {
-        const ourPrice = Number(p.price_usd ?? 0);
-        const wholesale = +(ourPrice * (1 - discount / 100)).toFixed(2);
-        const recommended = +(ourPrice * (1 + markup / 100)).toFixed(2);
+        const pricing = computePricing({
+          basePrice: Number(p.price_usd ?? 0),
+          discountPercent: discount,
+          markupPercent: markup,
+        });
         return {
           SKU: p.sku,
           Name: p.name,
-          "Our Price": ourPrice.toFixed(2),
+          Category: p.category,
+          "List Price": pricing.basePrice.toFixed(2),
           "Discount %": discount,
-          "Wholesale Price": wholesale.toFixed(2),
-          "Recommended Retail": recommended.toFixed(2),
+          "Your Cost": pricing.storeCost.toFixed(2),
+          "Markup %": markup,
+          "Suggested Retail": pricing.suggestedRetail.toFixed(2),
+          "Store Margin": pricing.storeMargin.toFixed(2),
         };
       });
 
@@ -283,11 +289,11 @@ export const PricingSheetExportDialog = ({
                           </div>
                         </div>
                         <div className="text-right text-xs whitespace-nowrap">
-                          <div className="text-muted-foreground">
+                          <div className="text-muted-foreground line-through">
                             ${ourPrice.toFixed(2)}
                           </div>
-                          <div className="font-medium">
-                            → ${wholesale.toFixed(2)}
+                          <div className="font-medium text-primary">
+                            ${wholesale.toFixed(2)}
                           </div>
                         </div>
                       </li>
