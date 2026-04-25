@@ -372,7 +372,7 @@ export default function Warehouse() {
       retail: acc.retail + s.retail,
       skus: acc.skus + s.skus,
     }),
-    { units: 0, value: 0, retail: 0 }
+    { units: 0, value: 0, retail: 0, skus: 0 }
   );
 
   const filtered = useMemo(() => {
