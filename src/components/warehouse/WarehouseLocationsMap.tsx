@@ -27,6 +27,8 @@ export interface WarehousePin {
   units: number;
   skus: number;
   lowSkus?: number;
+  lowUnits?: number;
+
 }
 
 interface Props {
