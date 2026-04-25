@@ -102,10 +102,13 @@ export function StockActionDialog({
   action,
   locationId,
   locationName,
+  locationType,
+  storeDiscountPercent = 0,
   otherLocations = [],
   onDone,
 }: Props) {
   const meta = ACTION_META[action];
+  const isConsignmentReceive = action === "receive" && locationType === "consignment";
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -133,7 +136,7 @@ export function StockActionDialog({
       supabase
         .from("products")
         .select(
-          "id, name, sku, cost_usd, price_usd, image_url, product_images(image_url, display_order)"
+          "id, name, sku, cost_usd, price_usd, wholesale_price_usd, image_url, product_images(image_url, display_order)"
         )
         .order("name")
         .limit(2000),
