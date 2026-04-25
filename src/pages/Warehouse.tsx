@@ -318,7 +318,9 @@ export default function Warehouse() {
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
         : loc.type === "consignment"
-        ? salons.find((sa) => sa.id === loc.salon_id)?.name
+        ? (salons.find((sa) => sa.id === loc.salon_id)?.name ??
+            supplyStores.find((sa) => sa.id === loc.supply_store_id)?.name ??
+            null)
         : null;
     const isEmpty = s.units === 0;
 
