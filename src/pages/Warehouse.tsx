@@ -44,6 +44,7 @@ import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { LogoUploader } from "@/components/LogoUploader";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
@@ -90,6 +91,7 @@ interface SupplyStoreLite {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logo_url: string | null;
 }
 
 const TYPE_META: Record<
@@ -169,6 +171,7 @@ export default function Warehouse() {
     supply_store_phone: string;
     supply_store_email: string;
     supply_store_website: string;
+    supply_store_logo_url: string;
   }>({
     name: "",
     type: "warehouse",
@@ -185,6 +188,7 @@ export default function Warehouse() {
     supply_store_phone: "",
     supply_store_email: "",
     supply_store_website: "",
+    supply_store_logo_url: "",
   });
 
   const loadData = async () => {
@@ -197,7 +201,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -259,6 +263,7 @@ export default function Warehouse() {
       supply_store_phone: "",
       supply_store_email: "",
       supply_store_website: "",
+      supply_store_logo_url: "",
     });
     setDialogOpen(true);
   };
@@ -285,6 +290,7 @@ export default function Warehouse() {
       supply_store_phone: linkedStore?.phone ?? "",
       supply_store_email: linkedStore?.email ?? "",
       supply_store_website: linkedStore?.website ?? "",
+      supply_store_logo_url: linkedStore?.logo_url ?? "",
     });
     setDialogOpen(true);
   };
@@ -323,6 +329,7 @@ export default function Warehouse() {
         phone: form.supply_store_phone.trim() || null,
         email: form.supply_store_email.trim() || null,
         website: form.supply_store_website.trim() || null,
+        logo_url: form.supply_store_logo_url.trim() || null,
       };
 
       if (linkedSupplyStoreId) {
@@ -918,6 +925,13 @@ export default function Warehouse() {
                     }
                   />
                 </div>
+
+                <LogoUploader
+                  value={form.supply_store_logo_url}
+                  onChange={(url) => setForm((f) => ({ ...f, supply_store_logo_url: url }))}
+                  folder="supply-stores"
+                  label="Store logo"
+                />
               </>
             )}
 
