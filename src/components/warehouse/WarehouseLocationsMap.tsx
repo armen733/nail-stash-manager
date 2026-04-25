@@ -231,10 +231,29 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
 
   return (
     <div
-      className={cn("relative w-full overflow-hidden rounded-lg border border-border", className)}
-      style={{ height: "600px" }}
+      className={cn(
+        "relative w-full overflow-hidden",
+        isFullscreen
+          ? "fixed inset-0 z-[100] rounded-none border-0"
+          : "rounded-lg border border-border",
+        !isFullscreen && className,
+      )}
+      style={isFullscreen ? undefined : { height: "600px" }}
     >
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+
+      {/* Fullscreen / exit button */}
+      <div className="absolute top-3 right-3 z-30">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shadow-lg h-8 w-8 p-0"
+          onClick={() => setIsFullscreen((v) => !v)}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+      </div>
 
       {pins.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10 pointer-events-none">
