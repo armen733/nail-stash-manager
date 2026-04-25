@@ -88,6 +88,7 @@ export default function WarehouseLocationDetail() {
     city: string | null;
     address: string | null;
     notes: string | null;
+    logo_url: string | null;
   } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
