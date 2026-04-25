@@ -33,6 +33,7 @@ import {
   ChevronRight,
   List,
   Map as MapIcon,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
