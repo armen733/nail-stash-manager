@@ -62,7 +62,7 @@ export const SupplyStoreStockHistory = ({ storeId, storeName, open, onOpenChange
           supabase
             .from("stock_movements")
             .select("id, created_at, quantity, unit_cost, reason, product_id, product:products(name, sku, image_url, wholesale_price_usd, price_usd, cost_usd)")
-            .in("movement_type", ["transfer", "sale"])
+            .in("movement_type", ["transfer", "sale", "receive"])
             .in("to_location_id", locIds)
             .order("created_at", { ascending: false })
             .limit(2000),
