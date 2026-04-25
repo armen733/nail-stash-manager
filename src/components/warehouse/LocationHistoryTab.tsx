@@ -252,22 +252,18 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                 return;
               }
               const data = receivedRows.map((r) => {
-                const cost =
-                  r.unit_cost != null ? Number(r.unit_cost) : Number(r.product!.cost_usd ?? 0);
+                // Use the real product cost from the catalog (not movement.unit_cost,
+                // which may store the price paid by the supply store).
+                const cost = Number(r.product!.cost_usd ?? 0);
                 const wholesale = Number(
                   r.product!.wholesale_price_usd ?? r.product!.price_usd ?? 0,
                 );
-                const recommendedRetail = Number(r.product!.price_usd ?? 0);
                 const fallbackStorePrice = wholesale * (1 - (storeDiscountPercent || 0) / 100);
                 const sellToStore = overrideMap.get(r.product!.id) ?? fallbackStorePrice;
-                const discountPct =
-                  wholesale > 0
-                    ? ((wholesale - sellToStore) / wholesale) * 100
-                    : storeDiscountPercent || 0;
                 const lineRevenue = sellToStore * r.quantity;
                 const lineCost = cost * r.quantity;
                 const lineProfit = lineRevenue - lineCost;
-                const margin = lineRevenue > 0 ? (lineProfit / lineRevenue) * 100 : 0;
+                const profitPct = cost > 0 ? (lineProfit / lineCost) * 100 : 0;
                 return {
                   Date: formatInPacific(r.created_at, {
                     year: "numeric",
@@ -276,17 +272,13 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
                   }),
                   SKU: r.product!.sku,
                   Product: r.product!.name,
-                  Quantity: r.quantity,
-                  "Our Cost (unit)": cost.toFixed(2),
-                  "Wholesale (unit)": wholesale.toFixed(2),
-                  "Discount %": discountPct.toFixed(1),
-                  "Sell to Store (unit)": sellToStore.toFixed(2),
-                  "Recommended Retail (unit)": recommendedRetail.toFixed(2),
+                  Units: r.quantity,
+                  "Cost (unit)": cost.toFixed(2),
+                  "Sell (unit)": sellToStore.toFixed(2),
                   "Total Cost": lineCost.toFixed(2),
-                  "Total Sell to Store": lineRevenue.toFixed(2),
-                  "Projected Profit": lineProfit.toFixed(2),
-                  "Margin %": margin.toFixed(1),
-                  Notes: r.reason ?? "",
+                  "Total Sell": lineRevenue.toFixed(2),
+                  "Profit ($)": lineProfit.toFixed(2),
+                  "Profit (%)": profitPct.toFixed(1),
                 };
               });
               downloadCSV(data, "supply-store-deliveries");
