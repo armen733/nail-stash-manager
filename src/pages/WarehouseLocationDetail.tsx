@@ -232,6 +232,41 @@ export default function WarehouseLocationDetail() {
         type: l.type,
       }))
     );
+
+    // Lifetime totals: everything ever delivered into this location.
+    if (isSupply) {
+      const { data: moves } = await supabase
+        .from("stock_movements")
+        .select("product_id, quantity, unit_cost, movement_type")
+        .eq("to_location_id", id);
+      const lifeRows = (moves ?? []) as any[];
+      // Get product cost map for the involved products (already partially in stockRes, but movements
+      // may reference products no longer on hand).
+      const pids = Array.from(new Set(lifeRows.map((m) => m.product_id)));
+      const costMap = new Map<string, number>();
+      if (pids.length > 0) {
+        const { data: prods } = await supabase
+          .from("products")
+          .select("id, cost_usd")
+          .in("id", pids);
+        ((prods ?? []) as any[]).forEach((p) => {
+          if (p.cost_usd != null) costMap.set(p.id, Number(p.cost_usd));
+        });
+      }
+      let units = 0;
+      let storePaid = 0;
+      let ourCost = 0;
+      for (const m of lifeRows) {
+        const qty = Number(m.quantity ?? 0);
+        units += qty;
+        storePaid += qty * Number(m.unit_cost ?? 0);
+        ourCost += qty * (costMap.get(m.product_id) ?? 0);
+      }
+      setLifetime({ units, storePaid, ourCost });
+    } else {
+      setLifetime({ units: 0, storePaid: 0, ourCost: 0 });
+    }
+
     setLoading(false);
   };
 
