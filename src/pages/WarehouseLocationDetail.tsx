@@ -227,6 +227,15 @@ export default function WarehouseLocationDetail() {
           <div className="px-2 py-1.5 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
             <img src={amazonLogoFull} alt="Amazon" className="h-7 w-auto object-contain" loading="lazy" />
           </div>
+        ) : storeInfo?.logo_url ? (
+          <div className="h-12 w-12 rounded-md border bg-white flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img
+              src={storeInfo.logo_url}
+              alt={storeInfo.name}
+              className="h-full w-full object-contain"
+              loading="lazy"
+            />
+          </div>
         ) : (
           <div className="p-2.5 rounded-md bg-primary/10 text-primary flex-shrink-0">
             <Icon className="h-6 w-6" />
