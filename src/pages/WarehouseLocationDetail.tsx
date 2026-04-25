@@ -215,7 +215,7 @@ export default function WarehouseLocationDetail() {
                 <div className="text-xs text-muted-foreground truncate">
                   {supplyStore.address || supplyStore.city || "No address on file"}
                   {supplyStore.latitude === null || supplyStore.longitude === null ? (
-                    <span className="ml-2 text-amber-500">· Location missing</span>
+                    <span className="ml-2 text-destructive">· Location missing</span>
                   ) : null}
                 </div>
               </div>
