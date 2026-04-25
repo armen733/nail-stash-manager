@@ -69,6 +69,19 @@ export default function SupplyStores() {
     load();
   }, []);
 
+  const goToStoreLocation = async (storeId: string) => {
+    const { data, error } = await supabase
+      .from("stock_locations")
+      .select("id")
+      .eq("supply_store_id", storeId)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error("No warehouse location linked to this store yet.");
+      return;
+    }
+    navigate(`/warehouse/${data.id}`);
+  };
+
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
@@ -403,7 +416,7 @@ export default function SupplyStores() {
                 <Card
                   key={s.id}
                   className="cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => navigate(`/supply-stores/${s.id}`)}
+                  onClick={() => goToStoreLocation(s.id)}
                 >
                   <CardHeader className="p-3 sm:p-4">
                     <div className="flex items-start justify-between gap-2">
