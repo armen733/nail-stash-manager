@@ -42,14 +42,13 @@ export function LocationFinancialsTab({ locationId }: Props) {
 
   const load = async () => {
     setLoading(true);
-    // Pull every movement INTO this location — that's what we delivered to the store.
+    // Stock IN to store (what we delivered) — store paid us this
     const { data: moves } = await supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
       .eq("to_location_id", locationId);
 
-    // Pull movements OUT (returns to warehouse, etc.) so we don't overstate
-    // what they actually owe / paid for.
+    // Stock OUT (returns to warehouse, etc.)
     const { data: outMoves } = await supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
@@ -61,21 +60,36 @@ export function LocationFinancialsTab({ locationId }: Props) {
       new Set([...ins, ...outs].map((m) => m.product_id))
     );
 
+    // Get product info — we need retail price (price_usd) as fallback
+    // for store's selling price to customers
     const productMap = new Map<
       string,
-      { name: string; sku: string; cost: number }
+      { name: string; sku: string; retailPrice: number }
     >();
     if (allPids.length > 0) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, sku, cost_usd")
+        .select("id, name, sku, price_usd")
         .in("id", allPids);
       ((prods ?? []) as any[]).forEach((p) => {
         productMap.set(p.id, {
           name: p.name,
           sku: p.sku,
-          cost: Number(p.cost_usd ?? 0),
+          retailPrice: Number(p.price_usd ?? 0),
         });
+      });
+    }
+
+    // Get this store's specific retail price overrides (if any)
+    const locPriceMap = new Map<string, number>();
+    if (allPids.length > 0) {
+      const { data: locPrices } = await supabase
+        .from("location_product_prices")
+        .select("product_id, price_usd")
+        .eq("location_id", locationId)
+        .in("product_id", allPids);
+      ((locPrices ?? []) as any[]).forEach((lp) => {
+        locPriceMap.set(lp.product_id, Number(lp.price_usd ?? 0));
       });
     }
 
@@ -113,21 +127,23 @@ export function LocationFinancialsTab({ locationId }: Props) {
       if (!info) continue;
       const unitsSold = a.unitsIn - a.unitsOut;
       if (unitsSold <= 0) continue;
-      const storePaid = a.paidIn - a.paidOut;
-      const ourCost = unitsSold * info.cost;
-      const profit = storePaid - ourCost;
-      const marginPct = ourCost > 0 ? (profit / ourCost) * 100 : 0;
-      const avgSellPrice = unitsSold > 0 ? storePaid / unitsSold : 0;
+      const storeCost = a.paidIn - a.paidOut; // what store paid us (their expense)
+      const retail = locPriceMap.get(pid) ?? info.retailPrice; // store's selling price
+      const storeRevenue = unitsSold * retail; // what store earns from customers
+      const profit = storeRevenue - storeCost;
+      const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
+      const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
       result.push({
         product_id: pid,
         name: info.name,
         sku: info.sku,
         unitsSold,
-        storePaid,
-        ourCost,
+        storeRevenue,
+        storeCost,
         profit,
         marginPct,
-        avgSellPrice,
+        avgRetailPrice: retail,
+        avgWholesalePrice,
       });
     }
     setRows(result);
