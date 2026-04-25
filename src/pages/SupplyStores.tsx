@@ -30,6 +30,7 @@ interface SupplyStore {
   default_discount_percent: number;
   default_markup_percent: number;
   status: string;
+  logo_url: string | null;
 }
 
 const emptyForm = {
@@ -46,6 +47,7 @@ const emptyForm = {
   notes: "",
   default_discount_percent: "0",
   default_markup_percent: "0",
+  logo_url: "",
 };
 
 export default function SupplyStores() {
@@ -104,6 +106,7 @@ export default function SupplyStores() {
       notes: s.notes ?? "",
       default_discount_percent: String(s.default_discount_percent ?? 0),
       default_markup_percent: String(s.default_markup_percent ?? 0),
+      logo_url: s.logo_url ?? "",
     });
     setDialogOpen(true);
   };
@@ -128,6 +131,7 @@ export default function SupplyStores() {
       notes: form.notes || null,
       default_discount_percent: Number(form.default_discount_percent) || 0,
       default_markup_percent: Number(form.default_markup_percent) || 0,
+      logo_url: form.logo_url.trim() || null,
     };
 
     if (editing) {
@@ -357,6 +361,24 @@ export default function SupplyStores() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="logo_url">Logo URL</Label>
+                <Input
+                  id="logo_url"
+                  placeholder="https://…"
+                  value={form.logo_url}
+                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                  className="min-h-[44px]"
+                />
+                {form.logo_url && (
+                  <img
+                    src={form.logo_url}
+                    alt="Logo preview"
+                    className="h-12 w-12 rounded-md object-contain border border-border bg-background"
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Input
                   id="notes"
@@ -421,7 +443,16 @@ export default function SupplyStores() {
                   <CardHeader className="p-3 sm:p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <Store className="h-5 w-5 text-primary flex-shrink-0" />
+                        {s.logo_url ? (
+                          <img
+                            src={s.logo_url}
+                            alt={`${s.name} logo`}
+                            className="h-8 w-8 rounded-md object-contain bg-background border border-border flex-shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Store className="h-5 w-5 text-primary flex-shrink-0" />
+                        )}
                         <h3 className="font-semibold text-base sm:text-lg truncate">{s.name}</h3>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
