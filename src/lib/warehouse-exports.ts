@@ -76,7 +76,7 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
         const q = supabase
           .from("stock_movements")
           .select(
-            "created_at, quantity, unit_cost, reason, movement_type, from_location_id, to_location_id, from_loc:stock_locations!stock_movements_from_location_id_fkey(name, type, supply_store_id), to_loc:stock_locations!stock_movements_to_location_id_fkey(name, type, supply_store_id), product:products(name, sku, cost_usd, wholesale_price_usd, price_usd), creator:profiles!stock_movements_created_by_fkey(full_name)"
+            "created_at, quantity, unit_cost, reason, movement_type, from_location_id, to_location_id, product_id, from_loc:stock_locations!stock_movements_from_location_id_fkey(name, type, supply_store_id), to_loc:stock_locations!stock_movements_to_location_id_fkey(name, type, supply_store_id), product:products(name, sku, cost_usd, wholesale_price_usd, price_usd), creator:profiles!stock_movements_created_by_fkey(full_name)"
           )
           .in("movement_type", ["sale", "transfer"])
           .order("created_at", { ascending: false });
