@@ -50,6 +50,7 @@ export const PricingSheetExportDialog = ({
   defaultDiscount = 0,
   defaultMarkup = 0,
   preselectedProductIds,
+  storeInfo,
 }: Props) => {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -57,6 +58,7 @@ export const PricingSheetExportDialog = ({
   const [search, setSearch] = useState("");
   const [discount, setDiscount] = useState<number>(defaultDiscount);
   const [markup, setMarkup] = useState<number>(defaultMarkup);
+  const [brand, setBrand] = useState<CompanyBrand | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -66,12 +68,16 @@ export const PricingSheetExportDialog = ({
 
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, sku, name, category, price_usd")
-        .order("sku");
-      if (error) toast.error(error.message);
-      setProducts((data ?? []) as Product[]);
+      const [productsRes, brandRes] = await Promise.all([
+        supabase.from("products").select("id, sku, name, category, price_usd").order("sku"),
+        supabase
+          .from("company_settings")
+          .select("company_name, logo_url, contact_phone, contact_email, website, instagram, address, tagline")
+          .maybeSingle(),
+      ]);
+      if (productsRes.error) toast.error(productsRes.error.message);
+      setProducts((productsRes.data ?? []) as Product[]);
+      setBrand((brandRes.data ?? null) as CompanyBrand | null);
       setLoading(false);
     };
     load();
