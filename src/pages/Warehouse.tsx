@@ -150,7 +150,7 @@ export default function Warehouse() {
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, stockRes, prodRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -158,6 +158,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
+      supabase.from("supply_stores").select("id, name, address, latitude, longitude"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -166,6 +167,7 @@ export default function Warehouse() {
     setLocations((locRes.data ?? []) as StockLocation[]);
     setProfiles((profRes.data ?? []) as Profile[]);
     setSalons((salRes.data ?? []) as Salon[]);
+    setSupplyStores((suppRes.data ?? []) as SupplyStoreLite[]);
 
     const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
