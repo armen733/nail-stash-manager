@@ -352,13 +352,18 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-[160px] h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="7d">Last 7 days</SelectItem>
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
+            <SelectItem value="this_month">This month</SelectItem>
+            <SelectItem value="last_month">Last month</SelectItem>
+            <SelectItem value="last_3_months">Last 3 months</SelectItem>
+            <SelectItem value="last_6_months">Last 6 months</SelectItem>
+            <SelectItem value="this_year">This year</SelectItem>
             <SelectItem value="all">All time</SelectItem>
           </SelectContent>
         </Select>
