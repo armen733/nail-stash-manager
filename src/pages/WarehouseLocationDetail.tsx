@@ -15,6 +15,7 @@ import {
   ClipboardEdit,
   ShoppingCart,
   FileSpreadsheet,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
