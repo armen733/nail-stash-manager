@@ -764,6 +764,27 @@ const Index = () => {
         ))}
       </div>
 
+      {supplyStoreCards.length > 0 && (
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+          {supplyStoreCards.map((stat, index) => (
+            <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow border-primary/20">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <stat.icon className="h-4 w-4 text-primary flex-shrink-0" />
+              </CardHeader>
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-lg sm:text-2xl font-bold truncate">{stat.value}</div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
+                  {stat.description}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Sales by Category - Pie Chart */}
       <Card className="shadow-[var(--shadow-card)] content-auto">
         <CardHeader className="flex flex-row items-center justify-between">
