@@ -15,11 +15,12 @@ interface ProductRow {
   name: string;
   sku: string;
   unitsSold: number;
-  storePaid: number;
-  ourCost: number;
-  profit: number;
+  storeRevenue: number; // what store earns selling to customers (retail × units)
+  storeCost: number; // what store paid us (wholesale)
+  profit: number; // storeRevenue - storeCost
   marginPct: number;
-  avgSellPrice: number;
+  avgRetailPrice: number;
+  avgWholesalePrice: number;
 }
 
 const formatMoney = (n: number) => {
@@ -41,14 +42,13 @@ export function LocationFinancialsTab({ locationId }: Props) {
 
   const load = async () => {
     setLoading(true);
-    // Pull every movement INTO this location — that's what we delivered to the store.
+    // Stock IN to store (what we delivered) — store paid us this
     const { data: moves } = await supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
       .eq("to_location_id", locationId);
 
-    // Pull movements OUT (returns to warehouse, etc.) so we don't overstate
-    // what they actually owe / paid for.
+    // Stock OUT (returns to warehouse, etc.)
     const { data: outMoves } = await supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
@@ -60,21 +60,36 @@ export function LocationFinancialsTab({ locationId }: Props) {
       new Set([...ins, ...outs].map((m) => m.product_id))
     );
 
+    // Get product info — we need retail price (price_usd) as fallback
+    // for store's selling price to customers
     const productMap = new Map<
       string,
-      { name: string; sku: string; cost: number }
+      { name: string; sku: string; retailPrice: number }
     >();
     if (allPids.length > 0) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, sku, cost_usd")
+        .select("id, name, sku, price_usd")
         .in("id", allPids);
       ((prods ?? []) as any[]).forEach((p) => {
         productMap.set(p.id, {
           name: p.name,
           sku: p.sku,
-          cost: Number(p.cost_usd ?? 0),
+          retailPrice: Number(p.price_usd ?? 0),
         });
+      });
+    }
+
+    // Get this store's specific retail price overrides (if any)
+    const locPriceMap = new Map<string, number>();
+    if (allPids.length > 0) {
+      const { data: locPrices } = await supabase
+        .from("location_product_prices")
+        .select("product_id, price_usd")
+        .eq("location_id", locationId)
+        .in("product_id", allPids);
+      ((locPrices ?? []) as any[]).forEach((lp) => {
+        locPriceMap.set(lp.product_id, Number(lp.price_usd ?? 0));
       });
     }
 
@@ -112,21 +127,23 @@ export function LocationFinancialsTab({ locationId }: Props) {
       if (!info) continue;
       const unitsSold = a.unitsIn - a.unitsOut;
       if (unitsSold <= 0) continue;
-      const storePaid = a.paidIn - a.paidOut;
-      const ourCost = unitsSold * info.cost;
-      const profit = storePaid - ourCost;
-      const marginPct = ourCost > 0 ? (profit / ourCost) * 100 : 0;
-      const avgSellPrice = unitsSold > 0 ? storePaid / unitsSold : 0;
+      const storeCost = a.paidIn - a.paidOut; // what store paid us (their expense)
+      const retail = locPriceMap.get(pid) ?? info.retailPrice; // store's selling price
+      const storeRevenue = unitsSold * retail; // what store earns from customers
+      const profit = storeRevenue - storeCost;
+      const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
+      const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
       result.push({
         product_id: pid,
         name: info.name,
         sku: info.sku,
         unitsSold,
-        storePaid,
-        ourCost,
+        storeRevenue,
+        storeCost,
         profit,
         marginPct,
-        avgSellPrice,
+        avgRetailPrice: retail,
+        avgWholesalePrice,
       });
     }
     setRows(result);
@@ -144,8 +161,8 @@ export function LocationFinancialsTab({ locationId }: Props) {
     let cost = 0;
     rows.forEach((r) => {
       units += r.unitsSold;
-      revenue += r.storePaid;
-      cost += r.ourCost;
+      revenue += r.storeRevenue;
+      cost += r.storeCost;
     });
     const profit = revenue - cost;
     const margin = cost > 0 ? (profit / cost) * 100 : 0;
@@ -167,7 +184,7 @@ export function LocationFinancialsTab({ locationId }: Props) {
         case "margin":
           return b.marginPct - a.marginPct;
         case "revenue":
-          return b.storePaid - a.storePaid;
+          return b.storeRevenue - a.storeRevenue;
         case "profit":
         default:
           return b.profit - a.profit;
@@ -199,36 +216,38 @@ export function LocationFinancialsTab({ locationId }: Props) {
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Total revenue
+              <DollarSign className="h-3 w-3" /> Store revenue
             </div>
             <div className="text-xl font-bold text-primary">
               {formatMoney(totals.revenue)}
             </div>
-            <div className="text-[10px] text-muted-foreground">store paid us</div>
+            <div className="text-[10px] text-muted-foreground">
+              retail × units sold
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingDown className="h-3 w-3" /> Our expenses
+              <TrendingDown className="h-3 w-3" /> Store expenses
             </div>
             <div className="text-xl font-bold">{formatMoney(totals.cost)}</div>
             <div className="text-[10px] text-muted-foreground">
-              factory cost of units sold
+              what they paid us (wholesale)
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Net profit
+              <TrendingUp className="h-3 w-3" /> Store profit
             </div>
             <div
               className={`text-xl font-bold ${totals.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
             >
               {formatMoney(totals.profit)}
             </div>
-            <div className="text-[10px] text-muted-foreground">revenue − cost</div>
+            <div className="text-[10px] text-muted-foreground">revenue − expenses</div>
           </CardContent>
         </Card>
         <Card>
@@ -320,23 +339,23 @@ export function LocationFinancialsTab({ locationId }: Props) {
                   <div className="text-muted-foreground leading-none">Units sold</div>
                   <div className="mt-1 font-semibold">{r.unitsSold}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    avg ${r.avgSellPrice.toFixed(2)}/u
+                    retail ${r.avgRetailPrice.toFixed(2)}/u
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
                   <div className="text-muted-foreground leading-none">Revenue</div>
                   <div className="mt-1 font-semibold text-primary">
-                    {formatMoney(r.storePaid)}
+                    {formatMoney(r.storeRevenue)}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    store paid
+                    store earns
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                  <div className="text-muted-foreground leading-none">Our cost</div>
-                  <div className="mt-1 font-semibold">{formatMoney(r.ourCost)}</div>
+                  <div className="text-muted-foreground leading-none">Expense</div>
+                  <div className="mt-1 font-semibold">{formatMoney(r.storeCost)}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    factory
+                    paid us ${r.avgWholesalePrice.toFixed(2)}/u
                   </div>
                 </div>
               </div>
