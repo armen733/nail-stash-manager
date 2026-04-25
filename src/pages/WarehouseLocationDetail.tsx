@@ -75,6 +75,7 @@ export default function WarehouseLocationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [location, setLocation] = useState<StockLocation | null>(null);
+  const [supplyStore, setSupplyStore] = useState<LinkedSupplyStore | null>(null);
   const [rows, setRows] = useState<StockRow[]>([]);
   const [otherLocations, setOtherLocations] = useState<
     { id: string; name: string; type: string }[]
@@ -108,7 +109,21 @@ export default function WarehouseLocationDetail() {
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
-    setLocation((locRes.data ?? null) as StockLocation | null);
+    const loc = (locRes.data ?? null) as StockLocation | null;
+    setLocation(loc);
+
+    // If consignment is linked to a supply store, fetch its address/coords for quick actions.
+    if (loc?.supply_store_id) {
+      const { data: storeData } = await supabase
+        .from("supply_stores")
+        .select("id, name, address, city, latitude, longitude, phone")
+        .eq("id", loc.supply_store_id)
+        .maybeSingle();
+      setSupplyStore((storeData ?? null) as LinkedSupplyStore | null);
+    } else {
+      setSupplyStore(null);
+    }
+
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
