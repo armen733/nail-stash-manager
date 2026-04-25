@@ -73,7 +73,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, isSup
       let q = supabase
         .from("stock_movements")
         .select(
-          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd)",
+          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd, image_url, product_images(image_url, display_order))",
         )
         .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
         .order("created_at", { ascending: false })
