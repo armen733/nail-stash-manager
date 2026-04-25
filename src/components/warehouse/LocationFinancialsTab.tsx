@@ -231,7 +231,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
               {formatMoney(totals.revenue)}
             </div>
             <div className="text-[10px] text-muted-foreground">
-              retail × units sold
+              suggested retail × units
             </div>
           </CardContent>
         </Card>
