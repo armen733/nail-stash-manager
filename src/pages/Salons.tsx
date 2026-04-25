@@ -466,7 +466,16 @@ const Salons = () => {
                 }}>
                   <div className="flex items-start justify-between mb-3 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      {salon.logo_url ? (
+                        <img
+                          src={salon.logo_url}
+                          alt={`${salon.name} logo`}
+                          className="h-8 w-8 rounded-md object-contain bg-background border border-border flex-shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Building2 className="h-5 w-5 text-primary flex-shrink-0" />
+                      )}
                       <h3 className="font-semibold text-base sm:text-lg truncate">{salon.name}</h3>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
