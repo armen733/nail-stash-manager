@@ -1357,19 +1357,20 @@ const Index = () => {
         </Card>
 
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-2 items-stretch">
             <button
               type="button"
               onClick={() => setTopProductsOpen((v) => !v)}
-              className="flex items-center gap-2 text-left flex-1 min-w-0"
+              className="flex items-center gap-2 text-left w-full"
             >
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${topProductsOpen ? "" : "-rotate-90"}`} />
-              <CardTitle className="text-base sm:text-lg truncate">Top Products</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Top Products</CardTitle>
               {!topProductsOpen && topProducts.length > 0 && (
                 <span className="text-xs text-muted-foreground ml-1">({topProducts.length})</span>
               )}
             </button>
-            <div className="flex gap-2">
+            {topProductsOpen && (
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -1499,6 +1500,7 @@ const Index = () => {
                 PNG
               </Button>
             </div>
+            )}
           </CardHeader>
           {topProductsOpen && (
           <CardContent className="overflow-x-auto">
