@@ -287,6 +287,76 @@ export default function WarehouseLocationDetail() {
         </CardContent></Card>
       </div>
 
+      {storeInfo && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" /> Store information
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => navigate(`/supply-stores/${storeInfo.id}`)}
+              >
+                Open profile <ExternalLink className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Name</dt>
+                <dd className="font-medium">{storeInfo.name}</dd>
+              </div>
+              {storeInfo.status && (
+                <div>
+                  <dt className="text-[10px] uppercase text-muted-foreground">Status</dt>
+                  <dd>
+                    <Badge variant={storeInfo.status === "active" ? "default" : "secondary"} className="text-[10px]">
+                      {storeInfo.status}
+                    </Badge>
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Contact</dt>
+                <dd className="font-medium">{storeInfo.contact_name || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Phone</dt>
+                <dd className="font-medium">{storeInfo.phone || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Email</dt>
+                <dd className="font-medium break-all">{storeInfo.email || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Website</dt>
+                <dd className="font-medium break-all">{storeInfo.website || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">Instagram</dt>
+                <dd className="font-medium">{storeInfo.instagram ? `@${storeInfo.instagram.replace(/^@/, "")}` : <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase text-muted-foreground">City</dt>
+                <dd className="font-medium">{storeInfo.city || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-[10px] uppercase text-muted-foreground">Address</dt>
+                <dd className="font-medium">{storeInfo.address || <span className="text-muted-foreground">—</span>}</dd>
+              </div>
+              {storeInfo.notes && (
+                <div className="sm:col-span-2">
+                  <dt className="text-[10px] uppercase text-muted-foreground">Notes</dt>
+                  <dd className="whitespace-pre-wrap text-sm">{storeInfo.notes}</dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="stock" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="stock">Stock</TabsTrigger>
