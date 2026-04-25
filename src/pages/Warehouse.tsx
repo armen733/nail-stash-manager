@@ -237,6 +237,9 @@ export default function Warehouse() {
       supply_store_city: "",
       supply_store_lat: null,
       supply_store_lng: null,
+      supply_store_contact_name: "",
+      supply_store_phone: "",
+      supply_store_email: "",
     });
     setDialogOpen(true);
   };
@@ -259,6 +262,9 @@ export default function Warehouse() {
       supply_store_city: linkedStore?.city ?? "",
       supply_store_lat: linkedStore?.latitude ?? null,
       supply_store_lng: linkedStore?.longitude ?? null,
+      supply_store_contact_name: linkedStore?.contact_name ?? "",
+      supply_store_phone: linkedStore?.phone ?? "",
+      supply_store_email: linkedStore?.email ?? "",
     });
     setDialogOpen(true);
   };
