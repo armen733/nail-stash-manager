@@ -128,6 +128,11 @@ const Index = () => {
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [showAllSalons, setShowAllSalons] = useState(false);
+  const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
+  const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
+  const [showAllSupplyStores, setShowAllSupplyStores] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedStoreName, setSelectedStoreName] = useState("");
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [stockValues, setStockValues] = useState<StockValue[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
