@@ -390,6 +390,13 @@ const Salons = () => {
                   />
                 </div>
 
+                <LogoUploader
+                  value={formData.logo_url}
+                  onChange={(url) => setFormData({ ...formData, logo_url: url })}
+                  folder="salons"
+                  label="Salon logo"
+                />
+
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="min-h-[44px]">
                     Cancel
