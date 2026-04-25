@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { Loader2, LocateFixed, Moon, Sun, Satellite, Settings2 } from "lucide-react";
+import { Loader2, LocateFixed, Moon, Sun, Satellite, Settings2, Maximize2, X } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -51,6 +51,23 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const [mapReady, setMapReady] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Resize map when entering/exiting fullscreen
+  useEffect(() => {
+    const t = setTimeout(() => map.current?.resize(), 50);
+    return () => clearTimeout(t);
+  }, [isFullscreen]);
+
+  // ESC to exit fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
 
   useEffect(() => {
     supabase.functions.invoke("get-mapbox-token").then(({ data, error }) => {
@@ -74,7 +91,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
           transition: transform 0.15s; color: white; font-size: 14px; font-weight: 700;
         " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
-          ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "C" : "D"}
+          ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "S" : "D"}
         </div>
       `;
 
@@ -85,7 +102,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
         ? `<p style="font-size: 12px; color: #4b5563; margin: 4px 0 0 0;">📍 ${pin.address}</p>`
         : "";
       const typeLabel =
-        pin.type === "warehouse" ? "Warehouse" : pin.type === "fba" ? "Amazon FBA" : pin.type === "consignment" ? "Consignment" : "Driver";
+        pin.type === "warehouse" ? "Warehouse" : pin.type === "fba" ? "Amazon FBA" : pin.type === "consignment" ? "Supply Store" : "Driver";
 
       popupNode.innerHTML = `
         <h3 style="font-weight: 700; font-size: 14px; color: #111; margin: 0 0 4px 0;">${pin.name}</h3>
@@ -214,10 +231,29 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
 
   return (
     <div
-      className={cn("relative w-full overflow-hidden rounded-lg border border-border", className)}
-      style={{ height: "600px" }}
+      className={cn(
+        "relative w-full overflow-hidden",
+        isFullscreen
+          ? "fixed inset-0 z-[100] rounded-none border-0"
+          : "rounded-lg border border-border",
+        !isFullscreen && className,
+      )}
+      style={isFullscreen ? undefined : { height: "600px" }}
     >
       <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
+
+      {/* Fullscreen / exit button */}
+      <div className={cn("absolute right-3 z-30", isFullscreen ? "top-3" : "top-32")}>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="shadow-lg h-8 w-8 p-0"
+          onClick={() => setIsFullscreen((v) => !v)}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
+      </div>
 
       {pins.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10 pointer-events-none">
@@ -235,7 +271,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
             const count = pins.filter((p) => p.type === key).length;
             if (count === 0) return null;
-            const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Consignment" : "Driver";
+            const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
               <div key={key} className="flex items-center gap-1.5">
                 <span
