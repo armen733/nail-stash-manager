@@ -32,21 +32,45 @@ export function LocationPricingTab({ locationId }: Props) {
 
   const load = async () => {
     setLoading(true);
-    const [prodRes, stockRes, overrideRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("id, name, sku, cost_usd, price_usd")
-        .order("name")
-        .limit(5000),
-      supabase
-        .from("product_stock")
-        .select("product_id, quantity")
-        .eq("location_id", locationId),
-      supabase
-        .from("location_product_prices")
-        .select("product_id, price_usd")
-        .eq("location_id", locationId),
-    ]);
+    // First fetch the location to discover if it's tied to a supply store
+    const { data: locRow } = await supabase
+      .from("stock_locations")
+      .select("id, type, supply_store_id")
+      .eq("id", locationId)
+      .maybeSingle();
+
+    const supplyStoreId =
+      locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
+
+    const [prodRes, stockRes, overrideRes, storeRes, discountOverridesRes] =
+      await Promise.all([
+        supabase
+          .from("products")
+          .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+          .order("name")
+          .limit(5000),
+        supabase
+          .from("product_stock")
+          .select("product_id, quantity")
+          .eq("location_id", locationId),
+        supabase
+          .from("location_product_prices")
+          .select("product_id, price_usd")
+          .eq("location_id", locationId),
+        supplyStoreId
+          ? supabase
+              .from("supply_stores")
+              .select("default_discount_percent")
+              .eq("id", supplyStoreId)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as any),
+        supplyStoreId
+          ? supabase
+              .from("supply_store_products")
+              .select("product_id, discount_percent_override")
+              .eq("supply_store_id", supplyStoreId)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
 
     if (prodRes.error) {
       toast.error(prodRes.error.message);
@@ -62,16 +86,34 @@ export function LocationPricingTab({ locationId }: Props) {
     (overrideRes.data ?? []).forEach((r: any) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
     );
+    const defaultDiscountPct = Number(
+      (storeRes as any)?.data?.default_discount_percent ?? 0
+    );
+    const discountOverrideMap = new Map<string, number>();
+    ((discountOverridesRes as any)?.data ?? []).forEach((r: any) => {
+      if (r.discount_percent_override != null) {
+        discountOverrideMap.set(r.product_id, Number(r.discount_percent_override));
+      }
+    });
 
     const next: Row[] = (prodRes.data ?? []).map((p: any) => {
       const override = overrideMap.has(p.id) ? overrideMap.get(p.id)! : null;
       const defaultPrice = Number(p.price_usd ?? 0);
+      const wholesalePrice = Number(p.wholesale_price_usd ?? defaultPrice);
+      const discountPct = discountOverrideMap.has(p.id)
+        ? discountOverrideMap.get(p.id)!
+        : defaultDiscountPct;
+      const ourSalePrice = supplyStoreId
+        ? wholesalePrice * (1 - discountPct / 100)
+        : 0;
       return {
         product_id: p.id,
         name: p.name,
         sku: p.sku,
         cost: Number(p.cost_usd ?? 0),
         defaultPrice,
+        wholesalePrice,
+        ourSalePrice,
         overridePrice: override,
         stockHere: stockMap.get(p.id) ?? 0,
         draft: override !== null ? String(override) : "",
