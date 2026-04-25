@@ -838,7 +838,7 @@ export default function Warehouse() {
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 border-t">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
