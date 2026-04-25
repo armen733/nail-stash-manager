@@ -22,6 +22,9 @@ interface Stats {
   totalProducts: number;
   monthlyRevenue: number;
   totalRevenue: number;
+  supplyStoreRevenue: number;
+  supplyStoreProfit: number;
+  supplyStoreUnits: number;
 }
 
 interface TopSalon {
