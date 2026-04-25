@@ -363,7 +363,8 @@ export async function exportWarehouseReport({ type, locationId, scopeName, start
           unitRevenue = r.unit_cost ? Number(r.unit_cost) : Number(r.product?.price_usd ?? 0);
         } else if (isTransferToStore && storeId) {
           const overrideKey = `${storeId}:${productId}`;
-          discountPct = overrideMap.has(overrideKey) ? overrideMap.get(overrideKey)! : (store?.discount ?? 0);
+          const ov = overrideMap.get(overrideKey);
+          discountPct = ov?.discount != null ? ov.discount : (store?.discount ?? 0);
           unitRevenue = wholesale * (1 - discountPct / 100);
         }
         const revenue = unitRevenue * Number(r.quantity);
