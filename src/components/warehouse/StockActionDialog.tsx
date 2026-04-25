@@ -619,6 +619,47 @@ export function StockActionDialog({
                         ).toFixed(2)}
                       </div>
                     )}
+                    {isConsignmentReceive && (() => {
+                      const qty = Number(l.quantity || 0);
+                      const sell = Number(l.unit_cost || 0);
+                      const cost = l.product_cost ?? 0;
+                      const profitPerUnit = sell - cost;
+                      const totalRevenue = sell * qty;
+                      const totalProfit = profitPerUnit * qty;
+                      const margin = sell > 0 ? (profitPerUnit / sell) * 100 : 0;
+                      return (
+                        <div className="rounded-md bg-muted/40 p-2 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div>
+                            <div className="text-muted-foreground">Our cost</div>
+                            <div className="font-medium">${cost.toFixed(2)}/u</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Profit/unit</div>
+                            <div
+                              className={`font-medium ${
+                                profitPerUnit < 0 ? "text-destructive" : "text-emerald-500"
+                              }`}
+                            >
+                              ${profitPerUnit.toFixed(2)} ({margin.toFixed(0)}%)
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Revenue</div>
+                            <div className="font-medium">${totalRevenue.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Total profit</div>
+                            <div
+                              className={`font-medium ${
+                                totalProfit < 0 ? "text-destructive" : "text-emerald-500"
+                              }`}
+                            >
+                              ${totalProfit.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
