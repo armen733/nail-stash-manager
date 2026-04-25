@@ -383,6 +383,15 @@ export default function SupplyStoreProfile() {
         alreadyAssigned={assignedIds}
         onAssigned={load}
       />
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName={store.name}
+        defaultDiscount={Number(store.default_discount_percent ?? 0)}
+        defaultMarkup={Number(store.default_markup_percent ?? 0)}
+        preselectedProductIds={Array.from(assignedIds)}
+      />
     </div>
   );
 }
