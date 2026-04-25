@@ -370,8 +370,9 @@ export default function Warehouse() {
       units: acc.units + s.units,
       value: acc.value + s.value,
       retail: acc.retail + s.retail,
+      skus: acc.skus + s.skus,
     }),
-    { units: 0, value: 0, retail: 0 }
+    { units: 0, value: 0, retail: 0, skus: 0 }
   );
 
   const filtered = useMemo(() => {
@@ -571,54 +572,55 @@ export default function Warehouse() {
       {/* Horizontal summary strip */}
       <Card>
         <CardContent className="py-3 px-4">
-          <div className="flex items-center justify-between gap-2 text-sm flex-wrap">
-            <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 text-sm flex-nowrap overflow-x-auto"
+            aria-expanded={showBreakdown}
+          >
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="font-semibold">{locations.length}</span>
               <span className="text-muted-foreground text-xs">locations</span>
             </div>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="flex items-center gap-1">
+            <div className="h-4 w-px bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="font-semibold">{totals.units.toLocaleString()}</span>
               <span className="text-muted-foreground text-xs">units</span>
             </div>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="flex items-center gap-1">
+            <div className="h-4 w-px bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <span className="font-semibold">{totals.skus.toLocaleString()}</span>
+              <span className="text-muted-foreground text-xs">SKUs</span>
+            </div>
+            <div className="h-4 w-px bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="font-semibold">
                 ${totals.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <span className="text-muted-foreground text-xs">cost</span>
             </div>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="flex items-center gap-1">
+            <div className="h-4 w-px bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="font-semibold text-primary">
                 ${totals.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <span className="text-muted-foreground text-xs">retail</span>
             </div>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="flex items-center gap-1">
+            <div className="h-4 w-px bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1 flex-shrink-0">
               <span className="font-semibold">
                 {locations.filter((l) => l.is_active).length}
               </span>
               <span className="text-muted-foreground text-xs">active</span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 ml-auto text-xs"
-              onClick={() => setShowBreakdown((v) => !v)}
-            >
+            <div className="flex-shrink-0 ml-1 text-muted-foreground">
               {showBreakdown ? (
-                <>
-                  Hide <ChevronUp className="h-3.5 w-3.5 ml-1" />
-                </>
+                <ChevronUp className="h-4 w-4" />
               ) : (
-                <>
-                  By location <ChevronDown className="h-3.5 w-3.5 ml-1" />
-                </>
+                <ChevronDown className="h-4 w-4" />
               )}
-            </Button>
-          </div>
+            </div>
+          </button>
 
           {showBreakdown && (
             <div className="mt-3 pt-3 border-t space-y-1">
@@ -635,10 +637,9 @@ export default function Warehouse() {
                     const meta = TYPE_META[loc.type];
                     const Icon = meta.icon;
                     return (
-                      <button
+                      <div
                         key={loc.id}
-                        onClick={() => navigate(`/warehouse/${loc.id}`)}
-                        className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm flex-nowrap overflow-x-auto"
                       >
                         {loc.type === "fba" ? (
                           <img src={amazonLogo} alt="" className="h-4 w-4 object-contain flex-shrink-0" loading="lazy" />
@@ -647,15 +648,15 @@ export default function Warehouse() {
                             <Icon className="h-3 w-3" />
                           </div>
                         )}
-                        <div className="min-w-0 flex-1 truncate text-xs sm:text-sm font-medium">
+                        <div className="min-w-0 truncate text-xs sm:text-sm font-medium flex-shrink-0 max-w-[40%]">
                           {loc.name}
                         </div>
-                        <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground flex-shrink-0 ml-auto">
                           <span>
-                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span> units
+                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span> u
                           </span>
                           <span>
-                            <span className="font-semibold text-foreground">{s.skus.toLocaleString()}</span> SKUs
+                            <span className="font-semibold text-foreground">{s.skus.toLocaleString()}</span> SKU
                           </span>
                           <span>
                             <span className="font-semibold text-foreground">
@@ -668,15 +669,7 @@ export default function Warehouse() {
                             </span> retail
                           </span>
                         </div>
-                        <div className="sm:hidden flex flex-col items-end text-[11px] text-muted-foreground flex-shrink-0">
-                          <span>
-                            <span className="font-semibold text-foreground">{s.units.toLocaleString()}</span>u ·{" "}
-                            <span className="font-semibold text-primary">
-                              ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span>
-                          </span>
-                        </div>
-                      </button>
+                      </div>
                     );
                   })
               )}
