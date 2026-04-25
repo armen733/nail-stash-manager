@@ -482,7 +482,7 @@ export default function WarehouseLocationDetail() {
                       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
                     );
                     const thumb = r.product.image_url || sorted[0]?.image_url || null;
-                    const effectivePrice = r.override_price ?? Number(r.product.price_usd ?? 0);
+                    const effectivePrice = Number(r.effective_unit_price ?? 0);
                     const hasOverride = r.override_price !== null;
                     return (
                       <div key={r.product_id} className="flex items-center gap-3 p-3">
