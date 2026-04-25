@@ -230,10 +230,17 @@ export function StockActionDialog({
       toast.info("Already in list");
       return;
     }
-    // Suggested store sell price: wholesale × (1 - discount%) when receiving into a supply store
+    // For consignment receive, derive sell price from per-product override → store default discount.
+    const list = p.price_usd; // list/retail price (or per-location override if set)
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
+    const effectiveDiscount = isConsignmentReceive
+      ? discountOverrideMap.get(p.id) ?? storeDiscountPercent ?? 0
+      : 0;
+    const effectiveMarkup = isConsignmentReceive
+      ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
+      : 0;
     const suggestedStorePrice = isConsignmentReceive
-      ? Math.max(0, wholesale * (1 - (storeDiscountPercent || 0) / 100))
+      ? Math.max(0, list * (1 - effectiveDiscount / 100))
       : null;
     setLines((prev) => [
       ...prev,
@@ -253,6 +260,8 @@ export function StockActionDialog({
         default_price: p.price_usd,
         product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
         wholesale_baseline: wholesale || null,
+        discount_pct: isConsignmentReceive ? String(effectiveDiscount) : "",
+        markup_pct: isConsignmentReceive ? String(effectiveMarkup) : "",
       },
     ]);
   };
