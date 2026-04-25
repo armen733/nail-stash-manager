@@ -56,6 +56,10 @@ interface LineItem {
   product_cost: number | null;
   /** Wholesale baseline used to compute the suggested store sell price */
   wholesale_baseline: number | null;
+  /** Per-line discount % off our list price (consignment receive only) */
+  discount_pct: string;
+  /** Per-line suggested markup % the store applies on top of OUR LIST price (consignment receive only) */
+  markup_pct: string;
 }
 
 interface Props {
@@ -68,6 +72,10 @@ interface Props {
   locationType?: string;
   /** Default % discount this supply store gets off wholesale price */
   storeDiscountPercent?: number;
+  /** Default % markup the store should apply on top of OUR LIST price */
+  storeMarkupPercent?: number;
+  /** The supply_store_id (if locationType is consignment) so we can persist overrides */
+  supplyStoreId?: string | null;
   /** For transfer: the OTHER locations to choose from */
   otherLocations?: LocationOption[];
   onDone: () => void;
