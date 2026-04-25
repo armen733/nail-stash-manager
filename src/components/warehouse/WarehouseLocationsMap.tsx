@@ -51,6 +51,23 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const [mapReady, setMapReady] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Resize map when entering/exiting fullscreen
+  useEffect(() => {
+    const t = setTimeout(() => map.current?.resize(), 50);
+    return () => clearTimeout(t);
+  }, [isFullscreen]);
+
+  // ESC to exit fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
 
   useEffect(() => {
     supabase.functions.invoke("get-mapbox-token").then(({ data, error }) => {
