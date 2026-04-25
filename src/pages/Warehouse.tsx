@@ -755,25 +755,62 @@ export default function Warehouse() {
             )}
 
             {form.type === "consignment" && (
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <AddressAutocomplete
-                  value={form.supply_store_address}
-                  onChange={(address, city, lat, lng) =>
-                    setForm((f) => ({
-                      ...f,
-                      supply_store_address: address,
-                      supply_store_city: city ?? f.supply_store_city,
-                      supply_store_lat: lat ?? f.supply_store_lat,
-                      supply_store_lng: lng ?? f.supply_store_lng,
-                    }))
-                  }
-                  placeholder="Search supply store address..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  Pick a suggestion to save the supply store location and show it on the map.
-                </p>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <AddressAutocomplete
+                    value={form.supply_store_address}
+                    onChange={(address, city, lat, lng) =>
+                      setForm((f) => ({
+                        ...f,
+                        supply_store_address: address,
+                        supply_store_city: city ?? f.supply_store_city,
+                        supply_store_lat: lat ?? f.supply_store_lat,
+                        supply_store_lng: lng ?? f.supply_store_lng,
+                      }))
+                    }
+                    placeholder="Search supply store address..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Pick a suggestion to save the supply store location and show it on the map.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Contact name</Label>
+                  <Input
+                    placeholder="Owner / manager"
+                    value={form.supply_store_contact_name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, supply_store_contact_name: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input
+                      placeholder="(555) 123-4567"
+                      value={form.supply_store_phone}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, supply_store_phone: e.target.value }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="store@example.com"
+                      value={form.supply_store_email}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, supply_store_email: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
