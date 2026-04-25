@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Phone, Mail, MapPin, Globe, Instagram, Plus, Trash2, Download, Printer, Store, Package } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Globe, Instagram, Plus, Trash2, Download, Printer, Store, Package, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import ProductPickerDialog from "@/components/supply-stores/ProductPickerDialog";
+import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { computePricing, effectiveDiscount, effectiveMarkup } from "@/lib/wholesale-pricing";
 import { exportWholesaleCatalog } from "@/lib/wholesale-export";
 import { openPrintableCatalog } from "@/lib/wholesale-catalog-print";
@@ -64,6 +65,7 @@ export default function SupplyStoreProfile() {
   const [brand, setBrand] = useState<CompanyBrand | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -279,6 +281,9 @@ export default function SupplyStoreProfile() {
             <Button size="sm" variant="outline" onClick={handlePrint}>
               <Printer className="h-3.5 w-3.5 mr-1.5" /> Print
             </Button>
+            <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
+              <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" /> Pricing sheet
+            </Button>
             <Button size="sm" onClick={() => setPickerOpen(true)}>
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Add
             </Button>
@@ -377,6 +382,15 @@ export default function SupplyStoreProfile() {
         storeId={store.id}
         alreadyAssigned={assignedIds}
         onAssigned={load}
+      />
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName={store.name}
+        defaultDiscount={Number(store.default_discount_percent ?? 0)}
+        defaultMarkup={Number(store.default_markup_percent ?? 0)}
+        preselectedProductIds={Array.from(assignedIds)}
       />
     </div>
   );

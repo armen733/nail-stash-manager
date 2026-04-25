@@ -14,11 +14,13 @@ import {
   ArrowLeftRight,
   ClipboardEdit,
   ShoppingCart,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
+import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
@@ -31,6 +33,7 @@ interface StockLocation {
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
+  supply_store_id: string | null;
 }
 
 interface StockRow {
@@ -65,6 +68,8 @@ export default function WarehouseLocationDetail() {
     { id: string; name: string; type: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [storeDefaults, setStoreDefaults] = useState<{ discount: number; markup: number } | null>(null);
+  const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
 
   const [action, setAction] = useState<StockAction | null>(null);
 
@@ -93,7 +98,26 @@ export default function WarehouseLocationDetail() {
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
-    setLocation((locRes.data ?? null) as StockLocation | null);
+    const loc = (locRes.data ?? null) as StockLocation | null;
+    setLocation(loc);
+
+    if (loc?.type === "consignment" && loc.supply_store_id) {
+      const { data: storeData } = await supabase
+        .from("supply_stores")
+        .select("default_discount_percent, default_markup_percent")
+        .eq("id", loc.supply_store_id)
+        .maybeSingle();
+      if (storeData) {
+        setStoreDefaults({
+          discount: Number(storeData.default_discount_percent ?? 0),
+          markup: Number(storeData.default_markup_percent ?? 0),
+        });
+      } else {
+        setStoreDefaults(null);
+      }
+    } else {
+      setStoreDefaults(null);
+    }
     const overrideMap = new Map<string, number>();
     ((overrideRes.data ?? []) as any[]).forEach((r) =>
       overrideMap.set(r.product_id, Number(r.price_usd ?? 0))
@@ -151,7 +175,12 @@ export default function WarehouseLocationDetail() {
         <Button variant="ghost" size="sm" onClick={() => navigate("/warehouse")} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-        <ExportMenu locationId={location?.id} scopeName={location?.name} />
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Pricing sheet
+          </Button>
+          <ExportMenu locationId={location?.id} scopeName={location?.name} />
+        </div>
       </div>
 
       <div className="flex items-start gap-3">
@@ -311,6 +340,15 @@ export default function WarehouseLocationDetail() {
           onDone={load}
         />
       )}
+
+      <PricingSheetExportDialog
+        open={pricingSheetOpen}
+        onOpenChange={setPricingSheetOpen}
+        scopeName={location.name}
+        defaultDiscount={storeDefaults?.discount ?? 0}
+        defaultMarkup={storeDefaults?.markup ?? 0}
+        preselectedProductIds={rows.map((r) => r.product_id)}
+      />
     </div>
   );
 }
