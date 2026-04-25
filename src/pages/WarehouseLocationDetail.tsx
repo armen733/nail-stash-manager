@@ -371,35 +371,35 @@ export default function WarehouseLocationDetail() {
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
-          <div className="text-xl font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-xl font-bold">{formatMoney(totalCost)}</div>
           <div className="text-[10px] text-muted-foreground">what these cost us</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4 pb-3">
           <div className="text-[10px] text-muted-foreground uppercase">
-            {isSupplyStoreView ? "Store pays us" : "Retail value"}
+            {isSupplyStoreView ? "Store paid us" : "Retail value"}
           </div>
-          <div className="text-xl font-bold text-primary">${totalRetail.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div className="text-xl font-bold text-primary">{formatMoney(totalRetail)}</div>
           {isSupplyStoreView && (
-            <div className="text-[10px] text-muted-foreground">our sale total</div>
+            <div className="text-[10px] text-muted-foreground">total they owe / paid</div>
           )}
         </CardContent></Card>
         {isSupplyStoreView && (
           <>
             <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Our profit</div>
+              <div className="text-[10px] text-muted-foreground uppercase">Clean profit</div>
               <div
                 className={`text-xl font-bold ${ourProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
               >
-                ${ourProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {formatMoney(ourProfit)}
               </div>
               <div className="text-[10px] text-muted-foreground">
-                {profitMarginPct.toFixed(0)}% on cost
+                paid − cost ({profitMarginPct.toFixed(0)}%)
               </div>
             </CardContent></Card>
             <Card><CardContent className="pt-4 pb-3">
               <div className="text-[10px] text-muted-foreground uppercase">Store earns</div>
               <div className="text-xl font-bold text-primary">
-                ${storeEarns.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {formatMoney(storeEarns)}
               </div>
               <div className="text-[10px] text-muted-foreground">if sold at suggested</div>
             </CardContent></Card>
