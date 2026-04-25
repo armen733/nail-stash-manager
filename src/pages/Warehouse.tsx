@@ -17,9 +17,7 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -33,11 +31,15 @@ import {
   Pencil,
   Search,
   ChevronRight,
+  List,
+  Map as MapIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import amazonLogo from "@/assets/amazon-logo.png";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse/WarehouseLocationsMap";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -72,9 +74,12 @@ interface Salon {
   name: string;
 }
 
-interface SupplyStore {
+interface SupplyStoreLite {
   id: string;
   name: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 const TYPE_META: Record<
@@ -119,7 +124,7 @@ export default function Warehouse() {
   const [stats, setStats] = useState<Record<string, LocationStats>>({});
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
-  const [supplyStores, setSupplyStores] = useState<SupplyStore[]>([]);
+  const [supplyStores, setSupplyStores] = useState<SupplyStoreLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
@@ -131,21 +136,21 @@ export default function Warehouse() {
     name: string;
     type: LocationType;
     assigned_user_id: string;
-    consignment_target: string; // "salon:<id>" | "supply:<id>" | ""
+    salon_id: string;
     notes: string;
     is_active: boolean;
   }>({
     name: "",
     type: "warehouse",
     assigned_user_id: "",
-    consignment_target: "",
+    salon_id: "",
     notes: "",
     is_active: true,
   });
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, supRes, stockRes, prodRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -153,7 +158,7 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name").order("name"),
+      supabase.from("supply_stores").select("id, name, address, latitude, longitude"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
     ]);
@@ -162,7 +167,7 @@ export default function Warehouse() {
     setLocations((locRes.data ?? []) as StockLocation[]);
     setProfiles((profRes.data ?? []) as Profile[]);
     setSalons((salRes.data ?? []) as Salon[]);
-    setSupplyStores((supRes.data ?? []) as SupplyStore[]);
+    setSupplyStores((suppRes.data ?? []) as SupplyStoreLite[]);
 
     const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
@@ -203,7 +208,7 @@ export default function Warehouse() {
       name: "",
       type: "warehouse",
       assigned_user_id: "",
-      consignment_target: "",
+      salon_id: "",
       notes: "",
       is_active: true,
     });
@@ -217,11 +222,7 @@ export default function Warehouse() {
       name: loc.name,
       type: loc.type,
       assigned_user_id: loc.assigned_user_id ?? "",
-      consignment_target: loc.salon_id
-        ? `salon:${loc.salon_id}`
-        : loc.supply_store_id
-          ? `supply:${loc.supply_store_id}`
-          : "",
+      salon_id: loc.salon_id ?? "",
       notes: loc.notes ?? "",
       is_active: loc.is_active,
     });
@@ -237,21 +238,16 @@ export default function Warehouse() {
       toast.error("Pick a driver (user) for this location");
       return;
     }
-
-    let salon_id: string | null = null;
-    let supply_store_id: string | null = null;
-    if (form.type === "consignment" && form.consignment_target) {
-      const [kind, id] = form.consignment_target.split(":");
-      if (kind === "salon") salon_id = id;
-      else if (kind === "supply") supply_store_id = id;
+    if (form.type === "consignment" && !form.salon_id) {
+      toast.error("Pick a salon for this consignment location");
+      return;
     }
 
     const payload = {
       name: form.name.trim(),
       type: form.type,
       assigned_user_id: form.type === "driver" ? form.assigned_user_id : null,
-      salon_id,
-      supply_store_id,
+      salon_id: form.type === "consignment" ? form.salon_id : null,
       notes: form.notes.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
@@ -287,9 +283,7 @@ export default function Warehouse() {
         l.type === "driver"
           ? profiles.find((p) => p.id === l.assigned_user_id)?.full_name ?? ""
           : l.type === "consignment"
-          ? (salons.find((s) => s.id === l.salon_id)?.name ??
-              supplyStores.find((s) => s.id === l.supply_store_id)?.name ??
-              "")
+          ? salons.find((s) => s.id === l.salon_id)?.name ?? ""
           : "";
       return (
         l.name.toLowerCase().includes(q) ||
@@ -297,7 +291,7 @@ export default function Warehouse() {
         (l.notes ?? "").toLowerCase().includes(q)
       );
     });
-  }, [locations, search, typeFilter, profiles, salons, supplyStores]);
+  }, [locations, search, typeFilter, profiles, salons]);
 
   const grouped = useMemo(() => {
     const g: Record<LocationType, StockLocation[]> = {
@@ -310,6 +304,32 @@ export default function Warehouse() {
     return g;
   }, [filtered]);
 
+  const mapPins: WarehousePin[] = useMemo(() => {
+    const supplyMap = new Map(supplyStores.map((s) => [s.id, s]));
+    return locations
+      .map<WarehousePin | null>((loc) => {
+        if (!loc.is_active) return null;
+        // Only consignment locations linked to a supply store with coords are shown.
+        // (Salons + warehouses + drivers + FBA have no lat/lng in the schema.)
+        if (loc.type !== "consignment" || !loc.supply_store_id) return null;
+        const sup = supplyMap.get(loc.supply_store_id);
+        if (!sup || sup.latitude === null || sup.longitude === null) return null;
+        const s = stats[loc.id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0 };
+        return {
+          id: loc.id,
+          name: loc.name,
+          type: loc.type,
+          address: sup.address,
+          lat: Number(sup.latitude),
+          lng: Number(sup.longitude),
+          supplyStoreId: sup.id,
+          units: s.units,
+          skus: s.skus,
+        };
+      })
+      .filter((p): p is WarehousePin => p !== null);
+  }, [locations, supplyStores, stats]);
+
   const renderCard = (loc: StockLocation) => {
     const meta = TYPE_META[loc.type];
     const Icon = meta.icon;
@@ -318,9 +338,7 @@ export default function Warehouse() {
       loc.type === "driver"
         ? profiles.find((p) => p.id === loc.assigned_user_id)?.full_name
         : loc.type === "consignment"
-        ? (salons.find((sa) => sa.id === loc.salon_id)?.name ??
-            supplyStores.find((sa) => sa.id === loc.supply_store_id)?.name ??
-            null)
+        ? salons.find((sa) => sa.id === loc.salon_id)?.name
         : null;
     const isEmpty = s.units === 0;
 
@@ -482,72 +500,98 @@ export default function Warehouse() {
         </CardContent>
       </Card>
 
-      {/* Search + filter */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search locations…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9"
-          />
-        </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="warehouse">Warehouse</SelectItem>
-            <SelectItem value="fba">Amazon FBA</SelectItem>
-            <SelectItem value="driver">Drivers</SelectItem>
-            <SelectItem value="consignment">Consignment</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* List / Map tabs */}
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list" className="gap-1.5">
+            <List className="h-3.5 w-3.5" /> List
+          </TabsTrigger>
+          <TabsTrigger value="map" className="gap-1.5">
+            <MapIcon className="h-3.5 w-3.5" /> Map
+            {mapPins.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-1">
+                {mapPins.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Grouped sections */}
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading…</div>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            {locations.length === 0
-              ? 'No locations yet. Tap "Add location" to get started.'
-              : "No locations match your filters."}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-5">
-          {TYPE_ORDER.map((type) => {
-            const items = grouped[type];
-            if (items.length === 0) return null;
-            const meta = TYPE_META[type];
-            const Icon = meta.icon;
-            return (
-              <section key={type} className="space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  {type === "fba" ? (
-                    <img src={amazonLogo} alt="" className="h-5 w-5 object-contain" loading="lazy" />
-                  ) : (
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    {meta.plural}
-                  </h2>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                    {items.length}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                  {items.map(renderCard)}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      )}
+        <TabsContent value="list" className="mt-3 space-y-3">
+          {/* Search + filter */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search locations…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="warehouse">Warehouse</SelectItem>
+                <SelectItem value="fba">Amazon FBA</SelectItem>
+                <SelectItem value="driver">Drivers</SelectItem>
+                <SelectItem value="consignment">Consignment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Grouped sections */}
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground text-sm">
+                {locations.length === 0
+                  ? 'No locations yet. Tap "Add location" to get started.'
+                  : "No locations match your filters."}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-5">
+              {TYPE_ORDER.map((type) => {
+                const items = grouped[type];
+                if (items.length === 0) return null;
+                const meta = TYPE_META[type];
+                const Icon = meta.icon;
+                return (
+                  <section key={type} className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      {type === "fba" ? (
+                        <img src={amazonLogo} alt="" className="h-5 w-5 object-contain" loading="lazy" />
+                      ) : (
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                        {meta.plural}
+                      </h2>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                        {items.length}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                      {items.map(renderCard)}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="map" className="mt-3">
+          <WarehouseLocationsMap pins={mapPins} />
+          <p className="text-[11px] text-muted-foreground mt-2 px-1">
+            Pins show consignment locations linked to supply stores that have coordinates set on their profile.
+          </p>
+        </TabsContent>
+      </Tabs>
 
       {/* Mobile FAB */}
       <Button
@@ -624,43 +668,22 @@ export default function Warehouse() {
 
             {form.type === "consignment" && (
               <div className="space-y-2">
-                <Label>Salon / supply store (optional)</Label>
+                <Label>Salon / supply store</Label>
                 <Select
-                  value={form.consignment_target || "none"}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, consignment_target: v === "none" ? "" : v }))
-                  }
+                  value={form.salon_id}
+                  onValueChange={(v) => setForm((f) => ({ ...f, salon_id: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pick a salon or supply store" />
+                    <SelectValue placeholder="Pick a salon" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— No link —</SelectItem>
-                    {salons.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Salons</SelectLabel>
-                        {salons.map((s) => (
-                          <SelectItem key={`salon-${s.id}`} value={`salon:${s.id}`}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {supplyStores.length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel>Supply stores</SelectLabel>
-                        {supplyStores.map((s) => (
-                          <SelectItem key={`supply-${s.id}`} value={`supply:${s.id}`}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
+                    {salons.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">
-                  Optional — link this consignment location to a salon or supply store partner, or leave unlinked.
-                </p>
               </div>
             )}
 
