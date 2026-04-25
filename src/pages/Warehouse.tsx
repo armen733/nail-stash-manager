@@ -370,6 +370,7 @@ export default function Warehouse() {
       units: acc.units + s.units,
       value: acc.value + s.value,
       retail: acc.retail + s.retail,
+      skus: acc.skus + s.skus,
     }),
     { units: 0, value: 0, retail: 0 }
   );
