@@ -26,12 +26,17 @@ export interface WarehousePin {
   supplyStoreId: string | null;
   units: number;
   skus: number;
+  lowSkus?: number;
 }
 
 interface Props {
   pins: WarehousePin[];
   className?: string;
+  fullscreen?: boolean;
+  onExitFullscreen?: () => void;
 }
+
+const LOW_STOCK_COLOR = { bg: "#dc2626", ring: "#fca5a5" };
 
 const TYPE_COLOR: Record<WarehousePin["type"], { bg: string; ring: string }> = {
   warehouse: { bg: "#2563eb", ring: "#93c5fd" },
@@ -40,7 +45,7 @@ const TYPE_COLOR: Record<WarehousePin["type"], { bg: string; ring: string }> = {
   driver: { bg: "#7c3aed", ring: "#c4b5fd" },
 };
 
-export default function WarehouseLocationsMap({ pins, className }: Props) {
+export default function WarehouseLocationsMap({ pins, className, fullscreen: fullscreenProp, onExitFullscreen }: Props) {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -51,7 +56,20 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
   const [mapStyle, setMapStyle] = useState<MapStyle>("dark");
   const [mapReady, setMapReady] = useState(0);
   const [showControls, setShowControls] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const isControlled = fullscreenProp !== undefined;
+  const isFullscreen = isControlled ? !!fullscreenProp : internalFullscreen;
+  const exitFullscreen = () => {
+    if (isControlled) onExitFullscreen?.();
+    else setInternalFullscreen(false);
+  };
+  const toggleFullscreen = () => {
+    if (isControlled) {
+      if (isFullscreen) onExitFullscreen?.();
+    } else {
+      setInternalFullscreen((v) => !v);
+    }
+  };
 
   // Resize map when entering/exiting fullscreen
   useEffect(() => {
@@ -63,7 +81,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
   useEffect(() => {
     if (!isFullscreen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+      if (e.key === "Escape") exitFullscreen();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -81,7 +99,8 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
     markersRef.current = [];
 
     pins.forEach((pin) => {
-      const colors = TYPE_COLOR[pin.type];
+      const isLow = (pin.lowSkus ?? 0) > 0;
+      const colors = isLow ? LOW_STOCK_COLOR : TYPE_COLOR[pin.type];
       const el = document.createElement("div");
       el.innerHTML = `
         <div style="
@@ -90,6 +109,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
           transition: transform 0.15s; color: white; font-size: 14px; font-weight: 700;
+          ${isLow ? "animation: pulse 1.6s ease-in-out infinite;" : ""}
         " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
           ${pin.type === "warehouse" ? "W" : pin.type === "fba" ? "F" : pin.type === "consignment" ? "S" : "D"}
         </div>
@@ -106,7 +126,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
 
       popupNode.innerHTML = `
         <h3 style="font-weight: 700; font-size: 14px; color: #111; margin: 0 0 4px 0;">${pin.name}</h3>
-        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}</p>
+        <p style="font-size: 11px; color: #6b7280; margin: 0;">${typeLabel}${isLow ? ` · <span style="color:#dc2626; font-weight:600;">${pin.lowSkus} low SKU${(pin.lowSkus ?? 0) === 1 ? "" : "s"}</span>` : ""}</p>
         ${addrLine}
         <div style="display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: #4b5563;">
           <span><strong style="color: #111;">${pin.units.toLocaleString()}</strong> units</span>
@@ -248,7 +268,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
           variant="secondary"
           size="sm"
           className="shadow-lg h-8 w-8 p-0"
-          onClick={() => setIsFullscreen((v) => !v)}
+          onClick={toggleFullscreen}
           aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -269,7 +289,7 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
       {pins.length > 0 && (
         <div className="absolute top-3 left-3 z-20 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-2 border text-[11px] space-y-1">
           {Object.entries(TYPE_COLOR).map(([key, c]) => {
-            const count = pins.filter((p) => p.type === key).length;
+            const count = pins.filter((p) => p.type === key && (p.lowSkus ?? 0) === 0).length;
             if (count === 0) return null;
             const label = key === "warehouse" ? "Warehouse" : key === "fba" ? "FBA" : key === "consignment" ? "Supply Store" : "Driver";
             return (
@@ -282,6 +302,19 @@ export default function WarehouseLocationsMap({ pins, className }: Props) {
               </div>
             );
           })}
+          {(() => {
+            const lowCount = pins.filter((p) => (p.lowSkus ?? 0) > 0).length;
+            if (lowCount === 0) return null;
+            return (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-full border"
+                  style={{ background: LOW_STOCK_COLOR.bg, borderColor: LOW_STOCK_COLOR.ring }}
+                />
+                <span className="font-semibold text-destructive">Low stock ({lowCount})</span>
+              </div>
+            );
+          })()}
         </div>
       )}
 

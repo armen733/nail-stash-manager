@@ -435,6 +435,7 @@ export default function Warehouse() {
           supplyStoreId: sup.id,
           units: s.units,
           skus: s.skus,
+          lowSkus: s.lowSkus,
         };
       })
       .filter((p): p is WarehousePin => p !== null);
@@ -766,7 +767,11 @@ export default function Warehouse() {
         </TabsContent>
 
         <TabsContent value="map" className="mt-3">
-          <WarehouseLocationsMap pins={mapPins} />
+          <WarehouseLocationsMap
+            pins={mapPins}
+            fullscreen={activeTab === "map"}
+            onExitFullscreen={() => setActiveTab("list")}
+          />
           <p className="text-[11px] text-muted-foreground mt-2 px-1">
             Pins show supply store locations linked to stores that have coordinates set on their profile.
           </p>
