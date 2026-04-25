@@ -238,12 +238,13 @@ export default function WarehouseLocationDetail() {
       : Number(r.product.price_usd);
     return s + r.quantity * v;
   }, 0);
-  // Retail value uses per-location override if set, falling back to product default.
+  // "Sale value" = what we'd be paid for these units at this location's effective price
+  // (per-location override > supply-store discount > regular retail).
   const totalRetail = rows.reduce(
-    (s, r) =>
-      s + r.quantity * Number(r.override_price ?? r.product.price_usd ?? 0),
+    (s, r) => s + r.quantity * Number(r.effective_unit_price ?? 0),
     0
   );
+  const isSupplyStoreView = location?.type === "consignment" && !!location.supply_store_id;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
