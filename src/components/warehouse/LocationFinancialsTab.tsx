@@ -95,7 +95,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
     // for store's selling price to customers
     const productMap = new Map<
       string,
-      { name: string; sku: string; retailPrice: number }
+      { name: string; sku: string; retailPrice: number; image_url: string | null }
     >();
     if (allPids.length > 0) {
       const { data: prods } = await supabase
