@@ -113,6 +113,29 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
   const [confirmDelete, setConfirmDelete] = useState<MovementRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [locationNameMap, setLocationNameMap] = useState<Map<string, string>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const since = rangeSince(range);
+      const until = rangeUntil(range);
+
+      let q = supabase
+        .from("stock_movements")
+        .select(
+          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd, image_url, product_images(image_url, display_order))",
+        )
+        .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
+        // Sales are tracked in the Earnings tab; keep History focused on stock flow.
+        .neq("movement_type", "sale")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (since) q = q.gte("created_at", since);
+      if (until) q = q.lt("created_at", until);
 
   useEffect(() => {
     let active = true;
