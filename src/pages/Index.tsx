@@ -746,10 +746,18 @@ const Index = () => {
       description: `${stats.totalOrders} total orders`,
     },
     {
-      title: "Active Salons",
-      value: loading ? "..." : stats.totalSalons.toString(),
+      title: showSupplyStoresCount ? "Active Supply Stores" : "Active Salons",
+      value: loading
+        ? "..."
+        : showSupplyStoresCount
+          ? stats.activeSupplyStores.toString()
+          : stats.totalSalons.toString(),
       icon: Users,
-      description: "Total clients",
+      description: showSupplyStoresCount
+        ? "Tap to see salons"
+        : "Total clients · tap for stores",
+      onClick: () => setShowSupplyStoresCount((v) => !v),
+      highlight: showSupplyStoresCount,
     },
     {
       title: "Products",
