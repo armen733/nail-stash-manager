@@ -363,11 +363,22 @@ export function StockActionDialog({
           return;
         }
         const unitCost = l.unit_cost ? Number(l.unit_cost) : null;
+        // For consignment receive (give stock to a supply store), deduct from the chosen
+        // source warehouse so we have a real paper trail of where the stock came from.
+        if (isConsignmentReceive && sourceLocationId) {
+          const available = sourceStockMap.get(l.product_id) ?? 0;
+          if (qtyNum > available) {
+            const srcName =
+              otherLocations.find((o) => o.id === sourceLocationId)?.name ?? "source";
+            toast.error(`Only ${available} of ${l.name} available at ${srcName}`);
+            return;
+          }
+        }
         movements.push({
           product_id: l.product_id,
-          movement_type: "receive",
+          movement_type: isConsignmentReceive && sourceLocationId ? "transfer" : "receive",
           quantity: qtyNum,
-          from_location_id: null,
+          from_location_id: isConsignmentReceive && sourceLocationId ? sourceLocationId : null,
           to_location_id: locationId,
           unit_cost: unitCost,
           reason: reason.trim() || null,
