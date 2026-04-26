@@ -296,61 +296,141 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   }
 
   return (
-    <div className="space-y-4">
-      {/* Top KPI cards */}
-      <div className="grid grid-cols-2 gap-2">
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Store revenue
-            </div>
-            <div className="text-xl font-bold text-primary">
-              {formatMoney(totals.revenue)}
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              suggested retail × units
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingDown className="h-3 w-3" /> Store expenses
-            </div>
-            <div className="text-xl font-bold">{formatMoney(totals.cost)}</div>
-            <div className="text-[10px] text-muted-foreground">
-              what they paid us (wholesale)
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> Store profit
-            </div>
-            <div
-              className={`text-xl font-bold ${totals.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-            >
-              {formatMoney(totals.profit)}
-            </div>
-            <div className="text-[10px] text-muted-foreground">revenue − expenses</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3">
-            <div className="text-[10px] text-muted-foreground uppercase">
-              Profit margin
-            </div>
-            <div
-              className={`text-xl font-bold ${totals.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-            >
-              {totals.margin.toFixed(0)}%
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              {totals.units.toLocaleString()} units · {totals.skus} SKUs
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-5">
+      {/* Expected (potential) section */}
+      <div className="space-y-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Expected (all delivered units)
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                <DollarSign className="h-3 w-3" /> Expected revenue
+              </div>
+              <div className="text-xl font-bold text-primary">
+                {formatMoney(totals.potentialRevenue)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                suggested retail × delivered
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> Store expense
+              </div>
+              <div className="text-xl font-bold">
+                {formatMoney(totals.potentialCost)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                what they paid us (wholesale)
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> Clean profit
+              </div>
+              <div
+                className={`text-xl font-bold ${totals.potentialProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                {formatMoney(totals.potentialProfit)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                if all sells at suggested
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3">
+              <div className="text-[10px] text-muted-foreground uppercase">
+                Profit margin
+              </div>
+              <div
+                className={`text-xl font-bold ${totals.potentialProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+              >
+                {totals.potentialMargin.toFixed(0)}%
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {totals.potentialUnits.toLocaleString()} units · {totals.skus} SKUs
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Actual (recorded sales) section */}
+      <div className="space-y-2">
+        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Actual (recorded sales)
+        </div>
+        {totals.soldUnits === 0 ? (
+          <div className="text-center py-6 text-muted-foreground text-xs border rounded-md">
+            No sales recorded yet for this {period && period !== "all" ? "period" : "store"}.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" /> Sold revenue
+                </div>
+                <div className="text-xl font-bold text-primary">
+                  {formatMoney(totals.soldRevenue)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {totals.soldUnits.toLocaleString()} units sold
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3" /> Sold expense
+                </div>
+                <div className="text-xl font-bold">
+                  {formatMoney(totals.soldCost)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  wholesale of sold units
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" /> Clean profit
+                </div>
+                <div
+                  className={`text-xl font-bold ${totals.soldProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                >
+                  {formatMoney(totals.soldProfit)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  on recorded sales
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">
+                  Profit margin
+                </div>
+                <div
+                  className={`text-xl font-bold ${totals.soldProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                >
+                  {totals.soldMargin.toFixed(0)}%
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  on recorded sales
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Per-product breakdown */}
@@ -410,41 +490,83 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div
-                    className={`text-sm font-bold ${r.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                    className={`text-sm font-bold ${r.potentialProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
                   >
-                    {formatMoney(r.profit)}
+                    {formatMoney(r.potentialProfit)}
                   </div>
                   <div className="text-[10px] text-muted-foreground">
-                    {r.marginPct.toFixed(0)}% margin
+                    {r.potentialMarginPct.toFixed(0)}% expected margin
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-1.5 text-[11px]">
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                  <div className="text-muted-foreground leading-none">Units sold</div>
-                  <div className="mt-1 font-semibold">{r.unitsSold}</div>
+                  <div className="text-muted-foreground leading-none">Delivered</div>
+                  <div className="mt-1 font-semibold">{r.potentialUnits}</div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
                     suggested ${r.avgRetailPrice.toFixed(2)}/u
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                  <div className="text-muted-foreground leading-none">Revenue</div>
+                  <div className="text-muted-foreground leading-none">
+                    Expected revenue
+                  </div>
                   <div className="mt-1 font-semibold text-primary">
-                    {formatMoney(r.storeRevenue)}
+                    {formatMoney(r.potentialRevenue)}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    store earns
+                    if all sells
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
                   <div className="text-muted-foreground leading-none">Expense</div>
-                  <div className="mt-1 font-semibold">{formatMoney(r.storeCost)}</div>
+                  <div className="mt-1 font-semibold">
+                    {formatMoney(r.potentialCost)}
+                  </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
                     paid us ${r.avgWholesalePrice.toFixed(2)}/u
                   </div>
                 </div>
               </div>
+
+              {r.soldUnits > 0 && (
+                <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5">
+                    <div className="text-muted-foreground leading-none">Sold</div>
+                    <div className="mt-1 font-semibold text-emerald-500">
+                      {r.soldUnits}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      avg ${r.avgSoldPrice.toFixed(2)}/u
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5">
+                    <div className="text-muted-foreground leading-none">
+                      Sold revenue
+                    </div>
+                    <div className="mt-1 font-semibold text-emerald-500">
+                      {formatMoney(r.soldRevenue)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      actual
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2 py-1.5">
+                    <div className="text-muted-foreground leading-none">
+                      Sold profit
+                    </div>
+                    <div
+                      className={`mt-1 font-semibold ${r.soldProfit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                    >
+                      {formatMoney(r.soldProfit)}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {r.soldMarginPct.toFixed(0)}% margin
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {visible.length === 0 && (
