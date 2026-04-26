@@ -12,10 +12,12 @@ export interface CompanyBrand {
   tagline: string | null;
 }
 
+export type PrintableRow = WholesaleCatalogRow & { quantity?: number };
+
 export interface PrintableCatalogInput {
   brand: CompanyBrand;
   store: { name: string; contact_name: string | null; phone: string | null; email: string | null; address: string | null };
-  rows: WholesaleCatalogRow[];
+  rows: PrintableRow[];
 }
 
 const escapeHtml = (s: string) =>
@@ -24,6 +26,12 @@ const escapeHtml = (s: string) =>
 export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInput) {
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
+  // If any row has a positive quantity, render as an order receipt
+  const isReceipt = rows.some((r) => Number(r.quantity ?? 0) > 0);
+
+  let grandSubtotal = 0;
+  let grandUnits = 0;
+
   const tableRows = rows
     .map((r) => {
       const p = computePricing({
@@ -31,6 +39,27 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
         discountPercent: r.discountPercent,
         markupPercent: r.markupPercent,
       });
+      const qty = Math.max(0, Math.floor(Number(r.quantity ?? 0)));
+      const lineTotal = +(p.storeCost * qty).toFixed(2);
+      if (isReceipt) {
+        grandSubtotal += lineTotal;
+        grandUnits += qty;
+      }
+      if (isReceipt) {
+        // Skip rows with zero quantity in receipt mode
+        if (qty <= 0) return "";
+        return `
+        <tr>
+          <td>${escapeHtml(r.sku)}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.category)}</td>
+          <td class="num">$${r.basePrice.toFixed(2)}</td>
+          <td class="num">${p.discountPercent}%</td>
+          <td class="num strong">$${p.storeCost.toFixed(2)}</td>
+          <td class="num">${qty}</td>
+          <td class="num strong">$${lineTotal.toFixed(2)}</td>
+        </tr>`;
+      }
       return `
         <tr>
           <td>${escapeHtml(r.sku)}</td>
@@ -99,6 +128,9 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
   .num { text-align: right; font-variant-numeric: tabular-nums; }
   .strong { font-weight: 700; }
   .muted { color: #666; }
+  .totals { margin-top: 16px; margin-left: auto; width: 280px; font-size: 12px; }
+  .totals-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #eee; }
+  .totals-row.grand { font-size: 14px; font-weight: 700; border-bottom: none; border-top: 2px solid #111; margin-top: 4px; }
   footer { margin-top: 24px; font-size: 10px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; display: flex; justify-content: space-between; gap: 16px; }
   @media print {
     body { padding: 16mm; }
@@ -119,7 +151,7 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
     <div class="brand-info">${brandLines}</div>
   </header>
 
-  <h1 class="doc-title">Wholesale Catalog · Supply Partnership</h1>
+  <h1 class="doc-title">${isReceipt ? "Wholesale Order · Supply Partnership" : "Wholesale Catalog · Supply Partnership"}</h1>
   <div class="meta">
     <div>
       <div class="store">For: ${escapeHtml(store.name)}</div>
@@ -137,13 +169,18 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
         <th>Category</th>
         <th class="num">List</th>
         <th class="num">Disc.</th>
-        <th class="num">Your Cost</th>
-        <th class="num">Sugg. Retail</th>
+        <th class="num">Unit Cost</th>
+        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th>` : `<th class="num">Sugg. Retail</th>`}
       </tr>
     </thead>
     <tbody>${tableRows}</tbody>
   </table>
 
+  ${isReceipt ? `
+  <div class="totals">
+    <div class="totals-row"><span>Total units</span><span class="num">${grandUnits}</span></div>
+    <div class="totals-row grand"><span>Order total</span><span class="num">$${grandSubtotal.toFixed(2)}</span></div>
+  </div>` : ""}
   <footer>
     <div>Prices in USD. Subject to change. ${escapeHtml(brand.company_name || "")} wholesale partnership.</div>
     <div>${escapeHtml(brand.website || "")}</div>
