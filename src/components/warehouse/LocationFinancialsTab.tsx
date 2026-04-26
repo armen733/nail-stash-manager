@@ -229,7 +229,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   if (rows.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm border rounded-md">
-        No deliveries to this store yet.
+        {period && period !== "all" ? "No deliveries in this period." : "No deliveries to this store yet."}
       </div>
     );
   }
