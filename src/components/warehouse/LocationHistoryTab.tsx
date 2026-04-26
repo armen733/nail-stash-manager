@@ -137,28 +137,6 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       if (since) q = q.gte("created_at", since);
       if (until) q = q.lt("created_at", until);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      setLoading(true);
-      const since =
-        range === "all"
-          ? null
-          : new Date(
-              Date.now() -
-                ({ "7d": 7, "30d": 30, "90d": 90 } as Record<RangeKey, number>)[range] * 86400000,
-            ).toISOString();
-
-      let q = supabase
-        .from("stock_movements")
-        .select(
-          "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd, image_url, product_images(image_url, display_order))",
-        )
-        .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (since) q = q.gte("created_at", since);
-
       // Look up supply_store_id (if any) so we can fetch markup overrides
       const { data: locRow } = await supabase
         .from("stock_locations")
@@ -198,7 +176,31 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       });
       setMarkupOverrideMap(mMap);
 
-      setRows(((movRes.data ?? []) as any[]) as MovementRow[]);
+      const movs = ((movRes.data ?? []) as any[]) as MovementRow[];
+
+      // Resolve names for the OTHER side of each movement so we can show
+      // "From: Main Warehouse" / "To: Customer Warehouse" on each entry.
+      const otherIds = new Set<string>();
+      movs.forEach((m) => {
+        if (m.from_location_id && m.from_location_id !== locationId) {
+          otherIds.add(m.from_location_id);
+        }
+        if (m.to_location_id && m.to_location_id !== locationId) {
+          otherIds.add(m.to_location_id);
+        }
+      });
+      const nameMap = new Map<string, string>();
+      if (otherIds.size > 0) {
+        const { data: locs } = await supabase
+          .from("stock_locations")
+          .select("id, name")
+          .in("id", Array.from(otherIds));
+        ((locs ?? []) as any[]).forEach((l) => nameMap.set(l.id, l.name));
+      }
+      if (!active) return;
+      setLocationNameMap(nameMap);
+
+      setRows(movs);
       setLoading(false);
     })();
     return () => {
