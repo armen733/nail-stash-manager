@@ -139,7 +139,7 @@ export function StockActionDialog({
   // Stock available at the chosen source, per product, for validation + display.
   const [sourceStockMap, setSourceStockMap] = useState<Map<string, number>>(new Map());
 
-  // Warehouse-type locations available as a source for "give stock to supply store"
+  // Warehouse-type locations available as a default source for "give stock to supply store"
   const sourceCandidates = useMemo(
     () => otherLocations.filter((l) => l.type === "warehouse"),
     [otherLocations],
