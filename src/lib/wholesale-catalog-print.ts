@@ -12,10 +12,12 @@ export interface CompanyBrand {
   tagline: string | null;
 }
 
+export type PrintableRow = WholesaleCatalogRow & { quantity?: number };
+
 export interface PrintableCatalogInput {
   brand: CompanyBrand;
   store: { name: string; contact_name: string | null; phone: string | null; email: string | null; address: string | null };
-  rows: WholesaleCatalogRow[];
+  rows: PrintableRow[];
 }
 
 const escapeHtml = (s: string) =>
