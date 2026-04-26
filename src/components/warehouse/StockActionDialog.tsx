@@ -133,6 +133,17 @@ export function StockActionDialog({
   // Per-product saved overrides for this supply store, used to seed lines
   const [discountOverrideMap, setDiscountOverrideMap] = useState<Map<string, number>>(new Map());
   const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
+  // For consignment receive: pick which warehouse the stock comes FROM.
+  // Defaults to the first warehouse-type location available.
+  const [sourceLocationId, setSourceLocationId] = useState("");
+  // Stock available at the chosen source, per product, for validation + display.
+  const [sourceStockMap, setSourceStockMap] = useState<Map<string, number>>(new Map());
+
+  // Warehouse-type locations available as a default source for "give stock to supply store"
+  const sourceCandidates = useMemo(
+    () => otherLocations.filter((l) => l.type === "warehouse"),
+    [otherLocations],
+  );
 
   // Reset on open
   useEffect(() => {
@@ -141,9 +152,39 @@ export function StockActionDialog({
     setLines([]);
     setReason("");
     setDestLocationId("");
+    setSourceStockMap(new Map());
+    // Default source: first warehouse if any, else first other location
+    if (isConsignmentReceive) {
+      const def = sourceCandidates[0]?.id ?? otherLocations[0]?.id ?? "";
+      setSourceLocationId(def);
+    } else {
+      setSourceLocationId("");
+    }
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // When source changes (consignment receive only), load that source's stock per product.
+  useEffect(() => {
+    if (!isConsignmentReceive || !sourceLocationId) {
+      setSourceStockMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("product_stock")
+        .select("product_id, quantity")
+        .eq("location_id", sourceLocationId);
+      if (cancelled) return;
+      const m = new Map<string, number>();
+      ((data ?? []) as any[]).forEach((r) => m.set(r.product_id, Number(r.quantity ?? 0)));
+      setSourceStockMap(m);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceLocationId, isConsignmentReceive]);
 
   const loadProducts = async () => {
     setLoadingProducts(true);
@@ -293,6 +334,10 @@ export function StockActionDialog({
       toast.error("Pick a destination location");
       return;
     }
+    if (isConsignmentReceive && !sourceLocationId) {
+      toast.error("Pick where the stock comes from");
+      return;
+    }
 
     // Validate quantities
     const movements: any[] = [];
@@ -322,11 +367,22 @@ export function StockActionDialog({
           return;
         }
         const unitCost = l.unit_cost ? Number(l.unit_cost) : null;
+        // For consignment receive (give stock to a supply store), deduct from the chosen
+        // source warehouse so we have a real paper trail of where the stock came from.
+        if (isConsignmentReceive && sourceLocationId) {
+          const available = sourceStockMap.get(l.product_id) ?? 0;
+          if (qtyNum > available) {
+            const srcName =
+              otherLocations.find((o) => o.id === sourceLocationId)?.name ?? "source";
+            toast.error(`Only ${available} of ${l.name} available at ${srcName}`);
+            return;
+          }
+        }
         movements.push({
           product_id: l.product_id,
-          movement_type: "receive",
+          movement_type: isConsignmentReceive && sourceLocationId ? "transfer" : "receive",
           quantity: qtyNum,
-          from_location_id: null,
+          from_location_id: isConsignmentReceive && sourceLocationId ? sourceLocationId : null,
           to_location_id: locationId,
           unit_cost: unitCost,
           reason: reason.trim() || null,
@@ -516,6 +572,34 @@ export function StockActionDialog({
             </div>
           )}
 
+          {isConsignmentReceive && (
+            <div className="space-y-1.5">
+              <Label>Stock comes from</Label>
+              <Select value={sourceLocationId} onValueChange={setSourceLocationId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a warehouse…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherLocations.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground">
+                      No other active locations.
+                    </div>
+                  ) : (
+                    otherLocations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}{" "}
+                        <span className="text-xs text-muted-foreground ml-1">({l.type})</span>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Units will be deducted from this location and the supply store's history will show where they came from.
+              </p>
+            </div>
+          )}
+
           {/* Product picker */}
           <div className="space-y-2">
             <Label>Add products</Label>
@@ -573,7 +657,9 @@ export function StockActionDialog({
                           <div className="text-xs text-muted-foreground truncate">{p.sku}</div>
                         </div>
                         <Badge variant="secondary" className="text-[10px]">
-                          {p.stockHere} here
+                          {isConsignmentReceive
+                            ? `${sourceStockMap.get(p.id) ?? 0} at source`
+                            : `${p.stockHere} here`}
                         </Badge>
                         {added ? (
                           <Badge variant="outline" className="text-[10px] flex-shrink-0">
