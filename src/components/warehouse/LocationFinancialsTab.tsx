@@ -178,7 +178,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationId]);
+  }, [locationId, period]);
 
   const totals = useMemo(() => {
     let units = 0;
