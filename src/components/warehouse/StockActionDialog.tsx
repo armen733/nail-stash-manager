@@ -133,6 +133,17 @@ export function StockActionDialog({
   // Per-product saved overrides for this supply store, used to seed lines
   const [discountOverrideMap, setDiscountOverrideMap] = useState<Map<string, number>>(new Map());
   const [markupOverrideMap, setMarkupOverrideMap] = useState<Map<string, number>>(new Map());
+  // For consignment receive: pick which warehouse the stock comes FROM.
+  // Defaults to the first warehouse-type location available.
+  const [sourceLocationId, setSourceLocationId] = useState("");
+  // Stock available at the chosen source, per product, for validation + display.
+  const [sourceStockMap, setSourceStockMap] = useState<Map<string, number>>(new Map());
+
+  // Warehouse-type locations available as a source for "give stock to supply store"
+  const sourceCandidates = useMemo(
+    () => otherLocations.filter((l) => l.type === "warehouse"),
+    [otherLocations],
+  );
 
   // Reset on open
   useEffect(() => {
@@ -141,9 +152,39 @@ export function StockActionDialog({
     setLines([]);
     setReason("");
     setDestLocationId("");
+    setSourceStockMap(new Map());
+    // Default source: first warehouse if any, else first other location
+    if (isConsignmentReceive) {
+      const def = sourceCandidates[0]?.id ?? otherLocations[0]?.id ?? "";
+      setSourceLocationId(def);
+    } else {
+      setSourceLocationId("");
+    }
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // When source changes (consignment receive only), load that source's stock per product.
+  useEffect(() => {
+    if (!isConsignmentReceive || !sourceLocationId) {
+      setSourceStockMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("product_stock")
+        .select("product_id, quantity")
+        .eq("location_id", sourceLocationId);
+      if (cancelled) return;
+      const m = new Map<string, number>();
+      ((data ?? []) as any[]).forEach((r) => m.set(r.product_id, Number(r.quantity ?? 0)));
+      setSourceStockMap(m);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceLocationId, isConsignmentReceive]);
 
   const loadProducts = async () => {
     setLoadingProducts(true);
