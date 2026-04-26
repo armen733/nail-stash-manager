@@ -445,12 +445,18 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
             <div className="divide-y">
               {grouped.map(([day, items]) => {
                 const skuSet = new Set<string>();
+                // Only count "received" units in the day header — transfers are
+                // stock flow between our own locations and shouldn't be summed
+                // as gains/losses (sales live on the Earnings tab).
                 let inUnits = 0;
-                let outUnits = 0;
                 items.forEach((m) => {
                   if (m.product?.id) skuSet.add(m.product.id);
-                  if (m.to_location_id === locationId) inUnits += m.quantity;
-                  if (m.from_location_id === locationId) outUnits += m.quantity;
+                  if (
+                    (m.movement_type === "receive" || m.movement_type === "initial") &&
+                    m.to_location_id === locationId
+                  ) {
+                    inUnits += m.quantity;
+                  }
                 });
                 return (
                 <div key={day}>
@@ -461,10 +467,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <span>{skuSet.size} SKU{skuSet.size === 1 ? "" : "s"}</span>
                       {inUnits > 0 && (
-                        <span className="text-emerald-500 font-medium">+{inUnits} units</span>
-                      )}
-                      {outUnits > 0 && (
-                        <span className="text-destructive font-medium">−{outUnits} units</span>
+                        <span className="text-emerald-500 font-medium">+{inUnits} received</span>
                       )}
                     </div>
                   </div>
@@ -561,17 +564,31 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          <div className="text-right">
-                            <div
-                              className={`font-semibold text-sm ${
-                                incoming ? "text-emerald-500" : "text-destructive"
-                              }`}
-                            >
-                              {incoming ? "+" : "−"}
-                              {r.quantity}
+                          {r.movement_type === "transfer" ? (
+                            // Transfers are stock flow between our locations — show
+                            // the quantity neutrally (no +/− signal) since neither
+                            // side is a gain or loss in dollar terms.
+                            <div className="text-right">
+                              <div className="font-semibold text-sm text-muted-foreground">
+                                {r.quantity}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {r.quantity === 1 ? "unit" : "units"}
+                              </div>
                             </div>
-                            <div className="text-[10px] text-muted-foreground">units</div>
-                          </div>
+                          ) : (
+                            <div className="text-right">
+                              <div
+                                className={`font-semibold text-sm ${
+                                  incoming ? "text-emerald-500" : "text-destructive"
+                                }`}
+                              >
+                                {incoming ? "+" : "−"}
+                                {r.quantity}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">units</div>
+                            </div>
+                          )}
                           {isSupplyStore && incoming && (r.movement_type === "receive" || r.movement_type === "transfer" || r.movement_type === "initial") && (
                             <Button
                               size="icon"
