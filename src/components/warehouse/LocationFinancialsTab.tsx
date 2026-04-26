@@ -221,17 +221,38 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   }, [locationId, period]);
 
   const totals = useMemo(() => {
-    let units = 0;
-    let revenue = 0;
-    let cost = 0;
+    let potentialUnits = 0;
+    let potentialRevenue = 0;
+    let potentialCost = 0;
+    let soldUnits = 0;
+    let soldRevenue = 0;
+    let soldCost = 0;
     rows.forEach((r) => {
-      units += r.unitsSold;
-      revenue += r.storeRevenue;
-      cost += r.storeCost;
+      potentialUnits += r.potentialUnits;
+      potentialRevenue += r.potentialRevenue;
+      potentialCost += r.potentialCost;
+      soldUnits += r.soldUnits;
+      soldRevenue += r.soldRevenue;
+      soldCost += r.soldCost;
     });
-    const profit = revenue - cost;
-    const margin = cost > 0 ? (profit / cost) * 100 : 0;
-    return { units, revenue, cost, profit, margin, skus: rows.length };
+    const potentialProfit = potentialRevenue - potentialCost;
+    const potentialMargin =
+      potentialCost > 0 ? (potentialProfit / potentialCost) * 100 : 0;
+    const soldProfit = soldRevenue - soldCost;
+    const soldMargin = soldCost > 0 ? (soldProfit / soldCost) * 100 : 0;
+    return {
+      potentialUnits,
+      potentialRevenue,
+      potentialCost,
+      potentialProfit,
+      potentialMargin,
+      soldUnits,
+      soldRevenue,
+      soldCost,
+      soldProfit,
+      soldMargin,
+      skus: rows.length,
+    };
   }, [rows]);
 
   const visible = useMemo(() => {
@@ -245,14 +266,14 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
     list = [...list].sort((a, b) => {
       switch (sortBy) {
         case "units":
-          return b.unitsSold - a.unitsSold;
+          return b.potentialUnits - a.potentialUnits;
         case "margin":
-          return b.marginPct - a.marginPct;
+          return b.potentialMarginPct - a.potentialMarginPct;
         case "revenue":
-          return b.storeRevenue - a.storeRevenue;
+          return b.potentialRevenue - a.potentialRevenue;
         case "profit":
         default:
-          return b.profit - a.profit;
+          return b.potentialProfit - a.potentialProfit;
       }
     });
     return list;
