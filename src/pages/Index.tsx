@@ -127,6 +127,8 @@ const Index = () => {
     supplyStoreProfit: 0,
     supplyStoreUnits: 0,
   });
+  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [showAllSalons, setShowAllSalons] = useState(false);
