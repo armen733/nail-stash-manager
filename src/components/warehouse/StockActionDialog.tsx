@@ -281,18 +281,25 @@ export function StockActionDialog({
     const list = p.price_usd; // product's real list/retail price
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
     const savedDiscount = discountOverrideMap.get(p.id);
+    const savedMarkup = markupOverrideMap.get(p.id);
     const effectiveDiscount = isConsignmentReceive
       ? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
-    const effectiveMarkup = isConsignmentReceive
-      ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
-      : 0;
+    const effectiveMarkup =
+      isConsignmentReceive || isConsignmentSale
+        ? savedMarkup ?? storeMarkupPercent ?? 0
+        : 0;
     // Prefer an explicit per-location sell-price override only when no discount % is saved,
     // otherwise compute from list * (1 - discount%) so list price drives the math.
     const suggestedStorePrice = isConsignmentReceive
       ? savedDiscount == null && p.location_price_override != null
         ? p.location_price_override
         : Math.max(0, list * (1 - effectiveDiscount / 100))
+      : null;
+    // For consignment SALE: pre-fill the unit price with the suggested retail
+    // (list × (1 + markup%)), matching what we showed during stock-giving.
+    const suggestedRetailForSale = isConsignmentSale
+      ? Math.max(0, list * (1 + effectiveMarkup / 100))
       : null;
     setLines((prev) => [
       ...prev,
@@ -308,12 +315,18 @@ export function StockActionDialog({
             : p.cost_usd
             ? String(p.cost_usd)
             : "",
-        unit_price: p.price_usd ? String(p.price_usd) : "",
+        unit_price:
+          suggestedRetailForSale != null
+            ? suggestedRetailForSale.toFixed(2)
+            : p.price_usd
+            ? String(p.price_usd)
+            : "",
         default_price: p.price_usd,
         product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
         wholesale_baseline: wholesale || null,
         discount_pct: isConsignmentReceive ? String(effectiveDiscount) : "",
-        markup_pct: isConsignmentReceive ? String(effectiveMarkup) : "",
+        markup_pct:
+          isConsignmentReceive || isConsignmentSale ? String(effectiveMarkup) : "",
       },
     ]);
   };
