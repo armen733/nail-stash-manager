@@ -334,6 +334,10 @@ export function StockActionDialog({
       toast.error("Pick a destination location");
       return;
     }
+    if (isConsignmentReceive && !sourceLocationId) {
+      toast.error("Pick where the stock comes from");
+      return;
+    }
 
     // Validate quantities
     const movements: any[] = [];
