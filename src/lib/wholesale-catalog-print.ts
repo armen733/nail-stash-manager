@@ -171,7 +171,7 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
         <th class="num">List</th>
         <th class="num">Disc.</th>
         <th class="num">Unit Cost</th>
-        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th>` : `<th class="num">Sugg. Retail</th>`}
+        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th><th class="num">Sugg. Retail</th>` : `<th class="num">Sugg. Retail</th>`}
       </tr>
     </thead>
     <tbody>${tableRows}</tbody>
