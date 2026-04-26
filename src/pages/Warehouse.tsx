@@ -826,7 +826,10 @@ export default function Warehouse() {
                         {items.length}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div
+                      className="grid gap-2 sm:gap-3"
+                      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+                    >
                       {items.map(renderCard)}
                     </div>
                   </section>
