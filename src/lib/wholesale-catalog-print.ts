@@ -26,6 +26,12 @@ const escapeHtml = (s: string) =>
 export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInput) {
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
+  // If any row has a positive quantity, render as an order receipt
+  const isReceipt = rows.some((r) => Number(r.quantity ?? 0) > 0);
+
+  let grandSubtotal = 0;
+  let grandUnits = 0;
+
   const tableRows = rows
     .map((r) => {
       const p = computePricing({
@@ -33,6 +39,27 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
         discountPercent: r.discountPercent,
         markupPercent: r.markupPercent,
       });
+      const qty = Math.max(0, Math.floor(Number(r.quantity ?? 0)));
+      const lineTotal = +(p.storeCost * qty).toFixed(2);
+      if (isReceipt) {
+        grandSubtotal += lineTotal;
+        grandUnits += qty;
+      }
+      if (isReceipt) {
+        // Skip rows with zero quantity in receipt mode
+        if (qty <= 0) return "";
+        return `
+        <tr>
+          <td>${escapeHtml(r.sku)}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.category)}</td>
+          <td class="num">$${r.basePrice.toFixed(2)}</td>
+          <td class="num">${p.discountPercent}%</td>
+          <td class="num strong">$${p.storeCost.toFixed(2)}</td>
+          <td class="num">${qty}</td>
+          <td class="num strong">$${lineTotal.toFixed(2)}</td>
+        </tr>`;
+      }
       return `
         <tr>
           <td>${escapeHtml(r.sku)}</td>
