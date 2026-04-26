@@ -242,10 +242,20 @@ export default function WarehouseLocationDetail() {
 
     // Lifetime totals: everything ever delivered into this location.
     if (isSupply) {
-      const { data: moves } = await supabase
+      let movesQuery = supabase
         .from("stock_movements")
-        .select("product_id, quantity, unit_cost, movement_type")
+        .select("product_id, quantity, unit_cost, movement_type, created_at")
         .eq("to_location_id", id);
+      if (statsPeriod !== "all") {
+        // statsPeriod is "YYYY-MM"; build [start, nextMonthStart) range in local time.
+        const [yStr, mStr] = statsPeriod.split("-");
+        const y = Number(yStr);
+        const m = Number(mStr) - 1;
+        const start = new Date(y, m, 1).toISOString();
+        const end = new Date(y, m + 1, 1).toISOString();
+        movesQuery = movesQuery.gte("created_at", start).lt("created_at", end);
+      }
+      const { data: moves } = await movesQuery;
       const lifeRows = (moves ?? []) as any[];
       // Get product cost map for the involved products (already partially in stockRes, but movements
       // may reference products no longer on hand).
