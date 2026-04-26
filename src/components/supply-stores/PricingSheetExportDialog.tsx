@@ -293,11 +293,17 @@ export const PricingSheetExportDialog = ({
                     return (
                       <li
                         key={p.id}
-                        onClick={() => toggle(p.id)}
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent/50"
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-accent/50"
                       >
-                        <Checkbox checked={isOn} onCheckedChange={() => toggle(p.id)} />
-                        <div className="flex-1 min-w-0">
+                        <Checkbox
+                          checked={isOn}
+                          onCheckedChange={() => toggle(p.id)}
+                          className="cursor-pointer"
+                        />
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => toggle(p.id)}
+                        >
                           <div className="text-sm font-medium truncate">{p.name}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-2">
                             <span>{p.sku}</span>
@@ -306,7 +312,30 @@ export const PricingSheetExportDialog = ({
                             </Badge>
                           </div>
                         </div>
-                        <div className="text-right text-xs whitespace-nowrap">
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          placeholder="Qty"
+                          value={quantities[p.id] ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setQuantities((prev) => {
+                              const next = { ...prev };
+                              if (v === "") delete next[p.id];
+                              else next[p.id] = Math.max(0, Math.floor(Number(v) || 0));
+                              return next;
+                            });
+                            // auto-select if user types a quantity
+                            if (Number(v) > 0 && !isOn) {
+                              setSelected((prev) => new Set(prev).add(p.id));
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-16 h-8 text-xs text-center"
+                          disabled={!isOn}
+                        />
+                        <div className="text-right text-xs whitespace-nowrap w-20">
                           <div className="text-muted-foreground line-through">
                             ${ourPrice.toFixed(2)}
                           </div>
