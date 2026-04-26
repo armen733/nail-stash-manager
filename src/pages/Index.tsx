@@ -798,14 +798,6 @@ const Index = () => {
       onClick: () => setShowSupplyAsProfit((v) => !v),
       highlight: showSupplyAsProfit,
     },
-    {
-      title: `${periodLabel} Supply Store Profit`,
-      value: `$${stats.supplyStoreProfit.toFixed(2)}`,
-      icon: DollarSign,
-      description: stats.supplyStoreRevenue > 0
-        ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin`
-        : "—",
-    },
   ] : [];
 
   return (
