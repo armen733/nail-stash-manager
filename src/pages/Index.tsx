@@ -333,12 +333,25 @@ const Index = () => {
         if (v) supplyRevenueAll += v.revenue;
       });
 
+      // Period order profit = sum over period order_items of (line_total - cost*qty)
+      const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
+      let orderProfitPeriod = 0;
+      (orderItemsRes.data || []).forEach((it: any) => {
+        if (!periodOrderIds.has(it.order_id)) return;
+        const pricing = productPricingMap.get(it.product_id);
+        const cost = pricing ? pricing.cost : 0;
+        const lineRevenue = Number(it.line_total ?? 0);
+        const lineCost = cost * Number(it.quantity ?? 0);
+        orderProfitPeriod += lineRevenue - lineCost;
+      });
+
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
+        monthlyProfit: orderProfitPeriod + supplyStoreProfit,
         totalRevenue: orderRevenueAll + supplyRevenueAll,
         supplyStoreRevenue,
         supplyStoreProfit,
