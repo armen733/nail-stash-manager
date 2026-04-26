@@ -30,6 +30,13 @@ import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
