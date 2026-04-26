@@ -171,6 +171,7 @@ export const PricingSheetExportDialog = ({
       basePrice: Number(p.price_usd ?? 0),
       discountPercent: discount,
       markupPercent: markup,
+      quantity: Math.max(0, Math.floor(Number(quantities[p.id] ?? 0))),
     }));
     const baseBrand: CompanyBrand = brand ?? {
       company_name: "",
@@ -199,6 +200,21 @@ export const PricingSheetExportDialog = ({
     });
     onOpenChange(false);
   };
+
+  // Order totals (only counts when qty > 0)
+  const orderSummary = useMemo(() => {
+    let units = 0;
+    let total = 0;
+    products.forEach((p) => {
+      if (!selected.has(p.id)) return;
+      const qty = Math.max(0, Math.floor(Number(quantities[p.id] ?? 0)));
+      if (qty <= 0) return;
+      const cost = Number(p.price_usd ?? 0) * (1 - discount / 100);
+      units += qty;
+      total += cost * qty;
+    });
+    return { units, total };
+  }, [products, selected, quantities, discount]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
