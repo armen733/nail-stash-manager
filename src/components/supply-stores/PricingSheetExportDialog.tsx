@@ -70,6 +70,7 @@ export const PricingSheetExportDialog = ({
     setDiscount(defaultDiscount);
     setMarkup(defaultMarkup);
     setSelected(new Set(preselectedProductIds ?? []));
+    setQuantities({});
 
     const load = async () => {
       setLoading(true);
