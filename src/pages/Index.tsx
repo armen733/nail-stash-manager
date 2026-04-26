@@ -727,7 +727,14 @@ const Index = () => {
     toast({ title: "Success", description: "Dashboard data exported successfully" });
   };
   
-  const statsCards = [
+  const statsCards: Array<{
+    title: string;
+    value: string;
+    icon: any;
+    description: string;
+    onClick?: () => void;
+    highlight?: boolean;
+  }> = [
     {
       title: `${periodLabel} Orders`,
       value: loading ? "..." : stats.monthlyOrders.toString(),
@@ -747,22 +754,49 @@ const Index = () => {
       description: "In catalog",
     },
     {
-      title: `${periodLabel} Revenue`,
-      value: loading ? "..." : `$${stats.monthlyRevenue.toFixed(2)}`,
+      title: showRevenueAsProfit ? `${periodLabel} Clean Profit` : `${periodLabel} Revenue`,
+      value: loading
+        ? "..."
+        : showRevenueAsProfit
+          ? `$${stats.monthlyProfit.toFixed(2)}`
+          : `$${stats.monthlyRevenue.toFixed(2)}`,
       icon: DollarSign,
-      description: stats.supplyStoreRevenue > 0
-        ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores`
-        : `$${stats.totalRevenue.toFixed(2)} total`,
+      description: showRevenueAsProfit
+        ? stats.monthlyRevenue > 0
+          ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
+          : "Tap to see revenue"
+        : stats.supplyStoreRevenue > 0
+          ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
+          : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
+      onClick: () => setShowRevenueAsProfit((v) => !v),
+      highlight: showRevenueAsProfit,
     },
   ];
 
   // Extra row of supply-store-specific KPIs (only when there's activity)
-  const supplyStoreCards = stats.supplyStoreRevenue > 0 ? [
+  const supplyStoreCards: Array<{
+    title: string;
+    value: string;
+    icon: any;
+    description: string;
+    onClick?: () => void;
+    highlight?: boolean;
+  }> = stats.supplyStoreRevenue > 0 ? [
     {
-      title: `${periodLabel} Supply Store Sales`,
-      value: `$${stats.supplyStoreRevenue.toFixed(2)}`,
+      title: showSupplyAsProfit
+        ? `${periodLabel} Supply Store Profit`
+        : `${periodLabel} Supply Store Sales`,
+      value: showSupplyAsProfit
+        ? `$${stats.supplyStoreProfit.toFixed(2)}`
+        : `$${stats.supplyStoreRevenue.toFixed(2)}`,
       icon: TrendingUp,
-      description: `${stats.supplyStoreUnits} units shipped to stores`,
+      description: showSupplyAsProfit
+        ? stats.supplyStoreRevenue > 0
+          ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin · tap to see sales`
+          : "Tap to see sales"
+        : `${stats.supplyStoreUnits} units shipped · tap for profit`,
+      onClick: () => setShowSupplyAsProfit((v) => !v),
+      highlight: showSupplyAsProfit,
     },
     {
       title: `${periodLabel} Supply Store Profit`,
