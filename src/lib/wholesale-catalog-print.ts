@@ -44,9 +44,21 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
     })
     .join("");
 
+  const formatPhone = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "");
+    // US/Canada: 11 digits starting with 1, or 10 digits
+    if (digits.length === 11 && digits.startsWith("1")) {
+      return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    }
+    if (digits.length === 10) {
+      return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    return raw.trim();
+  };
+
   const phoneLines = (brand.contact_phone ?? "")
     .split(/[,;\n]/)
-    .map((s) => s.trim())
+    .map((s) => formatPhone(s))
     .filter(Boolean);
 
   const brandLines = [
