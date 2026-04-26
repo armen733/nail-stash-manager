@@ -22,6 +22,7 @@ interface Stats {
   totalSalons: number;
   totalProducts: number;
   monthlyRevenue: number;
+  monthlyProfit: number;
   totalRevenue: number;
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
