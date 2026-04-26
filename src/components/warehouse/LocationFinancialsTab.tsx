@@ -11,6 +11,8 @@ interface Props {
   supplyStoreId?: string | null;
   /** Store-level default markup % the store applies on top of our retail. */
   storeMarkupPercent?: number;
+  /** Period filter: "all" or "YYYY-MM". */
+  period?: string;
 }
 
 interface ProductRow {
@@ -35,7 +37,7 @@ const formatMoney = (n: number) => {
   })}`;
 };
 
-export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeMarkupPercent = 0 }: Props) {
+export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeMarkupPercent = 0, period = "all" }: Props) {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ProductRow[]>([]);
   const [search, setSearch] = useState("");
@@ -45,17 +47,31 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
 
   const load = async () => {
     setLoading(true);
+    // Build optional date range for period filter ("YYYY-MM" → that calendar month).
+    let startISO: string | null = null;
+    let endISO: string | null = null;
+    if (period && period !== "all") {
+      const [yStr, mStr] = period.split("-");
+      const y = Number(yStr);
+      const m = Number(mStr) - 1;
+      startISO = new Date(y, m, 1).toISOString();
+      endISO = new Date(y, m + 1, 1).toISOString();
+    }
     // Stock IN to store (what we delivered) — store paid us this
-    const { data: moves } = await supabase
+    let inQuery = supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
       .eq("to_location_id", locationId);
+    if (startISO && endISO) inQuery = inQuery.gte("created_at", startISO).lt("created_at", endISO);
+    const { data: moves } = await inQuery;
 
     // Stock OUT (returns to warehouse, etc.)
-    const { data: outMoves } = await supabase
+    let outQuery = supabase
       .from("stock_movements")
       .select("product_id, quantity, unit_cost")
       .eq("from_location_id", locationId);
+    if (startISO && endISO) outQuery = outQuery.gte("created_at", startISO).lt("created_at", endISO);
+    const { data: outMoves } = await outQuery;
 
     const ins = (moves ?? []) as any[];
     const outs = (outMoves ?? []) as any[];
@@ -162,7 +178,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationId]);
+  }, [locationId, period]);
 
   const totals = useMemo(() => {
     let units = 0;
@@ -213,7 +229,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
   if (rows.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm border rounded-md">
-        No deliveries to this store yet.
+        {period && period !== "all" ? "No deliveries in this period." : "No deliveries to this store yet."}
       </div>
     );
   }
