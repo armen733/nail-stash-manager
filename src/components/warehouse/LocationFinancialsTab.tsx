@@ -19,13 +19,21 @@ interface ProductRow {
   product_id: string;
   name: string;
   sku: string;
-  unitsSold: number;
-  storeRevenue: number; // what store earns selling to customers (retail × units)
-  storeCost: number; // what store paid us (wholesale)
-  profit: number; // storeRevenue - storeCost
-  marginPct: number;
-  avgRetailPrice: number;
+  // Potential — based on all delivered units at suggested retail
+  potentialUnits: number;
+  potentialRevenue: number;
+  potentialCost: number;
+  potentialProfit: number;
+  potentialMarginPct: number;
+  // Actual — based on recorded sales only
+  soldUnits: number;
+  soldRevenue: number;
+  soldCost: number;
+  soldProfit: number;
+  soldMarginPct: number;
+  avgRetailPrice: number; // suggested retail
   avgWholesalePrice: number;
+  avgSoldPrice: number; // actual avg sold price
 }
 
 const formatMoney = (n: number) => {
