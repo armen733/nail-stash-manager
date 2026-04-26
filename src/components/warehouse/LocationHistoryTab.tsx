@@ -75,39 +75,31 @@ type RangeKey =
   | "last_6_months"
   | "this_year"
   | "all";
-type FilterKey = "all" | "receive" | "sale";
+type FilterKey = "all" | "receive" | "transfer" | "adjustment" | "return";
 
-/** Returns ISO since-date for a range key, or null for all-time. */
 function rangeSince(key: RangeKey): string | null {
   const now = new Date();
   if (key === "all") return null;
   if (key === "7d") return new Date(Date.now() - 7 * 86400000).toISOString();
   if (key === "30d") return new Date(Date.now() - 30 * 86400000).toISOString();
   if (key === "90d") return new Date(Date.now() - 90 * 86400000).toISOString();
-  if (key === "this_month") {
+  if (key === "this_month")
     return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  }
-  if (key === "last_month") {
+  if (key === "last_month")
     return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-  }
-  if (key === "last_3_months") {
+  if (key === "last_3_months")
     return new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
-  }
-  if (key === "last_6_months") {
+  if (key === "last_6_months")
     return new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString();
-  }
-  if (key === "this_year") {
+  if (key === "this_year")
     return new Date(now.getFullYear(), 0, 1).toISOString();
-  }
   return null;
 }
 
-/** Returns ISO until-date (exclusive) for ranges that have an upper bound. */
 function rangeUntil(key: RangeKey): string | null {
   const now = new Date();
-  if (key === "last_month") {
+  if (key === "last_month")
     return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  }
   return null;
 }
 
@@ -138,6 +130,8 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
           "id, created_at, movement_type, quantity, unit_cost, reason, from_location_id, to_location_id, product:products(id, name, sku, cost_usd, wholesale_price_usd, price_usd, image_url, product_images(image_url, display_order))",
         )
         .or(`from_location_id.eq.${locationId},to_location_id.eq.${locationId}`)
+        // Sales are tracked in the Earnings tab; keep History focused on stock flow.
+        .neq("movement_type", "sale")
         .order("created_at", { ascending: false })
         .limit(500);
       if (since) q = q.gte("created_at", since);
@@ -185,7 +179,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
       const movs = ((movRes.data ?? []) as any[]) as MovementRow[];
 
       // Resolve names for the OTHER side of each movement so we can show
-      // "From: Main Warehouse" etc. in the entry list.
+      // "From: Main Warehouse" / "To: Customer Warehouse" on each entry.
       const otherIds = new Set<string>();
       movs.forEach((m) => {
         if (m.from_location_id && m.from_location_id !== locationId) {
@@ -373,8 +367,10 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All activity</SelectItem>
-            <SelectItem value="receive">Received only</SelectItem>
-            <SelectItem value="sale">Sold only</SelectItem>
+            <SelectItem value="receive">Received</SelectItem>
+            <SelectItem value="transfer">Transfers</SelectItem>
+            <SelectItem value="adjustment">Adjustments</SelectItem>
+            <SelectItem value="return">Returns</SelectItem>
           </SelectContent>
         </Select>
         {isSupplyStore && (
