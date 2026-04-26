@@ -65,8 +65,43 @@ const TYPE_META: Record<MovementRow["movement_type"], { label: string; icon: any
   return: { label: "Returned", icon: RotateCcw, tone: "text-orange-500" },
 };
 
-type RangeKey = "7d" | "30d" | "90d" | "all";
-type FilterKey = "all" | "receive" | "sale";
+type RangeKey =
+  | "7d"
+  | "30d"
+  | "90d"
+  | "this_month"
+  | "last_month"
+  | "last_3_months"
+  | "last_6_months"
+  | "this_year"
+  | "all";
+type FilterKey = "all" | "receive" | "transfer" | "adjustment" | "return";
+
+function rangeSince(key: RangeKey): string | null {
+  const now = new Date();
+  if (key === "all") return null;
+  if (key === "7d") return new Date(Date.now() - 7 * 86400000).toISOString();
+  if (key === "30d") return new Date(Date.now() - 30 * 86400000).toISOString();
+  if (key === "90d") return new Date(Date.now() - 90 * 86400000).toISOString();
+  if (key === "this_month")
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  if (key === "last_month")
+    return new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  if (key === "last_3_months")
+    return new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
+  if (key === "last_6_months")
+    return new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString();
+  if (key === "this_year")
+    return new Date(now.getFullYear(), 0, 1).toISOString();
+  return null;
+}
+
+function rangeUntil(key: RangeKey): string | null {
+  const now = new Date();
+  if (key === "last_month")
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  return null;
+}
 
 export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, storeMarkupPercent = 0, isSupplyStore = false, onStockChanged }: Props) {
   const [loading, setLoading] = useState(true);
