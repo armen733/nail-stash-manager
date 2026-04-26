@@ -353,6 +353,7 @@ const Index = () => {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
+        activeSupplyStores: (supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length,
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
