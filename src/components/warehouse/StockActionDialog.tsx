@@ -122,6 +122,7 @@ export function StockActionDialog({
 }: Props) {
   const meta = ACTION_META[action];
   const isConsignmentReceive = action === "receive" && locationType === "consignment";
+  const isConsignmentSale = action === "sale" && locationType === "consignment";
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
