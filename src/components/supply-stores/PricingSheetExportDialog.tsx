@@ -59,6 +59,7 @@ export const PricingSheetExportDialog = ({
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
   const [discount, setDiscount] = useState<number>(defaultDiscount);
   const [markup, setMarkup] = useState<number>(defaultMarkup);
