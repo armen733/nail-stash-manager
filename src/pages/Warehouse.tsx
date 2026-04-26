@@ -194,7 +194,7 @@ export default function Warehouse() {
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, suppRes, stockRes, prodRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -202,16 +202,42 @@ export default function Warehouse() {
         .order("name"),
       supabase.from("profiles").select("id, full_name, email"),
       supabase.from("salons").select("id, name").order("name"),
-      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url"),
+      supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url, default_discount_percent"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
+      supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
-    setLocations((locRes.data ?? []) as StockLocation[]);
+    const locationsData = (locRes.data ?? []) as StockLocation[];
+    setLocations(locationsData);
     setProfiles((profRes.data ?? []) as Profile[]);
     setSalons((salRes.data ?? []) as Salon[]);
-    setSupplyStores((suppRes.data ?? []) as SupplyStoreLite[]);
+    const supplyStoresData = (suppRes.data ?? []) as any[];
+    setSupplyStores(supplyStoresData as SupplyStoreLite[]);
+
+    // Map: supply_store_id -> default discount %
+    const storeDiscountMap = new Map<string, number>();
+    supplyStoresData.forEach((s) => {
+      storeDiscountMap.set(s.id, Number(s.default_discount_percent ?? 0));
+    });
+    // Map: `${storeId}:${productId}` -> per-product discount % override
+    const productDiscountOverrideMap = new Map<string, number>();
+    (sspRes.data ?? []).forEach((row: any) => {
+      if (row.discount_percent_override != null) {
+        productDiscountOverrideMap.set(
+          `${row.supply_store_id}:${row.product_id}`,
+          Number(row.discount_percent_override),
+        );
+      }
+    });
+    // Map: location_id -> supply_store_id (only consignment locations linked to a store)
+    const locationToStoreMap = new Map<string, string>();
+    locationsData.forEach((loc) => {
+      if (loc.type === "consignment" && loc.supply_store_id) {
+        locationToStoreMap.set(loc.id, loc.supply_store_id);
+      }
+    });
 
     const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
@@ -227,8 +253,22 @@ export default function Warehouse() {
       const qty = Number(row.quantity ?? 0);
       if (qty <= 0) return;
       const prod = productMap.get(row.product_id);
-      const costPer = prod?.cost && prod.cost > 0 ? prod.cost : prod?.price ?? 0;
-      const retailPer = prod?.price ?? 0;
+      // True manufacturing cost — do NOT fall back to retail price (that inflates cost).
+      const costPer = prod?.cost ?? 0;
+      const listPrice = prod?.price ?? 0;
+      // For supply-store locations, "retail" represents what the STORE paid us
+      // (our wholesale price = list × (1 − discount %)). For all other locations,
+      // it stays as our customer-facing retail.
+      const storeId = locationToStoreMap.get(row.location_id);
+      let retailPer = listPrice;
+      if (storeId) {
+        const overrideKey = `${storeId}:${row.product_id}`;
+        const discountPct =
+          productDiscountOverrideMap.get(overrideKey) ??
+          storeDiscountMap.get(storeId) ??
+          0;
+        retailPer = listPrice * (1 - discountPct / 100);
+      }
       const cur =
         aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
       cur.units += qty;
