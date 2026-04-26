@@ -168,37 +168,47 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       const info = productMap.get(pid);
       if (!info) continue;
       const netDelivered = a.unitsIn - a.unitsOut;
-      // Suggested retail = our list price × (1 + markup%); fall back to list price if no markup.
       const markupPct = markupOverrideMap.get(pid) ?? storeMarkupPercent ?? 0;
       const suggestedRetail =
         markupPct > 0 ? info.retailPrice * (1 + markupPct / 100) : info.retailPrice;
-      // Average wholesale unit cost across deliveries (what store paid us per unit)
       const avgWholesalePrice = a.unitsIn > 0 ? a.paidIn / a.unitsIn : 0;
 
-      // If real sales exist, use them; otherwise fall back to "all delivered units assumed sold at suggested retail".
-      const hasRealSales = a.unitsSoldReal > 0;
-      const unitsSold = hasRealSales ? a.unitsSoldReal : netDelivered;
-      if (unitsSold <= 0) continue;
-      const storeRevenue = hasRealSales
-        ? a.saleRevenueReal
-        : unitsSold * suggestedRetail;
-      const storeCost = unitsSold * avgWholesalePrice;
-      const profit = storeRevenue - storeCost;
-      const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
-      const avgRetailPrice = hasRealSales
-        ? a.saleRevenueReal / a.unitsSoldReal
-        : suggestedRetail;
+      // Potential — if all delivered units sell at suggested retail
+      const potentialUnits = Math.max(0, netDelivered);
+      const potentialRevenue = potentialUnits * suggestedRetail;
+      const potentialCost = potentialUnits * avgWholesalePrice;
+      const potentialProfit = potentialRevenue - potentialCost;
+      const potentialMarginPct =
+        potentialCost > 0 ? (potentialProfit / potentialCost) * 100 : 0;
+
+      // Actual — recorded sales only
+      const soldUnits = a.unitsSoldReal;
+      const soldRevenue = a.saleRevenueReal;
+      const soldCost = soldUnits * avgWholesalePrice;
+      const soldProfit = soldRevenue - soldCost;
+      const soldMarginPct = soldCost > 0 ? (soldProfit / soldCost) * 100 : 0;
+      const avgSoldPrice = soldUnits > 0 ? soldRevenue / soldUnits : 0;
+
+      // Skip products with neither potential nor real sales
+      if (potentialUnits <= 0 && soldUnits <= 0) continue;
+
       result.push({
         product_id: pid,
         name: info.name,
         sku: info.sku,
-        unitsSold,
-        storeRevenue,
-        storeCost,
-        profit,
-        marginPct,
-        avgRetailPrice,
+        potentialUnits,
+        potentialRevenue,
+        potentialCost,
+        potentialProfit,
+        potentialMarginPct,
+        soldUnits,
+        soldRevenue,
+        soldCost,
+        soldProfit,
+        soldMarginPct,
+        avgRetailPrice: suggestedRetail,
         avgWholesalePrice,
+        avgSoldPrice,
       });
     }
     setRows(result);
