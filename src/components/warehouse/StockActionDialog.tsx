@@ -122,6 +122,7 @@ export function StockActionDialog({
 }: Props) {
   const meta = ACTION_META[action];
   const isConsignmentReceive = action === "receive" && locationType === "consignment";
+  const isConsignmentSale = action === "sale" && locationType === "consignment";
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -205,7 +206,7 @@ export function StockActionDialog({
         .from("location_product_prices")
         .select("product_id, price_usd")
         .eq("location_id", locationId),
-      isConsignmentReceive && supplyStoreId
+      (isConsignmentReceive || isConsignmentSale) && supplyStoreId
         ? supabase
             .from("supply_store_products")
             .select("product_id, discount_percent_override, markup_percent_override")
@@ -280,18 +281,25 @@ export function StockActionDialog({
     const list = p.price_usd; // product's real list/retail price
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
     const savedDiscount = discountOverrideMap.get(p.id);
+    const savedMarkup = markupOverrideMap.get(p.id);
     const effectiveDiscount = isConsignmentReceive
       ? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
-    const effectiveMarkup = isConsignmentReceive
-      ? markupOverrideMap.get(p.id) ?? storeMarkupPercent ?? 0
-      : 0;
+    const effectiveMarkup =
+      isConsignmentReceive || isConsignmentSale
+        ? savedMarkup ?? storeMarkupPercent ?? 0
+        : 0;
     // Prefer an explicit per-location sell-price override only when no discount % is saved,
     // otherwise compute from list * (1 - discount%) so list price drives the math.
     const suggestedStorePrice = isConsignmentReceive
       ? savedDiscount == null && p.location_price_override != null
         ? p.location_price_override
         : Math.max(0, list * (1 - effectiveDiscount / 100))
+      : null;
+    // For consignment SALE: pre-fill the unit price with the suggested retail
+    // (list × (1 + markup%)), matching what we showed during stock-giving.
+    const suggestedRetailForSale = isConsignmentSale
+      ? Math.max(0, list * (1 + effectiveMarkup / 100))
       : null;
     setLines((prev) => [
       ...prev,
@@ -307,12 +315,18 @@ export function StockActionDialog({
             : p.cost_usd
             ? String(p.cost_usd)
             : "",
-        unit_price: p.price_usd ? String(p.price_usd) : "",
+        unit_price:
+          suggestedRetailForSale != null
+            ? suggestedRetailForSale.toFixed(2)
+            : p.price_usd
+            ? String(p.price_usd)
+            : "",
         default_price: p.price_usd,
         product_cost: p.cost_usd != null ? Number(p.cost_usd) : null,
         wholesale_baseline: wholesale || null,
         discount_pct: isConsignmentReceive ? String(effectiveDiscount) : "",
-        markup_pct: isConsignmentReceive ? String(effectiveMarkup) : "",
+        markup_pct:
+          isConsignmentReceive || isConsignmentSale ? String(effectiveMarkup) : "",
       },
     ]);
   };
@@ -789,6 +803,35 @@ export function StockActionDialog({
                         />
                       </div>
                     </div>
+                    {isConsignmentSale && (
+                      <div>
+                        <Label className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">
+                          Markup % on list (auto-fills price)
+                        </Label>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={l.markup_pct}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9.]/g, "");
+                            const list = l.default_price || 0;
+                            const pct = Number(v || 0);
+                            const newPrice = Math.max(0, list * (1 + pct / 100));
+                            updateLine(l.product_id, {
+                              markup_pct: v,
+                              unit_price: newPrice.toFixed(2),
+                            });
+                          }}
+                          className="h-8"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          List ${(l.default_price || 0).toFixed(2)} · suggested ${(
+                            (l.default_price || 0) *
+                            (1 + Number(l.markup_pct || 0) / 100)
+                          ).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                     {isConsignmentReceive && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
