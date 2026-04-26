@@ -803,6 +803,35 @@ export function StockActionDialog({
                         />
                       </div>
                     </div>
+                    {isConsignmentSale && (
+                      <div>
+                        <Label className="text-[10px] uppercase text-muted-foreground whitespace-nowrap">
+                          Markup % on list (auto-fills price)
+                        </Label>
+                        <Input
+                          inputMode="decimal"
+                          placeholder="0"
+                          value={l.markup_pct}
+                          onChange={(e) => {
+                            const v = e.target.value.replace(/[^0-9.]/g, "");
+                            const list = l.default_price || 0;
+                            const pct = Number(v || 0);
+                            const newPrice = Math.max(0, list * (1 + pct / 100));
+                            updateLine(l.product_id, {
+                              markup_pct: v,
+                              unit_price: newPrice.toFixed(2),
+                            });
+                          }}
+                          className="h-8"
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          List ${(l.default_price || 0).toFixed(2)} · suggested ${(
+                            (l.default_price || 0) *
+                            (1 + Number(l.markup_pct || 0) / 100)
+                          ).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                     {isConsignmentReceive && (
                       <div className="grid grid-cols-2 gap-2">
                         <div>
