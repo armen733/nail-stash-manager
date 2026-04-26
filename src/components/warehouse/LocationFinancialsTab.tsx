@@ -11,6 +11,8 @@ interface Props {
   supplyStoreId?: string | null;
   /** Store-level default markup % the store applies on top of our retail. */
   storeMarkupPercent?: number;
+  /** Period filter: "all" or "YYYY-MM". */
+  period?: string;
 }
 
 interface ProductRow {
