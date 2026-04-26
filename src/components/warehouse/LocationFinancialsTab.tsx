@@ -483,12 +483,26 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
           {visible.map((r) => (
             <div key={r.product_id} className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium leading-tight truncate">
-                    {r.name}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-                    {r.sku}
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  {r.image_url ? (
+                    <img
+                      src={r.image_url}
+                      alt={r.name}
+                      loading="lazy"
+                      className="h-10 w-10 rounded-md object-cover border border-border flex-shrink-0 bg-muted"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-md border border-border flex-shrink-0 bg-muted flex items-center justify-center">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium leading-tight truncate">
+                      {r.name}
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground font-mono">
+                      {r.sku}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
