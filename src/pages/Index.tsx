@@ -121,6 +121,7 @@ const Index = () => {
     totalSalons: 0,
     totalProducts: 0,
     monthlyRevenue: 0,
+    monthlyProfit: 0,
     totalRevenue: 0,
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
