@@ -123,12 +123,14 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       unitsOut: number;
       paidIn: number;
       paidOut: number;
+      unitsSoldReal: number;
+      saleRevenueReal: number;
     };
     const acc = new Map<string, Acc>();
     const get = (pid: string): Acc => {
       let a = acc.get(pid);
       if (!a) {
-        a = { unitsIn: 0, unitsOut: 0, paidIn: 0, paidOut: 0 };
+        a = { unitsIn: 0, unitsOut: 0, paidIn: 0, paidOut: 0, unitsSoldReal: 0, saleRevenueReal: 0 };
         acc.set(pid, a);
       }
       return a;
@@ -145,22 +147,39 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       a.unitsOut += qty;
       a.paidOut += qty * Number(m.unit_cost ?? 0);
     }
+    for (const m of sales) {
+      const a = get(m.product_id);
+      const qty = Number(m.quantity ?? 0);
+      a.unitsSoldReal += qty;
+      // For sale movements, unit_cost stores the actual sale price (see StockActionDialog)
+      a.saleRevenueReal += qty * Number(m.unit_cost ?? 0);
+    }
 
     const result: ProductRow[] = [];
     for (const [pid, a] of acc) {
       const info = productMap.get(pid);
       if (!info) continue;
-      const unitsSold = a.unitsIn - a.unitsOut;
-      if (unitsSold <= 0) continue;
-      const storeCost = a.paidIn - a.paidOut; // what store paid us (their expense)
+      const netDelivered = a.unitsIn - a.unitsOut;
       // Suggested retail = our list price × (1 + markup%); fall back to list price if no markup.
       const markupPct = markupOverrideMap.get(pid) ?? storeMarkupPercent ?? 0;
       const suggestedRetail =
         markupPct > 0 ? info.retailPrice * (1 + markupPct / 100) : info.retailPrice;
-      const storeRevenue = unitsSold * suggestedRetail; // store earns at suggested retail
+      // Average wholesale unit cost across deliveries (what store paid us per unit)
+      const avgWholesalePrice = a.unitsIn > 0 ? a.paidIn / a.unitsIn : 0;
+
+      // If real sales exist, use them; otherwise fall back to "all delivered units assumed sold at suggested retail".
+      const hasRealSales = a.unitsSoldReal > 0;
+      const unitsSold = hasRealSales ? a.unitsSoldReal : netDelivered;
+      if (unitsSold <= 0) continue;
+      const storeRevenue = hasRealSales
+        ? a.saleRevenueReal
+        : unitsSold * suggestedRetail;
+      const storeCost = unitsSold * avgWholesalePrice;
       const profit = storeRevenue - storeCost;
       const marginPct = storeCost > 0 ? (profit / storeCost) * 100 : 0;
-      const avgWholesalePrice = unitsSold > 0 ? storeCost / unitsSold : 0;
+      const avgRetailPrice = hasRealSales
+        ? a.saleRevenueReal / a.unitsSoldReal
+        : suggestedRetail;
       result.push({
         product_id: pid,
         name: info.name,
@@ -170,7 +189,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
         storeCost,
         profit,
         marginPct,
-        avgRetailPrice: suggestedRetail,
+        avgRetailPrice,
         avgWholesalePrice,
       });
     }
