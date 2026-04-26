@@ -822,6 +822,7 @@ export default function WarehouseLocationDetail() {
               locationId={location.id}
               supplyStoreId={location.supply_store_id ?? null}
               storeMarkupPercent={storeDefaults?.markup ?? 0}
+              period={statsPeriod}
             />
           </TabsContent>
         )}
