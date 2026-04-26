@@ -445,12 +445,18 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
             <div className="divide-y">
               {grouped.map(([day, items]) => {
                 const skuSet = new Set<string>();
+                // Only count "received" units in the day header — transfers are
+                // stock flow between our own locations and shouldn't be summed
+                // as gains/losses (sales live on the Earnings tab).
                 let inUnits = 0;
-                let outUnits = 0;
                 items.forEach((m) => {
                   if (m.product?.id) skuSet.add(m.product.id);
-                  if (m.to_location_id === locationId) inUnits += m.quantity;
-                  if (m.from_location_id === locationId) outUnits += m.quantity;
+                  if (
+                    (m.movement_type === "receive" || m.movement_type === "initial") &&
+                    m.to_location_id === locationId
+                  ) {
+                    inUnits += m.quantity;
+                  }
                 });
                 return (
                 <div key={day}>
@@ -461,10 +467,7 @@ export function LocationHistoryTab({ locationId, storeDiscountPercent = 0, store
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <span>{skuSet.size} SKU{skuSet.size === 1 ? "" : "s"}</span>
                       {inUnits > 0 && (
-                        <span className="text-emerald-500 font-medium">+{inUnits} units</span>
-                      )}
-                      {outUnits > 0 && (
-                        <span className="text-destructive font-medium">−{outUnits} units</span>
+                        <span className="text-emerald-500 font-medium">+{inUnits} received</span>
                       )}
                     </div>
                   </div>
