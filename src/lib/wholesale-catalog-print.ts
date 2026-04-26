@@ -58,6 +58,7 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
           <td class="num strong">$${p.storeCost.toFixed(2)}</td>
           <td class="num">${qty}</td>
           <td class="num strong">$${lineTotal.toFixed(2)}</td>
+          <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
         </tr>`;
       }
       return `
@@ -170,7 +171,7 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
         <th class="num">List</th>
         <th class="num">Disc.</th>
         <th class="num">Unit Cost</th>
-        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th>` : `<th class="num">Sugg. Retail</th>`}
+        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th><th class="num">Sugg. Retail</th>` : `<th class="num">Sugg. Retail</th>`}
       </tr>
     </thead>
     <tbody>${tableRows}</tbody>
