@@ -57,26 +57,29 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
       startISO = new Date(y, m, 1).toISOString();
       endISO = new Date(y, m + 1, 1).toISOString();
     }
-    // Stock IN to store (what we delivered) — store paid us this
+    // Stock IN to store (what we delivered) — store paid us this (wholesale)
     let inQuery = supabase
       .from("stock_movements")
-      .select("product_id, quantity, unit_cost")
+      .select("product_id, quantity, unit_cost, movement_type")
       .eq("to_location_id", locationId);
     if (startISO && endISO) inQuery = inQuery.gte("created_at", startISO).lt("created_at", endISO);
     const { data: moves } = await inQuery;
 
-    // Stock OUT (returns to warehouse, etc.)
+    // Stock OUT — includes both transfers/returns back to warehouse AND actual sales to customers
     let outQuery = supabase
       .from("stock_movements")
-      .select("product_id, quantity, unit_cost")
+      .select("product_id, quantity, unit_cost, movement_type")
       .eq("from_location_id", locationId);
     if (startISO && endISO) outQuery = outQuery.gte("created_at", startISO).lt("created_at", endISO);
     const { data: outMoves } = await outQuery;
 
     const ins = (moves ?? []) as any[];
-    const outs = (outMoves ?? []) as any[];
+    const outsAll = (outMoves ?? []) as any[];
+    // Split outs: actual customer sales vs returns/transfers back to warehouse
+    const sales = outsAll.filter((m) => m.movement_type === "sale");
+    const outs = outsAll.filter((m) => m.movement_type !== "sale");
     const allPids = Array.from(
-      new Set([...ins, ...outs].map((m) => m.product_id))
+      new Set([...ins, ...outsAll].map((m) => m.product_id))
     );
 
     // Get product info — we need retail price (price_usd) as fallback
