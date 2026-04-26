@@ -19,6 +19,7 @@ interface ProductRow {
   product_id: string;
   name: string;
   sku: string;
+  image_url: string | null;
   // Potential — based on all delivered units at suggested retail
   potentialUnits: number;
   potentialRevenue: number;
