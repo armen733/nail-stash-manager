@@ -108,6 +108,8 @@ export default function WarehouseLocationDetail() {
   const [lifetimeByProduct, setLifetimeByProduct] = useState<
     Map<string, { units: number; storePaid: number; ourCost: number }>
   >(new Map());
+  // Period filter for lifetime/earnings stats. "all" = lifetime, otherwise "YYYY-MM".
+  const [statsPeriod, setStatsPeriod] = useState<string>("all");
 
   const [action, setAction] = useState<StockAction | null>(null);
 
