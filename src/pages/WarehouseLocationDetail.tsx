@@ -553,47 +553,87 @@ export default function WarehouseLocationDetail() {
         </Button>
       </div>
 
-      {isSupplyStoreView && lifetime.units > 0 && (
+      {isSupplyStoreView && (
         <div className="space-y-1">
-          <div className="text-[11px] uppercase tracking-wide text-muted-foreground px-1">
-            Lifetime — everything we've delivered to this store
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {statsPeriod === "all"
+                ? "Lifetime — everything we've delivered to this store"
+                : `${new Date(
+                    Number(statsPeriod.split("-")[0]),
+                    Number(statsPeriod.split("-")[1]) - 1,
+                    1,
+                  ).toLocaleString(undefined, { month: "long", year: "numeric" })} — delivered to this store`}
+            </div>
+            <Select value={statsPeriod} onValueChange={setStatsPeriod}>
+              <SelectTrigger className="h-7 w-[150px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="all">All time</SelectItem>
+                {(() => {
+                  const opts: { value: string; label: string }[] = [];
+                  const now = new Date();
+                  for (let i = 0; i < 24; i++) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                    const label = d.toLocaleString(undefined, {
+                      month: "short",
+                      year: "numeric",
+                    });
+                    opts.push({ value, label });
+                  }
+                  return opts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ));
+                })()}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
-            <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Units sold</div>
-              <div className="text-xl font-bold">{lifetime.units.toLocaleString()}</div>
-              <div className="text-[10px] text-muted-foreground">total delivered</div>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Our cost</div>
-              <div className="text-xl font-bold">{formatMoney(lifetime.ourCost)}</div>
-              <div className="text-[10px] text-muted-foreground">factory cost × units</div>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Store paid us</div>
-              <div className="text-xl font-bold text-primary">{formatMoney(lifetime.storePaid)}</div>
-              <div className="text-[10px] text-muted-foreground">discounted price × units</div>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4 pb-3">
-              <div className="text-[10px] text-muted-foreground uppercase">Clean profit</div>
-              {(() => {
-                const profit = lifetime.storePaid - lifetime.ourCost;
-                const pct = lifetime.ourCost > 0 ? (profit / lifetime.ourCost) * 100 : 0;
-                return (
-                  <>
-                    <div
-                      className={`text-xl font-bold ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
-                    >
-                      {formatMoney(profit)}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      paid − cost ({pct.toFixed(0)}%)
-                    </div>
-                  </>
-                );
-              })()}
-            </CardContent></Card>
-          </div>
+          {lifetime.units === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-xs border rounded-md">
+              No deliveries in this period.
+            </div>
+          ) : (
+            <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Units sold</div>
+                <div className="text-xl font-bold">{lifetime.units.toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">total delivered</div>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Our cost</div>
+                <div className="text-xl font-bold">{formatMoney(lifetime.ourCost)}</div>
+                <div className="text-[10px] text-muted-foreground">factory cost × units</div>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Store paid us</div>
+                <div className="text-xl font-bold text-primary">{formatMoney(lifetime.storePaid)}</div>
+                <div className="text-[10px] text-muted-foreground">discounted price × units</div>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Clean profit</div>
+                {(() => {
+                  const profit = lifetime.storePaid - lifetime.ourCost;
+                  const pct = lifetime.ourCost > 0 ? (profit / lifetime.ourCost) * 100 : 0;
+                  return (
+                    <>
+                      <div
+                        className={`text-xl font-bold ${profit >= 0 ? "text-emerald-500" : "text-destructive"}`}
+                      >
+                        {formatMoney(profit)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        paid − cost ({pct.toFixed(0)}%)
+                      </div>
+                    </>
+                  );
+                })()}
+              </CardContent></Card>
+            </div>
+          )}
         </div>
       )}
 
