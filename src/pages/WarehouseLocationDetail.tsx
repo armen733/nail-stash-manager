@@ -303,7 +303,7 @@ export default function WarehouseLocationDetail() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, statsPeriod]);
 
   if (loading) {
     return <div className="text-center py-12 text-muted-foreground">Loading…</div>;
