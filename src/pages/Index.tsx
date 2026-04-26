@@ -22,6 +22,7 @@ interface Stats {
   totalSalons: number;
   totalProducts: number;
   monthlyRevenue: number;
+  monthlyProfit: number;
   totalRevenue: number;
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
@@ -120,11 +121,14 @@ const Index = () => {
     totalSalons: 0,
     totalProducts: 0,
     monthlyRevenue: 0,
+    monthlyProfit: 0,
     totalRevenue: 0,
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
     supplyStoreUnits: 0,
   });
+  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [showAllSalons, setShowAllSalons] = useState(false);
@@ -228,7 +232,7 @@ const Index = () => {
         supabase.from("orders").select("id, total, created_at, salon_id, status, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
+        supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
         supabase.from("supply_stores").select("id, name, default_discount_percent"),
@@ -331,12 +335,25 @@ const Index = () => {
         if (v) supplyRevenueAll += v.revenue;
       });
 
+      // Period order profit = sum over period order_items of (line_total - cost*qty)
+      const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
+      let orderProfitPeriod = 0;
+      (orderItemsRes.data || []).forEach((it: any) => {
+        if (!periodOrderIds.has(it.order_id)) return;
+        const pricing = productPricingMap.get(it.product_id);
+        const cost = pricing ? pricing.cost : 0;
+        const lineRevenue = Number(it.line_total ?? 0);
+        const lineCost = cost * Number(it.quantity ?? 0);
+        orderProfitPeriod += lineRevenue - lineCost;
+      });
+
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
+        monthlyProfit: orderProfitPeriod + supplyStoreProfit,
         totalRevenue: orderRevenueAll + supplyRevenueAll,
         supplyStoreRevenue,
         supplyStoreProfit,
@@ -710,7 +727,14 @@ const Index = () => {
     toast({ title: "Success", description: "Dashboard data exported successfully" });
   };
   
-  const statsCards = [
+  const statsCards: Array<{
+    title: string;
+    value: string;
+    icon: any;
+    description: string;
+    onClick?: () => void;
+    highlight?: boolean;
+  }> = [
     {
       title: `${periodLabel} Orders`,
       value: loading ? "..." : stats.monthlyOrders.toString(),
@@ -730,22 +754,49 @@ const Index = () => {
       description: "In catalog",
     },
     {
-      title: `${periodLabel} Revenue`,
-      value: loading ? "..." : `$${stats.monthlyRevenue.toFixed(2)}`,
+      title: showRevenueAsProfit ? `${periodLabel} Clean Profit` : `${periodLabel} Revenue`,
+      value: loading
+        ? "..."
+        : showRevenueAsProfit
+          ? `$${stats.monthlyProfit.toFixed(2)}`
+          : `$${stats.monthlyRevenue.toFixed(2)}`,
       icon: DollarSign,
-      description: stats.supplyStoreRevenue > 0
-        ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores`
-        : `$${stats.totalRevenue.toFixed(2)} total`,
+      description: showRevenueAsProfit
+        ? stats.monthlyRevenue > 0
+          ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
+          : "Tap to see revenue"
+        : stats.supplyStoreRevenue > 0
+          ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
+          : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
+      onClick: () => setShowRevenueAsProfit((v) => !v),
+      highlight: showRevenueAsProfit,
     },
   ];
 
   // Extra row of supply-store-specific KPIs (only when there's activity)
-  const supplyStoreCards = stats.supplyStoreRevenue > 0 ? [
+  const supplyStoreCards: Array<{
+    title: string;
+    value: string;
+    icon: any;
+    description: string;
+    onClick?: () => void;
+    highlight?: boolean;
+  }> = stats.supplyStoreRevenue > 0 ? [
     {
-      title: `${periodLabel} Supply Store Sales`,
-      value: `$${stats.supplyStoreRevenue.toFixed(2)}`,
+      title: showSupplyAsProfit
+        ? `${periodLabel} Supply Store Profit`
+        : `${periodLabel} Supply Store Sales`,
+      value: showSupplyAsProfit
+        ? `$${stats.supplyStoreProfit.toFixed(2)}`
+        : `$${stats.supplyStoreRevenue.toFixed(2)}`,
       icon: TrendingUp,
-      description: `${stats.supplyStoreUnits} units shipped to stores`,
+      description: showSupplyAsProfit
+        ? stats.supplyStoreRevenue > 0
+          ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin · tap to see sales`
+          : "Tap to see sales"
+        : `${stats.supplyStoreUnits} units shipped · tap for profit`,
+      onClick: () => setShowSupplyAsProfit((v) => !v),
+      highlight: showSupplyAsProfit,
     },
     {
       title: `${periodLabel} Supply Store Profit`,
@@ -796,15 +847,27 @@ const Index = () => {
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => (
-          <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow">
+          <Card
+            key={index}
+            onClick={stat.onClick}
+            className={`shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-all ${
+              stat.onClick ? "cursor-pointer" : ""
+            } ${stat.highlight ? "border-emerald-500/60 bg-emerald-500/5" : ""}`}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <stat.icon className="h-4 w-4 text-primary flex-shrink-0" />
+              <stat.icon
+                className={`h-4 w-4 flex-shrink-0 ${stat.highlight ? "text-emerald-500" : "text-primary"}`}
+              />
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold truncate">{stat.value}</div>
+              <div
+                className={`text-lg sm:text-2xl font-bold truncate ${stat.highlight ? "text-emerald-500" : ""}`}
+              >
+                {stat.value}
+              </div>
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
                 {stat.description}
               </p>
@@ -816,15 +879,27 @@ const Index = () => {
       {supplyStoreCards.length > 0 && (
         <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
           {supplyStoreCards.map((stat, index) => (
-            <Card key={index} className="shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-shadow border-primary/20">
+            <Card
+              key={index}
+              onClick={stat.onClick}
+              className={`shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-all border-primary/20 ${
+                stat.onClick ? "cursor-pointer" : ""
+              } ${stat.highlight ? "border-emerald-500/60 bg-emerald-500/5" : ""}`}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
                 <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className="h-4 w-4 text-primary flex-shrink-0" />
+                <stat.icon
+                  className={`h-4 w-4 flex-shrink-0 ${stat.highlight ? "text-emerald-500" : "text-primary"}`}
+                />
               </CardHeader>
               <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                <div className="text-lg sm:text-2xl font-bold truncate">{stat.value}</div>
+                <div
+                  className={`text-lg sm:text-2xl font-bold truncate ${stat.highlight ? "text-emerald-500" : ""}`}
+                >
+                  {stat.value}
+                </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">
                   {stat.description}
                 </p>
