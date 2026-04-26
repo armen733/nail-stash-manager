@@ -120,6 +120,7 @@ const Index = () => {
     totalOrders: 0,
     monthlyOrders: 0,
     totalSalons: 0,
+    activeSupplyStores: 0,
     totalProducts: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
