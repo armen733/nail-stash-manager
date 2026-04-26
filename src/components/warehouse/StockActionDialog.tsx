@@ -206,7 +206,7 @@ export function StockActionDialog({
         .from("location_product_prices")
         .select("product_id, price_usd")
         .eq("location_id", locationId),
-      isConsignmentReceive && supplyStoreId
+      (isConsignmentReceive || isConsignmentSale) && supplyStoreId
         ? supabase
             .from("supply_store_products")
             .select("product_id, discount_percent_override, markup_percent_override")
