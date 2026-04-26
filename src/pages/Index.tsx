@@ -20,6 +20,7 @@ interface Stats {
   totalOrders: number;
   monthlyOrders: number;
   totalSalons: number;
+  activeSupplyStores: number;
   totalProducts: number;
   monthlyRevenue: number;
   monthlyProfit: number;
@@ -119,6 +120,7 @@ const Index = () => {
     totalOrders: 0,
     monthlyOrders: 0,
     totalSalons: 0,
+    activeSupplyStores: 0,
     totalProducts: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
@@ -129,6 +131,7 @@ const Index = () => {
   });
   const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
+  const [showSupplyStoresCount, setShowSupplyStoresCount] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [showAllSalons, setShowAllSalons] = useState(false);
@@ -235,7 +238,7 @@ const Index = () => {
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
-        supabase.from("supply_stores").select("id, name, default_discount_percent"),
+        supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
         supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
         supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
@@ -351,6 +354,7 @@ const Index = () => {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
         totalSalons: salonsRes.data?.length || 0,
+        activeSupplyStores: (supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length,
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
@@ -742,10 +746,18 @@ const Index = () => {
       description: `${stats.totalOrders} total orders`,
     },
     {
-      title: "Active Salons",
-      value: loading ? "..." : stats.totalSalons.toString(),
+      title: showSupplyStoresCount ? "Active Supply Stores" : "Active Salons",
+      value: loading
+        ? "..."
+        : showSupplyStoresCount
+          ? stats.activeSupplyStores.toString()
+          : stats.totalSalons.toString(),
       icon: Users,
-      description: "Total clients",
+      description: showSupplyStoresCount
+        ? "Tap to see salons"
+        : "Total clients · tap for stores",
+      onClick: () => setShowSupplyStoresCount((v) => !v),
+      highlight: showSupplyStoresCount,
     },
     {
       title: "Products",
