@@ -235,7 +235,7 @@ const Index = () => {
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
-        supabase.from("supply_stores").select("id, name, default_discount_percent"),
+        supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
         supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
         supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
