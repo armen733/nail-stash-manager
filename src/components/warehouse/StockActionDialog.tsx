@@ -653,7 +653,9 @@ export function StockActionDialog({
                           <div className="text-xs text-muted-foreground truncate">{p.sku}</div>
                         </div>
                         <Badge variant="secondary" className="text-[10px]">
-                          {p.stockHere} here
+                          {isConsignmentReceive
+                            ? `${sourceStockMap.get(p.id) ?? 0} at source`
+                            : `${p.stockHere} here`}
                         </Badge>
                         {added ? (
                           <Badge variant="outline" className="text-[10px] flex-shrink-0">
