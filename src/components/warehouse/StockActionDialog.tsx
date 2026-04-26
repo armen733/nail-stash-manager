@@ -568,6 +568,34 @@ export function StockActionDialog({
             </div>
           )}
 
+          {isConsignmentReceive && (
+            <div className="space-y-1.5">
+              <Label>Stock comes from</Label>
+              <Select value={sourceLocationId} onValueChange={setSourceLocationId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a warehouse…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherLocations.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground">
+                      No other active locations.
+                    </div>
+                  ) : (
+                    otherLocations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}{" "}
+                        <span className="text-xs text-muted-foreground ml-1">({l.type})</span>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Units will be deducted from this location and the supply store's history will show where they came from.
+              </p>
+            </div>
+          )}
+
           {/* Product picker */}
           <div className="space-y-2">
             <Label>Add products</Label>
