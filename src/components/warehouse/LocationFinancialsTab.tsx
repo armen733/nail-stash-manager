@@ -198,6 +198,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
         product_id: pid,
         name: info.name,
         sku: info.sku,
+        image_url: info.image_url,
         potentialUnits,
         potentialRevenue,
         potentialCost,
