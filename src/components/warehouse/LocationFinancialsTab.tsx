@@ -19,6 +19,7 @@ interface ProductRow {
   product_id: string;
   name: string;
   sku: string;
+  image_url: string | null;
   // Potential — based on all delivered units at suggested retail
   potentialUnits: number;
   potentialRevenue: number;
@@ -94,18 +95,19 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
     // for store's selling price to customers
     const productMap = new Map<
       string,
-      { name: string; sku: string; retailPrice: number }
+      { name: string; sku: string; retailPrice: number; image_url: string | null }
     >();
     if (allPids.length > 0) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, sku, price_usd")
+        .select("id, name, sku, price_usd, image_url")
         .in("id", allPids);
       ((prods ?? []) as any[]).forEach((p) => {
         productMap.set(p.id, {
           name: p.name,
           sku: p.sku,
           retailPrice: Number(p.price_usd ?? 0),
+          image_url: p.image_url ?? null,
         });
       });
     }
@@ -196,6 +198,7 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
         product_id: pid,
         name: info.name,
         sku: info.sku,
+        image_url: info.image_url,
         potentialUnits,
         potentialRevenue,
         potentialCost,
@@ -480,12 +483,26 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
           {visible.map((r) => (
             <div key={r.product_id} className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium leading-tight truncate">
-                    {r.name}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-                    {r.sku}
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  {r.image_url ? (
+                    <img
+                      src={r.image_url}
+                      alt={r.name}
+                      loading="lazy"
+                      className="h-10 w-10 rounded-md object-cover border border-border flex-shrink-0 bg-muted"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-md border border-border flex-shrink-0 bg-muted flex items-center justify-center">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium leading-tight truncate">
+                      {r.name}
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground font-mono">
+                      {r.sku}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
