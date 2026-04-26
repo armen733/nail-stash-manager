@@ -352,13 +352,24 @@ export const PricingSheetExportDialog = ({
           </div>
         </div>
 
+        {orderSummary.units > 0 && (
+          <div className="px-6 py-2 border-t bg-muted/40 flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Order: <strong className="text-foreground">{orderSummary.units}</strong> units
+            </span>
+            <span className="font-semibold">
+              Total: ${orderSummary.total.toFixed(2)}
+            </span>
+          </div>
+        )}
+
         <DialogFooter className="p-6 pt-4 border-t gap-2 sm:gap-2 flex-col sm:flex-row">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button variant="secondary" onClick={handlePrint} disabled={selected.size === 0}>
             <Printer className="h-4 w-4 mr-2" />
-            Print branded sheet
+            {orderSummary.units > 0 ? "Print order receipt" : "Print branded sheet"}
           </Button>
           <Button onClick={handleExport} disabled={selected.size === 0}>
             <Download className="h-4 w-4 mr-2" />
