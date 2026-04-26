@@ -100,13 +100,14 @@ export function LocationFinancialsTab({ locationId, supplyStoreId = null, storeM
     if (allPids.length > 0) {
       const { data: prods } = await supabase
         .from("products")
-        .select("id, name, sku, price_usd")
+        .select("id, name, sku, price_usd, image_url")
         .in("id", allPids);
       ((prods ?? []) as any[]).forEach((p) => {
         productMap.set(p.id, {
           name: p.name,
           sku: p.sku,
           retailPrice: Number(p.price_usd ?? 0),
+          image_url: p.image_url ?? null,
         });
       });
     }
