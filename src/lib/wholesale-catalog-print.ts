@@ -58,6 +58,7 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
           <td class="num strong">$${p.storeCost.toFixed(2)}</td>
           <td class="num">${qty}</td>
           <td class="num strong">$${lineTotal.toFixed(2)}</td>
+          <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
         </tr>`;
       }
       return `
