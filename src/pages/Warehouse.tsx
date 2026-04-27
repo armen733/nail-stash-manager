@@ -622,9 +622,11 @@ export default function Warehouse() {
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground uppercase">Retail</div>
+                <div className="text-[10px] text-muted-foreground uppercase">
+                  {loc.type === "consignment" ? "Store owes" : "Retail"}
+                </div>
                 <div className="font-semibold text-sm text-primary">
-                  ${s.retail.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  {formatMoney(s.retail)}
                 </div>
               </div>
             </div>
@@ -754,7 +756,7 @@ export default function Warehouse() {
                           </span>
                           <span className="whitespace-nowrap">
                             <span className="font-semibold text-primary">{formatCompactUsd(s.retail)}</span>
-                            <span className="ml-0.5">retail</span>
+                            <span className="ml-0.5">{loc.type === "consignment" ? "owed" : "retail"}</span>
                           </span>
                         </div>
                       </div>
