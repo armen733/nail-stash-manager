@@ -46,9 +46,17 @@ interface CategoryVariantType {
   variant_type: string;
 }
 
+interface LocationOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
 const LowStock = () => {
   const [products, setProducts] = useState<LowStockProduct[]>([]);
   const [categoryVariantTypes, setCategoryVariantTypes] = useState<CategoryVariantType[]>([]);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<LowStockProduct | null>(null);
   const [newStock, setNewStock] = useState("");
@@ -58,14 +66,32 @@ const LowStock = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchLowStockProducts();
+    fetchLocations();
     fetchCategoryVariantTypes();
   }, []);
+
+  useEffect(() => {
+    fetchLowStockProducts();
+  }, [locationFilter]);
 
   // Reset variant filter when category changes
   useEffect(() => {
     setVariantFilter("all");
   }, [categoryFilter]);
+
+  const fetchLocations = async () => {
+    const { data, error } = await supabase
+      .from("stock_locations")
+      .select("id, name, type, is_default, is_active")
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .order("name");
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setLocations((data ?? []) as LocationOption[]);
+  };
 
   const fetchLowStockProducts = async () => {
     try {
