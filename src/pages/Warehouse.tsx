@@ -654,7 +654,7 @@ export default function Warehouse() {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase">
-                  {loc.type === "consignment" ? "Store owes" : "Retail"}
+                  {loc.type === "consignment" ? "Store paid" : "Retail"}
                 </div>
                 <div className="font-semibold text-sm text-primary">
                   {formatMoney(s.retail)}
