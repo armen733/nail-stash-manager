@@ -199,7 +199,7 @@ export default function Warehouse() {
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes, priceRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes, priceRes, moveRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -212,6 +212,11 @@ export default function Warehouse() {
       supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
+      // For supply stores, lifetime cost/revenue must match the detail page,
+      // which reads from stock_movements (everything ever delivered to that store).
+      supabase
+        .from("stock_movements")
+        .select("to_location_id, product_id, quantity, unit_cost"),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
@@ -298,6 +303,32 @@ export default function Warehouse() {
         cur.lowUnits += qty;
       }
       aggregated[row.location_id] = cur;
+    });
+
+    // For supply-store (consignment) locations, replace `value` (cost) and `retail`
+    // with LIFETIME totals from stock_movements so the card matches the detail page:
+    //   • cost = Σ qty × product.cost_usd  (our manufacturer cost for everything ever sent)
+    //   • retail = Σ qty × movement.unit_cost  (what the store actually paid us)
+    const lifetimeByLoc = new Map<string, { ourCost: number; storePaid: number }>();
+    (moveRes.data ?? []).forEach((m: any) => {
+      const locId = m.to_location_id;
+      if (!locId || !locationToStoreMap.has(locId)) return;
+      const qty = Number(m.quantity ?? 0);
+      if (qty <= 0) return;
+      const prod = productMap.get(m.product_id);
+      const ourCost = qty * (prod?.cost ?? 0);
+      const storePaid = qty * Number(m.unit_cost ?? 0);
+      const cur = lifetimeByLoc.get(locId) ?? { ourCost: 0, storePaid: 0 };
+      cur.ourCost += ourCost;
+      cur.storePaid += storePaid;
+      lifetimeByLoc.set(locId, cur);
+    });
+    lifetimeByLoc.forEach((lt, locId) => {
+      const cur =
+        aggregated[locId] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
+      cur.value = lt.ourCost;
+      cur.retail = lt.storePaid;
+      aggregated[locId] = cur;
     });
     setStats(aggregated);
     setLoading(false);
@@ -623,7 +654,7 @@ export default function Warehouse() {
               </div>
               <div>
                 <div className="text-[10px] text-muted-foreground uppercase">
-                  {loc.type === "consignment" ? "Store owes" : "Retail"}
+                  {loc.type === "consignment" ? "Store paid" : "Retail"}
                 </div>
                 <div className="font-semibold text-sm text-primary">
                   {formatMoney(s.retail)}
@@ -756,7 +787,7 @@ export default function Warehouse() {
                           </span>
                           <span className="whitespace-nowrap">
                             <span className="font-semibold text-primary">{formatCompactUsd(s.retail)}</span>
-                            <span className="ml-0.5">{loc.type === "consignment" ? "owed" : "retail"}</span>
+                            <span className="ml-0.5">{loc.type === "consignment" ? "paid" : "retail"}</span>
                           </span>
                         </div>
                       </div>
