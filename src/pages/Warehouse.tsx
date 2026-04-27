@@ -787,7 +787,7 @@ export default function Warehouse() {
                           </span>
                           <span className="whitespace-nowrap">
                             <span className="font-semibold text-primary">{formatCompactUsd(s.retail)}</span>
-                            <span className="ml-0.5">{loc.type === "consignment" ? "owed" : "retail"}</span>
+                            <span className="ml-0.5">{loc.type === "consignment" ? "paid" : "retail"}</span>
                           </span>
                         </div>
                       </div>
