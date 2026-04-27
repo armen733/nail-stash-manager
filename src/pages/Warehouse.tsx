@@ -199,7 +199,7 @@ export default function Warehouse() {
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes, priceRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes, priceRes, moveRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -212,6 +212,11 @@ export default function Warehouse() {
       supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
+      // For supply stores, lifetime cost/revenue must match the detail page,
+      // which reads from stock_movements (everything ever delivered to that store).
+      supabase
+        .from("stock_movements")
+        .select("to_location_id, product_id, quantity, unit_cost"),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
