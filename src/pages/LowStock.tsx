@@ -50,6 +50,7 @@ interface LocationOption {
   id: string;
   name: string;
   type: string;
+  supply_store_id?: string | null;
 }
 
 const LowStock = () => {
@@ -82,7 +83,7 @@ const LowStock = () => {
   const fetchLocations = async () => {
     const { data, error } = await supabase
       .from("stock_locations")
-      .select("id, name, type, is_default, is_active")
+      .select("id, name, type, supply_store_id, is_default, is_active")
       .eq("is_active", true)
       .order("is_default", { ascending: false })
       .order("name");
@@ -107,6 +108,10 @@ const LowStock = () => {
       if (error) throw error;
 
       let perLocationStock = new Map<string, number>();
+      // For supply-store locations, we only want to flag products the store has actually
+      // received from us (i.e. has a stock row, even if currently 0). Other products
+      // they never bought can't be "out of stock" for them.
+      let stockedProductIds: Set<string> | null = null;
       if (locationFilter !== "all") {
         const { data: stockRows, error: stockErr } = await supabase
           .from("product_stock")
@@ -116,6 +121,10 @@ const LowStock = () => {
         (stockRows ?? []).forEach((r: any) => {
           perLocationStock.set(r.product_id, Number(r.quantity ?? 0));
         });
+        const selectedLoc = locations.find((l) => l.id === locationFilter);
+        if (selectedLoc?.type === "consignment") {
+          stockedProductIds = new Set((stockRows ?? []).map((r: any) => r.product_id as string));
+        }
       }
 
       // Filter products where stock is at or below reorder level and get first image
@@ -132,7 +141,10 @@ const LowStock = () => {
             image_url: p.image_url || firstImage?.image_url || null,
           };
         })
-        .filter((p) => p.stock_on_hand <= p.reorder_level);
+        .filter((p) => {
+          if (stockedProductIds && !stockedProductIds.has(p.id)) return false;
+          return p.stock_on_hand <= p.reorder_level;
+        });
 
       setProducts(lowStock);
     } catch (error: any) {
