@@ -204,7 +204,7 @@ export default function Warehouse() {
       supabase.from("salons").select("id, name").order("name"),
       supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url, default_discount_percent"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
-      supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
+      supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
     ]);
 
@@ -239,11 +239,12 @@ export default function Warehouse() {
       }
     });
 
-    const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
+    const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
       productMap.set(p.id, {
         cost: Number(p.cost_usd ?? 0),
         price: Number(p.price_usd ?? 0),
+        wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
         reorder: Number(p.reorder_level ?? 0),
       });
     });
@@ -256,9 +257,10 @@ export default function Warehouse() {
       // True manufacturing cost — do NOT fall back to retail price (that inflates cost).
       const costPer = prod?.cost ?? 0;
       const listPrice = prod?.price ?? 0;
+      const wholesaleBase = prod?.wholesale ?? listPrice;
       // For supply-store locations, "retail" represents what the STORE paid us
-      // (our wholesale price = list × (1 − discount %)). For all other locations,
-      // it stays as our customer-facing retail.
+      // (our wholesale price × (1 − discount %)). For all other locations,
+      // it stays as our customer-facing retail (price_usd).
       const storeId = locationToStoreMap.get(row.location_id);
       let retailPer = listPrice;
       if (storeId) {
@@ -267,7 +269,7 @@ export default function Warehouse() {
           productDiscountOverrideMap.get(overrideKey) ??
           storeDiscountMap.get(storeId) ??
           0;
-        retailPer = listPrice * (1 - discountPct / 100);
+        retailPer = wholesaleBase * (1 - discountPct / 100);
       }
       const cur =
         aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
