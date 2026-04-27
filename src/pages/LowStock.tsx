@@ -300,8 +300,22 @@ const LowStock = () => {
       </div>
 
       {/* Compact filters row */}
-      {products.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={locationFilter} onValueChange={setLocationFilter}>
+          <SelectTrigger className="w-[180px] sm:w-[200px] h-9 text-sm">
+            <SelectValue placeholder="Location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All locations</SelectItem>
+            {locations.map((l) => (
+              <SelectItem key={l.id} value={l.id}>
+                {l.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {products.length > 0 && (
+          <>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[140px] sm:w-[160px] h-9 text-sm">
               <SelectValue placeholder="Category" />
