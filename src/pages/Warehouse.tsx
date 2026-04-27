@@ -139,6 +139,11 @@ function formatCompactUsd(n: number): string {
   return `$${v.toLocaleString()}`;
 }
 
+function formatMoney(n: number): string {
+  if (Math.abs(n) >= 10_000) return formatCompactUsd(n);
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export default function Warehouse() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState<StockLocation[]>([]);
@@ -194,7 +199,7 @@ export default function Warehouse() {
 
   const loadData = async () => {
     setLoading(true);
-    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes] = await Promise.all([
+    const [locRes, profRes, salRes, suppRes, stockRes, prodRes, sspRes, priceRes] = await Promise.all([
       supabase
         .from("stock_locations")
         .select("*")
@@ -206,6 +211,7 @@ export default function Warehouse() {
       supabase.from("product_stock").select("location_id, product_id, quantity"),
       supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+      supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
     ]);
 
     if (locRes.error) toast.error(locRes.error.message);
@@ -230,6 +236,11 @@ export default function Warehouse() {
           Number(row.discount_percent_override),
         );
       }
+    });
+    // Map: `${locationId}:${productId}` -> exact unit price saved when stock was given to the store
+    const locationPriceOverrideMap = new Map<string, number>();
+    (priceRes.data ?? []).forEach((row: any) => {
+      locationPriceOverrideMap.set(`${row.location_id}:${row.product_id}`, Number(row.price_usd ?? 0));
     });
     // Map: location_id -> supply_store_id (only consignment locations linked to a store)
     const locationToStoreMap = new Map<string, string>();
@@ -264,12 +275,17 @@ export default function Warehouse() {
       const storeId = locationToStoreMap.get(row.location_id);
       let retailPer = listPrice;
       if (storeId) {
-        const overrideKey = `${storeId}:${row.product_id}`;
-        const discountPct =
-          productDiscountOverrideMap.get(overrideKey) ??
-          storeDiscountMap.get(storeId) ??
-          0;
-        retailPer = wholesaleBase * (1 - discountPct / 100);
+        const savedUnitPrice = locationPriceOverrideMap.get(`${row.location_id}:${row.product_id}`);
+        if (savedUnitPrice != null) {
+          retailPer = savedUnitPrice;
+        } else {
+          const overrideKey = `${storeId}:${row.product_id}`;
+          const discountPct =
+            productDiscountOverrideMap.get(overrideKey) ??
+            storeDiscountMap.get(storeId) ??
+            0;
+          retailPer = wholesaleBase * (1 - discountPct / 100);
+        }
       }
       const cur =
         aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
