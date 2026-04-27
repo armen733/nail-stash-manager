@@ -257,9 +257,10 @@ export default function Warehouse() {
       // True manufacturing cost — do NOT fall back to retail price (that inflates cost).
       const costPer = prod?.cost ?? 0;
       const listPrice = prod?.price ?? 0;
+      const wholesaleBase = prod?.wholesale ?? listPrice;
       // For supply-store locations, "retail" represents what the STORE paid us
-      // (our wholesale price = list × (1 − discount %)). For all other locations,
-      // it stays as our customer-facing retail.
+      // (our wholesale price × (1 − discount %)). For all other locations,
+      // it stays as our customer-facing retail (price_usd).
       const storeId = locationToStoreMap.get(row.location_id);
       let retailPer = listPrice;
       if (storeId) {
@@ -268,7 +269,7 @@ export default function Warehouse() {
           productDiscountOverrideMap.get(overrideKey) ??
           storeDiscountMap.get(storeId) ??
           0;
-        retailPer = listPrice * (1 - discountPct / 100);
+        retailPer = wholesaleBase * (1 - discountPct / 100);
       }
       const cur =
         aggregated[row.location_id] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
