@@ -364,8 +364,9 @@ const LowStock = () => {
               Clear
             </Button>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {loading ? (
         <Card>
