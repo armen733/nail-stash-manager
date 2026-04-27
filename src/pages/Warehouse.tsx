@@ -239,11 +239,12 @@ export default function Warehouse() {
       }
     });
 
-    const productMap = new Map<string, { cost: number; price: number; reorder: number }>();
+    const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number }>();
     (prodRes.data ?? []).forEach((p: any) => {
       productMap.set(p.id, {
         cost: Number(p.cost_usd ?? 0),
         price: Number(p.price_usd ?? 0),
+        wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
         reorder: Number(p.reorder_level ?? 0),
       });
     });
