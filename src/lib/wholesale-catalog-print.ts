@@ -133,8 +133,10 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
   .totals-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #eee; }
   .totals-row.grand { font-size: 14px; font-weight: 700; border-bottom: none; border-top: 2px solid #111; margin-top: 4px; }
   footer { margin-top: 24px; font-size: 10px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; display: flex; justify-content: space-between; gap: 16px; }
+  @page { size: auto; margin: 0mm; }
   @media print {
-    body { padding: 16mm; }
+    html, body { margin: 0 !important; }
+    body { padding: 14mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
   }
