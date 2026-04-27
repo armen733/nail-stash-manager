@@ -304,6 +304,32 @@ export default function Warehouse() {
       }
       aggregated[row.location_id] = cur;
     });
+
+    // For supply-store (consignment) locations, replace `value` (cost) and `retail`
+    // with LIFETIME totals from stock_movements so the card matches the detail page:
+    //   • cost = Σ qty × product.cost_usd  (our manufacturer cost for everything ever sent)
+    //   • retail = Σ qty × movement.unit_cost  (what the store actually paid us)
+    const lifetimeByLoc = new Map<string, { ourCost: number; storePaid: number }>();
+    (moveRes.data ?? []).forEach((m: any) => {
+      const locId = m.to_location_id;
+      if (!locId || !locationToStoreMap.has(locId)) return;
+      const qty = Number(m.quantity ?? 0);
+      if (qty <= 0) return;
+      const prod = productMap.get(m.product_id);
+      const ourCost = qty * (prod?.cost ?? 0);
+      const storePaid = qty * Number(m.unit_cost ?? 0);
+      const cur = lifetimeByLoc.get(locId) ?? { ourCost: 0, storePaid: 0 };
+      cur.ourCost += ourCost;
+      cur.storePaid += storePaid;
+      lifetimeByLoc.set(locId, cur);
+    });
+    lifetimeByLoc.forEach((lt, locId) => {
+      const cur =
+        aggregated[locId] ?? { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
+      cur.value = lt.ourCost;
+      cur.retail = lt.storePaid;
+      aggregated[locId] = cur;
+    });
     setStats(aggregated);
     setLoading(false);
   };
