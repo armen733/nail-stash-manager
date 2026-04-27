@@ -73,7 +73,7 @@ const LowStock = () => {
 
   useEffect(() => {
     fetchLowStockProducts();
-  }, [locationFilter]);
+  }, [locationFilter, locations]);
 
   // Reset variant filter when category changes
   useEffect(() => {
