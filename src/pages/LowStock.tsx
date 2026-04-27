@@ -46,9 +46,17 @@ interface CategoryVariantType {
   variant_type: string;
 }
 
+interface LocationOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
 const LowStock = () => {
   const [products, setProducts] = useState<LowStockProduct[]>([]);
   const [categoryVariantTypes, setCategoryVariantTypes] = useState<CategoryVariantType[]>([]);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<LowStockProduct | null>(null);
   const [newStock, setNewStock] = useState("");
@@ -58,14 +66,32 @@ const LowStock = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchLowStockProducts();
+    fetchLocations();
     fetchCategoryVariantTypes();
   }, []);
+
+  useEffect(() => {
+    fetchLowStockProducts();
+  }, [locationFilter]);
 
   // Reset variant filter when category changes
   useEffect(() => {
     setVariantFilter("all");
   }, [categoryFilter]);
+
+  const fetchLocations = async () => {
+    const { data, error } = await supabase
+      .from("stock_locations")
+      .select("id, name, type, is_default, is_active")
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .order("name");
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setLocations((data ?? []) as LocationOption[]);
+  };
 
   const fetchLowStockProducts = async () => {
     try {
@@ -80,17 +106,33 @@ const LowStock = () => {
 
       if (error) throw error;
 
+      let perLocationStock = new Map<string, number>();
+      if (locationFilter !== "all") {
+        const { data: stockRows, error: stockErr } = await supabase
+          .from("product_stock")
+          .select("product_id, quantity")
+          .eq("location_id", locationFilter);
+        if (stockErr) throw stockErr;
+        (stockRows ?? []).forEach((r: any) => {
+          perLocationStock.set(r.product_id, Number(r.quantity ?? 0));
+        });
+      }
+
       // Filter products where stock is at or below reorder level and get first image
       const lowStock = (data || [])
-        .filter((p) => p.stock_on_hand <= p.reorder_level)
         .map((p) => {
-          // Use product.image_url first, fallback to first product_image
           const firstImage = p.product_images?.sort((a: any, b: any) => a.display_order - b.display_order)[0];
+          const stock =
+            locationFilter === "all"
+              ? p.stock_on_hand
+              : perLocationStock.get(p.id) ?? 0;
           return {
             ...p,
-            image_url: p.image_url || firstImage?.image_url || null
+            stock_on_hand: stock,
+            image_url: p.image_url || firstImage?.image_url || null,
           };
-        });
+        })
+        .filter((p) => p.stock_on_hand <= p.reorder_level);
 
       setProducts(lowStock);
     } catch (error: any) {
@@ -258,8 +300,22 @@ const LowStock = () => {
       </div>
 
       {/* Compact filters row */}
-      {products.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={locationFilter} onValueChange={setLocationFilter}>
+          <SelectTrigger className="w-[180px] sm:w-[200px] h-9 text-sm">
+            <SelectValue placeholder="Location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All locations</SelectItem>
+            {locations.map((l) => (
+              <SelectItem key={l.id} value={l.id}>
+                {l.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {products.length > 0 && (
+          <>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[140px] sm:w-[160px] h-9 text-sm">
               <SelectValue placeholder="Category" />
@@ -308,8 +364,9 @@ const LowStock = () => {
               Clear
             </Button>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {loading ? (
         <Card>
