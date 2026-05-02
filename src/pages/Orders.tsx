@@ -86,6 +86,8 @@ interface Order {
   customer_phone?: string | null;
   customer_address?: string | null;
   created_by?: string | null;
+  shipping?: number | null;
+  shipping_zone?: string | null;
   salons: {
     name: string;
   } | null;
@@ -1068,6 +1070,7 @@ const Orders = () => {
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
+          ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
           <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
         </div>
 
@@ -1914,6 +1917,18 @@ Thank you!`;
                     <span className="text-muted-foreground">Tax</span>
                     <span>${viewOrder.tax.toFixed(2)}</span>
                   </div>
+                  {((viewOrder.shipping ?? 0) > 0 || viewOrder.shipping_zone) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Shipping{viewOrder.shipping_zone ? ` (${viewOrder.shipping_zone})` : ''}
+                      </span>
+                      <span>
+                        {(viewOrder.shipping ?? 0) > 0
+                          ? `$${(viewOrder.shipping ?? 0).toFixed(2)}`
+                          : 'FREE'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-lg border-t pt-2">
                     <span>Total</span>
                     <span className="text-primary">${viewOrder.total.toFixed(2)}</span>
