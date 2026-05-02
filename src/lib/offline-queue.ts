@@ -26,6 +26,7 @@ export interface QueuedOrder {
   salon_id: string | null;
   profile_id: string | null;
   notes: string | null;
+  technician_name?: string | null;
   created_by: string | null;
   status: "Draft";
   subtotal: number;
@@ -76,6 +77,7 @@ async function syncOne(q: QueuedOrder): Promise<boolean> {
           salon_id: q.salon_id,
           profile_id: q.profile_id,
           notes: q.notes,
+          technician_name: q.technician_name ?? null,
           created_by: q.created_by,
           status: q.status,
           subtotal: q.subtotal,
