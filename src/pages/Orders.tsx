@@ -85,6 +85,7 @@ interface Order {
   customer_email?: string | null;
   customer_phone?: string | null;
   customer_address?: string | null;
+  created_by?: string | null;
   salons: {
     name: string;
   } | null;
