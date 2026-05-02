@@ -174,6 +174,7 @@ const Orders = () => {
     salon_id: "",
     profile_id: "",
     notes: "",
+    technician_name: "",
   });
 
   const [newUserData, setNewUserData] = useState({
