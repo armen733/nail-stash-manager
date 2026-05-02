@@ -1185,9 +1185,32 @@ Thank you!`;
           return (
             <div key={status} className="flex items-center shrink-0">
               <button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  if (status !== order.status) {
+                  if (status === order.status) return;
+                  // If this order is among multiple selected, update all selected at once
+                  if (selectedOrders.size > 1 && selectedOrders.has(order.id)) {
+                    const ids = Array.from(selectedOrders);
+                    try {
+                      const { error } = await supabase
+                        .from("orders")
+                        .update({ status: status as any })
+                        .in("id", ids);
+                      if (error) throw error;
+                      await logAudit({
+                        action: "update",
+                        entityType: "order",
+                        entityLabel: `${ids.length} orders`,
+                        summary: `Bulk status update → ${status} (${ids.length} orders)`,
+                        metadata: { status_after: status, count: ids.length, ids },
+                      });
+                      toast({ title: "Success", description: `${ids.length} orders updated to ${status}` });
+                      setSelectedOrders(new Set());
+                      fetchData();
+                    } catch (err: any) {
+                      toast({ title: "Error", description: err.message, variant: "destructive" });
+                    }
+                  } else {
                     handleUpdateOrderStatus(order.id, status);
                   }
                 }}
