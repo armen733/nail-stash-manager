@@ -85,6 +85,7 @@ interface Order {
   customer_email?: string | null;
   customer_phone?: string | null;
   customer_address?: string | null;
+  created_by?: string | null;
   salons: {
     name: string;
   } | null;
@@ -2373,10 +2374,18 @@ Thank you!`;
                     <span className="text-sm text-muted-foreground">Select all</span>
                   </div>
                   
-                  {filteredActiveOrders.map((order) => (
+                  {filteredActiveOrders.map((order) => {
+                    const isCustomerApp = !order.created_by;
+                    return (
                     <Card 
                       key={order.id} 
-                      className={`shadow-sm cursor-pointer hover:bg-muted/50 transition-colors ${selectedOrders.has(order.id) ? 'ring-2 ring-primary' : ''}`}
+                      className={`shadow-sm cursor-pointer transition-colors ${
+                        selectedOrders.has(order.id) ? 'ring-2 ring-primary' : ''
+                      } ${
+                        isCustomerApp
+                          ? 'border-l-4 border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15'
+                          : 'hover:bg-muted/50'
+                      }`}
                       onClick={() => setViewOrder(order)}
                     >
                       <CardContent className="p-4">
@@ -2397,8 +2406,13 @@ Thank you!`;
                             </button>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                   <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  {isCustomerApp && (
+                                    <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
+                                      Customer App
+                                    </Badge>
+                                  )}
                                   {editedOrderIds.has(order.id) && (
                                     <Badge
                                       className="text-[10px] h-5 px-1.5 cursor-pointer bg-warning text-warning-foreground hover:bg-warning/90 border-transparent"
@@ -2509,7 +2523,8 @@ Thank you!`;
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
@@ -2524,17 +2539,28 @@ Thank you!`;
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredCompletedOrders.map((order) => (
+                  {filteredCompletedOrders.map((order) => {
+                    const isCustomerApp = !order.created_by;
+                    return (
                     <Card 
                       key={order.id} 
-                      className="shadow-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={`shadow-sm cursor-pointer transition-colors ${
+                        isCustomerApp
+                          ? 'border-l-4 border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15'
+                          : 'hover:bg-muted/50'
+                      }`}
                       onClick={() => setViewOrder(order)}
                     >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-wrap">
                               <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                              {isCustomerApp && (
+                                <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
+                                  Customer App
+                                </Badge>
+                              )}
                               {editedOrderIds.has(order.id) && (
                                 <Badge
                                   className="text-[10px] h-5 px-1.5 cursor-pointer bg-warning text-warning-foreground hover:bg-warning/90 border-transparent"
@@ -2640,7 +2666,8 @@ Thank you!`;
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
