@@ -1916,6 +1916,18 @@ Thank you!`;
                     <span className="text-muted-foreground">Tax</span>
                     <span>${viewOrder.tax.toFixed(2)}</span>
                   </div>
+                  {((viewOrder.shipping ?? 0) > 0 || viewOrder.shipping_zone) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Shipping{viewOrder.shipping_zone ? ` (${viewOrder.shipping_zone})` : ''}
+                      </span>
+                      <span>
+                        {(viewOrder.shipping ?? 0) > 0
+                          ? `$${(viewOrder.shipping ?? 0).toFixed(2)}`
+                          : 'FREE'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-lg border-t pt-2">
                     <span>Total</span>
                     <span className="text-primary">${viewOrder.total.toFixed(2)}</span>
