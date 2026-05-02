@@ -2406,8 +2406,13 @@ Thank you!`;
                             </button>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                   <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  {isCustomerApp && (
+                                    <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
+                                      Customer App
+                                    </Badge>
+                                  )}
                                   {editedOrderIds.has(order.id) && (
                                     <Badge
                                       className="text-[10px] h-5 px-1.5 cursor-pointer bg-warning text-warning-foreground hover:bg-warning/90 border-transparent"
