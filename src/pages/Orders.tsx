@@ -618,6 +618,7 @@ const Orders = () => {
           salon_id: formData.salon_id || null,
           profile_id: formData.profile_id || null,
           notes: formData.notes || null,
+          technician_name: formData.technician_name || null,
           created_by: user?.id ?? null,
           status: "Draft",
           subtotal,
@@ -642,7 +643,7 @@ const Orders = () => {
           description: "It will sync automatically when you're back online.",
         });
         setIsDialogOpen(false);
-        setFormData({ salon_id: "", profile_id: "", notes: "" });
+        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
         setDetectedReferrer(null);
         setOrderItems([]);
         return;
@@ -655,6 +656,7 @@ const Orders = () => {
             salon_id: formData.salon_id || null,
             profile_id: formData.profile_id || null,
             notes: formData.notes || null,
+            technician_name: formData.technician_name || null,
             created_by: user?.id,
             status: "Draft",
             subtotal,
@@ -796,7 +798,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
-      setFormData({ salon_id: "", profile_id: "", notes: "" });
+      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
       setDetectedReferrer(null);
       setOrderItems([]);
       fetchData();
@@ -896,7 +898,7 @@ const Orders = () => {
       }));
 
       setOrderItems(orderItemsData);
-      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}` });
+      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}`, technician_name: order.technician_name || '' });
       setIsDialogOpen(true);
       toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
     } catch (error: any) {
