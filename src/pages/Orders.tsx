@@ -2479,6 +2479,11 @@ Thank you!`;
                                   {new Date(order.order_date).toLocaleDateString()}
                                 </span>
                               </div>
+                              {order.technician_name && (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Tech: <span className="font-medium text-foreground">{order.technician_name}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -2628,6 +2633,11 @@ Thank you!`;
                           <div className="text-sm text-muted-foreground">
                             {new Date(order.order_date).toLocaleDateString()}
                           </div>
+                          {order.technician_name && (
+                            <div className="text-xs text-muted-foreground -mt-1">
+                              Tech: <span className="font-medium text-foreground">{order.technician_name}</span>
+                            </div>
+                          )}
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
                               <div className="space-y-1">
