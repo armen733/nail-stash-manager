@@ -57,7 +57,7 @@ ${orderData.discount_code ? `• Discount (${orderData.discount_code}): -$${orde
 ${orderData.points_redeemed ? `• Points Redeemed: ${orderData.points_redeemed} pts` : ''}
 • *Total: $${orderData.total?.toFixed(2) || '0.00'}*
 
-${orderData.notes ? `📝 *Notes:* ${orderData.notes}\n` : ''}📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
+${orderData.technician_name ? `💅 *Technician:* ${orderData.technician_name}\n` : ''}${orderData.notes ? `📝 *Notes:* ${orderData.notes}\n` : ''}📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
 
 ${isInStore ? '🏪 In-Store Quick Order' : '💳 Online Order'}
 ━━━━━━━━━━━━━━━━━━`;

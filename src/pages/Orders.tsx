@@ -736,6 +736,7 @@ const Orders = () => {
             subtotal,
             total,
             notes: formData.notes || null,
+            technician_name: formData.technician_name || null,
           }
         };
         
