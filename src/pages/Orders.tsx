@@ -2373,10 +2373,18 @@ Thank you!`;
                     <span className="text-sm text-muted-foreground">Select all</span>
                   </div>
                   
-                  {filteredActiveOrders.map((order) => (
+                  {filteredActiveOrders.map((order) => {
+                    const isCustomerApp = !order.created_by;
+                    return (
                     <Card 
                       key={order.id} 
-                      className={`shadow-sm cursor-pointer hover:bg-muted/50 transition-colors ${selectedOrders.has(order.id) ? 'ring-2 ring-primary' : ''}`}
+                      className={`shadow-sm cursor-pointer transition-colors ${
+                        selectedOrders.has(order.id) ? 'ring-2 ring-primary' : ''
+                      } ${
+                        isCustomerApp
+                          ? 'border-l-4 border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15'
+                          : 'hover:bg-muted/50'
+                      }`}
                       onClick={() => setViewOrder(order)}
                     >
                       <CardContent className="p-4">
