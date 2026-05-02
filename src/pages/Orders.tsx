@@ -80,6 +80,7 @@ interface Order {
   tax: number;
   total: number;
   notes: string | null;
+  technician_name?: string | null;
   created_at: string;
   customer_name?: string | null;
   customer_email?: string | null;
