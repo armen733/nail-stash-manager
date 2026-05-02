@@ -529,6 +529,7 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
+          technician_name: string | null
           tier_discount_applied: string | null
           tier_discount_percent: number | null
           total: number
@@ -558,6 +559,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          technician_name?: string | null
           tier_discount_applied?: string | null
           tier_discount_percent?: number | null
           total?: number
@@ -587,6 +589,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
+          technician_name?: string | null
           tier_discount_applied?: string | null
           tier_discount_percent?: number | null
           total?: number
