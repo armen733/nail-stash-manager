@@ -524,6 +524,8 @@ export type Database = {
           points_redeemed: number | null
           profile_id: string | null
           salon_id: string | null
+          shipping: number
+          shipping_zone: string | null
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
           tax: number
@@ -551,6 +553,8 @@ export type Database = {
           points_redeemed?: number | null
           profile_id?: string | null
           salon_id?: string | null
+          shipping?: number
+          shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
@@ -578,6 +582,8 @@ export type Database = {
           points_redeemed?: number | null
           profile_id?: string | null
           salon_id?: string | null
+          shipping?: number
+          shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
           tax?: number
