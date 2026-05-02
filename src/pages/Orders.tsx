@@ -2666,7 +2666,8 @@ Thank you!`;
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </TabsContent>
