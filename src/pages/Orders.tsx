@@ -1680,14 +1680,25 @@ Thank you!`;
 
             {/* Sticky footer */}
             <div className="border-t px-6 py-4 bg-background space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs">Notes</Label>
-                <Input
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Optional notes..."
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="technician_name" className="text-xs">Technician Name</Label>
+                  <Input
+                    id="technician_name"
+                    value={formData.technician_name}
+                    onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
+                    placeholder="Nail technician name..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-xs">Notes</Label>
+                  <Input
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Optional notes..."
+                  />
+                </div>
               </div>
               {/* Cart summary row */}
               {orderItems.length > 0 && (
