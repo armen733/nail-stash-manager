@@ -1070,6 +1070,7 @@ const Orders = () => {
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
+          ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
           <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
         </div>
 
