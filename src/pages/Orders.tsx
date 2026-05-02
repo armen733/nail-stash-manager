@@ -80,6 +80,7 @@ interface Order {
   tax: number;
   total: number;
   notes: string | null;
+  technician_name?: string | null;
   created_at: string;
   customer_name?: string | null;
   customer_email?: string | null;
@@ -173,6 +174,7 @@ const Orders = () => {
     salon_id: "",
     profile_id: "",
     notes: "",
+    technician_name: "",
   });
 
   const [newUserData, setNewUserData] = useState({
@@ -616,6 +618,7 @@ const Orders = () => {
           salon_id: formData.salon_id || null,
           profile_id: formData.profile_id || null,
           notes: formData.notes || null,
+          technician_name: formData.technician_name || null,
           created_by: user?.id ?? null,
           status: "Draft",
           subtotal,
@@ -640,7 +643,7 @@ const Orders = () => {
           description: "It will sync automatically when you're back online.",
         });
         setIsDialogOpen(false);
-        setFormData({ salon_id: "", profile_id: "", notes: "" });
+        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
         setDetectedReferrer(null);
         setOrderItems([]);
         return;
@@ -653,6 +656,7 @@ const Orders = () => {
             salon_id: formData.salon_id || null,
             profile_id: formData.profile_id || null,
             notes: formData.notes || null,
+            technician_name: formData.technician_name || null,
             created_by: user?.id,
             status: "Draft",
             subtotal,
@@ -794,7 +798,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
-      setFormData({ salon_id: "", profile_id: "", notes: "" });
+      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
       setDetectedReferrer(null);
       setOrderItems([]);
       fetchData();
@@ -894,7 +898,7 @@ const Orders = () => {
       }));
 
       setOrderItems(orderItemsData);
-      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}` });
+      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}`, technician_name: order.technician_name || '' });
       setIsDialogOpen(true);
       toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
     } catch (error: any) {
@@ -1676,14 +1680,25 @@ Thank you!`;
 
             {/* Sticky footer */}
             <div className="border-t px-6 py-4 bg-background space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs">Notes</Label>
-                <Input
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Optional notes..."
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="technician_name" className="text-xs">Technician Name</Label>
+                  <Input
+                    id="technician_name"
+                    value={formData.technician_name}
+                    onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
+                    placeholder="Nail technician name..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-xs">Notes</Label>
+                  <Input
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Optional notes..."
+                  />
+                </div>
               </div>
               {/* Cart summary row */}
               {orderItems.length > 0 && (
@@ -2464,6 +2479,11 @@ Thank you!`;
                                   {new Date(order.order_date).toLocaleDateString()}
                                 </span>
                               </div>
+                              {order.technician_name && (
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Tech: <span className="font-medium text-foreground">{order.technician_name}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -2613,6 +2633,11 @@ Thank you!`;
                           <div className="text-sm text-muted-foreground">
                             {new Date(order.order_date).toLocaleDateString()}
                           </div>
+                          {order.technician_name && (
+                            <div className="text-xs text-muted-foreground -mt-1">
+                              Tech: <span className="font-medium text-foreground">{order.technician_name}</span>
+                            </div>
+                          )}
                           <div className="text-sm">
                             {order.order_items && order.order_items.length > 0 ? (
                               <div className="space-y-1">
