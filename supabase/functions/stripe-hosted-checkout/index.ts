@@ -39,7 +39,8 @@ serve(async (req: Request) => {
     );
 
     console.log(`[${requestId}] Step 4: Parsing request body`);
-    const { items, customerEmail, customerName, metadata } = await req.json();
+    const { items, customerEmail, customerName, metadata, taxAmount, shippingAmount, shippingZone } = await req.json();
+    console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}`);
 
     if (!items?.length) {
       console.error(`[${requestId}] No items in request`);
@@ -91,6 +92,28 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
+    if (taxAmount && Number(taxAmount) > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Sales Tax (9.5%)" },
+          unit_amount: Math.round(Number(taxAmount) * 100),
+        },
+        quantity: 1,
+      });
+    }
+
+    if (shippingAmount && Number(shippingAmount) > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: `Shipping${shippingZone ? ` (${shippingZone})` : ""}` },
+          unit_amount: Math.round(Number(shippingAmount) * 100),
+        },
+        quantity: 1,
+      });
+    }
+
     // Prepare order items with product_id for stock reduction (compact format to fit 500 char limit)
     const orderItems = items.map((item: any) => ({
       n: item.name?.substring(0, 30), // truncate name
@@ -129,6 +152,9 @@ serve(async (req: Request) => {
         ...(metadata || {}), 
         userId: userId || "",
         orderItems: orderItemsJson,
+        taxAmount: String(taxAmount ?? 0),
+        shippingAmount: String(shippingAmount ?? 0),
+        shippingZone: shippingZone || "",
       },
     });
 
