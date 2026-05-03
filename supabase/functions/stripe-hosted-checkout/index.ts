@@ -152,6 +152,9 @@ serve(async (req: Request) => {
         ...(metadata || {}), 
         userId: userId || "",
         orderItems: orderItemsJson,
+        taxAmount: String(taxAmount ?? 0),
+        shippingAmount: String(shippingAmount ?? 0),
+        shippingZone: shippingZone || "",
       },
     });
 
