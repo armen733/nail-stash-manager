@@ -2324,7 +2324,7 @@ const Products = () => {
                           <p className="text-sm text-muted-foreground">{product.category}</p>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {product.sku}
+                              {skuOf(product)}
                             </span>
                             {product.is_parent && product.variants && product.variants.length > 0 && (
                               <Badge variant="secondary" className="text-[10px] leading-none">
