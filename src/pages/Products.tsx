@@ -2138,6 +2138,20 @@ const Products = () => {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* SKU source toggle */}
+              <button
+                type="button"
+                onClick={() => setShowSupplierSku((v) => !v)}
+                title={showSupplierSku ? "Showing Supplier SKU — click for Internal" : "Showing Internal SKU — click for Supplier"}
+                className={cn(
+                  "flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] font-medium transition-colors flex-shrink-0",
+                  showSupplierSku ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground"
+                )}
+              >
+                <span className={cn("w-2 h-2 rounded-full", showSupplierSku ? "bg-primary-foreground" : "bg-foreground/40")} />
+                {showSupplierSku ? "Supplier" : "Internal"}
+              </button>
               
               <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
                 <FileUp className="h-4 w-4" />
