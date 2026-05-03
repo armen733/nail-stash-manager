@@ -71,8 +71,21 @@ serve(async (req: Request) => {
         if (customers.data.length > 0) {
           customerId = customers.data[0].id;
           console.log(`[${requestId}] Found existing customer: ${customerId}`);
+          // Update phone if provided and missing/different
+          if (customerPhone && customers.data[0].phone !== customerPhone) {
+            try {
+              await stripe.customers.update(customerId, { phone: customerPhone });
+              console.log(`[${requestId}] Updated customer phone`);
+            } catch (e) {
+              console.warn(`[${requestId}] Phone update failed (non-fatal)`);
+            }
+          }
         } else {
-          const customer = await stripe.customers.create({ email: customerEmail, name: customerName });
+          const customer = await stripe.customers.create({ 
+            email: customerEmail, 
+            name: customerName,
+            phone: customerPhone || undefined,
+          });
           customerId = customer.id;
           console.log(`[${requestId}] Created new customer: ${customerId}`);
         }
