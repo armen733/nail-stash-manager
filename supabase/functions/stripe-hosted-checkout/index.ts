@@ -39,8 +39,8 @@ serve(async (req: Request) => {
     );
 
     console.log(`[${requestId}] Step 4: Parsing request body`);
-    const { items, customerEmail, customerName, metadata, taxAmount, shippingAmount, shippingZone } = await req.json();
-    console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}`);
+    const { items, customerEmail, customerName, customerPhone, metadata, taxAmount, shippingAmount, shippingZone } = await req.json();
+    console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}, Phone: ${customerPhone || 'none'}`);
 
     if (!items?.length) {
       console.error(`[${requestId}] No items in request`);
@@ -71,8 +71,21 @@ serve(async (req: Request) => {
         if (customers.data.length > 0) {
           customerId = customers.data[0].id;
           console.log(`[${requestId}] Found existing customer: ${customerId}`);
+          // Update phone if provided and missing/different
+          if (customerPhone && customers.data[0].phone !== customerPhone) {
+            try {
+              await stripe.customers.update(customerId, { phone: customerPhone });
+              console.log(`[${requestId}] Updated customer phone`);
+            } catch (e) {
+              console.warn(`[${requestId}] Phone update failed (non-fatal)`);
+            }
+          }
         } else {
-          const customer = await stripe.customers.create({ email: customerEmail, name: customerName });
+          const customer = await stripe.customers.create({ 
+            email: customerEmail, 
+            name: customerName,
+            phone: customerPhone || undefined,
+          });
           customerId = customer.id;
           console.log(`[${requestId}] Created new customer: ${customerId}`);
         }
