@@ -2486,7 +2486,7 @@ const Products = () => {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{product.sku}</TableCell>
+                          <TableCell className="font-mono text-xs">{skuOf(product)}</TableCell>
                           <TableCell>{product.category}</TableCell>
                           <TableCell className="text-right font-medium">${product.price_usd}</TableCell>
                           <TableCell className="text-right">
@@ -2571,7 +2571,7 @@ const Products = () => {
                 <div className="space-y-3">
                   <div>
                     <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                    <p className="text-sm text-muted-foreground mt-1">SKU: {skuOf(quickViewProduct)}</p>
                   </div>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
@@ -2636,7 +2636,7 @@ const Products = () => {
                                 </div>
                                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                   <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
-                                  <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                  <p className="text-xs text-muted-foreground">SKU: {skuOf(variant)}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <p className="text-sm font-semibold">${variant.price_usd}</p>
                                     {variant.stock_on_hand !== null && (
@@ -2748,7 +2748,7 @@ const Products = () => {
                   <div className="space-y-3">
                     <div>
                       <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                      <p className="text-sm text-muted-foreground mt-1">SKU: {skuOf(quickViewProduct)}</p>
                     </div>
                     <div className="space-y-2 text-sm">
                       <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
@@ -2815,7 +2815,7 @@ const Products = () => {
                               </div>
                               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                 <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
-                                <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                <p className="text-xs text-muted-foreground">SKU: {skuOf(variant)}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <p className="text-sm font-semibold">${variant.price_usd}</p>
                                   {variant.stock_on_hand !== null && (
