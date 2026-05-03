@@ -119,6 +119,8 @@ const Products = () => {
 
   // New state for improvements
   const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid");
+  const [showSupplierSku, setShowSupplierSku] = useState(false);
+  const skuOf = (p: any) => (showSupplierSku ? (p?.supplier_sku || p?.sku) : p?.sku);
   const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
@@ -2136,6 +2138,20 @@ const Products = () => {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
+
+              {/* SKU source toggle */}
+              <button
+                type="button"
+                onClick={() => setShowSupplierSku((v) => !v)}
+                title={showSupplierSku ? "Showing Supplier SKU — click for Internal" : "Showing Internal SKU — click for Supplier"}
+                className={cn(
+                  "flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] font-medium transition-colors flex-shrink-0",
+                  showSupplierSku ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground"
+                )}
+              >
+                <span className={cn("w-2 h-2 rounded-full", showSupplierSku ? "bg-primary-foreground" : "bg-foreground/40")} />
+                {showSupplierSku ? "Supplier" : "Internal"}
+              </button>
               
               <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
                 <FileUp className="h-4 w-4" />
@@ -2308,7 +2324,7 @@ const Products = () => {
                           <p className="text-sm text-muted-foreground">{product.category}</p>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="inline-block font-mono text-[10px] leading-none text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {product.sku}
+                              {skuOf(product)}
                             </span>
                             {product.is_parent && product.variants && product.variants.length > 0 && (
                               <Badge variant="secondary" className="text-[10px] leading-none">
@@ -2470,7 +2486,7 @@ const Products = () => {
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{product.sku}</TableCell>
+                          <TableCell className="font-mono text-xs">{skuOf(product)}</TableCell>
                           <TableCell>{product.category}</TableCell>
                           <TableCell className="text-right font-medium">${product.price_usd}</TableCell>
                           <TableCell className="text-right">
@@ -2555,7 +2571,7 @@ const Products = () => {
                 <div className="space-y-3">
                   <div>
                     <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                    <p className="text-sm text-muted-foreground mt-1">SKU: {skuOf(quickViewProduct)}</p>
                   </div>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
@@ -2620,7 +2636,7 @@ const Products = () => {
                                 </div>
                                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                   <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
-                                  <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                  <p className="text-xs text-muted-foreground">SKU: {skuOf(variant)}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <p className="text-sm font-semibold">${variant.price_usd}</p>
                                     {variant.stock_on_hand !== null && (
@@ -2732,7 +2748,7 @@ const Products = () => {
                   <div className="space-y-3">
                     <div>
                       <h3 className="text-2xl font-bold">{quickViewProduct.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">SKU: {quickViewProduct.sku}</p>
+                      <p className="text-sm text-muted-foreground mt-1">SKU: {skuOf(quickViewProduct)}</p>
                     </div>
                     <div className="space-y-2 text-sm">
                       <p><span className="font-medium">Category:</span> {quickViewProduct.category}</p>
@@ -2799,7 +2815,7 @@ const Products = () => {
                               </div>
                               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setQuickViewProduct(variant)}>
                                 <p className="font-medium text-sm">{variant.variant_name || variant.sku}</p>
-                                <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                                <p className="text-xs text-muted-foreground">SKU: {skuOf(variant)}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <p className="text-sm font-semibold">${variant.price_usd}</p>
                                   {variant.stock_on_hand !== null && (
