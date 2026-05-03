@@ -119,6 +119,8 @@ const Products = () => {
 
   // New state for improvements
   const [viewMode, setViewMode] = useState<"grid" | "compact" | "table">("grid");
+  const [showSupplierSku, setShowSupplierSku] = useState(false);
+  const skuOf = (p: any) => (showSupplierSku ? (p?.supplier_sku || p?.sku) : p?.sku);
   const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
