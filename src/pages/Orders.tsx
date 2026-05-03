@@ -1775,15 +1775,38 @@ Thank you!`;
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground">Email</Label>
-                    <div className="font-medium mt-1 break-all">{viewOrder.customer_email || "—"}</div>
+                    <div className="font-medium mt-1 break-all">
+                      {viewOrder.customer_email ? (
+                        <a href={`mailto:${viewOrder.customer_email}`} className="text-primary hover:underline">
+                          {viewOrder.customer_email}
+                        </a>
+                      ) : "—"}
+                    </div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground">Phone</Label>
-                    <div className="font-medium mt-1">{viewOrder.customer_phone || "—"}</div>
+                    <div className="font-medium mt-1">
+                      {viewOrder.customer_phone ? (
+                        <a href={`tel:${viewOrder.customer_phone.replace(/\s+/g, '')}`} className="text-primary hover:underline">
+                          {viewOrder.customer_phone}
+                        </a>
+                      ) : "—"}
+                    </div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground">Address</Label>
-                    <div className="font-medium mt-1">{viewOrder.customer_address || "—"}</div>
+                    <div className="font-medium mt-1">
+                      {viewOrder.customer_address ? (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(viewOrder.customer_address)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {viewOrder.customer_address}
+                        </a>
+                      ) : "—"}
+                    </div>
                   </div>
                 </div>
               </div>
