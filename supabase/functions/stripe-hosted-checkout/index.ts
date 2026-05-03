@@ -147,6 +147,7 @@ serve(async (req: Request) => {
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
       billing_address_collection: "required",
+      phone_number_collection: { enabled: true },
       shipping_address_collection: { allowed_countries: ["US", "CA", "GB", "AU"] },
       metadata: { 
         ...(metadata || {}), 
