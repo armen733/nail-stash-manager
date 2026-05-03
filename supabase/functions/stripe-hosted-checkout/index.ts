@@ -92,6 +92,28 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
+    if (taxAmount && Number(taxAmount) > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Sales Tax (9.5%)" },
+          unit_amount: Math.round(Number(taxAmount) * 100),
+        },
+        quantity: 1,
+      });
+    }
+
+    if (shippingAmount && Number(shippingAmount) > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: `Shipping${shippingZone ? ` (${shippingZone})` : ""}` },
+          unit_amount: Math.round(Number(shippingAmount) * 100),
+        },
+        quantity: 1,
+      });
+    }
+
     // Prepare order items with product_id for stock reduction (compact format to fit 500 char limit)
     const orderItems = items.map((item: any) => ({
       n: item.name?.substring(0, 30), // truncate name
