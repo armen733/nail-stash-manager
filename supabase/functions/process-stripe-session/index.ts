@@ -128,7 +128,8 @@ serve(async (req: Request) => {
       customer_phone: customerPhone,
       customer_address: shippingAddress,
       subtotal: subtotal,
-      tax: 0,
+      tax: taxAmount,
+      shipping_fee: shippingAmount,
       total: total,
       status: 'Confirmed',
     };
