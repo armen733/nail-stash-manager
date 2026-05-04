@@ -161,7 +161,8 @@ serve(async (req: Request) => {
       cancel_url: `${origin}/checkout`,
       billing_address_collection: "required",
       phone_number_collection: { enabled: true },
-      shipping_address_collection: { allowed_countries: ["US", "CA", "GB", "AU"] },
+      // Shipping address NOT collected here — already provided & validated in customer app.
+      // Prevents users from swapping to an international address after qualifying for local free shipping.
       metadata: { 
         ...(metadata || {}), 
         userId: userId || "",
