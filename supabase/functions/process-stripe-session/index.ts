@@ -77,10 +77,28 @@ serve(async (req: Request) => {
     const customerPhone = session.customer_details?.phone || '';
     const userId = session.metadata?.userId || null;
     
-    const shipping = session.shipping_details || session.customer_details;
-    const shippingAddress = shipping?.address ? 
-      `${shipping.address.line1 || ''}${shipping.address.line2 ? ', ' + shipping.address.line2 : ''}\n${shipping.address.city || ''}, ${shipping.address.state || ''} ${shipping.address.postal_code || ''}\n${shipping.address.country || ''}` :
-      session.metadata?.shippingAddress || 'No address provided';
+    // Prefer shipping address from metadata (customer app validated it & calculated shipping fee).
+    // Fall back to Stripe's billing/shipping details only if metadata is missing.
+    const md = session.metadata || {};
+    let shippingAddress: string;
+    if (md.shipping_address || md.shipping_city || md.shipping_zip) {
+      const line1 = md.shipping_address || '';
+      const cityStateZip = [
+        md.shipping_city || '',
+        [md.shipping_state, md.shipping_zip].filter(Boolean).join(' ')
+      ].filter(Boolean).join(', ');
+      shippingAddress = [line1, cityStateZip, md.shipping_country || '']
+        .filter(Boolean)
+        .join('\n');
+    } else {
+      const shipping = session.shipping_details || session.customer_details;
+      shippingAddress = shipping?.address
+        ? `${shipping.address.line1 || ''}${shipping.address.line2 ? ', ' + shipping.address.line2 : ''}\n${shipping.address.city || ''}, ${shipping.address.state || ''} ${shipping.address.postal_code || ''}\n${shipping.address.country || ''}`
+        : md.shippingAddress || 'No address provided';
+    }
+
+    const taxAmount = Number(md.taxAmount || 0);
+    const shippingAmount = Number(md.shippingAmount || 0);
 
     const lineItems = session.line_items?.data || [];
     const subtotal = (session.amount_subtotal || 0) / 100;
