@@ -129,7 +129,8 @@ serve(async (req: Request) => {
       customer_address: shippingAddress,
       subtotal: subtotal,
       tax: taxAmount,
-      shipping_fee: shippingAmount,
+      shipping: shippingAmount,
+      shipping_zone: md.shippingZone || null,
       total: total,
       status: 'Confirmed',
     };
