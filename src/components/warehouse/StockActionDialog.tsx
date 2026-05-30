@@ -388,8 +388,7 @@ export function StockActionDialog({
           if (qtyNum > available) {
             const srcName =
               otherLocations.find((o) => o.id === sourceLocationId)?.name ?? "source";
-            toast.error(`Only ${available} of ${l.name} available at ${srcName}`);
-            return;
+            toast.warning(`Low stock: only ${available} of ${l.name} at ${srcName}, proceeding anyway`);
           }
         }
         movements.push({
