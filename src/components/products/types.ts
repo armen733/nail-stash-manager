@@ -79,6 +79,7 @@ export interface ProductFormData {
 
 export const defaultFormData: ProductFormData = {
   name: "",
+  description: "",
   category: "",
   material: "",
   shape: "",
