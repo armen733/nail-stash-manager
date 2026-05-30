@@ -802,6 +802,7 @@ export type Database = {
           category_attributes: Json | null
           cost_usd: number | null
           created_at: string
+          description: string | null
           direction: string | null
           grit: string | null
           id: string
@@ -831,6 +832,7 @@ export type Database = {
           category_attributes?: Json | null
           cost_usd?: number | null
           created_at?: string
+          description?: string | null
           direction?: string | null
           grit?: string | null
           id?: string
@@ -860,6 +862,7 @@ export type Database = {
           category_attributes?: Json | null
           cost_usd?: number | null
           created_at?: string
+          description?: string | null
           direction?: string | null
           grit?: string | null
           id?: string

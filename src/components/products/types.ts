@@ -15,6 +15,7 @@ export interface SiblingGroup {
 export interface Product {
   id: string;
   name: string;
+  description?: string | null;
   category: string;
   material: string | null;
   shape: string | null;
@@ -50,6 +51,7 @@ export interface CartItem {
 
 export interface ProductFormData {
   name: string;
+  description: string;
   category: string;
   material: string;
   shape: string;
@@ -77,6 +79,7 @@ export interface ProductFormData {
 
 export const defaultFormData: ProductFormData = {
   name: "",
+  description: "",
   category: "",
   material: "",
   shape: "",

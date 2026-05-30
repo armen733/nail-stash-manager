@@ -398,6 +398,7 @@ const Products = () => {
 
       const productData = {
         name: formData.name,
+        description: formData.description?.trim() || null,
         category: formData.category,
         material: formData.material || null,
         shape: formData.shape || null,
@@ -659,6 +660,7 @@ const Products = () => {
     
     return {
       name: product.name,
+      description: (product as any).description || "",
       category: product.category,
       material: product.material || "",
       shape: product.shape || "",
@@ -1687,7 +1689,20 @@ const Products = () => {
                     placeholder="Enter supplier name"
                   />
                 </div>
+
+                {/* Description (optional) — shown in customer app */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description (optional)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Short product description shown to customers"
+                    rows={3}
+                  />
+                </div>
               </div>
+
 
               {/* ===== DYNAMIC CATEGORY FIELDS ===== */}
               <div className="border-t pt-4 mt-4">
