@@ -15,6 +15,7 @@ export interface SiblingGroup {
 export interface Product {
   id: string;
   name: string;
+  description?: string | null;
   category: string;
   material: string | null;
   shape: string | null;
