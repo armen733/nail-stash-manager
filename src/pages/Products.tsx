@@ -1689,7 +1689,20 @@ const Products = () => {
                     placeholder="Enter supplier name"
                   />
                 </div>
+
+                {/* Description (optional) — shown in customer app */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description (optional)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Short product description shown to customers"
+                    rows={3}
+                  />
+                </div>
               </div>
+
 
               {/* ===== DYNAMIC CATEGORY FIELDS ===== */}
               <div className="border-t pt-4 mt-4">
