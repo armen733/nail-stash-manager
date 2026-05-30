@@ -659,6 +659,7 @@ const Products = () => {
     
     return {
       name: product.name,
+      description: (product as any).description || "",
       category: product.category,
       material: product.material || "",
       shape: product.shape || "",
