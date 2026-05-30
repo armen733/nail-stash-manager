@@ -427,8 +427,7 @@ export function StockActionDialog({
           return;
         }
         if (qtyNum > l.stockHere) {
-          toast.error(`Only ${l.stockHere} available for ${l.name}`);
-          return;
+          toast.warning(`Low stock: only ${l.stockHere} of ${l.name} here, proceeding anyway`);
         }
         movements.push({
           product_id: l.product_id,
