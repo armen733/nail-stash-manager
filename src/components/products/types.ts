@@ -51,6 +51,7 @@ export interface CartItem {
 
 export interface ProductFormData {
   name: string;
+  description: string;
   category: string;
   material: string;
   shape: string;
