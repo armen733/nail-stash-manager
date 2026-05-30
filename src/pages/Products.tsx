@@ -398,6 +398,7 @@ const Products = () => {
 
       const productData = {
         name: formData.name,
+        description: formData.description?.trim() || null,
         category: formData.category,
         material: formData.material || null,
         shape: formData.shape || null,
