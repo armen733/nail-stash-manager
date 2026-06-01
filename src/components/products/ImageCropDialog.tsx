@@ -42,17 +42,7 @@ export function ImageCropDialog({ open, file, onCancel, onConfirm }: ImageCropDi
   const [aspect, setAspect] = useState<number | undefined>(1);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  // Load file
-  useState(() => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => setImgSrc(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  });
-
-  // Reset when file changes
-  useState(() => {
+  useEffect(() => {
     setImgSrc("");
     setCrop(undefined);
     setCompletedCrop(undefined);
@@ -61,7 +51,7 @@ export function ImageCropDialog({ open, file, onCancel, onConfirm }: ImageCropDi
       reader.onload = () => setImgSrc(reader.result as string);
       reader.readAsDataURL(file);
     }
-  });
+  }, [file]);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
