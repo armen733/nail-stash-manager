@@ -236,18 +236,31 @@ const Products = () => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setImageFiles(prev => [...prev, ...newFiles]);
-      
-      newFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
+    if (files && files.length > 0) {
+      // Queue files for cropping one-by-one
+      setCropQueue(Array.from(files));
     }
+    // Reset input so selecting same file again works
+    if (e.target) e.target.value = "";
+  };
+
+  const addCroppedFile = (file: File) => {
+    setImageFiles(prev => [...prev, file]);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviews(prev => [...prev, reader.result as string]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropConfirm = (cropped: File) => {
+    addCroppedFile(cropped);
+    setCropQueue(prev => prev.slice(1));
+  };
+
+  const handleCropCancel = () => {
+    // Skip this file, move to next
+    setCropQueue(prev => prev.slice(1));
   };
 
   const removeImagePreview = (index: number) => {
