@@ -71,6 +71,7 @@ import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
 import { ExportDialog } from "@/components/products/ExportDialog";
+import { ImageCropDialog } from "@/components/products/ImageCropDialog";
 import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
@@ -102,6 +103,7 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -236,18 +238,31 @@ const Products = () => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setImageFiles(prev => [...prev, ...newFiles]);
-      
-      newFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result as string]);
-        };
-        reader.readAsDataURL(file);
-      });
+    if (files && files.length > 0) {
+      // Queue files for cropping one-by-one
+      setCropQueue(Array.from(files));
     }
+    // Reset input so selecting same file again works
+    if (e.target) e.target.value = "";
+  };
+
+  const addCroppedFile = (file: File) => {
+    setImageFiles(prev => [...prev, file]);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviews(prev => [...prev, reader.result as string]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropConfirm = (cropped: File) => {
+    addCroppedFile(cropped);
+    setCropQueue(prev => prev.slice(1));
+  };
+
+  const handleCropCancel = () => {
+    // Skip this file, move to next
+    setCropQueue(prev => prev.slice(1));
   };
 
   const removeImagePreview = (index: number) => {
@@ -1957,6 +1972,14 @@ const Products = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Image Crop Dialog — processes selected photos one at a time */}
+        <ImageCropDialog
+          open={cropQueue.length > 0}
+          file={cropQueue[0] || null}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
         </div>
       </div>
 
