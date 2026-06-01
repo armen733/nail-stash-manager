@@ -290,6 +290,39 @@ const Products = () => {
     }
   };
 
+  // Drag-and-drop reorder helpers
+  const dragSource = useRef<{ kind: "existing" | "new"; index: number } | null>(null);
+
+  const reorder = <T,>(arr: T[], from: number, to: number): T[] => {
+    const copy = [...arr];
+    const [moved] = copy.splice(from, 1);
+    copy.splice(to, 0, moved);
+    return copy;
+  };
+
+  const handleImageDrop = (kind: "existing" | "new", toIndex: number) => {
+    const src = dragSource.current;
+    dragSource.current = null;
+    if (!src || src.kind !== kind || src.index === toIndex) return;
+    if (kind === "existing") {
+      setExistingImages(prev => reorder(prev, src.index, toIndex).map((img, i) => ({ ...img, display_order: i })));
+    } else {
+      setImageFiles(prev => reorder(prev, src.index, toIndex));
+      setImagePreviews(prev => reorder(prev, src.index, toIndex));
+    }
+  };
+
+  const persistExistingImageOrder = async () => {
+    if (existingImages.length === 0) return;
+    await Promise.all(
+      existingImages.map((img, i) =>
+        (supabase as any).from("product_images").update({ display_order: i }).eq("id", img.id)
+      )
+    );
+  };
+
+
+
   const uploadImages = async (productId: string) => {
     if (imageFiles.length === 0) return;
 
