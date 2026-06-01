@@ -290,6 +290,39 @@ const Products = () => {
     }
   };
 
+  // Drag-and-drop reorder helpers
+  const dragSource = useRef<{ kind: "existing" | "new"; index: number } | null>(null);
+
+  const reorder = <T,>(arr: T[], from: number, to: number): T[] => {
+    const copy = [...arr];
+    const [moved] = copy.splice(from, 1);
+    copy.splice(to, 0, moved);
+    return copy;
+  };
+
+  const handleImageDrop = (kind: "existing" | "new", toIndex: number) => {
+    const src = dragSource.current;
+    dragSource.current = null;
+    if (!src || src.kind !== kind || src.index === toIndex) return;
+    if (kind === "existing") {
+      setExistingImages(prev => reorder(prev, src.index, toIndex).map((img, i) => ({ ...img, display_order: i })));
+    } else {
+      setImageFiles(prev => reorder(prev, src.index, toIndex));
+      setImagePreviews(prev => reorder(prev, src.index, toIndex));
+    }
+  };
+
+  const persistExistingImageOrder = async () => {
+    if (existingImages.length === 0) return;
+    await Promise.all(
+      existingImages.map((img, i) =>
+        (supabase as any).from("product_images").update({ display_order: i }).eq("id", img.id)
+      )
+    );
+  };
+
+
+
   const uploadImages = async (productId: string) => {
     if (imageFiles.length === 0) return;
 
@@ -450,8 +483,10 @@ const Products = () => {
         if (error) throw error;
         productId = editingProduct.id;
         
-        // Upload new images
+        // Persist reordered existing images, then upload new ones
+        await persistExistingImageOrder();
         await uploadImages(productId);
+
 
         // Build a detailed change list comparing old product vs new productData
         const changes: string[] = [];
@@ -1526,8 +1561,19 @@ const Products = () => {
                   {existingImages.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {existingImages.map((img, index) => (
-                        <div key={img.id} className="relative w-full aspect-square border rounded-lg overflow-hidden">
-                          <img src={img.image_url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                        <div
+                          key={img.id}
+                          draggable
+                          onDragStart={() => { dragSource.current = { kind: "existing", index }; }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => { e.preventDefault(); handleImageDrop("existing", index); }}
+                          className="relative w-full aspect-square border rounded-lg overflow-hidden cursor-move"
+                          title="Drag to reorder"
+                        >
+                          <img src={img.image_url} alt={`Image ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+                          {index === 0 && (
+                            <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">Main</Badge>
+                          )}
                           <Button
                             type="button"
                             variant="destructive"
@@ -1546,8 +1592,16 @@ const Products = () => {
                   {imagePreviews.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative w-full aspect-square border rounded-lg overflow-hidden">
-                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                        <div
+                          key={index}
+                          draggable
+                          onDragStart={() => { dragSource.current = { kind: "new", index }; }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => { e.preventDefault(); handleImageDrop("new", index); }}
+                          className="relative w-full aspect-square border rounded-lg overflow-hidden cursor-move"
+                          title="Drag to reorder"
+                        >
+                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
                           <Button
                             type="button"
                             variant="destructive"
@@ -1561,6 +1615,7 @@ const Products = () => {
                       ))}
                     </div>
                   )}
+
                   
                   <input
                     ref={fileInputRef}
