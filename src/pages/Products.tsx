@@ -1559,8 +1559,19 @@ const Products = () => {
                   {existingImages.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {existingImages.map((img, index) => (
-                        <div key={img.id} className="relative w-full aspect-square border rounded-lg overflow-hidden">
-                          <img src={img.image_url} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
+                        <div
+                          key={img.id}
+                          draggable
+                          onDragStart={() => { dragSource.current = { kind: "existing", index }; }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => { e.preventDefault(); handleImageDrop("existing", index); }}
+                          className="relative w-full aspect-square border rounded-lg overflow-hidden cursor-move"
+                          title="Drag to reorder"
+                        >
+                          <img src={img.image_url} alt={`Image ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+                          {index === 0 && (
+                            <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">Main</Badge>
+                          )}
                           <Button
                             type="button"
                             variant="destructive"
@@ -1579,8 +1590,16 @@ const Products = () => {
                   {imagePreviews.length > 0 && (
                     <div className="grid grid-cols-4 gap-2">
                       {imagePreviews.map((preview, index) => (
-                        <div key={index} className="relative w-full aspect-square border rounded-lg overflow-hidden">
-                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                        <div
+                          key={index}
+                          draggable
+                          onDragStart={() => { dragSource.current = { kind: "new", index }; }}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => { e.preventDefault(); handleImageDrop("new", index); }}
+                          className="relative w-full aspect-square border rounded-lg overflow-hidden cursor-move"
+                          title="Drag to reorder"
+                        >
+                          <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
                           <Button
                             type="button"
                             variant="destructive"
@@ -1594,6 +1613,7 @@ const Products = () => {
                       ))}
                     </div>
                   )}
+
                   
                   <input
                     ref={fileInputRef}
