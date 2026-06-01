@@ -1581,6 +1581,18 @@ const Products = () => {
                   />
                 </div>
 
+                {/* Description (optional) — shown in customer app for ALL product types */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description (optional)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Short product description shown to customers (works for any category)"
+                    rows={3}
+                  />
+                </div>
+
                 {/* Category - MASTER TRIGGER */}
                 <div className="space-y-2">
                   <Label htmlFor="category">Category * <span className="text-xs text-muted-foreground">(determines available fields)</span></Label>
