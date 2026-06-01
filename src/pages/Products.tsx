@@ -483,8 +483,10 @@ const Products = () => {
         if (error) throw error;
         productId = editingProduct.id;
         
-        // Upload new images
+        // Persist reordered existing images, then upload new ones
+        await persistExistingImageOrder();
         await uploadImages(productId);
+
 
         // Build a detailed change list comparing old product vs new productData
         const changes: string[] = [];
