@@ -1972,6 +1972,14 @@ const Products = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Image Crop Dialog — processes selected photos one at a time */}
+        <ImageCropDialog
+          open={cropQueue.length > 0}
+          file={cropQueue[0] || null}
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
         </div>
       </div>
 
