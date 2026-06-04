@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, Crop as CropIcon } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -104,6 +104,7 @@ const Products = () => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [editingExistingImage, setEditingExistingImage] = useState<{ id: string; file: File } | null>(null);
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -289,6 +290,56 @@ const Products = () => {
       });
     }
   };
+
+  const startEditExistingImage = async (id: string, url: string) => {
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      const blob = await res.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      const file = new File([blob], `edit-${Date.now()}.${ext}`, { type: blob.type || "image/jpeg" });
+      setEditingExistingImage({ id, file });
+    } catch (e: any) {
+      toast({ title: "Error", description: "Could not load image for editing", variant: "destructive" });
+    }
+  };
+
+  const handleEditExistingConfirm = async (cropped: File) => {
+    const target = editingExistingImage;
+    setEditingExistingImage(null);
+    if (!target) return;
+    try {
+      setUploading(true);
+      const fileExt = cropped.name.split(".").pop() || "jpg";
+      const filePath = `${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, cropped);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(filePath);
+
+      if (target.id === "__legacy__" && editingProduct) {
+        const { error } = await (supabase as any)
+          .from("products")
+          .update({ image_url: publicUrl })
+          .eq("id", editingProduct.id);
+        if (error) throw error;
+        setEditingProduct({ ...editingProduct, image_url: publicUrl } as any);
+      } else {
+        const { error } = await (supabase as any)
+          .from("product_images")
+          .update({ image_url: publicUrl })
+          .eq("id", target.id);
+        if (error) throw error;
+        setExistingImages(prev => prev.map(img => img.id === target.id ? { ...img, image_url: publicUrl } : img));
+      }
+      toast({ title: "Success", description: "Image updated" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
 
   // Drag-and-drop reorder helpers
   const dragSource = useRef<{ kind: "existing" | "new"; index: number } | null>(null);
@@ -1550,6 +1601,16 @@ const Products = () => {
                     <div className="grid grid-cols-4 gap-2">
                       <div className="relative w-full aspect-square border rounded-lg overflow-hidden">
                         <img src={editingProduct.image_url} alt="Product" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          title="Crop / Edit"
+                          onClick={() => startEditExistingImage("__legacy__", editingProduct.image_url!)}
+                        >
+                          <CropIcon className="h-3 w-3" />
+                        </Button>
                         <div className="absolute bottom-1 left-1 right-1">
                           <Badge variant="secondary" className="text-xs w-full justify-center">Legacy Image</Badge>
                         </div>
@@ -1574,6 +1635,16 @@ const Products = () => {
                           {index === 0 && (
                             <Badge variant="secondary" className="absolute bottom-1 left-1 text-[10px]">Main</Badge>
                           )}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="absolute top-1 left-1 h-6 w-6"
+                            title="Crop / Edit"
+                            onClick={() => startEditExistingImage(img.id, img.image_url)}
+                          >
+                            <CropIcon className="h-3 w-3" />
+                          </Button>
                           <Button
                             type="button"
                             variant="destructive"
@@ -2034,6 +2105,14 @@ const Products = () => {
           file={cropQueue[0] || null}
           onCancel={handleCropCancel}
           onConfirm={handleCropConfirm}
+        />
+
+        {/* Edit existing image (crop/adjust) */}
+        <ImageCropDialog
+          open={!!editingExistingImage}
+          file={editingExistingImage?.file || null}
+          onCancel={() => setEditingExistingImage(null)}
+          onConfirm={handleEditExistingConfirm}
         />
         </div>
       </div>
