@@ -60,7 +60,9 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
     
     switch (field.field_type) {
       case "select":
-        const options = field.options || [];
+        const options = (field.options || []).filter(opt => opt && opt.trim() !== "");
+        const isCustom = value !== "" && !options.includes(value);
+        const selectValue = value === "" ? "__none__" : isCustom ? "__custom__" : value;
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.field_name}>
@@ -68,19 +70,33 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
               {isRequired && <span className="text-destructive ml-1">*</span>}
             </Label>
             <Select
-              value={value || "__none__"}
-              onValueChange={(v) => handleFieldChange(field.field_name, v === "__none__" ? "" : v)}
+              value={selectValue}
+              onValueChange={(v) => {
+                if (v === "__none__") handleFieldChange(field.field_name, "");
+                else if (v === "__custom__") handleFieldChange(field.field_name, " ");
+                else handleFieldChange(field.field_name, v);
+              }}
             >
               <SelectTrigger id={field.field_name} className="bg-background">
                 <SelectValue placeholder={field.placeholder || `Select ${field.field_label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent className="bg-background border">
                 <SelectItem value="__none__">None</SelectItem>
-                {options.filter(opt => opt && opt.trim() !== "").map((opt) => (
+                {options.map((opt) => (
                   <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                 ))}
+                <SelectItem value="__custom__">+ Custom…</SelectItem>
               </SelectContent>
             </Select>
+            {(isCustom || selectValue === "__custom__") && (
+              <Input
+                autoFocus
+                value={value.trim() === "" ? "" : value}
+                onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
+                placeholder={`Enter custom ${field.field_label.toLowerCase()}`}
+                className="bg-background"
+              />
+            )}
           </div>
         );
         
