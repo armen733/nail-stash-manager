@@ -63,8 +63,9 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
     switch (field.field_type) {
       case "select":
         const options = (field.options || []).filter(opt => opt && opt.trim() !== "");
-        const isCustom = value !== "" && !options.includes(value);
-        const selectValue = value === "" ? "__none__" : isCustom ? "__custom__" : value;
+        const valueNotInOptions = value !== "" && !options.includes(value);
+        const showCustom = valueNotInOptions || customMode[field.field_name];
+        const selectValue = showCustom ? "__custom__" : value === "" ? "__none__" : value;
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.field_name}>
@@ -74,9 +75,13 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
             <Select
               value={selectValue}
               onValueChange={(v) => {
-                if (v === "__none__") handleFieldChange(field.field_name, "");
-                else if (v === "__custom__") handleFieldChange(field.field_name, " ");
-                else handleFieldChange(field.field_name, v);
+                if (v === "__custom__") {
+                  setCustomMode({ ...customMode, [field.field_name]: true });
+                  handleFieldChange(field.field_name, "");
+                } else {
+                  setCustomMode({ ...customMode, [field.field_name]: false });
+                  handleFieldChange(field.field_name, v === "__none__" ? "" : v);
+                }
               }}
             >
               <SelectTrigger id={field.field_name} className="bg-background">
@@ -90,10 +95,10 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
                 <SelectItem value="__custom__">+ Custom…</SelectItem>
               </SelectContent>
             </Select>
-            {(isCustom || selectValue === "__custom__") && (
+            {showCustom && (
               <Input
-                autoFocus
-                value={value.trim() === "" ? "" : value}
+                autoFocus={!valueNotInOptions}
+                value={value}
                 onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
                 placeholder={`Enter custom ${field.field_label.toLowerCase()}`}
                 className="bg-background"
