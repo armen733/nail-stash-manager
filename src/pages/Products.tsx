@@ -2106,6 +2106,14 @@ const Products = () => {
           onCancel={handleCropCancel}
           onConfirm={handleCropConfirm}
         />
+
+        {/* Edit existing image (crop/adjust) */}
+        <ImageCropDialog
+          open={!!editingExistingImage}
+          file={editingExistingImage?.file || null}
+          onCancel={() => setEditingExistingImage(null)}
+          onConfirm={handleEditExistingConfirm}
+        />
         </div>
       </div>
 
