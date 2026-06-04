@@ -1637,6 +1637,16 @@ const Products = () => {
                           )}
                           <Button
                             type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="absolute top-1 left-1 h-6 w-6"
+                            title="Crop / Edit"
+                            onClick={() => startEditExistingImage(img.id, img.image_url)}
+                          >
+                            <CropIcon className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            type="button"
                             variant="destructive"
                             size="icon"
                             className="absolute top-1 right-1 h-6 w-6"
