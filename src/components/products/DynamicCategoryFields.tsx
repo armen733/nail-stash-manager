@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useCategoryFieldConfigs, getFieldsForCategory, CategoryFieldConfig } from "@/hooks/useCategoryFieldConfigs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface DynamicCategoryFieldsProps {
 
 export function DynamicCategoryFields({ category, values, onChange }: DynamicCategoryFieldsProps) {
   const { data: allConfigs = [], isLoading } = useCategoryFieldConfigs();
+  const [customMode, setCustomMode] = useState<Record<string, boolean>>({});
   
   const fields = getFieldsForCategory(allConfigs, category);
   
@@ -60,7 +62,10 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
     
     switch (field.field_type) {
       case "select":
-        const options = field.options || [];
+        const options = (field.options || []).filter(opt => opt && opt.trim() !== "");
+        const valueNotInOptions = value !== "" && !options.includes(value);
+        const showCustom = valueNotInOptions || customMode[field.field_name];
+        const selectValue = showCustom ? "__custom__" : value === "" ? "__none__" : value;
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={field.field_name}>
@@ -68,19 +73,37 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
               {isRequired && <span className="text-destructive ml-1">*</span>}
             </Label>
             <Select
-              value={value || "__none__"}
-              onValueChange={(v) => handleFieldChange(field.field_name, v === "__none__" ? "" : v)}
+              value={selectValue}
+              onValueChange={(v) => {
+                if (v === "__custom__") {
+                  setCustomMode({ ...customMode, [field.field_name]: true });
+                  handleFieldChange(field.field_name, "");
+                } else {
+                  setCustomMode({ ...customMode, [field.field_name]: false });
+                  handleFieldChange(field.field_name, v === "__none__" ? "" : v);
+                }
+              }}
             >
               <SelectTrigger id={field.field_name} className="bg-background">
                 <SelectValue placeholder={field.placeholder || `Select ${field.field_label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent className="bg-background border">
                 <SelectItem value="__none__">None</SelectItem>
-                {options.filter(opt => opt && opt.trim() !== "").map((opt) => (
+                {options.map((opt) => (
                   <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                 ))}
+                <SelectItem value="__custom__">+ Custom…</SelectItem>
               </SelectContent>
             </Select>
+            {showCustom && (
+              <Input
+                autoFocus={!valueNotInOptions}
+                value={value}
+                onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
+                placeholder={`Enter custom ${field.field_label.toLowerCase()}`}
+                className="bg-background"
+              />
+            )}
           </div>
         );
         
