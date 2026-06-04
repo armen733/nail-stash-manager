@@ -104,6 +104,7 @@ const Products = () => {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [editingExistingImage, setEditingExistingImage] = useState<{ id: string; file: File } | null>(null);
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
