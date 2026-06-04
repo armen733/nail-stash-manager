@@ -291,6 +291,56 @@ const Products = () => {
     }
   };
 
+  const startEditExistingImage = async (id: string, url: string) => {
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      const blob = await res.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      const file = new File([blob], `edit-${Date.now()}.${ext}`, { type: blob.type || "image/jpeg" });
+      setEditingExistingImage({ id, file });
+    } catch (e: any) {
+      toast({ title: "Error", description: "Could not load image for editing", variant: "destructive" });
+    }
+  };
+
+  const handleEditExistingConfirm = async (cropped: File) => {
+    const target = editingExistingImage;
+    setEditingExistingImage(null);
+    if (!target) return;
+    try {
+      setUploading(true);
+      const fileExt = cropped.name.split(".").pop() || "jpg";
+      const filePath = `${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, cropped);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(filePath);
+
+      if (target.id === "__legacy__" && editingProduct) {
+        const { error } = await (supabase as any)
+          .from("products")
+          .update({ image_url: publicUrl })
+          .eq("id", editingProduct.id);
+        if (error) throw error;
+        setEditingProduct({ ...editingProduct, image_url: publicUrl } as any);
+      } else {
+        const { error } = await (supabase as any)
+          .from("product_images")
+          .update({ image_url: publicUrl })
+          .eq("id", target.id);
+        if (error) throw error;
+        setExistingImages(prev => prev.map(img => img.id === target.id ? { ...img, image_url: publicUrl } : img));
+      }
+      toast({ title: "Success", description: "Image updated" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
   // Drag-and-drop reorder helpers
   const dragSource = useRef<{ kind: "existing" | "new"; index: number } | null>(null);
 
