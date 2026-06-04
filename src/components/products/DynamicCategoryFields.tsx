@@ -20,6 +20,7 @@ interface DynamicCategoryFieldsProps {
 
 export function DynamicCategoryFields({ category, values, onChange }: DynamicCategoryFieldsProps) {
   const { data: allConfigs = [], isLoading } = useCategoryFieldConfigs();
+  const [customMode, setCustomMode] = useState<Record<string, boolean>>({});
   
   const fields = getFieldsForCategory(allConfigs, category);
   
