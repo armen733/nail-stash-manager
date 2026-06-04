@@ -1601,6 +1601,16 @@ const Products = () => {
                     <div className="grid grid-cols-4 gap-2">
                       <div className="relative w-full aspect-square border rounded-lg overflow-hidden">
                         <img src={editingProduct.image_url} alt="Product" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          title="Crop / Edit"
+                          onClick={() => startEditExistingImage("__legacy__", editingProduct.image_url!)}
+                        >
+                          <CropIcon className="h-3 w-3" />
+                        </Button>
                         <div className="absolute bottom-1 left-1 right-1">
                           <Badge variant="secondary" className="text-xs w-full justify-center">Legacy Image</Badge>
                         </div>
