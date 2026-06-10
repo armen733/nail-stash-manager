@@ -178,33 +178,58 @@ export function ImageCropDialog({ open, file, onCancel, onConfirm }: ImageCropDi
             <span className="text-xs text-muted-foreground w-12 text-right">{Math.round(zoom * 100)}%</span>
           </div>
 
-          <div className="flex justify-center bg-muted/30 p-2 rounded overflow-auto" style={{ maxHeight: "60vh" }}>
+          <div className="flex justify-center bg-muted/30 p-2 rounded overflow-auto relative" style={{ maxHeight: "60vh" }}>
             {imgSrc && (
-              <ReactCrop
-                crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={aspect}
-              >
-                <img
-                  ref={imgRef}
-                  src={imgSrc}
-                  alt="Crop preview"
-                  onLoad={onImageLoad}
-                  style={{
-                    transform: `scale(${zoom}) rotate(${rotation}deg)`,
-                    transformOrigin: "center",
-                    maxHeight: "55vh",
-                    transition: "transform 0.15s ease",
-                  }}
-                  className="object-contain"
-                />
-              </ReactCrop>
+              <div className="relative inline-block">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={aspect}
+                >
+                  <img
+                    ref={imgRef}
+                    src={imgSrc}
+                    alt="Crop preview"
+                    onLoad={onImageLoad}
+                    style={{
+                      transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                      transformOrigin: "center",
+                      maxHeight: "55vh",
+                      transition: "transform 0.15s ease",
+                    }}
+                    className="object-contain"
+                  />
+                </ReactCrop>
+                {/* Center crosshair + rule-of-thirds guides (overlay only over crop area) */}
+                {completedCrop && completedCrop.width > 0 && (
+                  <svg
+                    className="pointer-events-none absolute"
+                    style={{
+                      left: completedCrop.x,
+                      top: completedCrop.y,
+                      width: completedCrop.width,
+                      height: completedCrop.height,
+                    }}
+                  >
+                    {/* Rule of thirds */}
+                    <line x1="33.33%" y1="0" x2="33.33%" y2="100%" stroke="white" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1="66.66%" y1="0" x2="66.66%" y2="100%" stroke="white" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1="0" y1="33.33%" x2="100%" y2="33.33%" stroke="white" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1="0" y1="66.66%" x2="100%" y2="66.66%" stroke="white" strokeOpacity="0.4" strokeWidth="1" strokeDasharray="3 3" />
+                    {/* Center crosshair */}
+                    <line x1="50%" y1="calc(50% - 10px)" x2="50%" y2="calc(50% + 10px)" stroke="#fbbf24" strokeWidth="2" />
+                    <line x1="calc(50% - 10px)" y1="50%" x2="calc(50% + 10px)" y2="50%" stroke="#fbbf24" strokeWidth="2" />
+                    <circle cx="50%" cy="50%" r="3" fill="none" stroke="#fbbf24" strokeWidth="1.5" />
+                  </svg>
+                )}
+              </div>
             )}
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Drag the corners to resize, drag inside the box to reposition. Use the slider to zoom in and the Center button to recenter.
+            The yellow crosshair marks the center of your crop. Dashed lines are rule-of-thirds guides for composition.
           </p>
+
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
