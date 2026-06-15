@@ -183,12 +183,21 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
   .totals-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #eee; }
   .totals-row.grand { font-size: 14px; font-weight: 700; border-bottom: none; border-top: 2px solid #111; margin-top: 4px; }
   footer { margin-top: 24px; font-size: 10px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; display: flex; justify-content: space-between; gap: 16px; }
+  .delivery { margin-bottom: 28px; }
+  .delivery + .delivery { border-top: 1px dashed #999; padding-top: 18px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .section-title { font-size: 14px; font-weight: 700; color: #111; }
+  .section-sub { font-size: 11px; color: #666; }
+  .grand-totals { margin-top: 12px; margin-left: auto; width: 320px; font-size: 13px; border: 2px solid #111; padding: 8px 12px; }
+  .grand-totals .grand { font-size: 15px; font-weight: 700; border-top: 1px solid #111; margin-top: 4px; padding-top: 6px; display: flex; justify-content: space-between; }
+  .grand-totals .row { display: flex; justify-content: space-between; padding: 2px 0; }
   @page { size: auto; margin: 0mm; }
   @media print {
     html, body { margin: 0 !important; }
     body { padding: 14mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
+    .page-break { page-break-before: always; }
   }
 </style>
 </head>
