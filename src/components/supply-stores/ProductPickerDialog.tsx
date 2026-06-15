@@ -23,16 +23,36 @@ interface Props {
 }
 
 export default function ProductPickerDialog({ open, onOpenChange, storeId, alreadyAssigned, onAssigned }: Props) {
+  const draftKey = `supplyStore:productPicker:${storeId}`;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
+  // Restore draft selections when dialog opens
   useEffect(() => {
     if (!open) return;
-    setSelected(new Set());
-    setSearch("");
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const ids: string[] = Array.isArray(parsed?.selected) ? parsed.selected : [];
+        setSelected(new Set(ids));
+        setSearch(typeof parsed?.search === "string" ? parsed.search : "");
+        if (ids.length > 0) {
+          toast.info(`Restored ${ids.length} selection${ids.length === 1 ? "" : "s"} from your draft`);
+        }
+      } else {
+        setSelected(new Set());
+        setSearch("");
+      }
+    } catch {
+      setSelected(new Set());
+      setSearch("");
+    }
+    setDraftLoaded(true);
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -43,7 +63,22 @@ export default function ProductPickerDialog({ open, onOpenChange, storeId, alrea
       setProducts((data ?? []) as Product[]);
       setLoading(false);
     })();
-  }, [open]);
+  }, [open, draftKey]);
+
+  // Persist draft as user picks
+  useEffect(() => {
+    if (!open || !draftLoaded) return;
+    try {
+      if (selected.size === 0 && !search) {
+        localStorage.removeItem(draftKey);
+      } else {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ selected: Array.from(selected), search }),
+        );
+      }
+    } catch {}
+  }, [selected, search, open, draftLoaded, draftKey]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -63,6 +98,12 @@ export default function ProductPickerDialog({ open, onOpenChange, storeId, alrea
     });
   };
 
+  const clearDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch {}
+    setSelected(new Set());
+    setSearch("");
+  };
+
   const handleAssign = async () => {
     if (selected.size === 0) {
       onOpenChange(false);
@@ -77,6 +118,7 @@ export default function ProductPickerDialog({ open, onOpenChange, storeId, alrea
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(`Added ${rows.length} product${rows.length === 1 ? "" : "s"}`);
+    clearDraft();
     onAssigned();
     onOpenChange(false);
   };
