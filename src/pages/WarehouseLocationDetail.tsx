@@ -15,6 +15,7 @@ import {
   ClipboardEdit,
   ShoppingCart,
   FileSpreadsheet,
+  Printer,
   Phone,
   Mail,
   MapPin,
