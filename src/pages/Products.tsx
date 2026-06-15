@@ -141,7 +141,53 @@ const Products = () => {
   const [advancedCategoryFilter, setAdvancedCategoryFilter] = useState("all");
   const [variantTypeFilter, setVariantTypeFilter] = useState("all");
 
-  const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
+  const DRAFT_KEY = "products:newProductDraft:v1";
+  const [formData, setFormData] = useState<ProductFormData>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(DRAFT_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { ...defaultFormData, ...parsed };
+      }
+    } catch {}
+    return defaultFormData;
+  });
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+
+  // Persist new-product form to localStorage so a refresh doesn't wipe progress
+  useEffect(() => {
+    if (editingProduct) return; // only persist drafts for new products
+    try {
+      // Skip persisting an empty form
+      const isEmpty =
+        !formData.name && !formData.sku && !formData.description &&
+        !formData.price_usd && !formData.supplier_sku;
+      if (isEmpty) {
+        localStorage.removeItem(DRAFT_KEY);
+      } else {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      }
+    } catch {}
+  }, [formData, editingProduct]);
+
+  // On first mount, if a saved draft exists, surface a notice with an undo
+  useEffect(() => {
+    if (hasRestoredDraft) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.name || parsed.sku)) {
+          toast({
+            title: "Draft restored",
+            description: "We recovered the product you were adding. Click 'Add Product' to continue.",
+          });
+        }
+      }
+    } catch {}
+    setHasRestoredDraft(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // SKU duplicate warnings
   const skuDuplicate = useMemo(() => {
