@@ -793,6 +793,19 @@ const Products = () => {
     setExistingImages([]);
     setSiblingAction("none");
     setSiblingSearchTerm("");
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  };
+
+  // Close dialog but preserve in-progress draft for new products
+  const closeFormDialogPreservingDraft = () => {
+    setIsDialogOpen(false);
+    if (editingProduct) {
+      // editing an existing product — clear editing state
+      resetForm();
+    } else {
+      // new product — keep formData/images so user can resume
+      setEditingProduct(null);
+    }
   };
 
   // Helper to convert product to form data
