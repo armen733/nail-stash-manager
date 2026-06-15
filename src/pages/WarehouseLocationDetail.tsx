@@ -371,14 +371,28 @@ export default function WarehouseLocationDetail() {
   };
 
   const handlePrintDeliveryList = async () => {
-    if (!location || rows.length === 0) return;
-    const { data: brandData } = await supabase
-      .from("company_settings")
-      .select(
-        "company_name, logo_url, contact_phone, contact_email, website, instagram, address, tagline",
-      )
-      .maybeSingle();
-    const baseBrand: CompanyBrand = (brandData as CompanyBrand) ?? {
+    if (!location) return;
+    const [brandRes, movesRes, prodRes] = await Promise.all([
+      supabase
+        .from("company_settings")
+        .select(
+          "company_name, logo_url, contact_phone, contact_email, website, instagram, address, tagline",
+        )
+        .maybeSingle(),
+      supabase
+        .from("stock_movements")
+        .select("product_id, quantity, unit_cost, created_at, movement_type")
+        .eq("to_location_id", location.id)
+        .in("movement_type", ["receive", "transfer", "initial"])
+        .order("created_at", { ascending: false })
+        .limit(2000),
+      supabase
+        .from("products")
+        .select("id, sku, name, category, price_usd")
+        .limit(5000),
+    ]);
+
+    const baseBrand: CompanyBrand = (brandRes.data as CompanyBrand) ?? {
       company_name: "",
       logo_url: null,
       contact_phone: null,
@@ -388,26 +402,98 @@ export default function WarehouseLocationDetail() {
       address: null,
       tagline: null,
     };
-    const printRows = rows.map((r) => {
-      const list = Number(r.product.price_usd ?? 0);
-      const sell = Number(r.effective_unit_price ?? 0);
-      const discountPct =
-        list > 0 ? Math.max(0, Math.round(((list - sell) / list) * 1000) / 10) : 0;
-      const suggested = Number(r.suggested_resell_unit_price ?? 0);
-      const markupPct =
-        list > 0 && suggested > list
-          ? Math.round(((suggested - list) / list) * 1000) / 10
-          : 0;
-      return {
-        sku: r.product.sku,
-        name: r.product.name,
-        category: r.product.category ?? "",
-        basePrice: list,
-        discountPercent: discountPct,
-        markupPercent: markupPct,
-        quantity: r.quantity,
-      };
+
+    const productMap = new Map<string, { sku: string; name: string; category: string; price: number }>();
+    ((prodRes.data ?? []) as any[]).forEach((p) => {
+      productMap.set(p.id, {
+        sku: p.sku,
+        name: p.name,
+        category: p.category ?? "",
+        price: Number(p.price_usd ?? 0),
+      });
     });
+
+    // Bucket movements that happened within ~5 minutes of each other into the
+    // same delivery batch (one print section per batch).
+    const moves = ((movesRes.data ?? []) as any[]).slice().sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+    const batches: { firstAt: string; lastAt: string; movements: typeof moves }[] = [];
+    const WINDOW_MS = 5 * 60 * 1000;
+    moves.forEach((m) => {
+      const t = new Date(m.created_at).getTime();
+      const last = batches[batches.length - 1];
+      if (last && t - new Date(last.lastAt).getTime() <= WINDOW_MS) {
+        last.movements.push(m);
+        last.lastAt = m.created_at;
+      } else {
+        batches.push({ firstAt: m.created_at, lastAt: m.created_at, movements: [m] });
+      }
+    });
+
+    // Newest delivery on top, oldest at bottom (so the user "keeps" old ones).
+    batches.reverse();
+
+    const fmtDate = (iso: string) =>
+      new Date(iso).toLocaleDateString("en-US", {
+        timeZone: "America/Los_Angeles",
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    const fmtTime = (iso: string) =>
+      new Date(iso).toLocaleTimeString("en-US", {
+        timeZone: "America/Los_Angeles",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+    const groups = batches.map((b, idx) => {
+      // Aggregate per product within this batch
+      const perProduct = new Map<string, { qty: number; paid: number }>();
+      b.movements.forEach((m) => {
+        const cur = perProduct.get(m.product_id) ?? { qty: 0, paid: 0 };
+        cur.qty += Number(m.quantity ?? 0);
+        cur.paid += Number(m.unit_cost ?? 0) * Number(m.quantity ?? 0);
+        perProduct.set(m.product_id, cur);
+      });
+      const rowsForGroup = Array.from(perProduct.entries())
+        .map(([pid, v]) => {
+          const p = productMap.get(pid);
+          if (!p || v.qty <= 0) return null;
+          const unitPaid = v.qty > 0 ? v.paid / v.qty : 0;
+          const list = p.price > 0 ? p.price : unitPaid;
+          const discountPct =
+            list > 0 && unitPaid < list
+              ? Math.max(0, Math.round(((list - unitPaid) / list) * 1000) / 10)
+              : 0;
+          return {
+            sku: p.sku,
+            name: p.name,
+            category: p.category,
+            basePrice: list,
+            discountPercent: discountPct,
+            markupPercent: 0,
+            quantity: v.qty,
+          };
+        })
+        .filter(Boolean) as any[];
+
+      const totalLabel =
+        batches.length === 1 ? "Delivery" : `Delivery #${batches.length - idx}`;
+      return {
+        title: `${totalLabel} — ${fmtDate(b.firstAt)}`,
+        subtitle: `${fmtTime(b.firstAt)}${b.firstAt !== b.lastAt ? ` – ${fmtTime(b.lastAt)}` : ""}`,
+        rows: rowsForGroup,
+      };
+    }).filter((g) => g.rows.length > 0);
+
+    if (groups.length === 0) {
+      toast.error("No deliveries recorded for this store yet.");
+      return;
+    }
+
     openPrintableCatalog({
       brand: {
         ...baseBrand,
@@ -421,9 +507,12 @@ export default function WarehouseLocationDetail() {
         email: storeInfo?.email ?? null,
         address: storeInfo?.address ?? null,
       },
-      rows: printRows,
+      rows: [],
+      groups,
     });
   };
+
+
 
 
   return (
