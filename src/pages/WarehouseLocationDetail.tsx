@@ -128,7 +128,7 @@ export default function WarehouseLocationDetail() {
       supabase
         .from("product_stock")
         .select(
-          "product_id, quantity, reserved, product:products(name, sku, price_usd, wholesale_price_usd, cost_usd, reorder_level, image_url, product_images(image_url, display_order))"
+          "product_id, quantity, reserved, product:products(name, sku, category, price_usd, wholesale_price_usd, cost_usd, reorder_level, image_url, product_images(image_url, display_order))"
         )
         .eq("location_id", id)
         .gt("quantity", 0)
