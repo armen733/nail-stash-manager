@@ -1639,7 +1639,10 @@ const Products = () => {
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) resetForm();
+            if (!open) {
+              if (editingProduct) resetForm();
+              // for new product, keep draft so user can resume
+            }
           }}>
             <DialogTrigger asChild>
               <Button>
