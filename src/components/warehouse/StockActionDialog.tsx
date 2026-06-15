@@ -703,6 +703,103 @@ export function StockActionDialog({
             </div>
           </div>
 
+          {/* Bulk discount / markup for this batch (consignment receive only) */}
+          {isConsignmentReceive && (
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-medium">
+                  Bulk discount / markup for this batch
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  Applied to newly added products
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground">
+                    Discount % off list
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 30"
+                    value={bulkDiscount}
+                    onChange={(e) =>
+                      setBulkDiscount(e.target.value.replace(/[^0-9.]/g, ""))
+                    }
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground">
+                    Markup % on list
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 10"
+                    value={bulkMarkup}
+                    onChange={(e) =>
+                      setBulkMarkup(e.target.value.replace(/[^0-9.]/g, ""))
+                    }
+                    className="h-8"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                {(bulkDiscount !== "" || bulkMarkup !== "") && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setBulkDiscount("");
+                      setBulkMarkup("");
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-xs"
+                  disabled={
+                    lines.length === 0 ||
+                    (bulkDiscount === "" && bulkMarkup === "")
+                  }
+                  onClick={() => {
+                    const dHas = bulkDiscount !== "" && Number.isFinite(Number(bulkDiscount));
+                    const mHas = bulkMarkup !== "" && Number.isFinite(Number(bulkMarkup));
+                    const dNum = dHas ? Number(bulkDiscount) : null;
+                    const mNum = mHas ? Number(bulkMarkup) : null;
+                    setLines((prev) =>
+                      prev.map((l) => {
+                        const next = { ...l };
+                        if (dNum != null) {
+                          const list = l.default_price || 0;
+                          const newSell = Math.max(0, list * (1 - dNum / 100));
+                          next.discount_pct = String(dNum);
+                          next.unit_cost = newSell.toFixed(2);
+                        }
+                        if (mNum != null) {
+                          next.markup_pct = String(mNum);
+                        }
+                        return next;
+                      }),
+                    );
+                    toast.success(
+                      `Applied to ${lines.length} product${lines.length === 1 ? "" : "s"}`,
+                    );
+                  }}
+                >
+                  Apply to all ({lines.length})
+                </Button>
+              </div>
+            </div>
+          )}
+
+
           {/* Selected lines */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
