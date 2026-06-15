@@ -377,6 +377,11 @@ export default function WarehouseLocationDetail() {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <div className="flex items-center gap-2">
+          {isSupplyStoreView && rows.length > 0 && (
+            <Button size="sm" variant="outline" onClick={handlePrintDeliveryList}>
+              <Printer className="h-4 w-4 mr-1.5" /> Print stock list
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
             <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Pricing sheet
           </Button>
