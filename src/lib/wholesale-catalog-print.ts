@@ -31,32 +31,34 @@ export interface PrintableCatalogInput {
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
-export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInput) {
+export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
   const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 
-  // If any row has a positive quantity, render as an order receipt
-  const isReceipt = rows.some((r) => Number(r.quantity ?? 0) > 0);
+  const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
 
-  let grandSubtotal = 0;
-  let grandUnits = 0;
+  // Receipt mode if ANY row across any section has a positive quantity.
+  const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
 
-  const tableRows = rows
-    .map((r) => {
-      const p = computePricing({
-        basePrice: r.basePrice,
-        discountPercent: r.discountPercent,
-        markupPercent: r.markupPercent,
-      });
-      const qty = Math.max(0, Math.floor(Number(r.quantity ?? 0)));
-      const lineTotal = +(p.storeCost * qty).toFixed(2);
-      if (isReceipt) {
-        grandSubtotal += lineTotal;
-        grandUnits += qty;
-      }
-      if (isReceipt) {
-        // Skip rows with zero quantity in receipt mode
-        if (qty <= 0) return "";
-        return `
+  let allTimeUnits = 0;
+  let allTimeSubtotal = 0;
+
+  const renderSection = (group: PrintableCatalogGroup, idx: number): string => {
+    let subtotal = 0;
+    let units = 0;
+    const tableRows = group.rows
+      .map((r) => {
+        const p = computePricing({
+          basePrice: r.basePrice,
+          discountPercent: r.discountPercent,
+          markupPercent: r.markupPercent,
+        });
+        const qty = Math.max(0, Math.floor(Number(r.quantity ?? 0)));
+        const lineTotal = +(p.storeCost * qty).toFixed(2);
+        if (isReceipt) {
+          subtotal += lineTotal;
+          units += qty;
+          if (qty <= 0) return "";
+          return `
         <tr>
           <td>${escapeHtml(r.sku)}</td>
           <td>${escapeHtml(r.name)}</td>
@@ -68,8 +70,8 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
           <td class="num strong">$${lineTotal.toFixed(2)}</td>
           <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
         </tr>`;
-      }
-      return `
+        }
+        return `
         <tr>
           <td>${escapeHtml(r.sku)}</td>
           <td>${escapeHtml(r.name)}</td>
@@ -79,8 +81,48 @@ export function openPrintableCatalog({ brand, store, rows }: PrintableCatalogInp
           <td class="num strong">$${p.storeCost.toFixed(2)}</td>
           <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
         </tr>`;
-    })
-    .join("");
+      })
+      .join("");
+
+    allTimeUnits += units;
+    allTimeSubtotal += subtotal;
+
+    const headerBlock = group.title
+      ? `<div class="section-head">
+           <div class="section-title">${escapeHtml(group.title)}</div>
+           ${group.subtitle ? `<div class="section-sub">${escapeHtml(group.subtitle)}</div>` : ""}
+         </div>`
+      : "";
+
+    return `
+      <section class="delivery${idx > 0 ? " page-break" : ""}">
+        ${headerBlock}
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th class="num">List</th>
+              <th class="num">Disc.</th>
+              <th class="num">Unit Cost</th>
+              ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th><th class="num">Sugg. Retail</th>` : `<th class="num">Sugg. Retail</th>`}
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        ${isReceipt ? `
+        <div class="totals">
+          <div class="totals-row"><span>Units</span><span class="num">${units}</span></div>
+          <div class="totals-row grand"><span>Subtotal</span><span class="num">$${subtotal.toFixed(2)}</span></div>
+        </div>` : ""}
+      </section>`;
+  };
+
+  const sectionsHtml = sections.map(renderSection).join("");
+  const grandUnits = allTimeUnits;
+  const grandSubtotal = allTimeSubtotal;
+  const showGrandTotals = isReceipt && sections.length > 1;
 
   const formatPhone = (raw: string): string => {
     const digits = raw.replace(/\D/g, "");
