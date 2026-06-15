@@ -2150,9 +2150,14 @@ const Products = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                <Button type="button" variant="outline" onClick={closeFormDialogPreservingDraft}>
+                  {editingProduct ? "Cancel" : "Save draft & close"}
                 </Button>
+                {!editingProduct && (formData.name || formData.sku) && (
+                  <Button type="button" variant="ghost" onClick={() => { resetForm(); setIsDialogOpen(false); }}>
+                    Discard draft
+                  </Button>
+                )}
                 <Button type="submit" disabled={uploading}>
                   {uploading ? "Uploading..." : editingProduct ? "Update Product" : "Add Product"}
                 </Button>
