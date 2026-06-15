@@ -14,10 +14,18 @@ export interface CompanyBrand {
 
 export type PrintableRow = WholesaleCatalogRow & { quantity?: number };
 
+export interface PrintableCatalogGroup {
+  title: string;
+  subtitle?: string;
+  rows: PrintableRow[];
+}
+
 export interface PrintableCatalogInput {
   brand: CompanyBrand;
   store: { name: string; contact_name: string | null; phone: string | null; email: string | null; address: string | null };
   rows: PrintableRow[];
+  /** Optional grouped sections (e.g. one per delivery date). When provided, `rows` is ignored. */
+  groups?: PrintableCatalogGroup[];
 }
 
 const escapeHtml = (s: string) =>
