@@ -29,6 +29,8 @@ import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
 import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
+import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
+import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
