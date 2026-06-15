@@ -141,7 +141,53 @@ const Products = () => {
   const [advancedCategoryFilter, setAdvancedCategoryFilter] = useState("all");
   const [variantTypeFilter, setVariantTypeFilter] = useState("all");
 
-  const [formData, setFormData] = useState<ProductFormData>(defaultFormData);
+  const DRAFT_KEY = "products:newProductDraft:v1";
+  const [formData, setFormData] = useState<ProductFormData>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(DRAFT_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { ...defaultFormData, ...parsed };
+      }
+    } catch {}
+    return defaultFormData;
+  });
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+
+  // Persist new-product form to localStorage so a refresh doesn't wipe progress
+  useEffect(() => {
+    if (editingProduct) return; // only persist drafts for new products
+    try {
+      // Skip persisting an empty form
+      const isEmpty =
+        !formData.name && !formData.sku && !formData.description &&
+        !formData.price_usd && !formData.supplier_sku;
+      if (isEmpty) {
+        localStorage.removeItem(DRAFT_KEY);
+      } else {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      }
+    } catch {}
+  }, [formData, editingProduct]);
+
+  // On first mount, if a saved draft exists, surface a notice with an undo
+  useEffect(() => {
+    if (hasRestoredDraft) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.name || parsed.sku)) {
+          toast({
+            title: "Draft restored",
+            description: "We recovered the product you were adding. Click 'Add Product' to continue.",
+          });
+        }
+      }
+    } catch {}
+    setHasRestoredDraft(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // SKU duplicate warnings
   const skuDuplicate = useMemo(() => {
@@ -747,6 +793,19 @@ const Products = () => {
     setExistingImages([]);
     setSiblingAction("none");
     setSiblingSearchTerm("");
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  };
+
+  // Close dialog but preserve in-progress draft for new products
+  const closeFormDialogPreservingDraft = () => {
+    setIsDialogOpen(false);
+    if (editingProduct) {
+      // editing an existing product — clear editing state
+      resetForm();
+    } else {
+      // new product — keep formData/images so user can resume
+      setEditingProduct(null);
+    }
   };
 
   // Helper to convert product to form data
@@ -1580,7 +1639,10 @@ const Products = () => {
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
-            if (!open) resetForm();
+            if (!open) {
+              if (editingProduct) resetForm();
+              // for new product, keep draft so user can resume
+            }
           }}>
             <DialogTrigger asChild>
               <Button>
@@ -2088,9 +2150,14 @@ const Products = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                <Button type="button" variant="outline" onClick={closeFormDialogPreservingDraft}>
+                  {editingProduct ? "Cancel" : "Save draft & close"}
                 </Button>
+                {!editingProduct && (formData.name || formData.sku) && (
+                  <Button type="button" variant="ghost" onClick={() => { resetForm(); setIsDialogOpen(false); }}>
+                    Discard draft
+                  </Button>
+                )}
                 <Button type="submit" disabled={uploading}>
                   {uploading ? "Uploading..." : editingProduct ? "Update Product" : "Add Product"}
                 </Button>
