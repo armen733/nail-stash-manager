@@ -139,6 +139,10 @@ export function StockActionDialog({
   const [sourceLocationId, setSourceLocationId] = useState("");
   // Stock available at the chosen source, per product, for validation + display.
   const [sourceStockMap, setSourceStockMap] = useState<Map<string, number>>(new Map());
+  // Bulk discount / markup for this batch — when set, applies to newly added lines
+  // and can be applied to all current lines via the "Apply to all" button.
+  const [bulkDiscount, setBulkDiscount] = useState<string>("");
+  const [bulkMarkup, setBulkMarkup] = useState<string>("");
 
   // Warehouse-type locations available as a default source for "give stock to supply store"
   const sourceCandidates = useMemo(
@@ -154,6 +158,8 @@ export function StockActionDialog({
     setReason("");
     setDestLocationId("");
     setSourceStockMap(new Map());
+    setBulkDiscount("");
+    setBulkMarkup("");
     // Default source: first warehouse if any, else first other location
     if (isConsignmentReceive) {
       const def = sourceCandidates[0]?.id ?? otherLocations[0]?.id ?? "";
@@ -282,12 +288,16 @@ export function StockActionDialog({
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
     const savedDiscount = discountOverrideMap.get(p.id);
     const savedMarkup = markupOverrideMap.get(p.id);
+    const bulkDiscountNum =
+      bulkDiscount !== "" && Number.isFinite(Number(bulkDiscount)) ? Number(bulkDiscount) : null;
+    const bulkMarkupNum =
+      bulkMarkup !== "" && Number.isFinite(Number(bulkMarkup)) ? Number(bulkMarkup) : null;
     const effectiveDiscount = isConsignmentReceive
-      ? savedDiscount ?? storeDiscountPercent ?? 0
+      ? bulkDiscountNum ?? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
     const effectiveMarkup =
       isConsignmentReceive || isConsignmentSale
-        ? savedMarkup ?? storeMarkupPercent ?? 0
+        ? bulkMarkupNum ?? savedMarkup ?? storeMarkupPercent ?? 0
         : 0;
     // Prefer an explicit per-location sell-price override only when no discount % is saved,
     // otherwise compute from list * (1 - discount%) so list price drives the math.
@@ -692,6 +702,103 @@ export function StockActionDialog({
               )}
             </div>
           </div>
+
+          {/* Bulk discount / markup for this batch (consignment receive only) */}
+          {isConsignmentReceive && (
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs font-medium">
+                  Bulk discount / markup for this batch
+                </Label>
+                <span className="text-[10px] text-muted-foreground">
+                  Applied to newly added products
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground">
+                    Discount % off list
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 30"
+                    value={bulkDiscount}
+                    onChange={(e) =>
+                      setBulkDiscount(e.target.value.replace(/[^0-9.]/g, ""))
+                    }
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase text-muted-foreground">
+                    Markup % on list
+                  </Label>
+                  <Input
+                    inputMode="decimal"
+                    placeholder="e.g. 10"
+                    value={bulkMarkup}
+                    onChange={(e) =>
+                      setBulkMarkup(e.target.value.replace(/[^0-9.]/g, ""))
+                    }
+                    className="h-8"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                {(bulkDiscount !== "" || bulkMarkup !== "") && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setBulkDiscount("");
+                      setBulkMarkup("");
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-xs"
+                  disabled={
+                    lines.length === 0 ||
+                    (bulkDiscount === "" && bulkMarkup === "")
+                  }
+                  onClick={() => {
+                    const dHas = bulkDiscount !== "" && Number.isFinite(Number(bulkDiscount));
+                    const mHas = bulkMarkup !== "" && Number.isFinite(Number(bulkMarkup));
+                    const dNum = dHas ? Number(bulkDiscount) : null;
+                    const mNum = mHas ? Number(bulkMarkup) : null;
+                    setLines((prev) =>
+                      prev.map((l) => {
+                        const next = { ...l };
+                        if (dNum != null) {
+                          const list = l.default_price || 0;
+                          const newSell = Math.max(0, list * (1 - dNum / 100));
+                          next.discount_pct = String(dNum);
+                          next.unit_cost = newSell.toFixed(2);
+                        }
+                        if (mNum != null) {
+                          next.markup_pct = String(mNum);
+                        }
+                        return next;
+                      }),
+                    );
+                    toast.success(
+                      `Applied to ${lines.length} product${lines.length === 1 ? "" : "s"}`,
+                    );
+                  }}
+                >
+                  Apply to all ({lines.length})
+                </Button>
+              </div>
+            </div>
+          )}
+
 
           {/* Selected lines */}
           <div className="space-y-2">
