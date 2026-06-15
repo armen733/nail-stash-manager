@@ -168,8 +168,13 @@ export default function ProductPickerDialog({ open, onOpenChange, storeId, alrea
         </div>
 
         <DialogFooter>
+          {selected.size > 0 && (
+            <Button variant="ghost" onClick={clearDraft} disabled={saving}>
+              Clear
+            </Button>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Close
           </Button>
           <Button onClick={handleAssign} disabled={saving || selected.size === 0}>
             Add {selected.size > 0 ? `(${selected.size})` : ""}
