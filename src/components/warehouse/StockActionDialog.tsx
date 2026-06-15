@@ -139,6 +139,10 @@ export function StockActionDialog({
   const [sourceLocationId, setSourceLocationId] = useState("");
   // Stock available at the chosen source, per product, for validation + display.
   const [sourceStockMap, setSourceStockMap] = useState<Map<string, number>>(new Map());
+  // Bulk discount / markup for this batch — when set, applies to newly added lines
+  // and can be applied to all current lines via the "Apply to all" button.
+  const [bulkDiscount, setBulkDiscount] = useState<string>("");
+  const [bulkMarkup, setBulkMarkup] = useState<string>("");
 
   // Warehouse-type locations available as a default source for "give stock to supply store"
   const sourceCandidates = useMemo(
