@@ -63,6 +63,7 @@ interface StockRow {
   product: {
     name: string;
     sku: string;
+    category?: string | null;
     price_usd: number;
     wholesale_price_usd: number | null;
     cost_usd: number | null;
