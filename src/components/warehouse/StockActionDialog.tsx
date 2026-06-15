@@ -158,6 +158,8 @@ export function StockActionDialog({
     setReason("");
     setDestLocationId("");
     setSourceStockMap(new Map());
+    setBulkDiscount("");
+    setBulkMarkup("");
     // Default source: first warehouse if any, else first other location
     if (isConsignmentReceive) {
       const def = sourceCandidates[0]?.id ?? otherLocations[0]?.id ?? "";
