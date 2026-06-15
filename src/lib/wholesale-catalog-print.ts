@@ -223,25 +223,12 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
     <div>Date: ${escapeHtml(today)}</div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>SKU</th>
-        <th>Product</th>
-        <th>Category</th>
-        <th class="num">List</th>
-        <th class="num">Disc.</th>
-        <th class="num">Unit Cost</th>
-        ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th><th class="num">Sugg. Retail</th>` : `<th class="num">Sugg. Retail</th>`}
-      </tr>
-    </thead>
-    <tbody>${tableRows}</tbody>
-  </table>
+  ${sectionsHtml}
 
-  ${isReceipt ? `
-  <div class="totals">
-    <div class="totals-row"><span>Total units</span><span class="num">${grandUnits}</span></div>
-    <div class="totals-row grand"><span>Order total</span><span class="num">$${grandSubtotal.toFixed(2)}</span></div>
+  ${showGrandTotals ? `
+  <div class="grand-totals">
+    <div class="row"><span>Total units (all deliveries)</span><span class="num">${grandUnits}</span></div>
+    <div class="grand"><span>Grand total</span><span class="num">$${grandSubtotal.toFixed(2)}</span></div>
   </div>` : ""}
   <footer>
     <div>Prices in USD. Subject to change. ${escapeHtml(brand.company_name || "")} wholesale partnership.</div>
