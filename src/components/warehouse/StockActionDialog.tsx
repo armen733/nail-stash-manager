@@ -288,12 +288,16 @@ export function StockActionDialog({
     const wholesale = p.wholesale_price_usd ?? p.price_usd;
     const savedDiscount = discountOverrideMap.get(p.id);
     const savedMarkup = markupOverrideMap.get(p.id);
+    const bulkDiscountNum =
+      bulkDiscount !== "" && Number.isFinite(Number(bulkDiscount)) ? Number(bulkDiscount) : null;
+    const bulkMarkupNum =
+      bulkMarkup !== "" && Number.isFinite(Number(bulkMarkup)) ? Number(bulkMarkup) : null;
     const effectiveDiscount = isConsignmentReceive
-      ? savedDiscount ?? storeDiscountPercent ?? 0
+      ? bulkDiscountNum ?? savedDiscount ?? storeDiscountPercent ?? 0
       : 0;
     const effectiveMarkup =
       isConsignmentReceive || isConsignmentSale
-        ? savedMarkup ?? storeMarkupPercent ?? 0
+        ? bulkMarkupNum ?? savedMarkup ?? storeMarkupPercent ?? 0
         : 0;
     // Prefer an explicit per-location sell-price override only when no discount % is saved,
     // otherwise compute from list * (1 - discount%) so list price drives the math.
