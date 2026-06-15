@@ -370,6 +370,62 @@ export default function WarehouseLocationDetail() {
     return `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
   };
 
+  const handlePrintDeliveryList = async () => {
+    if (!location || rows.length === 0) return;
+    const { data: brandData } = await supabase
+      .from("company_settings")
+      .select(
+        "company_name, logo_url, contact_phone, contact_email, website, instagram, address, tagline",
+      )
+      .maybeSingle();
+    const baseBrand: CompanyBrand = (brandData as CompanyBrand) ?? {
+      company_name: "",
+      logo_url: null,
+      contact_phone: null,
+      contact_email: null,
+      website: null,
+      instagram: null,
+      address: null,
+      tagline: null,
+    };
+    const printRows = rows.map((r) => {
+      const list = Number(r.product.price_usd ?? 0);
+      const sell = Number(r.effective_unit_price ?? 0);
+      const discountPct =
+        list > 0 ? Math.max(0, Math.round(((list - sell) / list) * 1000) / 10) : 0;
+      const suggested = Number(r.suggested_resell_unit_price ?? 0);
+      const markupPct =
+        list > 0 && suggested > list
+          ? Math.round(((suggested - list) / list) * 1000) / 10
+          : 0;
+      return {
+        sku: r.product.sku,
+        name: r.product.name,
+        category: r.product.category ?? "",
+        basePrice: list,
+        discountPercent: discountPct,
+        markupPercent: markupPct,
+        quantity: r.quantity,
+      };
+    });
+    openPrintableCatalog({
+      brand: {
+        ...baseBrand,
+        logo_url: new URL(neraBeautyLogo, window.location.origin).href,
+        contact_email: "info@nerabeautyus.com",
+      },
+      store: {
+        name: storeInfo?.name ?? location.name,
+        contact_name: storeInfo?.contact_name ?? null,
+        phone: storeInfo?.phone ?? null,
+        email: storeInfo?.email ?? null,
+        address: storeInfo?.address ?? null,
+      },
+      rows: printRows,
+    });
+  };
+
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto pb-20 md:pb-0">
       <div className="flex items-center justify-between gap-2">
