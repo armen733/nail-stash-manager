@@ -299,6 +299,10 @@ export default function VisitStatusMap({ salons, fullScreen, onToggleActive }: V
           <div className="w-3 h-3 rounded-full" style={{ background: "#ef4444" }} />
           <span className="text-muted-foreground">Critical (15d+/Never)</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full" style={{ background: "#8b5cf6" }} />
+          <span className="text-muted-foreground">Inactive</span>
+        </div>
       </div>
 
       {/* Map style controls */}
