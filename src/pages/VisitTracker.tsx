@@ -33,6 +33,7 @@ type SalonWithVisit = {
   city: string | null;
   phone: string | null;
   contact_name: string | null;
+  is_active: boolean;
   last_visit: string | null;
   last_visit_type: string | null;
   visit_count: number;
@@ -75,7 +76,7 @@ export default function VisitTracker() {
     setLoading(true);
     try {
       const [{ data: salonsData }, { data: visitsData }] = await Promise.all([
-        supabase.from("salons").select("id, name, address, city, phone, contact_name").order("name"),
+        supabase.from("salons").select("id, name, address, city, phone, contact_name, is_active").order("name"),
         supabase.from("salon_visits").select("id, salon_id, visit_type, notes, visited_at, order_id").order("visited_at", { ascending: false }),
       ]);
 
@@ -523,7 +524,20 @@ export default function VisitTracker() {
                     city: s.city,
                     phone: s.phone,
                     daysSinceVisit: s.days_since_visit,
+                    isActive: s.is_active,
                   }))}
+                  onToggleActive={async (salonId, nextActive) => {
+                    const { error } = await supabase
+                      .from("salons")
+                      .update({ is_active: nextActive })
+                      .eq("id", salonId);
+                    if (error) {
+                      toast.error("Failed to update salon");
+                      return;
+                    }
+                    toast.success(nextActive ? "Salon reactivated" : "Salon deactivated");
+                    setSalons(prev => prev.map(s => s.id === salonId ? { ...s, is_active: nextActive } : s));
+                  }}
                 />
               </Suspense>
             </div>

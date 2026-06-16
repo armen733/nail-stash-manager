@@ -22,11 +22,13 @@ interface SalonVisitStatus {
   city: string | null;
   phone: string | null;
   daysSinceVisit: number | null; // null = never visited
+  isActive: boolean;
 }
 
 interface VisitStatusMapProps {
   salons: SalonVisitStatus[];
   fullScreen?: boolean;
+  onToggleActive?: (salonId: string, nextActive: boolean) => void | Promise<void>;
 }
 
 interface GeoSalon extends SalonVisitStatus {
@@ -34,14 +36,20 @@ interface GeoSalon extends SalonVisitStatus {
   lng: number;
 }
 
-const getMarkerColor = (daysSinceVisit: number | null): { bg: string; ring: string; label: string } => {
+const INACTIVE_COLOR = { bg: "#8b5cf6", ring: "#c4b5fd", label: "Inactive" };
+
+const getMarkerColor = (
+  daysSinceVisit: number | null,
+  isActive: boolean,
+): { bg: string; ring: string; label: string } => {
+  if (!isActive) return INACTIVE_COLOR;
   if (daysSinceVisit === null) return { bg: "#ef4444", ring: "#fca5a5", label: "Never visited" };
   if (daysSinceVisit >= 15) return { bg: "#ef4444", ring: "#fca5a5", label: `${daysSinceVisit}d ago` };
   if (daysSinceVisit >= 10) return { bg: "#f97316", ring: "#fdba74", label: `${daysSinceVisit}d ago` };
   return { bg: "#22c55e", ring: "#86efac", label: `${daysSinceVisit}d ago` };
 };
 
-export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapProps) {
+export default function VisitStatusMap({ salons, fullScreen, onToggleActive }: VisitStatusMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -115,7 +123,7 @@ export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapPro
     markersRef.current = [];
 
     geocodedSalons.forEach(salon => {
-      const color = getMarkerColor(salon.daysSinceVisit);
+      const color = getMarkerColor(salon.daysSinceVisit, salon.isActive);
       const el = document.createElement("div");
       el.innerHTML = `
         <div style="
@@ -123,7 +131,7 @@ export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapPro
           background: ${color.bg}; border: 2.5px solid ${color.ring};
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
-          transition: transform 0.15s;
+          transition: transform 0.15s; ${salon.isActive ? "" : "opacity: 0.85;"}
         " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
@@ -137,19 +145,45 @@ export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapPro
       const encoded = encodeURIComponent(salon.address);
       const mapsUrl = isIOS ? `maps://maps.apple.com/?q=${encoded}` : `https://maps.google.com/?q=${encoded}`;
 
+      const toggleBtnId = `toggle-active-${salon.id}`;
       const popup = new mapboxgl.Popup({ offset: 20, className: "salon-popup" }).setHTML(`
-        <div style="padding: 10px; min-width: 180px;">
+        <div style="padding: 10px; min-width: 200px;">
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
             <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color.bg};"></div>
             <span style="font-size: 11px; color: #6b7280;">${color.label}</span>
+            ${salon.isActive ? "" : `<span style="font-size: 10px; padding: 1px 6px; border-radius: 999px; background: #ede9fe; color: #6d28d9; font-weight: 600;">INACTIVE</span>`}
           </div>
           <h3 style="font-weight: 700; font-size: 14px; color: #1a1a1a; margin: 0 0 6px 0;">${salon.name}</h3>
           <a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size: 12px; color: #2563eb; text-decoration: none; display: block; line-height: 1.4;">
             📍 ${salon.address}
           </a>
           ${salon.phone ? `<a href="tel:${salon.phone}" style="font-size: 12px; color: #2563eb; text-decoration: none; display: block; margin-top: 6px;">📞 ${salon.phone}</a>` : ""}
+          ${onToggleActive ? `
+            <button id="${toggleBtnId}" type="button" style="
+              margin-top: 10px; width: 100%; padding: 6px 10px;
+              border-radius: 6px; border: 1px solid ${salon.isActive ? "#fca5a5" : "#c4b5fd"};
+              background: ${salon.isActive ? "#fef2f2" : "#f5f3ff"};
+              color: ${salon.isActive ? "#b91c1c" : "#6d28d9"};
+              font-size: 12px; font-weight: 600; cursor: pointer;
+            ">
+              ${salon.isActive ? "Deactivate salon" : "Reactivate salon"}
+            </button>
+          ` : ""}
         </div>
       `);
+
+      if (onToggleActive) {
+        popup.on("open", () => {
+          const btn = document.getElementById(toggleBtnId);
+          if (!btn) return;
+          btn.addEventListener("click", async () => {
+            (btn as HTMLButtonElement).disabled = true;
+            (btn as HTMLButtonElement).style.opacity = "0.6";
+            await onToggleActive(salon.id, !salon.isActive);
+            popup.remove();
+          }, { once: true });
+        });
+      }
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([salon.lng, salon.lat])
@@ -264,6 +298,10 @@ export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapPro
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full" style={{ background: "#ef4444" }} />
           <span className="text-muted-foreground">Critical (15d+/Never)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full" style={{ background: "#8b5cf6" }} />
+          <span className="text-muted-foreground">Inactive</span>
         </div>
       </div>
 
