@@ -22,11 +22,13 @@ interface SalonVisitStatus {
   city: string | null;
   phone: string | null;
   daysSinceVisit: number | null; // null = never visited
+  isActive: boolean;
 }
 
 interface VisitStatusMapProps {
   salons: SalonVisitStatus[];
   fullScreen?: boolean;
+  onToggleActive?: (salonId: string, nextActive: boolean) => void | Promise<void>;
 }
 
 interface GeoSalon extends SalonVisitStatus {
@@ -34,7 +36,13 @@ interface GeoSalon extends SalonVisitStatus {
   lng: number;
 }
 
-const getMarkerColor = (daysSinceVisit: number | null): { bg: string; ring: string; label: string } => {
+const INACTIVE_COLOR = { bg: "#8b5cf6", ring: "#c4b5fd", label: "Inactive" };
+
+const getMarkerColor = (
+  daysSinceVisit: number | null,
+  isActive: boolean,
+): { bg: string; ring: string; label: string } => {
+  if (!isActive) return INACTIVE_COLOR;
   if (daysSinceVisit === null) return { bg: "#ef4444", ring: "#fca5a5", label: "Never visited" };
   if (daysSinceVisit >= 15) return { bg: "#ef4444", ring: "#fca5a5", label: `${daysSinceVisit}d ago` };
   if (daysSinceVisit >= 10) return { bg: "#f97316", ring: "#fdba74", label: `${daysSinceVisit}d ago` };
