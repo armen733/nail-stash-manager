@@ -49,7 +49,7 @@ const getMarkerColor = (
   return { bg: "#22c55e", ring: "#86efac", label: `${daysSinceVisit}d ago` };
 };
 
-export default function VisitStatusMap({ salons, fullScreen }: VisitStatusMapProps) {
+export default function VisitStatusMap({ salons, fullScreen, onToggleActive }: VisitStatusMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
