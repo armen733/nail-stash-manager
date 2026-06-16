@@ -33,6 +33,7 @@ type SalonWithVisit = {
   city: string | null;
   phone: string | null;
   contact_name: string | null;
+  is_active: boolean;
   last_visit: string | null;
   last_visit_type: string | null;
   visit_count: number;
