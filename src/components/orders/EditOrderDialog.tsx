@@ -44,6 +44,7 @@ interface OrderForEdit {
   customer_phone: string | null;
   customer_address: string | null;
   notes: string | null;
+  technician_name?: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -86,6 +87,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [salonId, setSalonId] = useState<string>("none");
   const [status, setStatus] = useState<string>("Draft");
   const [notes, setNotes] = useState("");
+  const [technicianName, setTechnicianName] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
@@ -116,6 +118,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setSalonId(order.salon_id || "none");
     setStatus(order.status);
     setNotes(order.notes || "");
+    setTechnicianName(order.technician_name || "");
     setDiscountCode(order.discount_code || "");
     setDiscountAmount(Number(order.discount_amount || 0));
     setPointsRedeemed(Number((order as any).points_redeemed || 0));
@@ -320,6 +323,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
           customer_phone: customerPhone || null,
           customer_address: customerAddress || null,
           notes: notes || null,
+          technician_name: technicianName || null,
           discount_code: discountCode || null,
           discount_amount: discountAmount || null,
           subtotal,
@@ -491,6 +495,16 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Technician */}
+            <div>
+              <Label>Technician Name</Label>
+              <Input
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
+                placeholder="e.g. Meline"
+              />
             </div>
 
             {/* Items */}
