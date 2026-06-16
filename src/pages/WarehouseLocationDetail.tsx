@@ -1077,6 +1077,90 @@ export default function WarehouseLocationDetail() {
             : undefined
         }
       />
+
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Print deliveries</DialogTitle>
+            <DialogDescription>
+              Choose which transfers to include in this printout.
+            </DialogDescription>
+          </DialogHeader>
+
+          {printLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading deliveries…</div>
+          ) : deliveryGroups.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No deliveries recorded for this store yet.
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{selectedDeliveryIds.size} of {deliveryGroups.length} selected</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() => setSelectedDeliveryIds(new Set(deliveryGroups.map((g) => g.id)))}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() => setSelectedDeliveryIds(new Set())}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="max-h-[50vh] pr-2">
+                <div className="space-y-2">
+                  {deliveryGroups.map((g) => {
+                    const checked = selectedDeliveryIds.has(g.id);
+                    return (
+                      <label
+                        key={g.id}
+                        className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                          checked ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleDelivery(g.id)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{g.title}</div>
+                          {g.subtitle && (
+                            <div className="text-xs text-muted-foreground">{g.subtitle}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {g.rows.length} item{g.rows.length === 1 ? "" : "s"} · {g.units} units · ${g.subtotal.toFixed(2)}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPrint}
+              disabled={printLoading || selectedDeliveryIds.size === 0}
+            >
+              <Printer className="h-4 w-4 mr-1.5" />
+              Print {selectedDeliveryIds.size > 0 ? `(${selectedDeliveryIds.size})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
