@@ -524,7 +524,20 @@ export default function VisitTracker() {
                     city: s.city,
                     phone: s.phone,
                     daysSinceVisit: s.days_since_visit,
+                    isActive: s.is_active,
                   }))}
+                  onToggleActive={async (salonId, nextActive) => {
+                    const { error } = await supabase
+                      .from("salons")
+                      .update({ is_active: nextActive })
+                      .eq("id", salonId);
+                    if (error) {
+                      toast.error("Failed to update salon");
+                      return;
+                    }
+                    toast.success(nextActive ? "Salon reactivated" : "Salon deactivated");
+                    setSalons(prev => prev.map(s => s.id === salonId ? { ...s, is_active: nextActive } : s));
+                  }}
                 />
               </Suspense>
             </div>
