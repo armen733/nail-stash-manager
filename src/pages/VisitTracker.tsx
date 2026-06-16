@@ -76,7 +76,7 @@ export default function VisitTracker() {
     setLoading(true);
     try {
       const [{ data: salonsData }, { data: visitsData }] = await Promise.all([
-        supabase.from("salons").select("id, name, address, city, phone, contact_name").order("name"),
+        supabase.from("salons").select("id, name, address, city, phone, contact_name, is_active").order("name"),
         supabase.from("salon_visits").select("id, salon_id, visit_type, notes, visited_at, order_id").order("visited_at", { ascending: false }),
       ]);
 
