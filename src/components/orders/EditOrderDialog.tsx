@@ -44,6 +44,7 @@ interface OrderForEdit {
   customer_phone: string | null;
   customer_address: string | null;
   notes: string | null;
+  technician_name?: string | null;
   subtotal: number;
   tax: number;
   total: number;
