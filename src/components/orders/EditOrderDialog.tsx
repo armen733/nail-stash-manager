@@ -118,6 +118,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setSalonId(order.salon_id || "none");
     setStatus(order.status);
     setNotes(order.notes || "");
+    setTechnicianName(order.technician_name || "");
     setDiscountCode(order.discount_code || "");
     setDiscountAmount(Number(order.discount_amount || 0));
     setPointsRedeemed(Number((order as any).points_redeemed || 0));
