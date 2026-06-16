@@ -323,6 +323,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
           customer_phone: customerPhone || null,
           customer_address: customerAddress || null,
           notes: notes || null,
+          technician_name: technicianName || null,
           discount_code: discountCode || null,
           discount_amount: discountAmount || null,
           subtotal,
