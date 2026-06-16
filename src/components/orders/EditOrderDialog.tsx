@@ -87,6 +87,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [salonId, setSalonId] = useState<string>("none");
   const [status, setStatus] = useState<string>("Draft");
   const [notes, setNotes] = useState("");
+  const [technicianName, setTechnicianName] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState<number>(0);
   const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
