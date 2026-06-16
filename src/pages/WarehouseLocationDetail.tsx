@@ -40,7 +40,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
+
+type DeliveryGroup = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  units: number;
+  subtotal: number;
+  rows: Array<{
+    sku: string;
+    name: string;
+    category: string;
+    basePrice: number;
+    discountPercent: number;
+    markupPercent: number;
+    quantity: number;
+  }>;
+};
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
@@ -108,6 +135,11 @@ export default function WarehouseLocationDetail() {
     logo_url: string | null;
   } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [deliveryGroups, setDeliveryGroups] = useState<DeliveryGroup[]>([]);
+  const [selectedDeliveryIds, setSelectedDeliveryIds] = useState<Set<string>>(new Set());
+  const [printBrand, setPrintBrand] = useState<CompanyBrand | null>(null);
   // Lifetime totals for everything ever delivered to this supply store
   // (sum of all `receive` + `transfer` movements INTO this location).
   const [lifetime, setLifetime] = useState<{
@@ -372,6 +404,8 @@ export default function WarehouseLocationDetail() {
 
   const handlePrintDeliveryList = async () => {
     if (!location) return;
+    setPrintLoading(true);
+    setPrintDialogOpen(true);
     const [brandRes, movesRes, prodRes] = await Promise.all([
       supabase
         .from("company_settings")
@@ -414,7 +448,7 @@ export default function WarehouseLocationDetail() {
     });
 
     // Bucket movements that happened within ~5 minutes of each other into the
-    // same delivery batch (one print section per batch).
+    // same delivery batch.
     const moves = ((movesRes.data ?? []) as any[]).slice().sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
@@ -431,7 +465,7 @@ export default function WarehouseLocationDetail() {
       }
     });
 
-    // Newest delivery on top, oldest at bottom (so the user "keeps" old ones).
+    // Newest delivery on top, oldest at bottom.
     batches.reverse();
 
     const fmtDate = (iso: string) =>
@@ -449,8 +483,7 @@ export default function WarehouseLocationDetail() {
         minute: "2-digit",
       });
 
-    const groups = batches.map((b, idx) => {
-      // Aggregate per product within this batch
+    const groups: DeliveryGroup[] = batches.map((b, idx) => {
       const perProduct = new Map<string, { qty: number; paid: number }>();
       b.movements.forEach((m) => {
         const cur = perProduct.get(m.product_id) ?? { qty: 0, paid: 0 };
@@ -458,6 +491,8 @@ export default function WarehouseLocationDetail() {
         cur.paid += Number(m.unit_cost ?? 0) * Number(m.quantity ?? 0);
         perProduct.set(m.product_id, cur);
       });
+      let units = 0;
+      let subtotal = 0;
       const rowsForGroup = Array.from(perProduct.entries())
         .map(([pid, v]) => {
           const p = productMap.get(pid);
@@ -468,6 +503,8 @@ export default function WarehouseLocationDetail() {
             list > 0 && unitPaid < list
               ? Math.max(0, Math.round(((list - unitPaid) / list) * 1000) / 10)
               : 0;
+          units += v.qty;
+          subtotal += unitPaid * v.qty;
           return {
             sku: p.sku,
             name: p.name,
@@ -478,25 +515,37 @@ export default function WarehouseLocationDetail() {
             quantity: v.qty,
           };
         })
-        .filter(Boolean) as any[];
+        .filter(Boolean) as DeliveryGroup["rows"];
 
       const totalLabel =
         batches.length === 1 ? "Delivery" : `Delivery #${batches.length - idx}`;
       return {
+        id: `${b.firstAt}-${idx}`,
         title: `${totalLabel} — ${fmtDate(b.firstAt)}`,
         subtitle: `${fmtTime(b.firstAt)}${b.firstAt !== b.lastAt ? ` – ${fmtTime(b.lastAt)}` : ""}`,
+        units,
+        subtotal,
         rows: rowsForGroup,
       };
     }).filter((g) => g.rows.length > 0);
 
-    if (groups.length === 0) {
-      toast.error("No deliveries recorded for this store yet.");
+    setDeliveryGroups(groups);
+    // Default: only the most recent delivery selected (top of list).
+    setSelectedDeliveryIds(new Set(groups.length > 0 ? [groups[0].id] : []));
+    setPrintBrand(baseBrand);
+    setPrintLoading(false);
+  };
+
+  const handleConfirmPrint = () => {
+    if (!location || !printBrand) return;
+    const selected = deliveryGroups.filter((g) => selectedDeliveryIds.has(g.id));
+    if (selected.length === 0) {
+      toast.error("Select at least one delivery to print.");
       return;
     }
-
     openPrintableCatalog({
       brand: {
-        ...baseBrand,
+        ...printBrand,
         logo_url: new URL(neraBeautyLogo, window.location.origin).href,
         contact_email: "info@nerabeautyus.com",
       },
@@ -508,9 +557,20 @@ export default function WarehouseLocationDetail() {
         address: storeInfo?.address ?? null,
       },
       rows: [],
-      groups,
+      groups: selected.map(({ id, units, subtotal, ...rest }) => rest),
+    });
+    setPrintDialogOpen(false);
+  };
+
+  const toggleDelivery = (id: string) => {
+    setSelectedDeliveryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   };
+
 
 
 
@@ -1017,6 +1077,90 @@ export default function WarehouseLocationDetail() {
             : undefined
         }
       />
+
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Print deliveries</DialogTitle>
+            <DialogDescription>
+              Choose which transfers to include in this printout.
+            </DialogDescription>
+          </DialogHeader>
+
+          {printLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading deliveries…</div>
+          ) : deliveryGroups.length === 0 ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              No deliveries recorded for this store yet.
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{selectedDeliveryIds.size} of {deliveryGroups.length} selected</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() => setSelectedDeliveryIds(new Set(deliveryGroups.map((g) => g.id)))}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() => setSelectedDeliveryIds(new Set())}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <ScrollArea className="max-h-[50vh] pr-2">
+                <div className="space-y-2">
+                  {deliveryGroups.map((g) => {
+                    const checked = selectedDeliveryIds.has(g.id);
+                    return (
+                      <label
+                        key={g.id}
+                        className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                          checked ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleDelivery(g.id)}
+                          className="mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{g.title}</div>
+                          {g.subtitle && (
+                            <div className="text-xs text-muted-foreground">{g.subtitle}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {g.rows.length} item{g.rows.length === 1 ? "" : "s"} · {g.units} units · ${g.subtotal.toFixed(2)}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPrint}
+              disabled={printLoading || selectedDeliveryIds.size === 0}
+            >
+              <Printer className="h-4 w-4 mr-1.5" />
+              Print {selectedDeliveryIds.size > 0 ? `(${selectedDeliveryIds.size})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
