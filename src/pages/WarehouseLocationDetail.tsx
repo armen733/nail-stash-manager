@@ -40,7 +40,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import amazonLogoFull from "@/assets/amazon-logo-full.png";
+
+type DeliveryGroup = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  units: number;
+  subtotal: number;
+  rows: Array<{
+    sku: string;
+    name: string;
+    category: string;
+    basePrice: number;
+    discountPercent: number;
+    markupPercent: number;
+    quantity: number;
+  }>;
+};
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver";
 
