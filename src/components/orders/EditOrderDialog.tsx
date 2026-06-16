@@ -450,12 +450,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
           )}
 
           <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
-            {/* Customer */}
+            {/* Customer contact */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label>Customer name</Label>
-                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-              </div>
               <div>
                 <Label>Email</Label>
                 <Input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
@@ -464,11 +460,12 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                 <Label>Phone</Label>
                 <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <Label>Address</Label>
                 <Input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} />
               </div>
             </div>
+
 
             {/* Salon + Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
