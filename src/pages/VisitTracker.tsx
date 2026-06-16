@@ -469,6 +469,11 @@ export default function VisitTracker() {
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium text-sm truncate">{salon.name}</h3>
                         {getStatusBadge(salon)}
+                        {!salon.is_active && (
+                          <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400">
+                            Deactivated
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
                         {salon.city && <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{salon.city}</span>}
