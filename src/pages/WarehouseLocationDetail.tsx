@@ -135,6 +135,11 @@ export default function WarehouseLocationDetail() {
     logo_url: string | null;
   } | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [deliveryGroups, setDeliveryGroups] = useState<DeliveryGroup[]>([]);
+  const [selectedDeliveryIds, setSelectedDeliveryIds] = useState<Set<string>>(new Set());
+  const [printBrand, setPrintBrand] = useState<CompanyBrand | null>(null);
   // Lifetime totals for everything ever delivered to this supply store
   // (sum of all `receive` + `transfer` movements INTO this location).
   const [lifetime, setLifetime] = useState<{
