@@ -302,7 +302,11 @@ const Index = () => {
           ? overrideMap.get(overrideKey)!
           : (storeDiscountMap.get(storeId) ?? 0);
         const sellPrice = pricing.wholesale * (1 - discountPct / 100);
-        const unitCost = m.unit_cost != null ? Number(m.unit_cost) : pricing.cost;
+        // Use product's true cost_usd (COGS), not movement.unit_cost — for supply-store
+        // transfers, unit_cost is recorded as the wholesale sell price, which would zero out profit.
+        const unitCost = pricing.cost > 0
+          ? pricing.cost
+          : (m.unit_cost != null ? Number(m.unit_cost) : 0);
         return {
           revenue: sellPrice * m.quantity,
           cost: unitCost * m.quantity,
