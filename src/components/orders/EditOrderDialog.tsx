@@ -497,6 +497,16 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
               </div>
             </div>
 
+            {/* Technician */}
+            <div>
+              <Label>Technician Name</Label>
+              <Input
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
+                placeholder="e.g. Meline"
+              />
+            </div>
+
             {/* Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
