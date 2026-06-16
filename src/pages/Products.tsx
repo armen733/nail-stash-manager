@@ -852,13 +852,10 @@ const Products = () => {
     setEditingProduct(product);
     setFormData(productToFormData(product));
     setExistingImages(product.images || []);
-    // Set sibling action based on whether product has a sibling group
-    const siblingId = (product as any).sibling_group_id;
-    if (siblingId) {
-      setSiblingAction("existing");
-    } else {
-      setSiblingAction("none");
-    }
+    // Default to "none" (keep current sibling group unchanged) on edit.
+    // Only switch to "existing"/"new" when the user explicitly picks an action in the dialog.
+    setSiblingAction("none");
+
     setIsDialogOpen(true);
   };
 
