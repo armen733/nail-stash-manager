@@ -53,20 +53,20 @@ export function ProductPicker({ products, value, onChange, placeholder = "Choose
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-auto min-h-10 px-2 py-1.5"
+          className="w-full justify-between h-auto min-h-12 px-2 py-1.5"
         >
           {selected ? (
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               {getThumb(selected) ? (
                 <img
                   src={getThumb(selected)!}
                   alt=""
-                  className="h-9 w-9 rounded object-cover flex-shrink-0 bg-muted"
+                  className="h-12 w-12 rounded object-cover flex-shrink-0 bg-muted"
                   loading="lazy"
                 />
               ) : (
-                <div className="h-9 w-9 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                  <Package className="h-4 w-4 text-muted-foreground" />
+                <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
               <div className="text-left min-w-0">
