@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProductPicker } from "./ProductPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, AlertTriangle, Loader2, Package } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, Loader2, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
