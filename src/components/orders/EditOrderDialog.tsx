@@ -449,7 +449,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </Alert>
           )}
 
-          <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
+          <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-4" : "space-y-4"}>
             {/* Customer contact */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -512,9 +512,9 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                   <Plus className="h-4 w-4 mr-1" /> Add item
                 </Button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {items.map((it, idx) => (
-                  <div key={idx} className="p-3 rounded-md border bg-muted/30 space-y-2">
+                  <div key={idx} className="p-2 rounded-md border bg-muted/30 space-y-1.5">
                     <div className="flex gap-2 items-start">
                       <div className="flex-1 min-w-0">
                         <Label className="text-xs">Product</Label>

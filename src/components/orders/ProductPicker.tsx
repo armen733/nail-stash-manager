@@ -53,7 +53,7 @@ export function ProductPicker({ products, value, onChange, placeholder = "Choose
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-auto min-h-12 px-2 py-1.5"
+          className="w-full justify-between h-auto min-h-[72px] px-2 py-1.5"
         >
           {selected ? (
             <div className="flex items-center gap-3 min-w-0">
@@ -61,12 +61,12 @@ export function ProductPicker({ products, value, onChange, placeholder = "Choose
                 <img
                   src={getThumb(selected)!}
                   alt=""
-                  className="h-12 w-12 rounded object-cover flex-shrink-0 bg-muted"
+                  className="h-16 w-16 rounded object-cover flex-shrink-0 bg-muted"
                   loading="lazy"
                 />
               ) : (
-                <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                  <Package className="h-5 w-5 text-muted-foreground" />
+                <div className="h-16 w-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                  <Package className="h-6 w-6 text-muted-foreground" />
                 </div>
               )}
               <div className="text-left min-w-0">
@@ -127,12 +127,12 @@ export function ProductPicker({ products, value, onChange, placeholder = "Choose
                       <img
                         src={thumb}
                         alt=""
-                        className="h-12 w-12 rounded object-cover flex-shrink-0 bg-muted"
+                        className="h-16 w-16 rounded object-cover flex-shrink-0 bg-muted"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
+                      <div className="h-16 w-16 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                        <Package className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
