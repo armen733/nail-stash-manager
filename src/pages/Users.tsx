@@ -417,10 +417,12 @@ export default function Users() {
             </div>
           ) : users && users.length > 0 ? (
             (() => {
-              const filteredUsers = users.filter(user => 
-                user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
-              );
+              const filteredUsers = users.filter(user => {
+                const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesNewsletter = !newsletterOnly || (newsletterSubscribers?.has(user.email.toLowerCase()) ?? false);
+                return matchesSearch && matchesNewsletter;
+              });
               return filteredUsers.length > 0 ? (
                 <div className="space-y-2 p-4 sm:p-0">
                   {filteredUsers.map((user) => {
