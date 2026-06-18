@@ -676,17 +676,20 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          </div>
+
+          <DialogFooter className="px-4 py-3 sm:px-6 sm:py-4 border-t bg-background sticky bottom-0 shrink-0 flex-row gap-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="flex-1 sm:flex-none h-11">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || isStripeOrder}>
+            <Button onClick={handleSave} disabled={saving || isStripeOrder} className="flex-1 sm:flex-none h-11">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }
