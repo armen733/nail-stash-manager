@@ -546,12 +546,12 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 shrink-0"
+                            className="h-8 w-8 shrink-0"
                             onClick={() => updateItem(idx, "quantity", Math.max(1, (Number(it.quantity) || 1) - 1))}
                             disabled={Number(it.quantity) <= 1}
                             aria-label="Decrease quantity"
                           >
-                            <Minus className="h-4 w-4" />
+                            <Minus className="h-3.5 w-3.5" />
                           </Button>
                           <Input
                             type="number"
@@ -571,17 +571,17 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                               const n = parseInt(e.target.value, 10);
                               updateItem(idx, "quantity", isNaN(n) || n < 1 ? 1 : n);
                             }}
-                            className="h-10 w-16 text-center"
+                            className="h-8 w-14 text-center text-sm"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 shrink-0"
+                            className="h-8 w-8 shrink-0"
                             onClick={() => updateItem(idx, "quantity", (Number(it.quantity) || 0) + 1)}
                             aria-label="Increase quantity"
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
