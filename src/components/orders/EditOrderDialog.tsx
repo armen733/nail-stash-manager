@@ -514,7 +514,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
               </div>
               <div className="space-y-2">
                 {items.map((it, idx) => (
-                  <div key={idx} className="p-2 rounded-md border bg-muted/30 space-y-1.5">
+                  <div key={idx} className="p-2 rounded-md border bg-muted/30 space-y-1">
                     <div className="flex gap-2 items-start">
                       <div className="flex-1 min-w-0">
                         <Label className="text-xs">Product</Label>
@@ -529,27 +529,27 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                         variant="ghost"
                         size="icon"
                         onClick={() => removeItem(idx)}
-                        className="text-destructive mt-5 shrink-0"
+                        className="text-destructive mt-5 shrink-0 h-7 w-7"
                         aria-label="Remove item"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
 
-                    <div className="flex gap-3 items-end flex-wrap">
+                    <div className="flex gap-2 items-end">
                       <div>
-                        <Label className="text-xs">Qty</Label>
-                        <div className="flex items-center gap-1">
+                        <Label className="text-[10px] leading-3">Qty</Label>
+                        <div className="flex items-center gap-0.5">
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
+                            className="h-7 w-7 shrink-0"
                             onClick={() => updateItem(idx, "quantity", Math.max(1, (Number(it.quantity) || 1) - 1))}
                             disabled={Number(it.quantity) <= 1}
                             aria-label="Decrease quantity"
                           >
-                            <Minus className="h-3.5 w-3.5" />
+                            <Minus className="h-3 w-3" />
                           </Button>
                           <Input
                             type="number"
@@ -569,33 +569,34 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                               const n = parseInt(e.target.value, 10);
                               updateItem(idx, "quantity", isNaN(n) || n < 1 ? 1 : n);
                             }}
-                            className="h-8 w-14 text-center text-sm"
+                            className="h-7 w-11 text-center text-xs px-1"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
+                            className="h-7 w-7 shrink-0"
                             onClick={() => updateItem(idx, "quantity", (Number(it.quantity) || 0) + 1)}
                             aria-label="Increase quantity"
                           >
-                            <Plus className="h-3.5 w-3.5" />
+                            <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
-                      <div className="w-24">
-                        <Label className="text-xs">Price</Label>
+                      <div className="w-20">
+                        <Label className="text-[10px] leading-3">Price</Label>
                         <Input
                           type="number"
                           step="0.01"
                           min={0}
                           value={it.unit_price}
                           onChange={(e) => updateItem(idx, "unit_price", parseFloat(e.target.value || "0"))}
+                          className="h-7 text-xs px-2"
                         />
                       </div>
-                      <div className="flex-1 text-right min-w-[80px]">
-                        <Label className="text-xs">Total</Label>
-                        <div className="h-10 flex items-center justify-end font-medium">
+                      <div className="flex-1 text-right">
+                        <div className="text-[10px] leading-3 text-muted-foreground">Total</div>
+                        <div className="h-7 flex items-center justify-end font-medium text-sm">
                           ${((Number(it.quantity) || 0) * it.unit_price).toFixed(2)}
                         </div>
                       </div>
