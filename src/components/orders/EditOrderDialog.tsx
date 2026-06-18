@@ -674,8 +674,6 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </div>
           </div>
 
-          </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel
