@@ -435,19 +435,23 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
       </AlertDialog>
 
       <Dialog open={open && (!isSensitiveStatus || warningAccepted)} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Order</DialogTitle>
+        <DialogContent
+          className="p-0 gap-0 w-screen h-[100dvh] max-w-full sm:w-auto sm:h-auto sm:max-w-3xl sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col"
+        >
+          <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b sticky top-0 bg-background z-10 shrink-0">
+            <DialogTitle className="text-base sm:text-lg">Edit Order</DialogTitle>
           </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           {isStripeOrder && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 This order was paid through Stripe. Editing is disabled to keep records in sync with the payment.
               </AlertDescription>
             </Alert>
           )}
+
 
           <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
             {/* Customer contact */}
@@ -672,17 +676,20 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          </div>
+
+          <DialogFooter className="px-4 py-3 sm:px-6 sm:py-4 border-t bg-background sticky bottom-0 shrink-0 flex-row gap-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="flex-1 sm:flex-none h-11">
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || isStripeOrder}>
+            <Button onClick={handleSave} disabled={saving || isStripeOrder} className="flex-1 sm:flex-none h-11">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }
