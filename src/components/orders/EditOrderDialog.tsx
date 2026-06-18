@@ -435,14 +435,11 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
       </AlertDialog>
 
       <Dialog open={open && (!isSensitiveStatus || warningAccepted)} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="p-0 gap-0 w-screen h-[100dvh] max-w-full sm:w-auto sm:h-auto sm:max-w-3xl sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col"
-        >
-          <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b sticky top-0 bg-background z-10 shrink-0">
-            <DialogTitle className="text-base sm:text-lg">Edit Order</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
           {isStripeOrder && (
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
@@ -451,7 +448,6 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
               </AlertDescription>
             </Alert>
           )}
-
 
           <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
             {/* Customer contact */}
@@ -548,12 +544,12 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 shrink-0"
+                            className="h-8 w-8 shrink-0"
                             onClick={() => updateItem(idx, "quantity", Math.max(1, (Number(it.quantity) || 1) - 1))}
                             disabled={Number(it.quantity) <= 1}
                             aria-label="Decrease quantity"
                           >
-                            <Minus className="h-4 w-4" />
+                            <Minus className="h-3.5 w-3.5" />
                           </Button>
                           <Input
                             type="number"
@@ -573,17 +569,17 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                               const n = parseInt(e.target.value, 10);
                               updateItem(idx, "quantity", isNaN(n) || n < 1 ? 1 : n);
                             }}
-                            className="h-10 w-16 text-center"
+                            className="h-8 w-14 text-center text-sm"
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="h-10 w-10 shrink-0"
+                            className="h-8 w-8 shrink-0"
                             onClick={() => updateItem(idx, "quantity", (Number(it.quantity) || 0) + 1)}
                             aria-label="Increase quantity"
                           >
-                            <Plus className="h-4 w-4" />
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
@@ -676,13 +672,11 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </div>
           </div>
 
-          </div>
-
-          <DialogFooter className="px-4 py-3 sm:px-6 sm:py-4 border-t bg-background sticky bottom-0 shrink-0 flex-row gap-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving} className="flex-1 sm:flex-none h-11">
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || isStripeOrder} className="flex-1 sm:flex-none h-11">
+            <Button onClick={handleSave} disabled={saving || isStripeOrder}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save changes
             </Button>
