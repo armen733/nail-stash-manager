@@ -406,6 +406,20 @@ export default function Users() {
                 className="pl-9 h-9"
               />
             </div>
+            <Button
+              variant={newsletterOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setNewsletterOnly((v) => !v)}
+              className="h-9 gap-2 shrink-0"
+            >
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Newsletter</span>
+              {newsletterOnly && (
+                <span className="ml-1 text-xs bg-primary-foreground text-primary rounded-full px-1.5 py-0.5">
+                  On
+                </span>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
