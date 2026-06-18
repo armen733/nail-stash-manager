@@ -92,6 +92,17 @@ export default function Users() {
     },
   });
 
+  const { data: newsletterSubscribers } = useQuery({
+    queryKey: ["newsletter-subscribers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("newsletter_subscribers")
+        .select("email");
+      if (error) throw error;
+      return new Set((data || []).map((s) => s.email.toLowerCase()));
+    },
+  });
+
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ["users-with-tiers"],
     queryFn: async () => {
