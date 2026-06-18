@@ -68,6 +68,7 @@ export default function Users() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [newsletterOnly, setNewsletterOnly] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
