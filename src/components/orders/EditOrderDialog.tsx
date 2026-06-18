@@ -440,7 +440,6 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             <DialogTitle>Edit Order</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5">
           {isStripeOrder && (
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
@@ -449,7 +448,6 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
               </AlertDescription>
             </Alert>
           )}
-
 
           <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
             {/* Customer contact */}
