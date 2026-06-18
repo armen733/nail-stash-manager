@@ -2532,11 +2532,11 @@ Thank you!`;
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between gap-2 pt-2 border-t flex-wrap">
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t">
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                             <div className="flex gap-2 flex-wrap justify-end">
+                             <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2680,11 +2680,11 @@ Thank you!`;
                               <span className="text-muted-foreground">No items</span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between gap-2 pt-2 flex-wrap">
+                          <div className="flex items-center justify-between gap-2 pt-2">
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                             <div className="flex gap-2 flex-wrap justify-end">
+                             <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
                                 variant="outline"
