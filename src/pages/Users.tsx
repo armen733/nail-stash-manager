@@ -68,6 +68,7 @@ export default function Users() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [newsletterOnly, setNewsletterOnly] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -88,6 +89,17 @@ export default function Users() {
         .order("name");
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  const { data: newsletterSubscribers } = useQuery({
+    queryKey: ["newsletter-subscribers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("newsletter_subscribers")
+        .select("email");
+      if (error) throw error;
+      return new Set((data || []).map((s) => s.email.toLowerCase()));
     },
   });
 
@@ -394,6 +406,20 @@ export default function Users() {
                 className="pl-9 h-9"
               />
             </div>
+            <Button
+              variant={newsletterOnly ? "default" : "outline"}
+              size="sm"
+              onClick={() => setNewsletterOnly((v) => !v)}
+              className="h-9 gap-2 shrink-0"
+            >
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">Newsletter</span>
+              {newsletterOnly && (
+                <span className="ml-1 text-xs bg-primary-foreground text-primary rounded-full px-1.5 py-0.5">
+                  On
+                </span>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
@@ -405,10 +431,12 @@ export default function Users() {
             </div>
           ) : users && users.length > 0 ? (
             (() => {
-              const filteredUsers = users.filter(user => 
-                user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase())
-              );
+              const filteredUsers = users.filter(user => {
+                const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesNewsletter = !newsletterOnly || (newsletterSubscribers?.has(user.email.toLowerCase()) ?? false);
+                return matchesSearch && matchesNewsletter;
+              });
               return filteredUsers.length > 0 ? (
                 <div className="space-y-2 p-4 sm:p-0">
                   {filteredUsers.map((user) => {
