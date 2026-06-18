@@ -435,11 +435,9 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
       </AlertDialog>
 
       <Dialog open={open && (!isSensitiveStatus || warningAccepted)} onOpenChange={onOpenChange}>
-        <DialogContent
-          className="p-0 gap-0 w-screen h-[100dvh] max-w-full sm:w-auto sm:h-auto sm:max-w-3xl sm:max-h-[90vh] sm:rounded-lg rounded-none flex flex-col"
-        >
-          <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b sticky top-0 bg-background z-10 shrink-0">
-            <DialogTitle className="text-base sm:text-lg">Edit Order</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
