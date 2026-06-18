@@ -449,7 +449,7 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
             </Alert>
           )}
 
-          <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-5" : "space-y-5"}>
+          <div className={isStripeOrder ? "opacity-50 pointer-events-none space-y-4" : "space-y-4"}>
             {/* Customer contact */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
