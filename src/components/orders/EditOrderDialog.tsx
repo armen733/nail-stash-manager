@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProductPicker } from "./ProductPicker";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, AlertTriangle, Loader2, Package } from "lucide-react";
+import { Trash2, Plus, Minus, AlertTriangle, Loader2, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
@@ -512,11 +512,10 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                   <Plus className="h-4 w-4 mr-1" /> Add item
                 </Button>
               </div>
-              <div className="space-y-2">
-                {items.map((it, idx) => {
-                  const product = products.find((p) => p.id === it.product_id);
-                  return (
-                    <div key={idx} className="flex gap-2 items-end p-2 rounded-md border bg-muted/30">
+              <div className="space-y-3">
+                {items.map((it, idx) => (
+                  <div key={idx} className="p-3 rounded-md border bg-muted/30 space-y-2">
+                    <div className="flex gap-2 items-start">
                       <div className="flex-1 min-w-0">
                         <Label className="text-xs">Product</Label>
                         <ProductPicker
@@ -525,14 +524,64 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                           onChange={(v) => updateItem(idx, "product_id", v)}
                         />
                       </div>
-                      <div className="w-20">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(idx)}
+                        className="text-destructive mt-5 shrink-0"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="flex gap-3 items-end flex-wrap">
+                      <div>
                         <Label className="text-xs">Qty</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={it.quantity}
-                          onChange={(e) => updateItem(idx, "quantity", Math.max(1, parseInt(e.target.value || "1")))}
-                        />
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 shrink-0"
+                            onClick={() => updateItem(idx, "quantity", Math.max(1, (Number(it.quantity) || 1) - 1))}
+                            disabled={Number(it.quantity) <= 1}
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            value={it.quantity}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                updateItem(idx, "quantity", "" as any);
+                                return;
+                              }
+                              const n = parseInt(raw, 10);
+                              if (!isNaN(n)) updateItem(idx, "quantity", Math.max(1, n));
+                            }}
+                            onBlur={(e) => {
+                              const n = parseInt(e.target.value, 10);
+                              updateItem(idx, "quantity", isNaN(n) || n < 1 ? 1 : n);
+                            }}
+                            className="h-10 w-16 text-center"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 shrink-0"
+                            onClick={() => updateItem(idx, "quantity", (Number(it.quantity) || 0) + 1)}
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="w-24">
                         <Label className="text-xs">Price</Label>
@@ -544,24 +593,15 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                           onChange={(e) => updateItem(idx, "unit_price", parseFloat(e.target.value || "0"))}
                         />
                       </div>
-                      <div className="w-20 text-right">
+                      <div className="flex-1 text-right min-w-[80px]">
                         <Label className="text-xs">Total</Label>
                         <div className="h-10 flex items-center justify-end font-medium">
-                          ${(it.quantity * it.unit_price).toFixed(2)}
+                          ${((Number(it.quantity) || 0) * it.unit_price).toFixed(2)}
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItem(idx)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
                 {items.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-4 border rounded-md">
                     <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
