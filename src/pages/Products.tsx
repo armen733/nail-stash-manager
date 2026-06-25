@@ -3078,8 +3078,12 @@ const Products = () => {
                     </div>
                     <div className="pt-3 border-t space-y-1">
                       {quickViewProduct.stock_on_hand !== null && (
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">Stock: {quickViewProduct.stock_on_hand}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <QuickStockEditor
+                            productId={quickViewProduct.id}
+                            stock={quickViewProduct.stock_on_hand || 0}
+                            onUpdated={(n) => setQuickViewProduct((p) => p ? { ...p, stock_on_hand: n } : p)}
+                          />
                           {quickViewProduct.stock_on_hand < 10 && (
                             <Badge variant={quickViewProduct.stock_on_hand === 0 ? "destructive" : "secondary"}>
                               {quickViewProduct.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
