@@ -72,7 +72,7 @@ import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
 import { ExportDialog } from "@/components/products/ExportDialog";
 import { ImageCropDialog } from "@/components/products/ImageCropDialog";
-import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
+import { useProducts, PRODUCTS_QUERY_KEY, useUpdateProductStock } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
