@@ -270,14 +270,22 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <Button
-              variant={showBadOnly ? "destructive" : "outline"}
-              onClick={() => setShowBadOnly((v) => !v)}
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad")}
               className="justify-start"
             >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              {showBadOnly ? "Showing bad performers" : "Show bad performers"}
-            </Button>
+              <ToggleGroupItem value="all" className="text-xs">
+                <List className="h-3.5 w-3.5 mr-1" /> All
+              </ToggleGroupItem>
+              <ToggleGroupItem value="top" className="text-xs">
+                <TrendingUp className="h-3.5 w-3.5 mr-1" /> Top
+              </ToggleGroupItem>
+              <ToggleGroupItem value="bad" className="text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Bad
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <Badge variant="secondary">{filtered.length} SKUs</Badge>
