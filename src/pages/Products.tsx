@@ -80,6 +80,76 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useAbandonedCart } from "@/hooks/useAbandonedCart";
 import { logAudit } from "@/lib/audit-log";
 
+interface QuickStockEditorProps {
+  productId: string;
+  stock: number;
+  onUpdated?: (newStock: number) => void;
+}
+
+const QuickStockEditor = ({ productId, stock, onUpdated }: QuickStockEditorProps) => {
+  const updateStock = useUpdateProductStock();
+  const [value, setValue] = useState<string>(String(stock));
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setValue(String(stock));
+  }, [stock, editing]);
+
+  const commit = (next: number) => {
+    const safe = Math.max(0, Math.floor(next));
+    if (safe === stock) return;
+    updateStock.mutate(
+      { id: productId, stock_on_hand: safe },
+      { onSuccess: () => onUpdated?.(safe) }
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-medium">Stock:</span>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => commit(stock - 1)}
+          disabled={updateStock.isPending || stock <= 0}
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min="0"
+          value={value}
+          onFocus={() => setEditing(true)}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => {
+            setEditing(false);
+            const n = parseInt(value, 10);
+            if (!Number.isNaN(n)) commit(n);
+            else setValue(String(stock));
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          className="h-8 w-16 text-center px-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => commit(stock + 1)}
+          disabled={updateStock.isPending}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const Products = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
