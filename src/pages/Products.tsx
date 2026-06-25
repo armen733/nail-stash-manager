@@ -72,13 +72,83 @@ import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
 import { ExportDialog } from "@/components/products/ExportDialog";
 import { ImageCropDialog } from "@/components/products/ImageCropDialog";
-import { useProducts, PRODUCTS_QUERY_KEY } from "@/hooks/useProducts";
+import { useProducts, PRODUCTS_QUERY_KEY, useUpdateProductStock } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAbandonedCart } from "@/hooks/useAbandonedCart";
 import { logAudit } from "@/lib/audit-log";
+
+interface QuickStockEditorProps {
+  productId: string;
+  stock: number;
+  onUpdated?: (newStock: number) => void;
+}
+
+const QuickStockEditor = ({ productId, stock, onUpdated }: QuickStockEditorProps) => {
+  const updateStock = useUpdateProductStock();
+  const [value, setValue] = useState<string>(String(stock));
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!editing) setValue(String(stock));
+  }, [stock, editing]);
+
+  const commit = (next: number) => {
+    const safe = Math.max(0, Math.floor(next));
+    if (safe === stock) return;
+    updateStock.mutate(
+      { id: productId, stock_on_hand: safe },
+      { onSuccess: () => onUpdated?.(safe) }
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-medium">Stock:</span>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => commit(stock - 1)}
+          disabled={updateStock.isPending || stock <= 0}
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Input
+          type="number"
+          min="0"
+          value={value}
+          onFocus={() => setEditing(true)}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => {
+            setEditing(false);
+            const n = parseInt(value, 10);
+            if (!Number.isNaN(n)) commit(n);
+            else setValue(String(stock));
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          className="h-8 w-16 text-center px-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => commit(stock + 1)}
+          disabled={updateStock.isPending}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const Products = () => {
   const navigate = useNavigate();
@@ -2827,8 +2897,12 @@ const Products = () => {
                   </div>
                   <div className="pt-3 border-t space-y-1">
                     {quickViewProduct.stock_on_hand !== null && (
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">Stock: {quickViewProduct.stock_on_hand}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <QuickStockEditor
+                          productId={quickViewProduct.id}
+                          stock={quickViewProduct.stock_on_hand || 0}
+                          onUpdated={(n) => setQuickViewProduct((p) => p ? { ...p, stock_on_hand: n } : p)}
+                        />
                         {quickViewProduct.stock_on_hand < 10 && (
                           <Badge variant={quickViewProduct.stock_on_hand === 0 ? "destructive" : "secondary"}>
                             {quickViewProduct.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
@@ -3004,8 +3078,12 @@ const Products = () => {
                     </div>
                     <div className="pt-3 border-t space-y-1">
                       {quickViewProduct.stock_on_hand !== null && (
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">Stock: {quickViewProduct.stock_on_hand}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <QuickStockEditor
+                            productId={quickViewProduct.id}
+                            stock={quickViewProduct.stock_on_hand || 0}
+                            onUpdated={(n) => setQuickViewProduct((p) => p ? { ...p, stock_on_hand: n } : p)}
+                          />
                           {quickViewProduct.stock_on_hand < 10 && (
                             <Badge variant={quickViewProduct.stock_on_hand === 0 ? "destructive" : "secondary"}>
                               {quickViewProduct.stock_on_hand === 0 ? "Out of Stock" : "Low Stock"}
