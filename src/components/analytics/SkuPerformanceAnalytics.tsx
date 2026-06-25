@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, AlertTriangle, TrendingDown, PackageX, Snowflake, Loader2, BarChart3, Filter } from "lucide-react";
+import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInDays } from "date-fns";
@@ -46,7 +47,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
   const [category, setCategory] = useState<string>(ALL);
   const [variant, setVariant] = useState<string>(ALL);
   const [search, setSearch] = useState("");
-  const [showBadOnly, setShowBadOnly] = useState(false);
+  const [mode, setMode] = useState<"all" | "top" | "bad">("all");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
 
@@ -178,15 +179,23 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows
+    const base = rows
       .filter((r) => category === ALL || r.category === category)
       .filter((r) => variant === ALL || r.variant === variant)
-      .filter((r) => !showBadOnly || r.badges.length > 0)
       .filter(
         (r) => !q || r.sku.toLowerCase().includes(q) || r.name.toLowerCase().includes(q),
       )
       .sort((a, b) => b.units_sold - a.units_sold);
-  }, [rows, category, variant, showBadOnly, search]);
+
+    if (mode === "top") {
+      // top performers: any with sales, ordered by units desc
+      return base.filter((r) => r.units_sold > 0 && !r.badges.includes("low-units"));
+    }
+    if (mode === "bad") {
+      return base.filter((r) => r.badges.length > 0);
+    }
+    return base;
+  }, [rows, category, variant, mode, search]);
 
   const totals = useMemo(
     () =>
@@ -261,14 +270,22 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <Button
-              variant={showBadOnly ? "destructive" : "outline"}
-              onClick={() => setShowBadOnly((v) => !v)}
+            <ToggleGroup
+              type="single"
+              value={mode}
+              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad")}
               className="justify-start"
             >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              {showBadOnly ? "Showing bad performers" : "Show bad performers"}
-            </Button>
+              <ToggleGroupItem value="all" className="text-xs">
+                <List className="h-3.5 w-3.5 mr-1" /> All
+              </ToggleGroupItem>
+              <ToggleGroupItem value="top" className="text-xs">
+                <TrendingUp className="h-3.5 w-3.5 mr-1" /> Top
+              </ToggleGroupItem>
+              <ToggleGroupItem value="bad" className="text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Bad
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <Badge variant="secondary">{filtered.length} SKUs</Badge>
