@@ -14,6 +14,7 @@ import {
   RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
+import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -1269,9 +1270,10 @@ const Analytics = () => {
       {/* Tabs for different analytics sections */}
       <Tabs defaultValue="sales" className="w-full">
         <div className="w-full overflow-x-auto -mx-1 px-1 scrollbar-thin">
-          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-6 h-auto gap-1">
+          <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-7 h-auto gap-1">
             <TabsTrigger value="sales" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Sales</TabsTrigger>
             <TabsTrigger value="products" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Products</TabsTrigger>
+            <TabsTrigger value="skus" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">SKUs</TabsTrigger>
             <TabsTrigger value="customers" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Customers</TabsTrigger>
             <TabsTrigger value="inventory" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">Inventory</TabsTrigger>
             <TabsTrigger value="warehouses" className="text-xs sm:text-sm py-2 px-3 whitespace-nowrap">
@@ -1715,6 +1717,14 @@ const Analytics = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* SKUs Tab — per-category sold SKU monitoring, bad performers, AI production plan */}
+        <TabsContent value="skus" className="mt-4 space-y-4">
+          <SkuPerformanceAnalytics
+            periodStart={getPeriodDates().periodStart}
+            periodEnd={getPeriodDates().periodEnd}
+          />
         </TabsContent>
 
         {/* Customers Tab */}
