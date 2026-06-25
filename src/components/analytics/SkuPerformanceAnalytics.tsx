@@ -57,34 +57,61 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       setLoading(true);
       setAiResult(null);
       try {
-        const [itemsRes, productsRes] = await Promise.all([
-          supabase
-            .from("order_items")
-            .select(
-              `quantity, line_total, order:orders!inner(created_at, status), product:products!inner(id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level)`,
-            )
-            .gte("order.created_at", periodStart.toISOString())
-            .lte("order.created_at", periodEnd.toISOString())
-            .in("order.status", ["Confirmed", "Shipped", "Delivered", "Paid"]),
-          supabase
-            .from("products")
-            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level"),
-        ]);
+        // 1) Get order IDs in period (paginated — Supabase caps at 1000 per page)
+        const orderIds: string[] = [];
+        const PAGE = 1000;
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await supabase
+            .from("orders")
+            .select("id")
+            .gte("created_at", periodStart.toISOString())
+            .lte("created_at", periodEnd.toISOString())
+            .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"])
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          orderIds.push(...data.map((o) => o.id));
+          if (data.length < PAGE) break;
+        }
 
-        if (itemsRes.error) throw itemsRes.error;
-        if (productsRes.error) throw productsRes.error;
-
+        // 2) Get order_items for those orders, in chunks of order IDs and paginated rows
         const salesByProduct = new Map<string, { units: number; revenue: number }>();
-        (itemsRes.data ?? []).forEach((it: any) => {
-          const pid = it.product?.id;
-          if (!pid) return;
-          const cur = salesByProduct.get(pid) ?? { units: 0, revenue: 0 };
-          cur.units += Number(it.quantity ?? 0);
-          cur.revenue += Number(it.line_total ?? 0);
-          salesByProduct.set(pid, cur);
-        });
+        const ID_CHUNK = 300;
+        for (let i = 0; i < orderIds.length; i += ID_CHUNK) {
+          const chunk = orderIds.slice(i, i + ID_CHUNK);
+          for (let from = 0; ; from += PAGE) {
+            const { data, error } = await supabase
+              .from("order_items")
+              .select("product_id, quantity, line_total")
+              .in("order_id", chunk)
+              .range(from, from + PAGE - 1);
+            if (error) throw error;
+            if (!data || data.length === 0) break;
+            data.forEach((it: any) => {
+              if (!it.product_id) return;
+              const cur = salesByProduct.get(it.product_id) ?? { units: 0, revenue: 0 };
+              cur.units += Number(it.quantity ?? 0);
+              cur.revenue += Number(it.line_total ?? 0);
+              salesByProduct.set(it.product_id, cur);
+            });
+            if (data.length < PAGE) break;
+          }
+        }
 
-        const built: SkuRow[] = (productsRes.data ?? []).map((p: any) => {
+        // 3) Get ALL products (paginated)
+        const productsAll: any[] = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await supabase
+            .from("products")
+            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level")
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          productsAll.push(...data);
+          if (data.length < PAGE) break;
+        }
+
+        const built: SkuRow[] = productsAll.map((p: any) => {
           const s = salesByProduct.get(p.id) ?? { units: 0, revenue: 0 };
           const velocity = s.units / periodDays;
           const stock = Number(p.stock_on_hand ?? 0);
@@ -115,11 +142,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         });
         groupMap.forEach((group) => {
           const sold = group.filter((g) => g.units_sold > 0).sort((a, b) => a.units_sold - b.units_sold);
-          const bottomCount = Math.max(1, Math.floor(group.length * 0.2));
+          const bottomCount = Math.max(1, Math.floor(sold.length * 0.2));
           const bottomSet = new Set(sold.slice(0, bottomCount).map((g) => g.productId));
           group.forEach((g) => {
-            if (g.units_sold <= 2) g.badges.push("zero-sales");
-            if (bottomSet.has(g.productId) && !g.badges.includes("zero-sales")) g.badges.push("low-units");
+            if (g.units_sold === 0) g.badges.push("no-sales");
+            else if (g.units_sold <= 2) g.badges.push("zero-sales");
+            if (bottomSet.has(g.productId) && g.badges.length === 0) g.badges.push("low-units");
             if (g.stock > 0 && (g.days_of_stock === null || g.days_of_stock > 90)) g.badges.push("overstocked");
           });
         });
