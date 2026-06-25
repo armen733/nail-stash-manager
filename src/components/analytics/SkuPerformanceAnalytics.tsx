@@ -47,7 +47,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
   const [category, setCategory] = useState<string>(ALL);
   const [variant, setVariant] = useState<string>(ALL);
   const [search, setSearch] = useState("");
-  const [showBadOnly, setShowBadOnly] = useState(false);
+  const [mode, setMode] = useState<"all" | "top" | "bad">("all");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
 
