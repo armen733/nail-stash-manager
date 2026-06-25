@@ -179,15 +179,23 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows
+    const base = rows
       .filter((r) => category === ALL || r.category === category)
       .filter((r) => variant === ALL || r.variant === variant)
-      .filter((r) => !showBadOnly || r.badges.length > 0)
       .filter(
         (r) => !q || r.sku.toLowerCase().includes(q) || r.name.toLowerCase().includes(q),
       )
       .sort((a, b) => b.units_sold - a.units_sold);
-  }, [rows, category, variant, showBadOnly, search]);
+
+    if (mode === "top") {
+      // top performers: any with sales, ordered by units desc
+      return base.filter((r) => r.units_sold > 0 && !r.badges.includes("low-units"));
+    }
+    if (mode === "bad") {
+      return base.filter((r) => r.badges.length > 0);
+    }
+    return base;
+  }, [rows, category, variant, mode, search]);
 
   const totals = useMemo(
     () =>
