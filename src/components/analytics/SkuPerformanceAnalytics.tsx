@@ -407,9 +407,14 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                       </td>
                       <td className="p-2">
                         <div className="flex flex-wrap gap-1">
+                          {r.badges.includes("no-sales") && (
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
+                              <Snowflake className="h-2.5 w-2.5" /> No sales
+                            </Badge>
+                          )}
                           {r.badges.includes("zero-sales") && (
                             <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
-                              <Snowflake className="h-2.5 w-2.5" /> Zero
+                              <Snowflake className="h-2.5 w-2.5" /> Near-zero
                             </Badge>
                           )}
                           {r.badges.includes("low-units") && (
