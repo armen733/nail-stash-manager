@@ -289,6 +289,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       // SKUs that are still flagged.
       return base.filter((r) => r.is_bad_performer).sort(sortTopFirst);
     }
+    if (mode === "never") {
+      // Never-sold SKUs only.
+      return base
+        .filter((r) => r.badges.includes("never-sold"))
+        .sort((a, b) => b.product_age_days - a.product_age_days || a.sku.localeCompare(b.sku));
+    }
     return base;
 
   }, [rows, category, variant, mode, search]);
