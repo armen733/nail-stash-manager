@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Plus, Printer, Receipt, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Printer, Receipt, Trash2, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { ProductionOrdersSection } from "./ProductionOrdersSection";
 
@@ -18,7 +19,10 @@ interface Expense {
   amount: number;
   expense_date: string;
   notes: string | null;
+  is_recurring: boolean;
+  recurring_frequency: string | null;
 }
+
 
 interface Props {
   periodStart: Date;
@@ -38,6 +42,7 @@ const PRESET_CATEGORIES = [
   "Office Supplies",
   "Travel",
   "Meals",
+  "Subscriptions",
   "Other",
 ];
 
@@ -55,6 +60,10 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
+  const [subscriptionsOnly, setSubscriptionsOnly] = useState(false);
+
 
   const toggle = () => {
     setOpen((p) => {
@@ -85,13 +94,23 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, periodStart.getTime(), periodEnd.getTime()]);
 
-  const total = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+  const filteredExpenses = useMemo(
+    () => (subscriptionsOnly ? expenses.filter((e) => e.is_recurring) : expenses),
+    [expenses, subscriptionsOnly]
+  );
+
+  const total = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0), [filteredExpenses]);
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const e of expenses) map[e.category] = (map[e.category] || 0) + Number(e.amount || 0);
+    for (const e of filteredExpenses) map[e.category] = (map[e.category] || 0) + Number(e.amount || 0);
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
+  }, [filteredExpenses]);
+
+  const recurringTotal = useMemo(
+    () => expenses.filter((e) => e.is_recurring).reduce((s, e) => s + Number(e.amount || 0), 0),
+    [expenses]
+  );
 
   const handleAdd = async () => {
     const finalCat = category === "Other" && customCategory.trim() ? customCategory.trim() : category;
@@ -107,15 +126,19 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
       description: description || null,
       expense_date: expenseDate,
       created_by: user?.id,
+      is_recurring: isRecurring,
+      recurring_frequency: isRecurring ? recurringFrequency : null,
     });
     if (error) {
       toast({ title: "Failed to add expense", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Expense added" });
+    toast({ title: isRecurring ? "Subscription added" : "Expense added" });
     setAmount("");
     setDescription("");
     setCustomCategory("");
+    setIsRecurring(false);
+    setRecurringFrequency("monthly");
     setAdding(false);
     load();
   };
@@ -133,12 +156,12 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
     const rangeText = `${format(periodStart, "MMM d, yyyy")} - ${format(periodEnd, "MMM d, yyyy")}`;
     const esc = (s: string) =>
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const rows = expenses
+    const rows = filteredExpenses
       .map(
         (e) => `
           <tr>
             <td>${format(new Date(e.expense_date), "MMM d, yyyy")}</td>
-            <td>${esc(e.category)}</td>
+            <td>${esc(e.category)}${e.is_recurring ? ' <span style="font-size:10px;color:#7c3aed">(recurring ' + esc(e.recurring_frequency || "monthly") + ')</span>' : ""}</td>
             <td>${esc(e.description || "")}</td>
             <td style="text-align:right">$${Number(e.amount).toFixed(2)}</td>
           </tr>`
@@ -150,7 +173,8 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
           <tr><td>${esc(cat)}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`
       )
       .join("");
-    const html = `<!doctype html><html><head><title>Expenses Report</title>
+    const title = subscriptionsOnly ? "Subscriptions Report" : "Expenses Report";
+    const html = `<!doctype html><html><head><title>${title}</title>
       <style>
         @page { margin: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 24px; color: #111; }
@@ -162,8 +186,8 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
         th { background: #f3f4f6; text-align: left; }
         tfoot td { font-weight: 600; background: #fafafa; }
       </style></head><body>
-      <h1>Expenses Report</h1>
-      <div class="sub">${rangeText} · ${expenses.length} entries · Total $${total.toFixed(2)}</div>
+      <h1>${title}</h1>
+      <div class="sub">${rangeText} · ${filteredExpenses.length} entries · Total $${total.toFixed(2)}${subscriptionsOnly ? "" : ` · Recurring $${recurringTotal.toFixed(2)}`}</div>
 
       <h2>By category</h2>
       <table>
@@ -208,20 +232,24 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
       {open && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
           {/* Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Total in period</div>
               <div className="text-xl font-semibold text-orange-500">${total.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Entries</div>
-              <div className="text-xl font-semibold">{expenses.length}</div>
+              <div className="text-xl font-semibold">{filteredExpenses.length}</div>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Top category</div>
               <div className="text-sm font-semibold truncate">
                 {byCategory[0] ? `${byCategory[0][0]} · $${byCategory[0][1].toFixed(2)}` : "—"}
               </div>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="text-xs text-muted-foreground">Recurring / Subscriptions</div>
+              <div className="text-xl font-semibold text-purple-500">${recurringTotal.toFixed(2)}</div>
             </div>
           </div>
 
@@ -272,20 +300,60 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
                   />
                 </div>
               </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center rounded-lg border p-3 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                  <Label htmlFor="recurring" className="cursor-pointer flex items-center gap-1">
+                    <Repeat className="h-4 w-4 text-purple-500" />
+                    Recurring payment / subscription
+                  </Label>
+                </div>
+                {isRecurring && (
+                  <div className="flex items-center gap-2 sm:ml-auto">
+                    <Label className="text-xs text-muted-foreground">Frequency</Label>
+                    <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+                      <SelectTrigger className="w-36 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
-                <Button onClick={handleAdd}>Save expense</Button>
+                <Button onClick={handleAdd}>{isRecurring ? "Save subscription" : "Save expense"}</Button>
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <Button onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add expense
               </Button>
-              <Button variant="outline" onClick={handlePrint} disabled={expenses.length === 0}>
+              <Button variant="outline" onClick={handlePrint} disabled={filteredExpenses.length === 0}>
                 <Printer className="h-4 w-4 mr-2" /> Print
               </Button>
+              <div className="flex items-center gap-2 ml-auto">
+                <Switch
+                  id="subscriptions-only"
+                  checked={subscriptionsOnly}
+                  onCheckedChange={setSubscriptionsOnly}
+                />
+                <Label htmlFor="subscriptions-only" className="cursor-pointer text-sm flex items-center gap-1">
+                  <Repeat className="h-4 w-4 text-purple-500" />
+                  Subscriptions only
+                </Label>
+              </div>
             </div>
           )}
 
@@ -293,16 +361,24 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
           <div className="rounded-lg border divide-y">
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">Loading…</div>
-            ) : expenses.length === 0 ? (
+            ) : filteredExpenses.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">
-                No expenses logged for this period.
+                {subscriptionsOnly
+                  ? "No recurring subscriptions logged for this period."
+                  : "No expenses logged for this period."}
               </div>
             ) : (
-              expenses.map((e) => (
+              filteredExpenses.map((e) => (
                 <div key={e.id} className="flex items-center justify-between gap-3 p-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{e.category}</span>
+                      {e.is_recurring && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
+                          <Repeat className="h-3 w-3" />
+                          {e.recurring_frequency || "monthly"}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(e.expense_date), "MMM d, yyyy")}
                       </span>
