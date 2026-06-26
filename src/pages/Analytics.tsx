@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
-  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse, Eye, EyeOff
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse, ChevronDown
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
@@ -988,17 +988,20 @@ const Analytics = () => {
 
       {/* Revenue Trend Chart */}
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader
+          className="p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+          onClick={() => toggleChart("revenueTrend")}
+        >
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
               Revenue & Orders Trend
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
               {isChartVisible("revenueTrend") && (
-                <ToggleGroup 
-                  type="single" 
-                  value={chartType} 
+                <ToggleGroup
+                  type="single"
+                  value={chartType}
                   onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
                   className="bg-muted/50 rounded-lg p-1"
                 >
@@ -1013,9 +1016,7 @@ const Analytics = () => {
                   </ToggleGroupItem>
                 </ToggleGroup>
               )}
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("revenueTrend")} aria-label={isChartVisible("revenueTrend") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("revenueTrend") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", isChartVisible("revenueTrend") && "rotate-180")} />
             </div>
           </div>
         </CardHeader>
@@ -1171,15 +1172,16 @@ const Analytics = () => {
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Cumulative Revenue Line Chart */}
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="p-4 sm:p-6">
+          <CardHeader
+            className="p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+            onClick={() => toggleChart("cumulative")}
+          >
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-green-500" />
                 Cumulative Revenue
               </CardTitle>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("cumulative")} aria-label={isChartVisible("cumulative") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("cumulative") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", isChartVisible("cumulative") && "rotate-180")} />
             </div>
           </CardHeader>
           {isChartVisible("cumulative") && (
@@ -1231,15 +1233,16 @@ const Analytics = () => {
 
         {/* Average Order Value Trend */}
         <Card className="shadow-[var(--shadow-card)]">
-          <CardHeader className="p-4 sm:p-6">
+          <CardHeader
+            className="p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+            onClick={() => toggleChart("avgOrder")}
+          >
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-purple-500" />
                 Avg Order Value Trend
               </CardTitle>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("avgOrder")} aria-label={isChartVisible("avgOrder") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("avgOrder") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
+              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", isChartVisible("avgOrder") && "rotate-180")} />
             </div>
           </CardHeader>
           {isChartVisible("avgOrder") && (
@@ -1278,15 +1281,16 @@ const Analytics = () => {
 
       {/* Orders Volume Chart */}
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader
+          className="p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+          onClick={() => toggleChart("ordersVolume")}
+        >
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-blue-500" />
               Daily Orders Volume
             </CardTitle>
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("ordersVolume")} aria-label={isChartVisible("ordersVolume") ? "Hide chart" : "Show chart"}>
-              {isChartVisible("ordersVolume") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", isChartVisible("ordersVolume") && "rotate-180")} />
           </div>
         </CardHeader>
         {isChartVisible("ordersVolume") && (
