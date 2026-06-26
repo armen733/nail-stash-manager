@@ -537,6 +537,29 @@ export default function Users() {
                       </span>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[40px]"
+                      onClick={() => setContactTarget(selectedUser)}
+                      disabled={!selectedUser.email || selectedUser.email.endsWith("@placeholder.local")}
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[40px]"
+                      onClick={() => setContactTarget(selectedUser)}
+                      disabled={!selectedUser.phone}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Text
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Stats Cards */}
