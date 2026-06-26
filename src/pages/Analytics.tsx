@@ -735,7 +735,7 @@ const Analytics = () => {
     </div>
   );
 
-  const StatCard = ({ title, value, icon: Icon, change, prefix = "", previousValue, sparkData, sparkKey, sparkColor }: { 
+  const StatCard = ({ title, value, icon: Icon, change, prefix = "", previousValue, sparkData, sparkKey, sparkColor, onClick, highlight, description }: { 
     title: string; 
     value: string | number; 
     icon: any; 
@@ -745,13 +745,23 @@ const Analytics = () => {
     sparkData?: any[];
     sparkKey?: string;
     sparkColor?: string;
+    onClick?: () => void;
+    highlight?: boolean;
+    description?: string;
   }) => (
-    <Card className="shadow-[var(--shadow-card)] overflow-hidden">
+    <Card
+      onClick={onClick}
+      className={cn(
+        "shadow-[var(--shadow-card)] overflow-hidden transition-all",
+        onClick && "cursor-pointer hover:shadow-lg active:scale-[0.99]",
+        highlight && "border-green-500/60 ring-1 ring-green-500/30"
+      )}
+    >
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
-            <p className="text-xl sm:text-2xl font-bold mt-1">{prefix}{value}</p>
+            <p className={cn("text-xl sm:text-2xl font-bold mt-1", highlight && "text-green-500")}>{prefix}{value}</p>
             {showComparison && change !== undefined && (
               <div className={`flex items-center gap-1 mt-1 text-xs ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {change >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -763,10 +773,13 @@ const Analytics = () => {
                 Previous: {prefix}{typeof previousValue === 'number' ? previousValue.toFixed(2) : previousValue}
               </p>
             )}
+            {description && (
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{description}</p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="p-2.5 rounded-full bg-primary/10">
-              <Icon className="h-4 w-4 text-primary" />
+            <div className={cn("p-2.5 rounded-full bg-primary/10", highlight && "bg-green-500/15") }>
+              <Icon className={cn("h-4 w-4 text-primary", highlight && "text-green-500")} />
             </div>
             {sparkData && sparkKey && sparkColor && (
               <Sparkline data={sparkData} dataKey={sparkKey} color={sparkColor} />
