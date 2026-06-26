@@ -53,7 +53,7 @@ interface LocationOption {
   supply_store_id?: string | null;
 }
 
-const LowStock = () => {
+const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [products, setProducts] = useState<LowStockProduct[]>([]);
   const [categoryVariantTypes, setCategoryVariantTypes] = useState<CategoryVariantType[]>([]);
   const [locations, setLocations] = useState<LocationOption[]>([]);
