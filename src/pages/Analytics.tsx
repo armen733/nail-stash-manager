@@ -2126,10 +2126,23 @@ const Analytics = () => {
                 <p className="text-xs text-muted-foreground">Active Salons</p>
               </CardContent>
             </Card>
-            <Card className="shadow-[var(--shadow-card)]">
+            <Card
+              className="shadow-[var(--shadow-card)] cursor-pointer hover:bg-muted/30 transition"
+              onClick={() => setSalonRevenueView(salonRevenueView === "revenue" ? "profit" : "revenue")}
+              title="Click to toggle Revenue / Clean Profit"
+            >
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">${salonStats.reduce((s, x) => s + x.revenue, 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">Total Salon Revenue</p>
+                {salonRevenueView === "revenue" ? (
+                  <>
+                    <div className="text-2xl font-bold">${salonStats.reduce((s, x) => s + x.revenue, 0).toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total Salon Revenue · click for profit</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-green-500">${salonStats.reduce((s, x) => s + x.profit, 0).toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total Clean Profit · click for revenue</p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card className="shadow-[var(--shadow-card)]">
