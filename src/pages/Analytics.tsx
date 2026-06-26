@@ -322,6 +322,53 @@ const Analytics = () => {
       const taxCollected = orders?.reduce((sum, o) => sum + (o.tax || 0), 0) || 0;
       setTotalTaxCollected(taxCollected);
 
+      // ===== Active counts + supply store stats for the selected period =====
+      const [salonsRes, supplyStoresRes, supplyLocsRes, supplyMovementsRes, pricingRes, overridesRes] = await Promise.all([
+        supabase.from("salons").select("id, is_active"),
+        supabase.from("supply_stores").select("id, default_discount_percent, status"),
+        supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
+        supabase.from("stock_movements")
+          .select("product_id, quantity, unit_cost, to_location_id, movement_type, created_at")
+          .gte("created_at", periodStart.toISOString())
+          .lte("created_at", periodEnd.toISOString()),
+        supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
+        supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+      ]);
+
+      setActiveSalonsCount((salonsRes.data || []).filter((s: any) => s.is_active !== false).length);
+      setActiveSupplyStoresCount((supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length);
+
+      const locMap = new Map<string, string>();
+      (supplyLocsRes.data || []).forEach((l: any) => l.supply_store_id && locMap.set(l.id, l.supply_store_id));
+      const discMap = new Map<string, number>();
+      (supplyStoresRes.data || []).forEach((s: any) => discMap.set(s.id, Number(s.default_discount_percent) || 0));
+      const priceMap = new Map<string, { wholesale: number; cost: number }>();
+      (pricingRes.data || []).forEach((p: any) => priceMap.set(p.id, {
+        wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
+        cost: Number(p.cost_usd ?? 0),
+      }));
+      const ovMap = new Map<string, number>();
+      (overridesRes.data || []).forEach((o: any) => {
+        if (o.discount_percent_override != null) ovMap.set(`${o.supply_store_id}:${o.product_id}`, Number(o.discount_percent_override));
+      });
+
+      let ssRevenue = 0, ssProfit = 0, ssUnits = 0;
+      (supplyMovementsRes.data || []).forEach((m: any) => {
+        if (!["transfer", "sale", "receive"].includes(m.movement_type)) return;
+        const storeId = m.to_location_id ? locMap.get(m.to_location_id) : null;
+        if (!storeId) return;
+        const pricing = priceMap.get(m.product_id);
+        if (!pricing) return;
+        const key = `${storeId}:${m.product_id}`;
+        const discPct = ovMap.has(key) ? ovMap.get(key)! : (discMap.get(storeId) ?? 0);
+        const sell = pricing.wholesale * (1 - discPct / 100);
+        const cost = pricing.cost > 0 ? pricing.cost : (m.unit_cost != null ? Number(m.unit_cost) : 0);
+        ssRevenue += sell * m.quantity;
+        ssProfit += (sell - cost) * m.quantity;
+        ssUnits += m.quantity;
+      });
+      setSupplyStoreStats({ revenue: ssRevenue, profit: ssProfit, units: ssUnits });
+
       const categoryMap: Record<string, CategorySales> = {};
       const productMap: Record<string, ProductPerformance> = {};
       const customerMap: Record<string, CustomerInsight> = {};
