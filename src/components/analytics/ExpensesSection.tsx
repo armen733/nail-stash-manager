@@ -361,16 +361,24 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
           <div className="rounded-lg border divide-y">
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">Loading…</div>
-            ) : expenses.length === 0 ? (
+            ) : filteredExpenses.length === 0 ? (
               <div className="p-6 text-center text-sm text-muted-foreground">
-                No expenses logged for this period.
+                {subscriptionsOnly
+                  ? "No recurring subscriptions logged for this period."
+                  : "No expenses logged for this period."}
               </div>
             ) : (
-              expenses.map((e) => (
+              filteredExpenses.map((e) => (
                 <div key={e.id} className="flex items-center justify-between gap-3 p-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{e.category}</span>
+                      {e.is_recurring && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
+                          <Repeat className="h-3 w-3" />
+                          {e.recurring_frequency || "monthly"}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(e.expense_date), "MMM d, yyyy")}
                       </span>
