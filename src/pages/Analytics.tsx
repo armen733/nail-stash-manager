@@ -116,7 +116,7 @@ const Analytics = () => {
       return next;
     });
   };
-  const isChartVisible = (key: string) => chartVisibility[key] ?? true;
+  const isChartVisible = (key: string) => chartVisibility[key] ?? false;
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
