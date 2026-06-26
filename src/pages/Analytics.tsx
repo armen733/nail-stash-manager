@@ -1598,6 +1598,14 @@ const Analytics = () => {
                 Profit Margins by Product
                 <span className="text-xs font-normal text-muted-foreground ml-2">(Based on Cost vs Selling Price)</span>
               </CardTitle>
+              <div className="mt-3">
+                <Input
+                  placeholder="Search by product name or SKU…"
+                  value={marginSearch}
+                  onChange={(e) => setMarginSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               {loading || topProducts.length === 0 ? (
@@ -1610,6 +1618,7 @@ const Analytics = () => {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
+                        <th className="text-left py-3 px-2 font-medium text-muted-foreground">SKU</th>
                         <th className="text-right py-3 px-2 font-medium text-muted-foreground">Units Sold</th>
                         <th className="text-right py-3 px-2 font-medium text-muted-foreground">Revenue</th>
                         <th className="text-right py-3 px-2 font-medium text-muted-foreground">Profit</th>
@@ -1618,45 +1627,67 @@ const Analytics = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {topProducts.map((product, index) => {
-                        const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
-                        return (
-                          <tr key={index} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-2">
-                              <span className="font-medium truncate max-w-[200px] inline-block">{product.name}</span>
-                            </td>
-                            <td className="text-right py-3 px-2 tabular-nums">{product.quantity}</td>
-                            <td className="text-right py-3 px-2 tabular-nums text-primary font-medium">${product.revenue.toFixed(2)}</td>
-                            <td className="text-right py-3 px-2 tabular-nums text-green-500 font-medium">${product.profit.toFixed(2)}</td>
-                            <td className="text-right py-3 px-2">
-                              <Badge 
-                                variant={margin > 40 ? "default" : margin > 20 ? "secondary" : "outline"}
-                                className={cn(
-                                  "font-medium",
-                                  margin > 40 && "bg-green-500 hover:bg-green-600",
-                                  margin <= 20 && margin > 0 && "text-amber-600 border-amber-300",
-                                  margin <= 0 && "text-red-600 border-red-300"
-                                )}
-                              >
-                                {margin.toFixed(1)}%
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                                <div 
+                      {(() => {
+                        const q = marginSearch.trim().toLowerCase();
+                        const source = q ? allSoldProducts : topProducts;
+                        const filtered = q
+                          ? source.filter(p =>
+                              p.name.toLowerCase().includes(q) ||
+                              (p.sku || "").toLowerCase().includes(q) ||
+                              (p.supplier_sku || "").toLowerCase().includes(q)
+                            )
+                          : source;
+                        if (filtered.length === 0) {
+                          return (
+                            <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No products match "{marginSearch}"</td></tr>
+                          );
+                        }
+                        return filtered.map((product, index) => {
+                          const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+                          return (
+                            <tr
+                              key={product.sku || product.name + index}
+                              className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                              onClick={() => setHistoryProduct(product)}
+                            >
+                              <td className="py-3 px-2">
+                                <span className="font-medium truncate max-w-[200px] inline-block">{product.name}</span>
+                              </td>
+                              <td className="py-3 px-2 font-mono text-xs text-muted-foreground">{product.sku || "—"}</td>
+                              <td className="text-right py-3 px-2 tabular-nums">{product.quantity}</td>
+                              <td className="text-right py-3 px-2 tabular-nums text-primary font-medium">${product.revenue.toFixed(2)}</td>
+                              <td className="text-right py-3 px-2 tabular-nums text-green-500 font-medium">${product.profit.toFixed(2)}</td>
+                              <td className="text-right py-3 px-2">
+                                <Badge
+                                  variant={margin > 40 ? "default" : margin > 20 ? "secondary" : "outline"}
                                   className={cn(
-                                    "h-full rounded-full transition-all",
-                                    margin > 40 ? "bg-green-500" : margin > 20 ? "bg-primary" : margin > 0 ? "bg-amber-500" : "bg-red-500"
+                                    "font-medium",
+                                    margin > 40 && "bg-green-500 hover:bg-green-600",
+                                    margin <= 20 && margin > 0 && "text-amber-600 border-amber-300",
+                                    margin <= 0 && "text-red-600 border-red-300"
                                   )}
-                                  style={{ width: `${Math.min(Math.max(margin, 0), 100)}%` }}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                                >
+                                  {margin.toFixed(1)}%
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-2">
+                                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={cn(
+                                      "h-full rounded-full transition-all",
+                                      margin > 40 ? "bg-green-500" : margin > 20 ? "bg-primary" : margin > 0 ? "bg-amber-500" : "bg-red-500"
+                                    )}
+                                    style={{ width: `${Math.min(Math.max(margin, 0), 100)}%` }}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
+
                   {/* Summary Row */}
                   <div className="mt-4 p-3 rounded-lg bg-muted/50 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
