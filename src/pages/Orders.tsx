@@ -646,7 +646,7 @@ const Orders = () => {
           description: "It will sync automatically when you're back online.",
         });
         setIsDialogOpen(false);
-        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
+        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
         setDetectedReferrer(null);
         setOrderItems([]);
         return;
@@ -802,7 +802,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
-      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
+      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
       setDetectedReferrer(null);
       setOrderItems([]);
       fetchData();
