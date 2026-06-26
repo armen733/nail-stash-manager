@@ -7,7 +7,7 @@
 const routeImports: Record<string, () => Promise<unknown>> = {
   '/': () => import('@/pages/Index'),
   '/products': () => import('@/pages/Products'),
-  '/low-stock': () => import('@/pages/LowStock'),
+  
   '/salons': () => import('@/pages/Salons'),
   '/orders': () => import('@/pages/Orders'),
   '/users': () => import('@/pages/Users'),
