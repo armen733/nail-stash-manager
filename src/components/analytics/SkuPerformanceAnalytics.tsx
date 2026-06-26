@@ -495,8 +495,11 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
 
       {/* SKU table */}
       <Card className="shadow-[var(--shadow-card)]">
-        <CardHeader className="p-4">
+        <CardHeader className="p-4 flex flex-row items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">SKU performance</CardTitle>
+          <Badge variant="secondary" className="shrink-0">
+            Showing {filtered.length} of {rows.length} SKUs
+          </Badge>
         </CardHeader>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
@@ -582,6 +585,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                   ))}
                 </tbody>
               </table>
+              <div className="border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                Showing {filtered.length} SKU{filtered.length === 1 ? "" : "s"} from {rows.length} loaded product SKU{rows.length === 1 ? "" : "s"}.
+              </div>
             </div>
           )}
         </CardContent>
