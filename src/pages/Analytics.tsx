@@ -255,6 +255,14 @@ const Analytics = () => {
 
       if (ordersError) throw ordersError;
 
+      // Fetch period expenses total for Net Profit card
+      const { data: expensesData } = await supabase
+        .from("business_expenses")
+        .select("amount")
+        .gte("expense_date", periodStart.toISOString().split("T")[0])
+        .lte("expense_date", periodEnd.toISOString().split("T")[0]);
+      setPeriodExpensesTotal((expensesData || []).reduce((s, e: any) => s + Number(e.amount || 0), 0));
+
       // Fetch previous period for comparison (with created_at for daily breakdown)
       const { data: previousOrders } = await supabase
         .from("orders")
