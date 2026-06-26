@@ -102,6 +102,21 @@ const Analytics = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [chartVisibility, setChartVisibility] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("analytics-chart-visibility");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { revenueTrend: true, cumulative: true, avgOrder: true, ordersVolume: true };
+  });
+  const toggleChart = (key: string) => {
+    setChartVisibility((prev) => {
+      const next = { ...prev, [key]: !(prev[key] ?? true) };
+      try { localStorage.setItem("analytics-chart-visibility", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+  const isChartVisible = (key: string) => chartVisibility[key] ?? true;
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
