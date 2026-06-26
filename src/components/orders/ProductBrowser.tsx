@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Search, Plus, Minus, Package } from "lucide-react";
+import { Search, Plus, Minus, Package, FilterX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -121,12 +122,15 @@ export function ProductBrowser({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedVariantType, setSelectedVariantType] = useState<string>("all");
+  const [filtersHidden, setFiltersHidden] = useState(false);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrollTop = useRef(0);
   const { data: categoryVariantTypes = [] } = useCategoryVariantTypes();
-  
+
   const categories = useMemo(() => getCategories(categoryVariantTypes), [categoryVariantTypes]);
-  const variantTypes = useMemo(() => 
-    getVariantTypesForCategory(categoryVariantTypes, selectedCategory), 
+  const variantTypes = useMemo(() =>
+    getVariantTypesForCategory(categoryVariantTypes, selectedCategory),
     [categoryVariantTypes, selectedCategory]
   );
 
@@ -136,27 +140,52 @@ export function ProductBrowser({
     setSelectedVariantType("all");
   };
 
+  // Hide filters when scrolling down, show when scrolling up
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const viewport = container.querySelector("[data-radix-scroll-area-viewport]");
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      const scrollTop = (viewport as HTMLElement).scrollTop;
+      const threshold = 40;
+      if (scrollTop > lastScrollTop.current && scrollTop > threshold) {
+        setFiltersHidden(true);
+      } else if (scrollTop < lastScrollTop.current) {
+        setFiltersHidden(false);
+      }
+      lastScrollTop.current = scrollTop <= 0 ? 0 : scrollTop;
+    };
+
+    viewport.addEventListener("scroll", handleScroll, { passive: true });
+    return () => viewport.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Ref to measure the filter bar for accurate hide distance
+  const filterBarRef = useRef<HTMLDivElement>(null);
+
   const filteredProducts = useMemo(() => {
     let filtered = products;
-    
+
     // Filter by category
     if (selectedCategory !== "all") {
       filtered = filtered.filter(p => p.category === selectedCategory);
     }
-    
+
     // Filter by variant type (checks bit_type first, falls back to product name)
     if (selectedVariantType !== "all") {
       const variantLower = selectedVariantType.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.bit_type?.toLowerCase().includes(variantLower) ||
         p.name.toLowerCase().includes(variantLower)
       );
     }
-    
+
     // Filter by search term - search across multiple fields
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(term) ||
         p.sku.toLowerCase().includes(term) ||
         p.supplier_sku?.toLowerCase().includes(term) ||
@@ -168,7 +197,7 @@ export function ProductBrowser({
         p.variant_name?.toLowerCase().includes(term)
       );
     }
-    
+
     return filtered;
   }, [products, searchTerm, selectedCategory, selectedVariantType]);
 
@@ -177,56 +206,79 @@ export function ProductBrowser({
   };
 
   return (
-    <div className="space-y-3 flex flex-col flex-1 min-h-0">
-      {/* Filters Row */}
-      <div className="flex gap-2">
-        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(cat => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        <Select value={selectedVariantType} onValueChange={setSelectedVariantType}>
-          <SelectTrigger className="flex-1">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {variantTypes.map(type => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="flex flex-col flex-1 min-h-0 relative">
+      {/* Floating filter reveal button (visible only when filters hidden) */}
+      {filtersHidden && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="absolute top-2 right-2 z-20 h-8 px-2 gap-1 shadow-sm"
+          onClick={() => setFiltersHidden(false)}
+        >
+          <FilterX className="h-3.5 w-3.5" />
+          Filters
+        </Button>
+      )}
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search products..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-8"
-        />
-      </div>
+      {/* Product Grid with filters placed inside the scrollable area */}
+      <ScrollArea className="flex-1 min-h-[200px] pr-3" ref={scrollContainerRef}>
+        {/* Sticky filter bar that hides on scroll down */}
+        <div
+          ref={filterBarRef}
+          className={cn(
+            "sticky top-0 z-10 bg-background transition-transform duration-300 ease-out space-y-2 pb-1 mb-2",
+            filtersHidden && "-translate-y-[120%]"
+          )}
+        >
+          {/* Filters Row */}
+          <div className="flex gap-2">
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      {/* Product Grid with optimized rendering */}
-      <ScrollArea className="flex-1 min-h-[200px] pr-3">
+            <Select value={selectedVariantType} onValueChange={setSelectedVariantType}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {variantTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 gap-2">
           {filteredProducts.map((product) => {
             const quantity = getItemQuantity(product.id);
             const isLowStock = (product.stock_on_hand ?? 0) <= 5;
             const isOutOfStock = (product.stock_on_hand ?? 0) === 0;
             const productImage = product.product_images?.[0]?.image_url || product.image_url;
-            
+
             return (
-              <div 
+              <div
                 key={product.id}
                 className={`
                   relative p-2 rounded-lg border bg-card flex flex-col
@@ -267,9 +319,9 @@ export function ProductBrowser({
                 {/* Add/Remove Controls */}
                 <div className="mt-auto">
                   {quantity === 0 ? (
-                    <Button 
+                    <Button
                       type="button"
-                      size="sm" 
+                      size="sm"
                       className="w-full h-8"
                       onClick={() => onAddProduct(product)}
                       disabled={isOutOfStock}
@@ -279,10 +331,10 @@ export function ProductBrowser({
                     </Button>
                   ) : (
                     <div className="flex items-center justify-between gap-1">
-                      <Button 
+                      <Button
                         type="button"
-                        size="icon" 
-                        variant="outline" 
+                        size="icon"
+                        variant="outline"
                         className="h-8 w-8"
                         onClick={() => {
                           if (quantity === 1) {
@@ -295,10 +347,10 @@ export function ProductBrowser({
                         <Minus className="h-3 w-3" />
                       </Button>
                       <span className="font-semibold text-sm">{quantity}</span>
-                      <Button 
+                      <Button
                         type="button"
-                        size="icon" 
-                        variant="outline" 
+                        size="icon"
+                        variant="outline"
                         className="h-8 w-8"
                         onClick={() => onUpdateQuantity(product.id, quantity + 1)}
                       >

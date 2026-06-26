@@ -1283,286 +1283,7 @@ Thank you!`;
           </SheetHeader>
           <form onSubmit={handleCreateOrder} className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 flex flex-col">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="profile_id">Customer (optional)</Label>
-                  <Popover open={customerComboOpen} onOpenChange={setCustomerComboOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={customerComboOpen}
-                        className="w-full justify-between font-normal"
-                      >
-                        {formData.profile_id
-                          ? profiles.find(p => p.id === formData.profile_id)?.full_name || "Walk-in (no customer)"
-                          : "Walk-in (no customer)"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search customers..." />
-                        <CommandList>
-                          <CommandEmpty>No customer found.</CommandEmpty>
-                          <CommandGroup>
-                            <CommandItem
-                              value="no-customer"
-                              onSelect={() => {
-                                setFormData({ ...formData, profile_id: "" });
-                                setCustomerComboOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", !formData.profile_id ? "opacity-100" : "opacity-0")} />
-                              <span className="text-muted-foreground">Walk-in (no customer)</span>
-                            </CommandItem>
-                            <CommandItem
-                              value="add-new-customer"
-                              onSelect={() => {
-                                setShowNewUserForm(true);
-                                setCustomerComboOpen(false);
-                              }}
-                            >
-                              <Plus className="mr-2 h-4 w-4 text-primary" />
-                              <span className="text-primary">Add New Customer</span>
-                            </CommandItem>
-                            {profiles.map((profile) => (
-                              <CommandItem
-                                key={profile.id}
-                                value={`${profile.full_name} ${profile.email} ${profile.phone || ""}`}
-                                onSelect={() => {
-                                  setFormData({ ...formData, profile_id: profile.id });
-                                  setCustomerComboOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", formData.profile_id === profile.id ? "opacity-100" : "opacity-0")} />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{profile.full_name}</span>
-                                  <span className="text-xs text-muted-foreground">{profile.email}</span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
 
-                {/* Referrer auto-detection indicator */}
-                {detectedReferrer && (
-                  <div className="sm:col-span-2 bg-muted/50 border rounded-md p-3 flex items-center gap-2">
-                    <Share2 className="h-4 w-4 text-primary flex-shrink-0" />
-                    <div className="text-sm">
-                      <span className="font-medium">Referrer detected:</span>{" "}
-                      <span>{detectedReferrer.name}</span>{" "}
-                      <span className="text-muted-foreground">({detectedReferrer.commission_rate}% commission = ${(calculateTotal() * detectedReferrer.commission_rate / 100).toFixed(2)})</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="salon_id">Salon</Label>
-                  <Popover open={salonComboOpen} onOpenChange={setSalonComboOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={salonComboOpen}
-                        className="w-full justify-between font-normal"
-                      >
-                        {formData.salon_id
-                          ? salons.find(s => s.id === formData.salon_id)?.name || "No salon"
-                          : "No salon"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search salons..." />
-                        <CommandList>
-                          <CommandEmpty>No salon found.</CommandEmpty>
-                          <CommandGroup>
-                            <CommandItem
-                              value="no-salon"
-                              onSelect={() => {
-                                setFormData({ ...formData, salon_id: "" });
-                                setSalonComboOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", !formData.salon_id ? "opacity-100" : "opacity-0")} />
-                              <span className="text-muted-foreground">No salon</span>
-                            </CommandItem>
-                            <CommandItem
-                              value="add-new-salon"
-                              onSelect={() => {
-                                setShowNewSalonForm(true);
-                                setSalonComboOpen(false);
-                              }}
-                            >
-                              <Plus className="mr-2 h-4 w-4 text-primary" />
-                              <span className="text-primary">Add New Salon</span>
-                            </CommandItem>
-                            {salons.map((salon) => (
-                              <CommandItem
-                                key={salon.id}
-                                value={salon.name}
-                                onSelect={() => {
-                                  setFormData({ ...formData, salon_id: salon.id });
-                                  setSalonComboOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", formData.salon_id === salon.id ? "opacity-100" : "opacity-0")} />
-                                {salon.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              {showNewSalonForm && (
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-semibold">New Salon Details</Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewSalonForm(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_name">Salon Name *</Label>
-                      <Input
-                        id="new_salon_name"
-                        value={newSalonData.name}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, name: e.target.value })}
-                        placeholder="Beauty Salon"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_contact">Contact Name</Label>
-                      <Input
-                        id="new_salon_contact"
-                        value={newSalonData.contact_name}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, contact_name: e.target.value })}
-                        placeholder="Jane Doe"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_phone">Phone</Label>
-                      <Input
-                        id="new_salon_phone"
-                        type="tel"
-                        value={newSalonData.phone}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, phone: e.target.value })}
-                        placeholder="+1 234 567 8900"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_email">Email</Label>
-                      <Input
-                        id="new_salon_email"
-                        type="email"
-                        value={newSalonData.email}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, email: e.target.value })}
-                        placeholder="salon@example.com"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_address">Address</Label>
-                      <Input
-                        id="new_salon_address"
-                        value={newSalonData.address}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, address: e.target.value })}
-                        placeholder="123 Main St"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_salon_city">City</Label>
-                      <Input
-                        id="new_salon_city"
-                        value={newSalonData.city}
-                        onChange={(e) => setNewSalonData({ ...newSalonData, city: e.target.value })}
-                        placeholder="New York"
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    onClick={handleCreateInlineSalon}
-                    disabled={isCreatingSalon || !newSalonData.name}
-                  >
-                    {isCreatingSalon ? "Creating..." : "Create & Select Salon"}
-                  </Button>
-                </div>
-              )}
-
-              {showNewUserForm && (
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
-                  <div className="flex items-center justify-between">
-                    <Label className="font-semibold">New Customer Details</Label>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewUserForm(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="new_full_name">Name *</Label>
-                      <Input
-                        id="new_full_name"
-                        value={newUserData.full_name}
-                        onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_email">Email *</Label>
-                      <Input
-                        id="new_email"
-                        type="email"
-                        value={newUserData.email}
-                        onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                        placeholder="john@example.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_phone">Phone</Label>
-                      <Input
-                        id="new_phone"
-                        type="tel"
-                        value={newUserData.phone}
-                        onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
-                        placeholder="+1 234 567 8900"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="new_address">Address *</Label>
-                      <Input
-                        id="new_address"
-                        value={newUserData.address}
-                        onChange={(e) => setNewUserData({ ...newUserData, address: e.target.value })}
-                        placeholder="123 Main St"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    onClick={handleCreateInlineUser}
-                    disabled={isCreatingUser || !newUserData.full_name || !newUserData.email || !newUserData.address}
-                  >
-                    {isCreatingUser ? "Creating..." : "Create & Select Customer"}
-                  </Button>
-                </div>
-              )}
 
               <div className="space-y-3 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between">
@@ -1791,8 +1512,16 @@ Thank you!`;
                 </Collapsible>
               )}
 
-              {/* Collapsible order details (Tech / Notes / Discount) */}
-              <Collapsible open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+              {/* Collapsible order details (Customer / Salon / Tech / Notes / Discount) */}
+              <Collapsible open={showOrderDetails || showNewUserForm || showNewSalonForm} onOpenChange={(open) => {
+                if (!open) {
+                  setShowOrderDetails(false);
+                  setShowNewUserForm(false);
+                  setShowNewSalonForm(false);
+                } else {
+                  setShowOrderDetails(true);
+                }
+              }}>
                 <CollapsibleTrigger asChild>
                   <Button
                     type="button"
@@ -1803,17 +1532,156 @@ Thank you!`;
                     <span className="flex items-center gap-2">
                       <Settings className="h-3.5 w-3.5" />
                       Order details
-                      {(formData.technician_name || formData.notes || formData.discount) && (
+                      {(formData.profile_id || formData.salon_id || formData.technician_name || formData.notes || formData.discount) && (
                         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                          {(formData.technician_name ? 1 : 0) + (formData.notes ? 1 : 0) + (formData.discount ? 1 : 0)} set
+                          {(formData.profile_id ? 1 : 0) + (formData.salon_id ? 1 : 0) + (formData.technician_name ? 1 : 0) + (formData.notes ? 1 : 0) + (formData.discount ? 1 : 0)} set
                         </Badge>
                       )}
                     </span>
-                    <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showOrderDetails && "rotate-90")} />
+                    <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", (showOrderDetails || showNewUserForm || showNewSalonForm) && "rotate-90")} />
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pt-2">
+                <CollapsibleContent className="pt-2 space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="profile_id" className="text-xs text-muted-foreground">Customer (optional)</Label>
+                      <Popover open={customerComboOpen} onOpenChange={setCustomerComboOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={customerComboOpen}
+                            className="w-full justify-between font-normal h-9 text-sm"
+                          >
+                            {formData.profile_id
+                              ? profiles.find(p => p.id === formData.profile_id)?.full_name || "Walk-in (no customer)"
+                              : "Walk-in (no customer)"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search customers..." />
+                            <CommandList>
+                              <CommandEmpty>No customer found.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="no-customer"
+                                  onSelect={() => {
+                                    setFormData({ ...formData, profile_id: "" });
+                                    setCustomerComboOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", !formData.profile_id ? "opacity-100" : "opacity-0")} />
+                                  <span className="text-muted-foreground">Walk-in (no customer)</span>
+                                </CommandItem>
+                                <CommandItem
+                                  value="add-new-customer"
+                                  onSelect={() => {
+                                    setShowNewUserForm(true);
+                                    setCustomerComboOpen(false);
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4 text-primary" />
+                                  <span className="text-primary">Add New Customer</span>
+                                </CommandItem>
+                                {profiles.map((profile) => (
+                                  <CommandItem
+                                    key={profile.id}
+                                    value={`${profile.full_name} ${profile.email} ${profile.phone || ""}`}
+                                    onSelect={() => {
+                                      setFormData({ ...formData, profile_id: profile.id });
+                                      setCustomerComboOpen(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", formData.profile_id === profile.id ? "opacity-100" : "opacity-0")} />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{profile.full_name}</span>
+                                      <span className="text-xs text-muted-foreground">{profile.email}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="salon_id" className="text-xs text-muted-foreground">Salon</Label>
+                      <Popover open={salonComboOpen} onOpenChange={setSalonComboOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={salonComboOpen}
+                            className="w-full justify-between font-normal h-9 text-sm"
+                          >
+                            {formData.salon_id
+                              ? salons.find(s => s.id === formData.salon_id)?.name || "No salon"
+                              : "No salon"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search salons..." />
+                            <CommandList>
+                              <CommandEmpty>No salon found.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="no-salon"
+                                  onSelect={() => {
+                                    setFormData({ ...formData, salon_id: "" });
+                                    setSalonComboOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", !formData.salon_id ? "opacity-100" : "opacity-0")} />
+                                  <span className="text-muted-foreground">No salon</span>
+                                </CommandItem>
+                                <CommandItem
+                                  value="add-new-salon"
+                                  onSelect={() => {
+                                    setShowNewSalonForm(true);
+                                    setSalonComboOpen(false);
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4 text-primary" />
+                                  <span className="text-primary">Add New Salon</span>
+                                </CommandItem>
+                                {salons.map((salon) => (
+                                  <CommandItem
+                                    key={salon.id}
+                                    value={salon.name}
+                                    onSelect={() => {
+                                      setFormData({ ...formData, salon_id: salon.id });
+                                      setSalonComboOpen(false);
+                                    }}
+                                  >
+                                    <Check className={cn("mr-2 h-4 w-4", formData.salon_id === salon.id ? "opacity-100" : "opacity-0")} />
+                                    {salon.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Referrer auto-detection indicator */}
+                    {detectedReferrer && (
+                      <div className="sm:col-span-2 bg-muted/50 border rounded-md p-3 flex items-center gap-2">
+                        <Share2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="text-sm">
+                          <span className="font-medium">Referrer detected:</span>{" "}
+                          <span>{detectedReferrer.name}</span>{" "}
+                          <span className="text-muted-foreground">({detectedReferrer.commission_rate}% commission = ${(calculateTotal() * detectedReferrer.commission_rate / 100).toFixed(2)})</span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-1">
                       <Label htmlFor="technician_name" className="text-xs text-muted-foreground">Technician</Label>
                       <Input
@@ -1862,6 +1730,146 @@ Thank you!`;
                       </div>
                     </div>
                   </div>
+
+                  {showNewSalonForm && (
+                    <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-semibold">New Salon Details</Label>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewSalonForm(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_name">Salon Name *</Label>
+                          <Input
+                            id="new_salon_name"
+                            value={newSalonData.name}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, name: e.target.value })}
+                            placeholder="Beauty Salon"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_contact">Contact Name</Label>
+                          <Input
+                            id="new_salon_contact"
+                            value={newSalonData.contact_name}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, contact_name: e.target.value })}
+                            placeholder="Jane Doe"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_phone">Phone</Label>
+                          <Input
+                            id="new_salon_phone"
+                            type="tel"
+                            value={newSalonData.phone}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, phone: e.target.value })}
+                            placeholder="+1 234 567 8900"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_email">Email</Label>
+                          <Input
+                            id="new_salon_email"
+                            type="email"
+                            value={newSalonData.email}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, email: e.target.value })}
+                            placeholder="salon@example.com"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_address">Address</Label>
+                          <Input
+                            id="new_salon_address"
+                            value={newSalonData.address}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, address: e.target.value })}
+                            placeholder="123 Main St"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_salon_city">City</Label>
+                          <Input
+                            id="new_salon_city"
+                            value={newSalonData.city}
+                            onChange={(e) => setNewSalonData({ ...newSalonData, city: e.target.value })}
+                            placeholder="New York"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        onClick={handleCreateInlineSalon}
+                        disabled={isCreatingSalon || !newSalonData.name}
+                      >
+                        {isCreatingSalon ? "Creating..." : "Create & Select Salon"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {showNewUserForm && (
+                    <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-semibold">New Customer Details</Label>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewUserForm(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="new_full_name">Name *</Label>
+                          <Input
+                            id="new_full_name"
+                            value={newUserData.full_name}
+                            onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
+                            placeholder="John Doe"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_email">Email *</Label>
+                          <Input
+                            id="new_email"
+                            type="email"
+                            value={newUserData.email}
+                            onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                            placeholder="john@example.com"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_phone">Phone</Label>
+                          <Input
+                            id="new_phone"
+                            type="tel"
+                            value={newUserData.phone}
+                            onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
+                            placeholder="+1 234 567 8900"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="new_address">Address *</Label>
+                          <Input
+                            id="new_address"
+                            value={newUserData.address}
+                            onChange={(e) => setNewUserData({ ...newUserData, address: e.target.value })}
+                            placeholder="123 Main St"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        onClick={handleCreateInlineUser}
+                        disabled={isCreatingUser || !newUserData.full_name || !newUserData.email || !newUserData.address}
+                      >
+                        {isCreatingUser ? "Creating..." : "Create & Select Customer"}
+                      </Button>
+                    </div>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
 
