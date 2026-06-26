@@ -94,13 +94,23 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, periodStart.getTime(), periodEnd.getTime()]);
 
-  const total = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+  const filteredExpenses = useMemo(
+    () => (subscriptionsOnly ? expenses.filter((e) => e.is_recurring) : expenses),
+    [expenses, subscriptionsOnly]
+  );
+
+  const total = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0), [filteredExpenses]);
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const e of expenses) map[e.category] = (map[e.category] || 0) + Number(e.amount || 0);
+    for (const e of filteredExpenses) map[e.category] = (map[e.category] || 0) + Number(e.amount || 0);
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
+  }, [filteredExpenses]);
+
+  const recurringTotal = useMemo(
+    () => expenses.filter((e) => e.is_recurring).reduce((s, e) => s + Number(e.amount || 0), 0),
+    [expenses]
+  );
 
   const handleAdd = async () => {
     const finalCat = category === "Other" && customCategory.trim() ? customCategory.trim() : category;
