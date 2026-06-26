@@ -394,6 +394,7 @@ const Analytics = () => {
 
           const category = product.category;
           const productName = product.name;
+          const productSku = product.sku || productName;
 
           // Category sales
           if (!categoryMap[category]) {
@@ -402,9 +403,11 @@ const Analytics = () => {
           categoryMap[category].revenue += item.line_total;
           categoryMap[category].quantity += item.quantity;
 
-          // Product performance
-          if (!productMap[productName]) {
-            productMap[productName] = {
+          // Product performance — keyed by SKU so each variant is its own row
+          // (matches the SKUs tab). Previously this keyed by name, which merged
+          // every DDB### into a single misleading row.
+          if (!productMap[productSku]) {
+            productMap[productSku] = {
               name: productName,
               revenue: 0,
               quantity: 0,
@@ -414,13 +417,13 @@ const Analytics = () => {
               supplier_sku: product.supplier_sku || ""
             };
           }
-          productMap[productName].revenue += item.line_total;
-          productMap[productName].quantity += item.quantity;
-          
+          productMap[productSku].revenue += item.line_total;
+          productMap[productSku].quantity += item.quantity;
+
           // Use cost_usd if available, fallback to wholesale_price_usd
           const cost = product.cost_usd || product.wholesale_price_usd || 0;
           const profit = (item.unit_price - cost) * item.quantity;
-          productMap[productName].profit += profit;
+          productMap[productSku].profit += profit;
         });
       });
 
