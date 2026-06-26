@@ -1309,6 +1309,7 @@ const Analytics = () => {
             </ChartContainer>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Tabs for different analytics sections */}
