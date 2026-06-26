@@ -58,6 +58,10 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
+  const [subscriptionsOnly, setSubscriptionsOnly] = useState(false);
+
 
   const toggle = () => {
     setOpen((p) => {
