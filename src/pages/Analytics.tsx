@@ -1318,6 +1318,9 @@ const Analytics = () => {
           )}
         </Card>
 
+        {/* Business Expenses */}
+        <ExpensesSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
+
         {/* Average Order Value Trend */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader
