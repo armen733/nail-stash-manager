@@ -125,19 +125,31 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
             )}
 
             <div className="border rounded-lg overflow-hidden">
-              <div className="px-3 py-2 bg-muted/50 text-xs font-medium">Order History ({rows.length})</div>
+              <div className="px-3 py-2 bg-muted/50 text-xs font-medium flex items-center justify-between">
+                <span>Order History ({rows.length})</span>
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_110px_90px_90px] gap-2 px-3 py-1.5 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wide border-b">
+                <span>Buyer</span>
+                <span className="text-center">Date</span>
+                <span className="text-center">Qty</span>
+                <span className="text-right">Profit</span>
+              </div>
               <div className="divide-y max-h-[400px] overflow-y-auto">
                 {rows.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">No sales yet</div>
                 ) : rows.map((r, i) => (
-                  <div key={i} className="px-3 py-2 flex items-center justify-between gap-2 text-sm hover:bg-muted/30">
+                  <div key={i} className="grid grid-cols-[minmax(0,1fr)_110px_90px_90px] gap-2 px-3 py-2 text-sm hover:bg-muted/30 items-center">
                     <div className="min-w-0">
                       <div className="font-medium truncate">{r.customer}</div>
-                      <div className="text-xs text-muted-foreground">{r.date ? format(new Date(r.date), "MMM dd, yyyy") : ""}</div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-sm">{r.quantity} × ${r.unit_price.toFixed(2)}</div>
-                      <div className="text-xs text-green-500">+${r.profit.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground text-center whitespace-nowrap">
+                      {r.date ? format(new Date(r.date), "MMM dd, yyyy") : "—"}
+                    </div>
+                    <div className="text-sm text-center whitespace-nowrap">
+                      {r.quantity} × ${r.unit_price.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-green-500 text-right whitespace-nowrap">
+                      +${r.profit.toFixed(2)}
                     </div>
                   </div>
                 ))}
