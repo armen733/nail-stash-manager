@@ -404,10 +404,22 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
             </Badge>
             {totals.bad > 0 && (
-              <Badge variant="destructive">{totals.bad} flagged</Badge>
+              <Badge
+                variant="destructive"
+                className="cursor-pointer hover:ring-2 hover:ring-destructive/40"
+                onClick={() => setMode("bad")}
+              >
+                {totals.bad} flagged
+              </Badge>
             )}
             {totals.neverSold > 0 && (
-              <Badge variant="outline">{totals.neverSold} never sold</Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:ring-2 hover:ring-foreground/30"
+                onClick={() => setMode("never")}
+              >
+                {totals.neverSold} never sold
+              </Badge>
             )}
             <span className="ml-auto">Period: {periodDays} day{periodDays === 1 ? "" : "s"}</span>
           </div>
