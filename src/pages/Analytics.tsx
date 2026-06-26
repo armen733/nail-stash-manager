@@ -17,6 +17,8 @@ import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
 import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
 import { ExpensesSection } from "@/components/analytics/ExpensesSection";
+import LowStock from "@/pages/LowStock";
+import { AlertTriangle } from "lucide-react";
 import { ProductionOrdersSection } from "@/components/analytics/ProductionOrdersSection";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
