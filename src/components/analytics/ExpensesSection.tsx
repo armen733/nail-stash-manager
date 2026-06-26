@@ -156,12 +156,12 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
     const rangeText = `${format(periodStart, "MMM d, yyyy")} - ${format(periodEnd, "MMM d, yyyy")}`;
     const esc = (s: string) =>
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const rows = expenses
+    const rows = filteredExpenses
       .map(
         (e) => `
           <tr>
             <td>${format(new Date(e.expense_date), "MMM d, yyyy")}</td>
-            <td>${esc(e.category)}</td>
+            <td>${esc(e.category)}${e.is_recurring ? ' <span style="font-size:10px;color:#7c3aed">(recurring ' + esc(e.recurring_frequency || "monthly") + ')</span>' : ""}</td>
             <td>${esc(e.description || "")}</td>
             <td style="text-align:right">$${Number(e.amount).toFixed(2)}</td>
           </tr>`
@@ -173,7 +173,8 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
           <tr><td>${esc(cat)}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`
       )
       .join("");
-    const html = `<!doctype html><html><head><title>Expenses Report</title>
+    const title = subscriptionsOnly ? "Subscriptions Report" : "Expenses Report";
+    const html = `<!doctype html><html><head><title>${title}</title>
       <style>
         @page { margin: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 24px; color: #111; }
@@ -185,8 +186,8 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
         th { background: #f3f4f6; text-align: left; }
         tfoot td { font-weight: 600; background: #fafafa; }
       </style></head><body>
-      <h1>Expenses Report</h1>
-      <div class="sub">${rangeText} · ${expenses.length} entries · Total $${total.toFixed(2)}</div>
+      <h1>${title}</h1>
+      <div class="sub">${rangeText} · ${filteredExpenses.length} entries · Total $${total.toFixed(2)}${subscriptionsOnly ? "" : ` · Recurring $${recurringTotal.toFixed(2)}`}</div>
 
       <h2>By category</h2>
       <table>
