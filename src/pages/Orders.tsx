@@ -633,6 +633,7 @@ const Orders = () => {
           subtotal,
           tax,
           total,
+          discount_amount: discountAmount > 0 ? discountAmount : null,
           customer_label: customerLabel,
           items: orderItems.map((it) => {
             const p = products.find((pp) => pp.id === it.product_id);
