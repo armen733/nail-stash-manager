@@ -86,6 +86,7 @@ const Analytics = () => {
   const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
+  const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom" | "specific-month">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
