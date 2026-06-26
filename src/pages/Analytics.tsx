@@ -1255,6 +1255,7 @@ const Analytics = () => {
               </ChartContainer>
             )}
           </CardContent>
+          )}
         </Card>
       </div>
 
