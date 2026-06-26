@@ -42,11 +42,13 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
         .eq("id", productId)
         .maybeSingle();
       setStock(prod?.stock_on_hand ?? null);
-      const cost = Number(prod?.cost_usd || 0);
-      const resell = Number(prod?.wholesale_price_usd || prod?.price_usd || 0);
-      setUnitCost(cost || null);
-      setUnitPrice(resell || null);
-      setUnitMargin(resell > 0 ? ((resell - cost) / resell) * 100 : null);
+      const costUsd = Number(prod?.cost_usd || 0);
+      const resellPrice = Number(prod?.wholesale_price_usd || prod?.price_usd || 0);
+      // Fallback to wholesale_price as cost only for profit calc when cost is missing
+      const effectiveCost = costUsd || Number(prod?.wholesale_price_usd || 0);
+      setUnitCost(costUsd || null);
+      setUnitPrice(resellPrice || null);
+      setUnitMargin(resellPrice > 0 ? ((resellPrice - effectiveCost) / resellPrice) * 100 : null);
 
       // Collect all product ids that share this SKU (siblings/variants)
       let productIds: string[] = [productId];
