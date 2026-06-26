@@ -70,6 +70,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             .from("orders")
             .select("id")
             .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"])
+            .order("created_at", { ascending: true })
             .range(from, from + PAGE - 1);
 
             if (start) query = query.gte("created_at", start.toISOString());
@@ -128,6 +129,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           const { data, error } = await supabase
             .from("products")
             .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at")
+            .order("sku", { ascending: true })
             .range(from, from + PAGE - 1);
           if (error) throw error;
           if (!data || data.length === 0) break;
