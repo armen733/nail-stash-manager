@@ -107,7 +107,7 @@ const Analytics = () => {
       const saved = localStorage.getItem("analytics-chart-visibility");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { revenueTrend: true, cumulative: true, avgOrder: true, ordersVolume: true };
+    return { revenueTrend: false, cumulative: false, avgOrder: false, ordersVolume: false };
   });
   const toggleChart = (key: string) => {
     setChartVisibility((prev) => {
