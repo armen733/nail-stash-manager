@@ -272,14 +272,6 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       b.total_units_sold - a.total_units_sold ||
       a.sku.localeCompare(b.sku);
 
-    const badRank = (r: SkuRow) => {
-      if (r.badges.includes("never-sold")) return 0;
-      if (r.badges.includes("no-period-sales")) return 1;
-      if (r.badges.includes("near-zero")) return 2;
-      if (r.badges.includes("slow-mover")) return 3;
-      return 4;
-    };
-
     const base = rows
       .filter((r) => category === ALL || r.category === category)
       .filter((r) => variant === ALL || r.variant === variant)
@@ -293,11 +285,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       return base.filter((r) => r.units_sold > 0).sort(sortTopFirst);
     }
     if (mode === "bad") {
-      return base
-        .filter((r) => r.is_bad_performer)
-        .sort((a, b) => badRank(a) - badRank(b) || a.units_sold - b.units_sold || b.stock - a.stock || a.sku.localeCompare(b.sku));
+      // Bad performers sorted by most-sold first so you can see the strongest
+      // SKUs that are still flagged.
+      return base.filter((r) => r.is_bad_performer).sort(sortTopFirst);
     }
     return base;
+
   }, [rows, category, variant, mode, search]);
 
   const totals = useMemo(
