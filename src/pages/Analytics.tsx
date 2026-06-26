@@ -104,19 +104,19 @@ const Analytics = () => {
   const [showMap, setShowMap] = useState(false);
   const [chartVisibility, setChartVisibility] = useState<Record<string, boolean>>(() => {
     try {
-      const saved = localStorage.getItem("analytics-chart-visibility");
+      const saved = localStorage.getItem("analytics-chart-visibility-v2");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return { revenueTrend: true, cumulative: true, avgOrder: true, ordersVolume: true };
+    return { revenueTrend: false, cumulative: false, avgOrder: false, ordersVolume: false };
   });
   const toggleChart = (key: string) => {
     setChartVisibility((prev) => {
-      const next = { ...prev, [key]: !(prev[key] ?? true) };
-      try { localStorage.setItem("analytics-chart-visibility", JSON.stringify(next)); } catch {}
+      const next = { ...prev, [key]: !(prev[key] ?? false) };
+      try { localStorage.setItem("analytics-chart-visibility-v2", JSON.stringify(next)); } catch {}
       return next;
     });
   };
-  const isChartVisible = (key: string) => chartVisibility[key] ?? true;
+  const isChartVisible = (key: string) => chartVisibility[key] ?? false;
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
