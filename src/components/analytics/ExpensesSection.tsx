@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Plus, Receipt, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Printer, Receipt, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -128,6 +128,63 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
     setExpenses((p) => p.filter((e) => e.id !== id));
   };
 
+  const handlePrint = () => {
+    const rangeText = `${format(periodStart, "MMM d, yyyy")} - ${format(periodEnd, "MMM d, yyyy")}`;
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const rows = expenses
+      .map(
+        (e) => `
+          <tr>
+            <td>${format(new Date(e.expense_date), "MMM d, yyyy")}</td>
+            <td>${esc(e.category)}</td>
+            <td>${esc(e.description || "")}</td>
+            <td style="text-align:right">$${Number(e.amount).toFixed(2)}</td>
+          </tr>`
+      )
+      .join("");
+    const catRows = byCategory
+      .map(
+        ([cat, amt]) => `
+          <tr><td>${esc(cat)}</td><td style="text-align:right">$${amt.toFixed(2)}</td></tr>`
+      )
+      .join("");
+    const html = `<!doctype html><html><head><title>Expenses Report</title>
+      <style>
+        @page { margin: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 24px; color: #111; }
+        h1 { margin: 0 0 4px; font-size: 22px; }
+        h2 { font-size: 14px; margin: 18px 0 6px; }
+        .sub { color: #555; margin-bottom: 16px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; vertical-align: top; }
+        th { background: #f3f4f6; text-align: left; }
+        tfoot td { font-weight: 600; background: #fafafa; }
+      </style></head><body>
+      <h1>Expenses Report</h1>
+      <div class="sub">${rangeText} · ${expenses.length} entries · Total $${total.toFixed(2)}</div>
+
+      <h2>By category</h2>
+      <table>
+        <thead><tr><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${catRows || `<tr><td colspan="2" style="text-align:center;color:#888">—</td></tr>`}</tbody>
+        <tfoot><tr><td>Total</td><td style="text-align:right">$${total.toFixed(2)}</td></tr></tfoot>
+      </table>
+
+      <h2>All entries</h2>
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;color:#888">No entries</td></tr>`}</tbody>
+        <tfoot><tr><td colspan="3">Total</td><td style="text-align:right">$${total.toFixed(2)}</td></tr></tfoot>
+      </table>
+      <script>window.onload = () => { window.print(); }</script>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+  };
+
   return (
     <Card className="shadow-[var(--shadow-card)]">
       <CardHeader
@@ -220,10 +277,15 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
               </div>
             </div>
           ) : (
-            <Button onClick={() => setAdding(true)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Add expense
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setAdding(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add expense
+              </Button>
+              <Button variant="outline" onClick={handlePrint} disabled={expenses.length === 0}>
+                <Printer className="h-4 w-4 mr-2" /> Print
+              </Button>
+            </div>
           )}
 
           {/* List */}

@@ -831,6 +831,62 @@ export type Database = {
           },
         ]
       }
+      production_orders: {
+        Row: {
+          amount_spent: number
+          attachments: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          order_date: string
+          product_id: string | null
+          product_name: string | null
+          quantity: number
+          sku: string | null
+          supplier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_spent?: number
+          attachments?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity?: number
+          sku?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_spent?: number
+          attachments?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          product_id?: string | null
+          product_name?: string | null
+          quantity?: number
+          sku?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           bit_type: string | null
