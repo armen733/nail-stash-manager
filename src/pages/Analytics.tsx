@@ -89,7 +89,8 @@ const Analytics = () => {
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
   const [allSoldProducts, setAllSoldProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
-  const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
+  const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number; profit: number }[]>([]);
+  const [salonRevenueView, setSalonRevenueView] = useState<"revenue" | "profit">("revenue");
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
@@ -393,6 +394,7 @@ const Analytics = () => {
       const categoryMap: Record<string, CategorySales> = {};
       const productMap: Record<string, ProductPerformance> = {};
       const customerMap: Record<string, CustomerInsight> = {};
+      const salonProfitMap: Record<string, number> = {};
 
       orders?.forEach((order) => {
         // Customer insights
@@ -446,6 +448,10 @@ const Analytics = () => {
           const cost = product.cost_usd || product.wholesale_price_usd || 0;
           const profit = (item.unit_price - cost) * item.quantity;
           productMap[productSku].profit += profit;
+
+          // Track profit per salon
+          const sKey = (order as any).salon_id || "direct";
+          salonProfitMap[sKey] = (salonProfitMap[sKey] || 0) + profit;
         });
       });
 
@@ -456,19 +462,25 @@ const Analytics = () => {
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5));
 
       // Calculate salon stats
-      const salonMap: Record<string, { name: string; revenue: number; orderCount: number }> = {};
+      const salonMap: Record<string, { name: string; revenue: number; orderCount: number; key: string }> = {};
       orders?.forEach(order => {
         const salonName = (order as any).salons?.name || "Walk-in / Direct";
         const key = (order as any).salon_id || "direct";
         if (!salonMap[key]) {
-          salonMap[key] = { name: salonName, revenue: 0, orderCount: 0 };
+          salonMap[key] = { name: salonName, revenue: 0, orderCount: 0, key };
         }
         salonMap[key].revenue += order.total || 0;
         salonMap[key].orderCount += 1;
       });
       setSalonStats(
         Object.values(salonMap)
-          .map(s => ({ ...s, avgOrder: s.orderCount > 0 ? s.revenue / s.orderCount : 0 }))
+          .map(s => ({
+            name: s.name,
+            revenue: s.revenue,
+            orderCount: s.orderCount,
+            avgOrder: s.orderCount > 0 ? s.revenue / s.orderCount : 0,
+            profit: salonProfitMap[s.key] || 0,
+          }))
           .sort((a, b) => b.revenue - a.revenue)
       );
 
@@ -2114,10 +2126,23 @@ const Analytics = () => {
                 <p className="text-xs text-muted-foreground">Active Salons</p>
               </CardContent>
             </Card>
-            <Card className="shadow-[var(--shadow-card)]">
+            <Card
+              className="shadow-[var(--shadow-card)] cursor-pointer hover:bg-muted/30 transition"
+              onClick={() => setSalonRevenueView(salonRevenueView === "revenue" ? "profit" : "revenue")}
+              title="Click to toggle Revenue / Clean Profit"
+            >
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">${salonStats.reduce((s, x) => s + x.revenue, 0).toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">Total Salon Revenue</p>
+                {salonRevenueView === "revenue" ? (
+                  <>
+                    <div className="text-2xl font-bold">${salonStats.reduce((s, x) => s + x.revenue, 0).toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total Salon Revenue · click for profit</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-green-500">${salonStats.reduce((s, x) => s + x.profit, 0).toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total Clean Profit · click for revenue</p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card className="shadow-[var(--shadow-card)]">
@@ -2220,10 +2245,19 @@ const Analytics = () => {
               ) : (
                 <div className="space-y-3">
                   {salonStats.map((salon, index) => {
-                    const maxRevenue = salonStats[0]?.revenue || 1;
-                    const percentage = (salon.revenue / maxRevenue) * 100;
+                    const showProfit = salonRevenueView === "profit";
+                    const value = showProfit ? salon.profit : salon.revenue;
+                    const maxVal = showProfit
+                      ? Math.max(...salonStats.map(s => s.profit), 1)
+                      : (salonStats[0]?.revenue || 1);
+                    const percentage = Math.max(0, (value / maxVal) * 100);
                     return (
-                      <div key={index} className="space-y-1">
+                      <div
+                        key={index}
+                        className="space-y-1 cursor-pointer"
+                        onClick={() => setSalonRevenueView(showProfit ? "revenue" : "profit")}
+                        title="Click to toggle Revenue / Clean Profit"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="text-xs w-6 h-6 flex items-center justify-center rounded-full p-0">
@@ -2232,13 +2266,17 @@ const Analytics = () => {
                             <span className="text-sm font-medium truncate max-w-[150px] sm:max-w-none">{salon.name}</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-semibold text-primary">${salon.revenue.toFixed(2)}</span>
-                            <span className="text-xs text-muted-foreground ml-2">({salon.orderCount} orders)</span>
+                            <span className={`text-sm font-semibold ${showProfit ? "text-green-500" : "text-primary"}`}>
+                              ${value.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {showProfit ? "profit" : `(${salon.orderCount} orders)`}
+                            </span>
                           </div>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
                           <div
-                            className="bg-primary rounded-full h-2 transition-all duration-500"
+                            className={`${showProfit ? "bg-green-500" : "bg-primary"} rounded-full h-2 transition-all duration-500`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
