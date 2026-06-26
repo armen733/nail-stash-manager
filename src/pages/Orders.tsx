@@ -1774,56 +1774,79 @@ Thank you!`;
                 </div>
               )}
 
-              {/* Compact order details row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="technician_name" className="text-[10px] uppercase tracking-wide text-muted-foreground">Tech</Label>
-                  <Input
-                    id="technician_name"
-                    value={formData.technician_name}
-                    onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
-                    placeholder="Tech name..."
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="notes" className="text-[10px] uppercase tracking-wide text-muted-foreground">Notes</Label>
-                  <Input
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Notes..."
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="space-y-1 col-span-2 sm:col-span-2">
-                  <Label htmlFor="discount" className="text-[10px] uppercase tracking-wide text-muted-foreground">Discount</Label>
-                  <div className="flex gap-1">
-                    <Input
-                      id="discount"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.discount}
-                      onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                      placeholder="0"
-                      className="h-8 text-sm"
-                    />
-                    <div className="flex rounded-md border overflow-hidden h-8 flex-shrink-0">
-                      <button
-                        type="button"
-                        className={`px-2 text-xs ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                        onClick={() => setFormData({ ...formData, discountType: "amount" })}
-                      >$</button>
-                      <button
-                        type="button"
-                        className={`px-2 text-xs ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                        onClick={() => setFormData({ ...formData, discountType: "percent" })}
-                      >%</button>
+              {/* Collapsible order details (Tech / Notes / Discount) */}
+              <Collapsible open={showOrderDetails} onOpenChange={setShowOrderDetails}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 text-xs justify-between"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Settings className="h-3.5 w-3.5" />
+                      Order details
+                      {(formData.technician_name || formData.notes || formData.discount) && (
+                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                          {(formData.technician_name ? 1 : 0) + (formData.notes ? 1 : 0) + (formData.discount ? 1 : 0)} set
+                        </Badge>
+                      )}
+                    </span>
+                    <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showOrderDetails && "rotate-90")} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="technician_name" className="text-xs text-muted-foreground">Technician</Label>
+                      <Input
+                        id="technician_name"
+                        value={formData.technician_name}
+                        onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
+                        placeholder="Tech name..."
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="notes" className="text-xs text-muted-foreground">Notes</Label>
+                      <Input
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="Order notes..."
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <Label htmlFor="discount" className="text-xs text-muted-foreground">Discount</Label>
+                      <div className="flex gap-1">
+                        <Input
+                          id="discount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.discount}
+                          onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                          placeholder="0"
+                          className="h-9 text-sm"
+                        />
+                        <div className="flex rounded-md border overflow-hidden h-9 flex-shrink-0">
+                          <button
+                            type="button"
+                            className={`px-3 text-xs ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                            onClick={() => setFormData({ ...formData, discountType: "amount" })}
+                          >$</button>
+                          <button
+                            type="button"
+                            className={`px-3 text-xs ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                            onClick={() => setFormData({ ...formData, discountType: "percent" })}
+                          >%</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </CollapsibleContent>
+              </Collapsible>
 
               {/* Cart summary row */}
               {orderItems.length > 0 && (() => {
