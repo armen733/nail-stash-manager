@@ -447,6 +447,10 @@ const Analytics = () => {
           const cost = product.cost_usd || product.wholesale_price_usd || 0;
           const profit = (item.unit_price - cost) * item.quantity;
           productMap[productSku].profit += profit;
+
+          // Track profit per salon
+          const sKey = (order as any).salon_id || "direct";
+          salonProfitMap[sKey] = (salonProfitMap[sKey] || 0) + profit;
         });
       });
 
