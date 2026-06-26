@@ -394,6 +394,7 @@ const Analytics = () => {
       const categoryMap: Record<string, CategorySales> = {};
       const productMap: Record<string, ProductPerformance> = {};
       const customerMap: Record<string, CustomerInsight> = {};
+      const salonProfitMap: Record<string, number> = {};
 
       orders?.forEach((order) => {
         // Customer insights
