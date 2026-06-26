@@ -977,24 +977,32 @@ const Analytics = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
               Revenue & Orders Trend
             </CardTitle>
-            <ToggleGroup 
-              type="single" 
-              value={chartType} 
-              onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
-              className="bg-muted/50 rounded-lg p-1"
-            >
-              <ToggleGroupItem value="area" aria-label="Area chart" className="h-8 w-8 p-0">
-                <AreaChartIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="line" aria-label="Line chart" className="h-8 w-8 p-0">
-                <LineChartIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="bar" aria-label="Bar chart" className="h-8 w-8 p-0">
-                <BarChart2 className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+            <div className="flex items-center gap-2">
+              {isChartVisible("revenueTrend") && (
+                <ToggleGroup 
+                  type="single" 
+                  value={chartType} 
+                  onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
+                  className="bg-muted/50 rounded-lg p-1"
+                >
+                  <ToggleGroupItem value="area" aria-label="Area chart" className="h-8 w-8 p-0">
+                    <AreaChartIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="line" aria-label="Line chart" className="h-8 w-8 p-0">
+                    <LineChartIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="bar" aria-label="Bar chart" className="h-8 w-8 p-0">
+                    <BarChart2 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("revenueTrend")} aria-label={isChartVisible("revenueTrend") ? "Hide chart" : "Show chart"}>
+                {isChartVisible("revenueTrend") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </CardHeader>
+        {isChartVisible("revenueTrend") && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">Loading...</div>
