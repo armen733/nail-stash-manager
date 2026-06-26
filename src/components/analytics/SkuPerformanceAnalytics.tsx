@@ -196,12 +196,27 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           const lifetimeLowCutoff = percentile(lifetimeSold, 0.25);
           const oldEnough = Math.min(14, periodDays);
 
+          // Absolute floor: any SKU selling at a real clip is NEVER bad,
+          // regardless of how its category peers performed.
+          const perDay = periodDays > 0 ? 1 / periodDays : 0;
+          const ABSOLUTE_GOOD_PERIOD = Math.max(10, Math.ceil(periodDays * 0.15)); // ~1 every ~7 days
+          const ABSOLUTE_GOOD_LIFETIME = 25;
+
           group.forEach((g) => {
             const isOldEnough = g.product_age_days >= oldEnough;
+            const sellsWell =
+              g.units_sold >= ABSOLUTE_GOOD_PERIOD ||
+              g.total_units_sold >= ABSOLUTE_GOOD_LIFETIME;
+
             const neverSold = g.total_units_sold === 0 && isOldEnough;
-            const noPeriodSales = g.total_units_sold > 0 && g.units_sold === 0 && isOldEnough;
-            const nearZero = g.units_sold > 0 && g.units_sold <= currentLowCutoff && currentSold.length >= 5;
+            const noPeriodSales = g.total_units_sold > 0 && g.units_sold === 0 && isOldEnough && !sellsWell;
+            const nearZero =
+              !sellsWell &&
+              g.units_sold > 0 &&
+              g.units_sold <= currentLowCutoff &&
+              currentSold.length >= 5;
             const slowVsGroup =
+              !sellsWell &&
               group.length >= 8 &&
               g.total_units_sold > 0 &&
               g.total_units_sold <= lifetimeLowCutoff &&
@@ -210,7 +225,8 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             const stockRisk =
               g.stock > 0 &&
               (g.days_of_stock === null || g.days_of_stock > 150) &&
-              g.units_sold <= currentMedian;
+              g.units_sold <= currentMedian &&
+              !sellsWell;
 
             if (g.product_age_days < oldEnough && g.total_units_sold === 0) g.badges.push("new");
             if (neverSold) g.badges.push("never-sold");
@@ -219,8 +235,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             if (!neverSold && slowVsGroup && !g.badges.includes("near-zero")) g.badges.push("slow-mover");
             if (stockRisk && !neverSold && !noPeriodSales) g.badges.push("stock-risk");
 
-            g.is_bad_performer = neverSold || noPeriodSales || nearZero || slowVsGroup;
+            g.is_bad_performer = !sellsWell && (neverSold || noPeriodSales || nearZero || slowVsGroup);
           });
+
         });
 
         setRows(built);
