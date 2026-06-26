@@ -23,8 +23,11 @@ interface SkuRow {
   variant: string | null;
   units_sold: number;
   revenue: number;
+  profit: number;
   total_units_sold: number;
   total_revenue: number;
+  total_profit: number;
+  cost_usd: number;
   stock: number;
   reorder_level: number;
   velocity_per_day: number;
@@ -128,7 +131,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         for (let from = 0; ; from += PAGE) {
           const { data, error } = await supabase
             .from("products")
-            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at")
+            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at, cost_usd")
             .order("sku", { ascending: true })
             .range(from, from + PAGE - 1);
           if (error) throw error;
@@ -146,6 +149,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           const productAgeDays = p.created_at
             ? Math.max(0, differenceInDays(periodEnd, new Date(p.created_at)))
             : periodDays;
+          const cost = Number(p.cost_usd ?? 0);
           return {
             productId: p.id,
             sku: p.sku || "",
@@ -154,8 +158,11 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             variant: p.variant_name || p.bit_type || null,
             units_sold: s.units,
             revenue: s.revenue,
+            profit: s.revenue - s.units * cost,
             total_units_sold: lifetime.units,
             total_revenue: lifetime.revenue,
+            total_profit: lifetime.revenue - lifetime.units * cost,
+            cost_usd: cost,
             stock,
             reorder_level: Number(p.reorder_level ?? 0),
             velocity_per_day: velocity,
@@ -282,11 +289,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         (a, r) => ({
           units: a.units + r.units_sold,
           revenue: a.revenue + r.revenue,
+          profit: a.profit + r.profit,
           bad: a.bad + (r.is_bad_performer ? 1 : 0),
           neverSold: a.neverSold + (r.badges.includes("never-sold") ? 1 : 0),
           selling: a.selling + (r.units_sold > 0 ? 1 : 0),
         }),
-        { units: 0, revenue: 0, bad: 0, neverSold: 0, selling: 0 },
+        { units: 0, revenue: 0, profit: 0, bad: 0, neverSold: 0, selling: 0 },
       ),
     [filtered],
   );
@@ -373,6 +381,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             <Badge variant="secondary">{totals.selling} selling</Badge>
             <Badge variant="secondary">{totals.units.toLocaleString()} units</Badge>
             <Badge variant="secondary">${totals.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} revenue</Badge>
+            <Badge variant="secondary" className={totals.profit >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}>
+              ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+            </Badge>
             {totals.bad > 0 && (
               <Badge variant="destructive">{totals.bad} flagged</Badge>
             )}
@@ -483,6 +494,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                     <th className="text-left p-2 hidden md:table-cell">Variant</th>
                       <th className="text-right p-2">Sold</th>
                     <th className="text-right p-2 hidden sm:table-cell">Revenue</th>
+                    <th className="text-right p-2 hidden md:table-cell">Profit</th>
                     <th className="text-right p-2 hidden sm:table-cell">Stock</th>
                     <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
                     <th className="text-left p-2">Flags</th>
@@ -504,6 +516,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                         )}
                       </td>
                       <td className="p-2 text-right hidden sm:table-cell">${r.revenue.toFixed(0)}</td>
+                      <td className={`p-2 text-right hidden md:table-cell ${r.profit < 0 ? "text-destructive" : r.profit > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                        {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="p-2 text-right hidden sm:table-cell">{r.stock}</td>
                       <td className="p-2 text-right hidden md:table-cell">
                         {r.days_of_stock === null
