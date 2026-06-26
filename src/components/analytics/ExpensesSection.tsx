@@ -324,7 +324,11 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
               ))
             )}
           </div>
+
+          {/* Nested: Production Orders */}
+          <ProductionOrdersSection periodStart={periodStart} periodEnd={periodEnd} />
         </CardContent>
+
       )}
     </Card>
   );
