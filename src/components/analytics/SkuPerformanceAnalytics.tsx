@@ -53,7 +53,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
   const [category, setCategory] = useState<string>(ALL);
   const [variant, setVariant] = useState<string>(ALL);
   const [search, setSearch] = useState("");
-  const [mode, setMode] = useState<"all" | "top" | "bad">("all");
+  const [mode, setMode] = useState<"all" | "top" | "bad" | "never">("all");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
 
@@ -289,6 +289,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       // SKUs that are still flagged.
       return base.filter((r) => r.is_bad_performer).sort(sortTopFirst);
     }
+    if (mode === "never") {
+      // Never-sold SKUs only.
+      return base
+        .filter((r) => r.badges.includes("never-sold"))
+        .sort((a, b) => b.product_age_days - a.product_age_days || a.sku.localeCompare(b.sku));
+    }
     return base;
 
   }, [rows, category, variant, mode, search]);
@@ -372,7 +378,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             <ToggleGroup
               type="single"
               value={mode}
-              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad")}
+              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never")}
               className="justify-start"
             >
               <ToggleGroupItem value="all" className="text-xs">
@@ -383,6 +389,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               </ToggleGroupItem>
               <ToggleGroupItem value="bad" className="text-xs">
                 <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Bad
+              </ToggleGroupItem>
+              <ToggleGroupItem value="never" className="text-xs">
+                <Snowflake className="h-3.5 w-3.5 mr-1" /> Never
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -395,10 +404,22 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
             </Badge>
             {totals.bad > 0 && (
-              <Badge variant="destructive">{totals.bad} flagged</Badge>
+              <Badge
+                variant="destructive"
+                className="cursor-pointer hover:ring-2 hover:ring-destructive/40"
+                onClick={() => setMode("bad")}
+              >
+                {totals.bad} flagged
+              </Badge>
             )}
             {totals.neverSold > 0 && (
-              <Badge variant="outline">{totals.neverSold} never sold</Badge>
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:ring-2 hover:ring-foreground/30"
+                onClick={() => setMode("never")}
+              >
+                {totals.neverSold} never sold
+              </Badge>
             )}
             <span className="ml-auto">Period: {periodDays} day{periodDays === 1 ? "" : "s"}</span>
           </div>
