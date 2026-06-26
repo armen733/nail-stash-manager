@@ -54,22 +54,29 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
         }
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("order_items")
-        .select("quantity, unit_price, line_total, orders!inner(id, created_at, customer_name, salon_name)")
+        .select("quantity, unit_price, line_total, orders!inner(id, created_at, customer_name, salon_id, salons(name))")
         .in("product_id", productIds)
         .order("created_at", { foreignTable: "orders", ascending: false });
 
+      if (error) {
+        console.error("Product history fetch error:", error);
+      }
 
-      const mapped: HistoryRow[] = (data || []).map((it: any) => ({
-        date: it.orders?.created_at || "",
-        order_id: it.orders?.id || "",
-        customer: it.orders?.salon_name || it.orders?.customer_name || "—",
-        quantity: it.quantity,
-        unit_price: Number(it.unit_price),
-        line_total: Number(it.line_total),
-        profit: (Number(it.unit_price) - cost) * it.quantity,
-      }));
+      const mapped: HistoryRow[] = (data || []).map((it: any) => {
+        const salons = it.orders?.salons;
+        const salonName = (salons && !Array.isArray(salons) ? salons.name : Array.isArray(salons) ? salons[0]?.name : null) || it.orders?.customer_name || "—";
+        return {
+          date: it.orders?.created_at || "",
+          order_id: it.orders?.id || "",
+          customer: salonName,
+          quantity: it.quantity,
+          unit_price: Number(it.unit_price),
+          line_total: Number(it.line_total),
+          profit: (Number(it.unit_price) - cost) * it.quantity,
+        };
+      });
 
       const totalUnits = mapped.reduce((s, r) => s + r.quantity, 0);
       const totalRevenue = mapped.reduce((s, r) => s + r.line_total, 0);
@@ -86,7 +93,7 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
       setRows(mapped);
       setLoading(false);
     })();
-  }, [open, productId]);
+  }, [open, productId, sku]);
 
   const margin = stats.totalRevenue > 0 ? (stats.totalProfit / stats.totalRevenue) * 100 : 0;
 
