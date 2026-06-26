@@ -28,6 +28,9 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [stats, setStats] = useState({ totalUnits: 0, totalRevenue: 0, totalProfit: 0, orderCount: 0, firstSold: "", lastSold: "" });
   const [stock, setStock] = useState<number | null>(null);
+  const [unitCost, setUnitCost] = useState<number | null>(null);
+  const [unitPrice, setUnitPrice] = useState<number | null>(null);
+  const [unitMargin, setUnitMargin] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open || !productId) return;
@@ -35,11 +38,17 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
       setLoading(true);
       const { data: prod } = await supabase
         .from("products")
-        .select("stock_on_hand, cost_usd, wholesale_price_usd, sku")
+        .select("stock_on_hand, cost_usd, wholesale_price_usd, price_usd, sku")
         .eq("id", productId)
         .maybeSingle();
       setStock(prod?.stock_on_hand ?? null);
-      const cost = (prod?.cost_usd as number) || (prod?.wholesale_price_usd as number) || 0;
+      const costUsd = Number(prod?.cost_usd || 0);
+      const resellPrice = Number(prod?.wholesale_price_usd || prod?.price_usd || 0);
+      // Fallback to wholesale_price as cost only for profit calc when cost is missing
+      const effectiveCost = costUsd || Number(prod?.wholesale_price_usd || 0);
+      setUnitCost(costUsd || null);
+      setUnitPrice(resellPrice || null);
+      setUnitMargin(resellPrice > 0 ? ((resellPrice - effectiveCost) / resellPrice) * 100 : null);
 
       // Collect all product ids that share this SKU (siblings/variants)
       let productIds: string[] = [productId];
@@ -74,7 +83,7 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
           quantity: it.quantity,
           unit_price: Number(it.unit_price),
           line_total: Number(it.line_total),
-          profit: (Number(it.unit_price) - cost) * it.quantity,
+          profit: (Number(it.unit_price) - effectiveCost) * it.quantity,
         };
       });
 
@@ -116,6 +125,13 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
               <StatCard icon={<DollarSign className="h-4 w-4" />} label="Revenue" value={`$${stats.totalRevenue.toFixed(2)}`} color="text-primary" />
               <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Profit" value={`$${stats.totalProfit.toFixed(2)}`} sub={`${margin.toFixed(0)}% margin`} color="text-green-500" />
               <StatCard icon={<Calendar className="h-4 w-4" />} label="Orders" value={stats.orderCount.toString()} sub={stock !== null ? `${stock} in stock` : undefined} />
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard icon={<DollarSign className="h-4 w-4" />} label="Unit Cost" value={unitCost !== null ? `$${unitCost.toFixed(2)}` : "—"} color="text-rose-500" />
+              <StatCard icon={<DollarSign className="h-4 w-4" />} label="Resell Price" value={unitPrice !== null ? `$${unitPrice.toFixed(2)}` : "—"} color="text-primary" />
+              <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Unit Profit" value={unitCost !== null && unitPrice !== null ? `$${(unitPrice - unitCost).toFixed(2)}` : "—"} color="text-green-500" />
+              <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Unit Margin" value={unitMargin !== null ? `${unitMargin.toFixed(1)}%` : "—"} sub={unitMargin !== null && unitMargin < 20 ? "low" : undefined} color={unitMargin !== null && unitMargin < 20 ? "text-amber-500" : "text-green-500"} />
             </div>
 
             {stats.firstSold && (
