@@ -167,16 +167,6 @@ const App = () => (
               }
             />
             <Route
-              path="/low-stock"
-              element={
-                <ManagerRoute>
-                  <AppLayout>
-                    <LowStock />
-                  </AppLayout>
-                </ManagerRoute>
-              }
-            />
-            <Route
               path="/warehouse"
               element={
                 <ManagerRoute>
