@@ -1335,11 +1335,9 @@ const Analytics = () => {
           )}
         </Card>
 
-        {/* Business Expenses */}
+        {/* Business Expenses (includes Production Orders) */}
         <ExpensesSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
 
-        {/* Production / Supplier Orders */}
-        <ProductionOrdersSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
 
         {/* Average Order Value Trend */}
         <Card className="shadow-[var(--shadow-card)]">
