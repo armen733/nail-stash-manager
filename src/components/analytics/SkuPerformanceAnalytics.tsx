@@ -131,7 +131,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         for (let from = 0; ; from += PAGE) {
           const { data, error } = await supabase
             .from("products")
-            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at")
+            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at, cost_usd")
             .order("sku", { ascending: true })
             .range(from, from + PAGE - 1);
           if (error) throw error;
@@ -149,6 +149,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           const productAgeDays = p.created_at
             ? Math.max(0, differenceInDays(periodEnd, new Date(p.created_at)))
             : periodDays;
+          const cost = Number(p.cost_usd ?? 0);
           return {
             productId: p.id,
             sku: p.sku || "",
@@ -157,8 +158,11 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             variant: p.variant_name || p.bit_type || null,
             units_sold: s.units,
             revenue: s.revenue,
+            profit: s.revenue - s.units * cost,
             total_units_sold: lifetime.units,
             total_revenue: lifetime.revenue,
+            total_profit: lifetime.revenue - lifetime.units * cost,
+            cost_usd: cost,
             stock,
             reorder_level: Number(p.reorder_level ?? 0),
             velocity_per_day: velocity,
