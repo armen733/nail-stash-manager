@@ -42,6 +42,7 @@ const PRESET_CATEGORIES = [
   "Office Supplies",
   "Travel",
   "Meals",
+  "Subscriptions",
   "Other",
 ];
 
