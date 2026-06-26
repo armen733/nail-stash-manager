@@ -398,12 +398,24 @@ const Analytics = () => {
       const salonProfitMap: Record<string, number> = {};
 
       orders?.forEach((order) => {
-        // Customer insights
-        const customerId = order.profile_id || order.customer_email || "unknown";
+        // Customer insights — group by profile, then email, then salon, then per-order
+        // (Walk-ins without any identifier should NOT be merged into one "Unknown" customer.)
+        const salonName = (order as any).salons?.name;
+        const salonId = (order as any).salon_id;
+        const customerId =
+          order.profile_id ||
+          (order.customer_email ? `email:${order.customer_email.toLowerCase()}` : null) ||
+          (salonId ? `salon:${salonId}` : null) ||
+          `order:${order.id}`;
+        const displayName =
+          order.customer_name ||
+          salonName ||
+          (order.customer_email ? order.customer_email.split("@")[0] : null) ||
+          "Walk-in";
         if (!customerMap[customerId]) {
           customerMap[customerId] = {
             id: customerId,
-            name: order.customer_name || "Unknown",
+            name: displayName,
             email: order.customer_email || "",
             totalSpent: 0,
             orderCount: 0
@@ -411,6 +423,7 @@ const Analytics = () => {
         }
         customerMap[customerId].totalSpent += order.total || 0;
         customerMap[customerId].orderCount += 1;
+
 
         order.order_items?.forEach((item: any) => {
           const product = item.products;
