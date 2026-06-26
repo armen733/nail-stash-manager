@@ -1711,28 +1711,70 @@ Thank you!`;
                   />
                 </div>
               </div>
-              {/* Cart summary row */}
-              {orderItems.length > 0 && (
-                <div className="flex items-center justify-between">
-                  <Button
-                    type="button"
-                    variant={showCartOnly ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setShowCartOnly(!showCartOnly)}
-                    className="gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
-                  </Button>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
-                    {taxRate > 0 && (
-                      <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${calculateTax(calculateTotal()).toFixed(2)}</div>
-                    )}
-                    <div className="font-bold text-lg">${(calculateTotal() + calculateTax(calculateTotal())).toFixed(2)}</div>
-                  </div>
+              {/* Discount row */}
+              <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="discount" className="text-xs">Discount</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    placeholder="0"
+                  />
                 </div>
-              )}
+                <div className="flex rounded-md border overflow-hidden h-10">
+                  <button
+                    type="button"
+                    className={`px-3 text-sm ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                    onClick={() => setFormData({ ...formData, discountType: "amount" })}
+                  >$</button>
+                  <button
+                    type="button"
+                    className={`px-3 text-sm ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                    onClick={() => setFormData({ ...formData, discountType: "percent" })}
+                  >%</button>
+                </div>
+              </div>
+              {/* Cart summary row */}
+              {orderItems.length > 0 && (() => {
+                const sub = calculateTotal();
+                const dInput = parseFloat(formData.discount) || 0;
+                const dAmt = Math.min(sub, Math.max(0, formData.discountType === "percent" ? sub * (dInput / 100) : dInput));
+                const discounted = Math.max(0, sub - dAmt);
+                const taxAmt = calculateTax(discounted);
+                return (
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant={showCartOnly ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setShowCartOnly(!showCartOnly)}
+                      className="gap-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
+                    </Button>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
+                      {dAmt > 0 && (
+                        <div className="text-xs text-emerald-500">
+                          Discount{formData.discountType === "percent" ? ` (${dInput}%)` : ""}: −${dAmt.toFixed(2)}
+                        </div>
+                      )}
+                      {taxRate > 0 && (
+                        <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${taxAmt.toFixed(2)}</div>
+                      )}
+                      {dAmt > 0 && (
+                        <div className="text-xs text-muted-foreground line-through">${(sub + calculateTax(sub)).toFixed(2)}</div>
+                      )}
+                      <div className="font-bold text-lg">${(discounted + taxAmt).toFixed(2)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
               
               {/* Actions */}
               <div className="flex justify-end gap-2">
