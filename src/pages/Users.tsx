@@ -747,6 +747,12 @@ export default function Users() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ContactCustomerDialog
+        open={!!contactTarget}
+        onOpenChange={(o) => !o && setContactTarget(null)}
+        customer={contactTarget}
+      />
     </div>
   );
 }
