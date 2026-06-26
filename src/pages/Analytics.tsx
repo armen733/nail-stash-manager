@@ -2245,10 +2245,19 @@ const Analytics = () => {
               ) : (
                 <div className="space-y-3">
                   {salonStats.map((salon, index) => {
-                    const maxRevenue = salonStats[0]?.revenue || 1;
-                    const percentage = (salon.revenue / maxRevenue) * 100;
+                    const showProfit = salonRevenueView === "profit";
+                    const value = showProfit ? salon.profit : salon.revenue;
+                    const maxVal = showProfit
+                      ? Math.max(...salonStats.map(s => s.profit), 1)
+                      : (salonStats[0]?.revenue || 1);
+                    const percentage = Math.max(0, (value / maxVal) * 100);
                     return (
-                      <div key={index} className="space-y-1">
+                      <div
+                        key={index}
+                        className="space-y-1 cursor-pointer"
+                        onClick={() => setSalonRevenueView(showProfit ? "revenue" : "profit")}
+                        title="Click to toggle Revenue / Clean Profit"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="text-xs w-6 h-6 flex items-center justify-center rounded-full p-0">
@@ -2257,13 +2266,17 @@ const Analytics = () => {
                             <span className="text-sm font-medium truncate max-w-[150px] sm:max-w-none">{salon.name}</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-semibold text-primary">${salon.revenue.toFixed(2)}</span>
-                            <span className="text-xs text-muted-foreground ml-2">({salon.orderCount} orders)</span>
+                            <span className={`text-sm font-semibold ${showProfit ? "text-green-500" : "text-primary"}`}>
+                              ${value.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {showProfit ? "profit" : `(${salon.orderCount} orders)`}
+                            </span>
                           </div>
                         </div>
                         <div className="w-full bg-muted rounded-full h-2">
                           <div
-                            className="bg-primary rounded-full h-2 transition-all duration-500"
+                            className={`${showProfit ? "bg-green-500" : "bg-primary"} rounded-full h-2 transition-all duration-500`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
