@@ -471,6 +471,18 @@ export default function Users() {
                             <Badge variant="secondary" className={`text-xs ${getTierColor(tier?.current_tier)}`}>
                               {getTierLabel(tier?.current_tier)}
                             </Badge>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 shrink-0"
+                              title="Send email or text"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContactTarget(user);
+                              }}
+                            >
+                              <Send className="h-4 w-4 text-primary" />
+                            </Button>
                             <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
                           </div>
                         </div>
