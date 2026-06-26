@@ -94,6 +94,11 @@ const Analytics = () => {
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const [showComparison, setShowComparison] = useState(true);
   const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
+  const [showStoresInsteadOfSalons, setShowStoresInsteadOfSalons] = useState(false);
+  const [activeSalonsCount, setActiveSalonsCount] = useState(0);
+  const [activeSupplyStoresCount, setActiveSupplyStoresCount] = useState(0);
+  const [supplyStoreStats, setSupplyStoreStats] = useState({ revenue: 0, profit: 0, units: 0 });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
