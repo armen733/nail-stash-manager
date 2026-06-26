@@ -1209,6 +1209,7 @@ const Analytics = () => {
               </ChartContainer>
             )}
           </CardContent>
+          )}
         </Card>
 
         {/* Average Order Value Trend */}
