@@ -1155,11 +1155,17 @@ const Analytics = () => {
         {/* Cumulative Revenue Line Chart */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              Cumulative Revenue
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                Cumulative Revenue
+              </CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("cumulative")} aria-label={isChartVisible("cumulative") ? "Hide chart" : "Show chart"}>
+                {isChartVisible("cumulative") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </CardHeader>
+          {isChartVisible("cumulative") && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {loading ? (
               <div className="h-[250px] flex items-center justify-center text-muted-foreground">Loading...</div>
