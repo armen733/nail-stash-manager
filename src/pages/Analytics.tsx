@@ -1639,16 +1639,24 @@ const Analytics = () => {
                   {topProducts.map((product, index) => {
                     const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
                     return (
-                      <div key={index} className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                        <div className="flex items-start justify-between gap-2 mb-2">
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setHistoryProduct(product)}
+                        className="text-left p-3 rounded-lg border bg-card hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
                           <p className="font-medium text-sm truncate flex-1">{product.name}</p>
-                          <Badge 
+                          <Badge
                             variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}
                             className="shrink-0"
                           >
                             {margin.toFixed(0)}%
                           </Badge>
                         </div>
+                        {product.sku && (
+                          <p className="text-[10px] font-mono text-muted-foreground mb-2 truncate">SKU: {product.sku}</p>
+                        )}
                         <div className="grid grid-cols-3 gap-2 text-center">
                           <div>
                             <p className="text-lg font-bold">{product.quantity}</p>
@@ -1663,7 +1671,7 @@ const Analytics = () => {
                             <p className="text-[10px] text-muted-foreground">Profit</p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
