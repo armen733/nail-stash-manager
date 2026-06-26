@@ -232,6 +232,49 @@ const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
     toast({ title: "Exported", description: `${filteredProducts.length} low stock products exported to CSV` });
   };
 
+  const printLowStock = () => {
+    const today = new Date().toLocaleDateString();
+    const rowsHtml = filteredProducts.map(p => {
+      const status = p.stock_on_hand === 0 ? "OUT" : "LOW";
+      return `<tr>
+        <td>${status}</td>
+        <td>${p.name}${p.variant_name ? ` <span style="color:#666">(${p.variant_name})</span>` : ""}</td>
+        <td>${p.sku}</td>
+        <td>${p.category}</td>
+        <td style="text-align:right">${p.stock_on_hand}</td>
+        <td style="text-align:right">${p.reorder_level}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${Math.max(0, p.reorder_level - p.stock_on_hand)}</td>
+        <td style="text-align:right">$${p.price_usd.toFixed(2)}</td>
+      </tr>`;
+    }).join("");
+    const html = `<!doctype html><html><head><title>Low Stock - ${today}</title>
+      <style>
+        @page { margin: 0 }
+        body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #111; }
+        h1 { margin: 0 0 4px; font-size: 20px; }
+        .sub { color:#666; font-size:12px; margin-bottom:16px; }
+        table { width:100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 6px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background:#f5f5f5; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+        tr:nth-child(even) td { background: #fafafa; }
+      </style></head><body>
+      <h1>Low Stock Report</h1>
+      <div class="sub">${today} · ${filteredProducts.length} items (${outOfStock.length} out of stock, ${lowStock.length} low)</div>
+      <table>
+        <thead><tr><th>Status</th><th>Product</th><th>SKU</th><th>Category</th><th style="text-align:right">Stock</th><th style="text-align:right">Reorder</th><th style="text-align:right">Short</th><th style="text-align:right">Price</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <script>window.onload=()=>{setTimeout(()=>window.print(),200)}</script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast({ title: "Popup blocked", description: "Allow popups to print.", variant: "destructive" });
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+  };
+
   // Get unique categories from low stock products
   const categories = [...new Set(products.map(p => p.category))].sort();
   
