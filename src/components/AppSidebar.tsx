@@ -22,12 +22,11 @@ import neraLogoDark from "@/assets/nera-logo-dark.png";
 import { prefetchRoute } from "@/lib/prefetch";
 
 // Manager-only routes
-const MANAGER_ONLY_ROUTES = ["/", "/products", "/low-stock", "/warehouse", "/salons", "/users", "/promotions", "/analytics", "/visit-tracker", "/referrals", "/audit-log"];
+const MANAGER_ONLY_ROUTES = ["/", "/products", "/warehouse", "/salons", "/users", "/promotions", "/analytics", "/visit-tracker", "/referrals", "/audit-log"];
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, managerOnly: true },
   { title: "Products", url: "/products", icon: Package, managerOnly: true },
-  { title: "Low Stock", url: "/low-stock", icon: AlertTriangle, managerOnly: true },
   { title: "Warehouse", url: "/warehouse", icon: Warehouse, managerOnly: true },
   { title: "Salons", url: "/salons", icon: Building2, managerOnly: true },
   { title: "Orders", url: "/orders", icon: ShoppingCart, managerOnly: false },
