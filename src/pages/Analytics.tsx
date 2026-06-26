@@ -100,7 +100,8 @@ const Analytics = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), "yyyy-MM"));
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const [showComparison, setShowComparison] = useState(true);
-  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  const [revenueView, setRevenueView] = useState<"revenue" | "profit" | "net">("revenue");
+  const [periodExpensesTotal, setPeriodExpensesTotal] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [showStoresInsteadOfSalons, setShowStoresInsteadOfSalons] = useState(false);
   const [activeSalonsCount, setActiveSalonsCount] = useState(0);
@@ -253,6 +254,14 @@ const Analytics = () => {
         .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
 
       if (ordersError) throw ordersError;
+
+      // Fetch period expenses total for Net Profit card
+      const { data: expensesData } = await supabase
+        .from("business_expenses")
+        .select("amount")
+        .gte("expense_date", periodStart.toISOString().split("T")[0])
+        .lte("expense_date", periodEnd.toISOString().split("T")[0]);
+      setPeriodExpensesTotal((expensesData || []).reduce((s, e: any) => s + Number(e.amount || 0), 0));
 
       // Fetch previous period for comparison (with created_at for daily breakdown)
       const { data: previousOrders } = await supabase
@@ -1004,26 +1013,33 @@ const Analytics = () => {
 
       {/* KPI Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title={showRevenueAsProfit ? "Clean Profit" : "Total Revenue"}
-          value={(showRevenueAsProfit ? totalProfit : totalRevenue).toFixed(2)} 
-          icon={DollarSign} 
-          change={showRevenueAsProfit ? undefined : revenueChange}
-          prefix="$"
-          previousValue={showRevenueAsProfit ? undefined : previousPeriodStats.revenue}
-          sparkData={dailyRevenue}
-          sparkKey="revenue"
-          sparkColor={showRevenueAsProfit ? "#22c55e" : "#10B981"}
-          onClick={() => setShowRevenueAsProfit(v => !v)}
-          highlight={showRevenueAsProfit}
-          description={
-            showRevenueAsProfit
-              ? (totalRevenue > 0
-                  ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
-                  : "Tap to see revenue")
-              : `$${totalProfit.toFixed(2)} profit · tap for profit`
-          }
-        />
+        {(() => {
+          const netProfit = totalProfit - periodExpensesTotal;
+          const cardValue = revenueView === "revenue" ? totalRevenue : revenueView === "profit" ? totalProfit : netProfit;
+          const cardTitle = revenueView === "revenue" ? "Total Revenue" : revenueView === "profit" ? "Clean Profit" : "Net Profit";
+          const nextLabel = revenueView === "revenue" ? "tap for profit" : revenueView === "profit" ? "tap for net (− expenses)" : "tap to see revenue";
+          const desc = revenueView === "revenue"
+            ? `$${totalProfit.toFixed(2)} profit · ${nextLabel}`
+            : revenueView === "profit"
+              ? (totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}% margin · ${nextLabel}` : nextLabel)
+              : `− $${periodExpensesTotal.toFixed(2)} expenses · ${nextLabel}`;
+          return (
+            <StatCard
+              title={cardTitle}
+              value={cardValue.toFixed(2)}
+              icon={DollarSign}
+              change={revenueView === "revenue" ? revenueChange : undefined}
+              prefix="$"
+              previousValue={revenueView === "revenue" ? previousPeriodStats.revenue : undefined}
+              sparkData={dailyRevenue}
+              sparkKey="revenue"
+              sparkColor={revenueView === "revenue" ? "#10B981" : "#22c55e"}
+              onClick={() => setRevenueView(v => v === "revenue" ? "profit" : v === "profit" ? "net" : "revenue")}
+              highlight={revenueView !== "revenue"}
+              description={desc}
+            />
+          );
+        })()}
         <StatCard 
           title="Total Orders" 
           value={totalOrders} 
