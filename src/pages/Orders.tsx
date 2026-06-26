@@ -176,6 +176,8 @@ const Orders = () => {
     profile_id: "",
     notes: "",
     technician_name: "",
+    discount: "",
+    discountType: "amount" as "amount" | "percent",
   });
 
   const [newUserData, setNewUserData] = useState({
