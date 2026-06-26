@@ -1692,54 +1692,133 @@ Thank you!`;
             </div>
 
             {/* Sticky footer */}
-            <div className="border-t px-6 py-4 bg-background space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="border-t px-6 py-3 bg-background space-y-3">
+              {/* Selected products summary - visible and compact */}
+              {orderItems.length > 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="technician_name" className="text-xs">Technician Name</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">Selected Products ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})</Label>
+                    <Button
+                      type="button"
+                      variant={showCartOnly ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setShowCartOnly(!showCartOnly)}
+                      className="h-7 text-xs gap-1 px-2"
+                    >
+                      <ShoppingCart className="h-3 w-3" />
+                      {showCartOnly ? "Back to products" : "Edit cart"}
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {orderItems.map((item) => {
+                      const product = products.find(p => p.id === item.product_id);
+                      if (!product) return null;
+                      const imageUrl = product.image_url || product.product_images?.[0]?.image_url;
+                      return (
+                        <div key={item.product_id} className="flex-shrink-0 w-[140px] bg-muted/50 rounded-lg p-2 border">
+                          <div className="h-16 w-full rounded bg-muted flex items-center justify-center overflow-hidden mb-1.5">
+                            {imageUrl ? (
+                              <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="text-xs font-medium truncate" title={product.name}>{product.name}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">{product.sku}</div>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center gap-0.5 bg-background rounded border">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  if (item.quantity <= 1) {
+                                    setOrderItems(orderItems.filter(i => i.product_id !== item.product_id));
+                                  } else {
+                                    setOrderItems(orderItems.map(i =>
+                                      i.product_id === item.product_id ? { ...i, quantity: i.quantity - 1 } : i
+                                    ));
+                                  }
+                                }}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-5 text-center text-xs font-semibold">{item.quantity}</span>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  setOrderItems(orderItems.map(i =>
+                                    i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
+                                  ));
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <span className="text-xs font-semibold">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Compact order details row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="technician_name" className="text-[10px] uppercase tracking-wide text-muted-foreground">Tech</Label>
                   <Input
                     id="technician_name"
                     value={formData.technician_name}
                     onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
-                    placeholder="Nail technician name..."
+                    placeholder="Tech name..."
+                    className="h-8 text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-xs">Notes</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="notes" className="text-[10px] uppercase tracking-wide text-muted-foreground">Notes</Label>
                   <Input
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Optional notes..."
+                    placeholder="Notes..."
+                    className="h-8 text-sm"
                   />
                 </div>
-              </div>
-              {/* Discount row */}
-              <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="discount" className="text-xs">Discount</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.discount}
-                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                    placeholder="0"
-                  />
+                <div className="space-y-1 col-span-2 sm:col-span-2">
+                  <Label htmlFor="discount" className="text-[10px] uppercase tracking-wide text-muted-foreground">Discount</Label>
+                  <div className="flex gap-1">
+                    <Input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discount}
+                      onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                      placeholder="0"
+                      className="h-8 text-sm"
+                    />
+                    <div className="flex rounded-md border overflow-hidden h-8 flex-shrink-0">
+                      <button
+                        type="button"
+                        className={`px-2 text-xs ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                        onClick={() => setFormData({ ...formData, discountType: "amount" })}
+                      >$</button>
+                      <button
+                        type="button"
+                        className={`px-2 text-xs ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                        onClick={() => setFormData({ ...formData, discountType: "percent" })}
+                      >%</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex rounded-md border overflow-hidden h-10">
-                  <button
-                    type="button"
-                    className={`px-3 text-sm ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                    onClick={() => setFormData({ ...formData, discountType: "amount" })}
-                  >$</button>
-                  <button
-                    type="button"
-                    className={`px-3 text-sm ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
-                    onClick={() => setFormData({ ...formData, discountType: "percent" })}
-                  >%</button>
-                </div>
               </div>
+
               {/* Cart summary row */}
               {orderItems.length > 0 && (() => {
                 const sub = calculateTotal();
@@ -1749,18 +1828,10 @@ Thank you!`;
                 const taxAmt = calculateTax(discounted);
                 return (
                   <div className="flex items-center justify-between">
-                    <Button
-                      type="button"
-                      variant={showCartOnly ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => setShowCartOnly(!showCartOnly)}
-                      className="gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
-                    </Button>
+                    <div className="text-sm text-muted-foreground">
+                      {orderItems.length} product(s)
+                    </div>
                     <div className="text-right">
-                      <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
                       {dAmt > 0 && (
                         <div className="text-xs text-emerald-500">
                           Discount{formData.discountType === "percent" ? ` (${dInput}%)` : ""}: −${dAmt.toFixed(2)}
@@ -1778,6 +1849,7 @@ Thank you!`;
                 );
               })()}
             </div>
+
 
             {/* Sticky Actions */}
             <div className="flex justify-end gap-2 px-6 py-3 border-t bg-background pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
