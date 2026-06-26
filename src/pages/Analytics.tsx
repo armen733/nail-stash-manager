@@ -21,6 +21,7 @@ import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,7 @@ const Analytics = () => {
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
+  const [productSearch, setProductSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom" | "specific-month">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -1627,57 +1629,78 @@ const Analytics = () => {
           {/* Product Performance Cards */}
           <Card className="shadow-[var(--shadow-card)]">
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg">Product Performance</CardTitle>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <CardTitle className="text-base sm:text-lg">Product Performance</CardTitle>
+                <Badge variant="secondary">{allSoldProducts.length} SKUs</Badge>
+              </div>
+              <div className="mt-3">
+                <Input
+                  placeholder="Search by name or SKU…"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="h-9"
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-              {loading || topProducts.length === 0 ? (
+              {loading || allSoldProducts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   {loading ? "Loading..." : "No data available"}
                 </div>
-              ) : (
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {topProducts.map((product, index) => {
-                    const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setHistoryProduct(product)}
-                        className="text-left p-3 rounded-lg border bg-card hover:bg-muted/40 hover:border-primary/40 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <p className="font-medium text-sm truncate flex-1">{product.name}</p>
-                          <Badge
-                            variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}
-                            className="shrink-0"
-                          >
-                            {margin.toFixed(0)}%
-                          </Badge>
-                        </div>
-                        {product.sku && (
-                          <p className="text-[10px] font-mono text-muted-foreground mb-2 truncate">SKU: {product.sku}</p>
-                        )}
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div>
-                            <p className="text-lg font-bold">{product.quantity}</p>
-                            <p className="text-[10px] text-muted-foreground">Units</p>
+              ) : (() => {
+                const q = productSearch.trim().toLowerCase();
+                const filtered = [...allSoldProducts]
+                  .sort((a, b) => b.quantity - a.quantity)
+                  .filter(p => !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.supplier_sku.toLowerCase().includes(q));
+                if (filtered.length === 0) {
+                  return <div className="text-center py-8 text-muted-foreground text-sm">No products match "{productSearch}"</div>;
+                }
+                return (
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map((product, index) => {
+                      const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
+                      return (
+                        <button
+                          key={product.sku || index}
+                          type="button"
+                          onClick={() => setHistoryProduct(product)}
+                          className="text-left p-3 rounded-lg border bg-card hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <p className="font-medium text-sm truncate flex-1">{product.name}</p>
+                            <Badge
+                              variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}
+                              className="shrink-0"
+                            >
+                              {margin.toFixed(0)}%
+                            </Badge>
                           </div>
-                          <div>
-                            <p className="text-lg font-bold text-primary">${product.revenue.toFixed(0)}</p>
-                            <p className="text-[10px] text-muted-foreground">Revenue</p>
+                          {product.sku && (
+                            <p className="text-[10px] font-mono text-muted-foreground mb-2 truncate">SKU: {product.sku}</p>
+                          )}
+                          <div className="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                              <p className="text-lg font-bold">{product.quantity}</p>
+                              <p className="text-[10px] text-muted-foreground">Units</p>
+                            </div>
+                            <div>
+                              <p className="text-lg font-bold text-primary">${product.revenue.toFixed(0)}</p>
+                              <p className="text-[10px] text-muted-foreground">Revenue</p>
+                            </div>
+                            <div>
+                              <p className="text-lg font-bold text-green-500">${product.profit.toFixed(0)}</p>
+                              <p className="text-[10px] text-muted-foreground">Profit</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-lg font-bold text-green-500">${product.profit.toFixed(0)}</p>
-                            <p className="text-[10px] text-muted-foreground">Profit</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
+
         </TabsContent>
 
         {/* Sold Products Tab */}

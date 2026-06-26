@@ -35,17 +35,31 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
       setLoading(true);
       const { data: prod } = await supabase
         .from("products")
-        .select("stock_on_hand, cost_usd, wholesale_price_usd")
+        .select("stock_on_hand, cost_usd, wholesale_price_usd, sku")
         .eq("id", productId)
         .maybeSingle();
       setStock(prod?.stock_on_hand ?? null);
       const cost = (prod?.cost_usd as number) || (prod?.wholesale_price_usd as number) || 0;
 
+      // Collect all product ids that share this SKU (siblings/variants)
+      let productIds: string[] = [productId];
+      const effectiveSku = sku || prod?.sku;
+      if (effectiveSku) {
+        const { data: sameSku } = await supabase
+          .from("products")
+          .select("id")
+          .eq("sku", effectiveSku);
+        if (sameSku && sameSku.length > 0) {
+          productIds = Array.from(new Set([...productIds, ...sameSku.map((p: any) => p.id)]));
+        }
+      }
+
       const { data } = await supabase
         .from("order_items")
         .select("quantity, unit_price, line_total, orders!inner(id, created_at, customer_name, salon_name)")
-        .eq("product_id", productId)
+        .in("product_id", productIds)
         .order("created_at", { foreignTable: "orders", ascending: false });
+
 
       const mapped: HistoryRow[] = (data || []).map((it: any) => ({
         date: it.orders?.created_at || "",
