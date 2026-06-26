@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, Percent, CalendarCheck, Share2, Warehouse, History, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, Building2, ShoppingCart, LogOut, User, BarChart3, Percent, CalendarCheck, Share2, Warehouse, History } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -10,14 +9,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarMenuAction,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
@@ -34,15 +28,9 @@ interface MenuItem {
   managerOnly: boolean;
 }
 
-interface MenuGroup {
-  title: string;
-  url: string;
-  icon: React.ComponentType<{ className?: string }>;
-  managerOnly: boolean;
-  children: MenuItem[];
-}
-
 const topMenuItems: MenuItem[] = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, managerOnly: true },
+  { title: "Orders", url: "/orders", icon: ShoppingCart, managerOnly: false },
   { title: "Products", url: "/products", icon: Package, managerOnly: true },
   { title: "Warehouse", url: "/warehouse", icon: Warehouse, managerOnly: true },
   { title: "Salons", url: "/salons", icon: Building2, managerOnly: true },
@@ -55,26 +43,13 @@ const topMenuItems: MenuItem[] = [
   { title: "Profile", url: "/profile", icon: User, managerOnly: false },
 ];
 
-const dashboardGroup: MenuGroup = {
-  title: "Dashboard",
-  url: "/",
-  icon: LayoutDashboard,
-  managerOnly: true,
-  children: [
-    { title: "Orders", url: "/orders", icon: ShoppingCart, managerOnly: false },
-  ],
-};
-
 export function AppSidebar() {
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { isManager, loading: roleLoading } = useUserRole();
   const location = useLocation();
   const collapsed = state === "collapsed";
-  const [dashboardOpen, setDashboardOpen] = useState(() =>
-    location.pathname === "/orders" || location.pathname === "/"
-  );
 
   const handleNavClick = () => {
     setOpenMobile(false);
@@ -91,19 +66,11 @@ export function AppSidebar() {
     }
   };
 
-  const visibleTopItems = topMenuItems.filter(item => {
+  const visibleItems = topMenuItems.filter(item => {
     if (roleLoading) return true;
     if (item.managerOnly && !isManager) return false;
     return true;
   });
-
-  const visibleDashboardChildren = dashboardGroup.children.filter(item => {
-    if (roleLoading) return true;
-    if (item.managerOnly && !isManager) return false;
-    return true;
-  });
-
-  const dashboardGroupVisible = roleLoading || isManager || visibleDashboardChildren.length > 0;
 
   return (
     <Sidebar collapsible="icon">
@@ -116,70 +83,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {dashboardGroupVisible && (
-                <SidebarMenuItem>
-                  <Collapsible
-                    open={dashboardOpen || collapsed}
-                    onOpenChange={setDashboardOpen}
-                    className="group/collapsible"
-                  >
-                    <div className="relative">
-                      <SidebarMenuButton asChild isActive={location.pathname === "/" || location.pathname === "/orders"}>
-                        <NavLink
-                          to="/"
-                          end
-                          onClick={handleNavClick}
-                          onMouseEnter={() => prefetchRoute("/")}
-                          onTouchStart={() => prefetchRoute("/")}
-                          className={({ isActive }) =>
-                            cn(
-                              "min-h-[44px] px-3 py-2 flex items-center gap-3 touch-manipulation",
-                              isActive
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                                : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70"
-                            )
-                          }
-                        >
-                          <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
-                          {!collapsed && <span className="text-sm font-medium">Dashboard</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                      {!collapsed && (
-                        <SidebarMenuAction
-                          onClick={() => setDashboardOpen(open => !open)}
-                          className={cn(
-                            "transition-transform",
-                            dashboardOpen && "rotate-90"
-                          )}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </SidebarMenuAction>
-                      )}
-                    </div>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {visibleDashboardChildren.map(child => (
-                          <SidebarMenuSubItem key={child.title}>
-                            <SidebarMenuSubButton asChild isActive={location.pathname === child.url}>
-                              <NavLink
-                                to={child.url}
-                                onClick={handleNavClick}
-                                onMouseEnter={() => prefetchRoute(child.url)}
-                                onTouchStart={() => prefetchRoute(child.url)}
-                              >
-                                <child.icon className="h-4 w-4" />
-                                <span>{child.title}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuItem>
-              )}
-
-              {visibleTopItems.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
