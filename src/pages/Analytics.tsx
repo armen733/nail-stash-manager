@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
+import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ interface CustomerInsight {
 }
 
 interface ProductPerformance {
+  id?: string;
   name: string;
   revenue: number;
   quantity: number;
@@ -84,6 +86,7 @@ const Analytics = () => {
   const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
+  const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "custom" | "specific-month">("month");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -408,6 +411,7 @@ const Analytics = () => {
           // every DDB### into a single misleading row.
           if (!productMap[productSku]) {
             productMap[productSku] = {
+              id: product.id,
               name: productName,
               revenue: 0,
               quantity: 0,
@@ -1635,16 +1639,24 @@ const Analytics = () => {
                   {topProducts.map((product, index) => {
                     const margin = product.revenue > 0 ? (product.profit / product.revenue) * 100 : 0;
                     return (
-                      <div key={index} className="p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                        <div className="flex items-start justify-between gap-2 mb-2">
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setHistoryProduct(product)}
+                        className="text-left p-3 rounded-lg border bg-card hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
                           <p className="font-medium text-sm truncate flex-1">{product.name}</p>
-                          <Badge 
+                          <Badge
                             variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "outline"}
                             className="shrink-0"
                           >
                             {margin.toFixed(0)}%
                           </Badge>
                         </div>
+                        {product.sku && (
+                          <p className="text-[10px] font-mono text-muted-foreground mb-2 truncate">SKU: {product.sku}</p>
+                        )}
                         <div className="grid grid-cols-3 gap-2 text-center">
                           <div>
                             <p className="text-lg font-bold">{product.quantity}</p>
@@ -1659,7 +1671,7 @@ const Analytics = () => {
                             <p className="text-[10px] text-muted-foreground">Profit</p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -2276,6 +2288,14 @@ const Analytics = () => {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <ProductHistoryDialog
+        productId={historyProduct?.id || null}
+        productName={historyProduct?.name}
+        sku={historyProduct?.sku}
+        open={!!historyProduct}
+        onOpenChange={(o) => !o && setHistoryProduct(null)}
+      />
     </div>
   );
 };
