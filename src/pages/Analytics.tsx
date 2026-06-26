@@ -100,7 +100,8 @@ const Analytics = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), "yyyy-MM"));
   const [previousPeriodStats, setPreviousPeriodStats] = useState({ revenue: 0, orders: 0, customers: 0 });
   const [showComparison, setShowComparison] = useState(true);
-  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  const [revenueView, setRevenueView] = useState<"revenue" | "profit" | "net">("revenue");
+  const [periodExpensesTotal, setPeriodExpensesTotal] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [showStoresInsteadOfSalons, setShowStoresInsteadOfSalons] = useState(false);
   const [activeSalonsCount, setActiveSalonsCount] = useState(0);
