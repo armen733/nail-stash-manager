@@ -1519,38 +1519,6 @@ const Analytics = () => {
               </CardContent>
             </Card>
 
-            {/* Top Products Bar Chart */}
-            <Card className="shadow-[var(--shadow-card)]">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Top Products by Revenue</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                {loading || topProducts.length === 0 ? (
-                  <div className="h-[280px] flex items-center justify-center text-muted-foreground">
-                    {loading ? "Loading..." : "No data available"}
-                  </div>
-                ) : (
-                  <ChartContainer config={{}} className="h-[280px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={topProducts.slice(0, 5)} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={10}
-                          width={100}
-                          tickFormatter={(value) => value.length > 15 ? value.slice(0, 15) + '...' : value}
-                        />
-                        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                        <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </ChartContainer>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Profit Margins Section */}
