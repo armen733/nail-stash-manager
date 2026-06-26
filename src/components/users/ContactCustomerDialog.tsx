@@ -83,6 +83,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer: {
+    id?: string;
     full_name: string;
     email: string;
     phone: string | null;
