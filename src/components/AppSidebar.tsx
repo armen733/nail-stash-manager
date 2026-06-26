@@ -102,7 +102,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
+                      {!collapsed && <span className="text-base font-medium">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -114,7 +114,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-3 space-y-2 pb-[env(safe-area-inset-bottom,16px)]">
         <div className="flex items-center gap-3 min-h-[44px] px-3 py-2">
           <ThemeToggle />
-          {!collapsed && <span className="text-sm text-muted-foreground">Theme</span>}
+          {!collapsed && <span className="text-base text-muted-foreground">Theme</span>}
         </div>
         <Button
           variant="ghost"
@@ -122,7 +122,7 @@ export function AppSidebar() {
           className="w-full justify-start min-h-[44px] px-3 touch-manipulation active:bg-sidebar-accent/70"
         >
           <LogOut className="h-5 w-5" />
-          {!collapsed && <span className="ml-3 text-sm font-medium">Logout</span>}
+          {!collapsed && <span className="ml-3 text-base font-medium">Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
