@@ -111,7 +111,7 @@ const Analytics = () => {
   });
   const toggleChart = (key: string) => {
     setChartVisibility((prev) => {
-      const next = { ...prev, [key]: !(prev[key] ?? true) };
+      const next = { ...prev, [key]: !(prev[key] ?? false) };
       try { localStorage.setItem("analytics-chart-visibility", JSON.stringify(next)); } catch {}
       return next;
     });
