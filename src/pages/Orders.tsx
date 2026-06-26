@@ -671,6 +671,7 @@ const Orders = () => {
             subtotal,
             tax,
             total,
+            discount_amount: discountAmount > 0 ? discountAmount : null,
           },
         ])
         .select()
