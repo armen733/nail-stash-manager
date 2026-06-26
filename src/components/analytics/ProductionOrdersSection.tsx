@@ -22,6 +22,7 @@ interface ProductionOrder {
   id: string;
   product_id: string | null;
   sku: string | null;
+  supplier_sku: string | null;
   product_name: string | null;
   supplier_name: string | null;
   quantity: number;
@@ -34,8 +35,10 @@ interface ProductionOrder {
 interface ProductOption {
   id: string;
   sku: string | null;
+  supplier_sku: string | null;
   name: string;
 }
+
 
 interface Props {
   periodStart: Date;
@@ -93,10 +96,11 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
   const loadProducts = async () => {
     const { data, error } = await supabase
       .from("products")
-      .select("id, sku, name")
+      .select("id, sku, supplier_sku, name")
       .order("name");
     if (!error && data) setProducts(data as ProductOption[]);
   };
+
 
   useEffect(() => {
     if (open) {
