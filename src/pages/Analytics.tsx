@@ -104,7 +104,7 @@ const Analytics = () => {
   const [showMap, setShowMap] = useState(false);
   const [chartVisibility, setChartVisibility] = useState<Record<string, boolean>>(() => {
     try {
-      const saved = localStorage.getItem("analytics-chart-visibility");
+      const saved = localStorage.getItem("analytics-chart-visibility-v2");
       if (saved) return JSON.parse(saved);
     } catch {}
     return { revenueTrend: false, cumulative: false, avgOrder: false, ordersVolume: false };
@@ -112,7 +112,7 @@ const Analytics = () => {
   const toggleChart = (key: string) => {
     setChartVisibility((prev) => {
       const next = { ...prev, [key]: !(prev[key] ?? false) };
-      try { localStorage.setItem("analytics-chart-visibility", JSON.stringify(next)); } catch {}
+      try { localStorage.setItem("analytics-chart-visibility-v2", JSON.stringify(next)); } catch {}
       return next;
     });
   };
