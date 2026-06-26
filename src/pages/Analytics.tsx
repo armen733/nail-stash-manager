@@ -20,6 +20,7 @@ import { ExpensesSection } from "@/components/analytics/ExpensesSection";
 import LowStock from "@/pages/LowStock";
 import { AlertTriangle } from "lucide-react";
 import { ProductionOrdersSection } from "@/components/analytics/ProductionOrdersSection";
+import { InventoryOverview } from "@/components/analytics/InventoryOverview";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
