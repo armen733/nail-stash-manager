@@ -232,20 +232,24 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
       {open && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
           {/* Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Total in period</div>
               <div className="text-xl font-semibold text-orange-500">${total.toFixed(2)}</div>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Entries</div>
-              <div className="text-xl font-semibold">{expenses.length}</div>
+              <div className="text-xl font-semibold">{filteredExpenses.length}</div>
             </div>
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="text-xs text-muted-foreground">Top category</div>
               <div className="text-sm font-semibold truncate">
                 {byCategory[0] ? `${byCategory[0][0]} · $${byCategory[0][1].toFixed(2)}` : "—"}
               </div>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <div className="text-xs text-muted-foreground">Recurring / Subscriptions</div>
+              <div className="text-xl font-semibold text-purple-500">${recurringTotal.toFixed(2)}</div>
             </div>
           </div>
 
