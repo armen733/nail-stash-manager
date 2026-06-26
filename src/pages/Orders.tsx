@@ -79,6 +79,7 @@ interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  discount_amount?: number | null;
   notes: string | null;
   technician_name?: string | null;
   created_at: string;
