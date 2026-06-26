@@ -516,6 +516,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                         )}
                       </td>
                       <td className="p-2 text-right hidden sm:table-cell">${r.revenue.toFixed(0)}</td>
+                      <td className={`p-2 text-right hidden md:table-cell ${r.profit < 0 ? "text-destructive" : r.profit > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                        {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="p-2 text-right hidden sm:table-cell">{r.stock}</td>
                       <td className="p-2 text-right hidden md:table-cell">
                         {r.days_of_stock === null
