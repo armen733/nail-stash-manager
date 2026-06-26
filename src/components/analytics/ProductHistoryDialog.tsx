@@ -38,11 +38,15 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
       setLoading(true);
       const { data: prod } = await supabase
         .from("products")
-        .select("stock_on_hand, cost_usd, wholesale_price_usd, sku")
+        .select("stock_on_hand, cost_usd, wholesale_price_usd, price_usd, sku")
         .eq("id", productId)
         .maybeSingle();
       setStock(prod?.stock_on_hand ?? null);
-      const cost = (prod?.cost_usd as number) || (prod?.wholesale_price_usd as number) || 0;
+      const cost = Number(prod?.cost_usd || 0);
+      const resell = Number(prod?.wholesale_price_usd || prod?.price_usd || 0);
+      setUnitCost(cost || null);
+      setUnitPrice(resell || null);
+      setUnitMargin(resell > 0 ? ((resell - cost) / resell) * 100 : null);
 
       // Collect all product ids that share this SKU (siblings/variants)
       let productIds: string[] = [productId];
