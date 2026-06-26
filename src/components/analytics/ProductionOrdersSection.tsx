@@ -155,6 +155,7 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
       const { error } = await supabase.from("production_orders").insert({
         product_id: selectedProduct?.id ?? null,
         sku: selectedProduct?.sku ?? null,
+        supplier_sku: selectedProduct?.supplier_sku ?? null,
         product_name: selectedProduct?.name ?? null,
         supplier_name: supplier || null,
         quantity: isNaN(qty) ? 0 : qty,
@@ -214,6 +215,7 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
         <tr>
           <td>${format(new Date(o.order_date), "MMM d, yyyy")}</td>
           <td>${escapeHtml(o.sku || "")}</td>
+          <td>${escapeHtml(o.supplier_sku || "")}</td>
           <td>${escapeHtml(o.product_name || "")}</td>
           <td>${escapeHtml(o.supplier_name || "")}</td>
           <td style="text-align:right">${Number(o.quantity || 0)}</td>
@@ -238,11 +240,11 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
       <div class="sub">${rangeText} · ${orders.length} orders · Total spent $${totalSpent.toFixed(2)} · Units ${totalUnits}</div>
       <table>
         <thead>
-          <tr><th>Date</th><th>SKU</th><th>Product</th><th>Supplier</th><th>Qty</th><th>Spent</th><th>Notes</th><th>Files</th></tr>
+          <tr><th>Date</th><th>SKU</th><th>Supplier SKU</th><th>Product</th><th>Supplier</th><th>Qty</th><th>Spent</th><th>Notes</th><th>Files</th></tr>
         </thead>
-        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:#888">No orders</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="9" style="text-align:center;color:#888">No orders</td></tr>`}</tbody>
         <tfoot>
-          <tr><td colspan="4">Total</td><td style="text-align:right">${totalUnits}</td><td style="text-align:right">$${totalSpent.toFixed(2)}</td><td colspan="2"></td></tr>
+          <tr><td colspan="5">Total</td><td style="text-align:right">${totalUnits}</td><td style="text-align:right">$${totalSpent.toFixed(2)}</td><td colspan="2"></td></tr>
         </tfoot>
       </table>
       <script>window.onload = () => { window.print(); }</script>
@@ -421,6 +423,9 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {o.sku && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{o.sku}</span>}
+                        {o.supplier_sku && (
+                          <span className="font-mono text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded">Supp: {o.supplier_sku}</span>
+                        )}
                         <span className="font-medium text-sm">{o.product_name || "—"}</span>
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(o.order_date), "MMM d, yyyy")}
