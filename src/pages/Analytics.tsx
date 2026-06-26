@@ -1147,6 +1147,7 @@ const Analytics = () => {
             </ChartContainer>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Additional Charts Row */}
