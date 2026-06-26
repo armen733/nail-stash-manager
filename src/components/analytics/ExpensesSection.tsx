@@ -126,15 +126,19 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
       description: description || null,
       expense_date: expenseDate,
       created_by: user?.id,
+      is_recurring: isRecurring,
+      recurring_frequency: isRecurring ? recurringFrequency : null,
     });
     if (error) {
       toast({ title: "Failed to add expense", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Expense added" });
+    toast({ title: isRecurring ? "Subscription added" : "Expense added" });
     setAmount("");
     setDescription("");
     setCustomCategory("");
+    setIsRecurring(false);
+    setRecurringFrequency("monthly");
     setAdding(false);
     load();
   };
