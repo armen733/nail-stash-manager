@@ -1513,7 +1513,15 @@ Thank you!`;
               )}
 
               {/* Collapsible order details (Customer / Salon / Tech / Notes / Discount) */}
-              <Collapsible open={showOrderDetails || showNewUserForm || showNewSalonForm} onOpenChange={setShowOrderDetails}>
+              <Collapsible open={showOrderDetails || showNewUserForm || showNewSalonForm} onOpenChange={(open) => {
+                if (!open) {
+                  setShowOrderDetails(false);
+                  setShowNewUserForm(false);
+                  setShowNewSalonForm(false);
+                } else {
+                  setShowOrderDetails(true);
+                }
+              }}>
                 <CollapsibleTrigger asChild>
                   <Button
                     type="button"
