@@ -918,6 +918,7 @@ const Orders = () => {
 
       setOrderItems(orderItemsData);
       setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}`, technician_name: order.technician_name || '', discount: "", discountType: "amount" });
+      setShowOrderDetails(false);
       setIsDialogOpen(true);
       toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
     } catch (error: any) {
