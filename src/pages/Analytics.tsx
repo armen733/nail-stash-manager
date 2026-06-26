@@ -462,19 +462,25 @@ const Analytics = () => {
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5));
 
       // Calculate salon stats
-      const salonMap: Record<string, { name: string; revenue: number; orderCount: number }> = {};
+      const salonMap: Record<string, { name: string; revenue: number; orderCount: number; key: string }> = {};
       orders?.forEach(order => {
         const salonName = (order as any).salons?.name || "Walk-in / Direct";
         const key = (order as any).salon_id || "direct";
         if (!salonMap[key]) {
-          salonMap[key] = { name: salonName, revenue: 0, orderCount: 0 };
+          salonMap[key] = { name: salonName, revenue: 0, orderCount: 0, key };
         }
         salonMap[key].revenue += order.total || 0;
         salonMap[key].orderCount += 1;
       });
       setSalonStats(
         Object.values(salonMap)
-          .map(s => ({ ...s, avgOrder: s.orderCount > 0 ? s.revenue / s.orderCount : 0 }))
+          .map(s => ({
+            name: s.name,
+            revenue: s.revenue,
+            orderCount: s.orderCount,
+            avgOrder: s.orderCount > 0 ? s.revenue / s.orderCount : 0,
+            profit: salonProfitMap[s.key] || 0,
+          }))
           .sort((a, b) => b.revenue - a.revenue)
       );
 
