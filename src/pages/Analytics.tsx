@@ -229,6 +229,8 @@ const Analytics = () => {
     return { periodStart, periodEnd, previousStart, previousEnd };
   };
 
+  const periodDates = useMemo(() => getPeriodDates(), [period, dateRange, selectedMonth]);
+
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
