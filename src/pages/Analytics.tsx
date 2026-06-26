@@ -1036,6 +1036,29 @@ const Analytics = () => {
           icon={DollarSign}
           prefix="$"
         />
+        <StatCard
+          title={showStoresInsteadOfSalons ? "Active Supply Stores" : "Active Salons"}
+          value={showStoresInsteadOfSalons ? activeSupplyStoresCount : activeSalonsCount}
+          icon={showStoresInsteadOfSalons ? Warehouse : Users}
+          onClick={() => setShowStoresInsteadOfSalons(v => !v)}
+          highlight={showStoresInsteadOfSalons}
+          description={showStoresInsteadOfSalons ? "Tap to see salons" : "Tap to see supply stores"}
+        />
+        <StatCard
+          title={showSupplyAsProfit ? "Supply Store Profit" : "Supply Store Sales"}
+          value={(showSupplyAsProfit ? supplyStoreStats.profit : supplyStoreStats.revenue).toFixed(2)}
+          icon={showSupplyAsProfit ? TrendingUp : DollarSign}
+          prefix="$"
+          onClick={() => setShowSupplyAsProfit(v => !v)}
+          highlight={showSupplyAsProfit}
+          description={
+            showSupplyAsProfit
+              ? (supplyStoreStats.revenue > 0
+                  ? `${((supplyStoreStats.profit / supplyStoreStats.revenue) * 100).toFixed(1)}% margin · tap for sales`
+                  : "Tap for sales")
+              : `${supplyStoreStats.units} units · tap for profit`
+          }
+        />
       </div>
 
       {/* Revenue Trend Chart */}
