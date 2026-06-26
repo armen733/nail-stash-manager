@@ -938,17 +938,26 @@ const Analytics = () => {
       />
 
       {/* KPI Cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard 
-          title="Total Revenue" 
-          value={totalRevenue.toFixed(2)} 
+          title={showRevenueAsProfit ? "Clean Profit" : "Total Revenue"}
+          value={(showRevenueAsProfit ? totalProfit : totalRevenue).toFixed(2)} 
           icon={DollarSign} 
-          change={revenueChange}
+          change={showRevenueAsProfit ? undefined : revenueChange}
           prefix="$"
-          previousValue={previousPeriodStats.revenue}
+          previousValue={showRevenueAsProfit ? undefined : previousPeriodStats.revenue}
           sparkData={dailyRevenue}
           sparkKey="revenue"
-          sparkColor="#10B981"
+          sparkColor={showRevenueAsProfit ? "#22c55e" : "#10B981"}
+          onClick={() => setShowRevenueAsProfit(v => !v)}
+          highlight={showRevenueAsProfit}
+          description={
+            showRevenueAsProfit
+              ? (totalRevenue > 0
+                  ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
+                  : "Tap to see revenue")
+              : `$${totalProfit.toFixed(2)} profit · tap for profit`
+          }
         />
         <StatCard 
           title="Total Orders" 
@@ -968,12 +977,6 @@ const Analytics = () => {
           sparkData={dailyRevenue.filter(d => d.orders > 0)}
           sparkKey="avgOrderValue"
           sparkColor="#8B5CF6"
-        />
-        <StatCard 
-          title="Total Profit" 
-          value={totalProfit.toFixed(2)} 
-          icon={TrendingUp}
-          prefix="$"
         />
         <StatCard 
           title="Tax Collected" 
