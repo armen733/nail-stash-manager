@@ -1262,11 +1262,17 @@ const Analytics = () => {
       {/* Orders Volume Chart */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-blue-500" />
-            Daily Orders Volume
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-blue-500" />
+              Daily Orders Volume
+            </CardTitle>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("ordersVolume")} aria-label={isChartVisible("ordersVolume") ? "Hide chart" : "Show chart"}>
+              {isChartVisible("ordersVolume") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
         </CardHeader>
+        {isChartVisible("ordersVolume") && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="h-[200px] flex items-center justify-center text-muted-foreground">Loading...</div>
