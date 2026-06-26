@@ -423,6 +423,26 @@ const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
           )}
           </>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={printLowStock}
+          disabled={filteredProducts.length === 0}
+          className="h-9 text-xs ml-auto"
+        >
+          <Printer className="mr-1.5 h-3.5 w-3.5" /> Print
+        </Button>
+        {embedded && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportLowStockCSV}
+            disabled={filteredProducts.length === 0}
+            className="h-9 text-xs"
+          >
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+          </Button>
+        )}
       </div>
 
       {loading ? (
