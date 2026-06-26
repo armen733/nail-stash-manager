@@ -53,7 +53,7 @@ interface LocationOption {
   supply_store_id?: string | null;
 }
 
-const LowStock = () => {
+const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
   const [products, setProducts] = useState<LowStockProduct[]>([]);
   const [categoryVariantTypes, setCategoryVariantTypes] = useState<CategoryVariantType[]>([]);
   const [locations, setLocations] = useState<LocationOption[]>([]);
@@ -261,6 +261,7 @@ const LowStock = () => {
   return (
     <div className="space-y-3 sm:space-y-5 animate-fade-in">
       {/* Compact header */}
+      {!embedded && (
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
@@ -310,6 +311,7 @@ const LowStock = () => {
           </Button>
         </div>
       </div>
+      )}
 
       {/* Compact filters row */}
       <div className="flex flex-wrap items-center gap-2">

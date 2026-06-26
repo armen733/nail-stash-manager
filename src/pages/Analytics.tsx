@@ -17,6 +17,8 @@ import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
 import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
 import { ExpensesSection } from "@/components/analytics/ExpensesSection";
+import LowStock from "@/pages/LowStock";
+import { AlertTriangle } from "lucide-react";
 import { ProductionOrdersSection } from "@/components/analytics/ProductionOrdersSection";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
@@ -1337,6 +1339,29 @@ const Analytics = () => {
 
         {/* Business Expenses (includes Production Orders) */}
         <ExpensesSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
+
+        {/* Low Stock (collapsible) */}
+        <Card className="shadow-[var(--shadow-card)] lg:col-span-2">
+          <CardHeader
+            className="p-4 sm:p-6 cursor-pointer hover:bg-muted/30 transition-colors select-none"
+            onClick={() => toggleChart("lowStock")}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Low Stock
+              </CardTitle>
+              <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform duration-200", isChartVisible("lowStock") && "rotate-180")} />
+            </div>
+          </CardHeader>
+          {isChartVisible("lowStock") && (
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <LowStock embedded />
+            </CardContent>
+          )}
+        </Card>
+
+
 
 
         {/* Average Order Value Trend */}
