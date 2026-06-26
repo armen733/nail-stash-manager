@@ -381,6 +381,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             <Badge variant="secondary">{totals.selling} selling</Badge>
             <Badge variant="secondary">{totals.units.toLocaleString()} units</Badge>
             <Badge variant="secondary">${totals.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} revenue</Badge>
+            <Badge variant="secondary" className={totals.profit >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}>
+              ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+            </Badge>
             {totals.bad > 0 && (
               <Badge variant="destructive">{totals.bad} flagged</Badge>
             )}
