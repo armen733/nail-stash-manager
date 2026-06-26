@@ -24,7 +24,7 @@ const Salons = lazy(() => import("./pages/Salons"));
 const Orders = lazy(() => import("./pages/Orders"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Analytics = lazy(() => import("./pages/Analytics"));
-const LowStock = lazy(() => import("./pages/LowStock"));
+
 const Warehouse = lazy(() => import("./pages/Warehouse"));
 const WarehouseLocationDetail = lazy(() => import("./pages/WarehouseLocationDetail"));
 const Users = lazy(() => import("./pages/Users"));
