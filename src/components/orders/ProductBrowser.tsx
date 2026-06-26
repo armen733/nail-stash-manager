@@ -162,6 +162,9 @@ export function ProductBrowser({
     return () => viewport.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Ref to measure the filter bar for accurate hide distance
+  const filterBarRef = useRef<HTMLDivElement>(null);
+
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
@@ -203,53 +206,7 @@ export function ProductBrowser({
   };
 
   return (
-    <div className="space-y-3 flex flex-col flex-1 min-h-0 relative">
-      {/* Sticky filter bar that hides on scroll down */}
-      <div
-        className={cn(
-          "sticky top-0 z-10 bg-background transition-transform duration-300 ease-out space-y-2 pb-1",
-          filtersHidden && "-translate-y-[calc(100%+0.75rem)]"
-        )}
-      >
-        {/* Filters Row */}
-        <div className="flex gap-2">
-          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(cat => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedVariantType} onValueChange={setSelectedVariantType}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              {variantTypes.map(type => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-      </div>
-
+    <div className="flex flex-col flex-1 min-h-0 relative">
       {/* Floating filter reveal button (visible only when filters hidden) */}
       {filtersHidden && (
         <Button
@@ -264,8 +221,55 @@ export function ProductBrowser({
         </Button>
       )}
 
-      {/* Product Grid with optimized rendering */}
+      {/* Product Grid with filters placed inside the scrollable area */}
       <ScrollArea className="flex-1 min-h-[200px] pr-3" ref={scrollContainerRef}>
+        {/* Sticky filter bar that hides on scroll down */}
+        <div
+          ref={filterBarRef}
+          className={cn(
+            "sticky top-0 z-10 bg-background transition-transform duration-300 ease-out space-y-2 pb-1 mb-2",
+            filtersHidden && "-translate-y-[120%]"
+          )}
+        >
+          {/* Filters Row */}
+          <div className="flex gap-2">
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedVariantType} onValueChange={setSelectedVariantType}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {variantTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 gap-2">
           {filteredProducts.map((product) => {
             const quantity = getItemQuantity(product.id);
