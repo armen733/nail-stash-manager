@@ -819,6 +819,7 @@ const Orders = () => {
       setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
       setDetectedReferrer(null);
       setOrderItems([]);
+      setShowOrderDetails(false);
       fetchData();
     } catch (error: any) {
       toast({
