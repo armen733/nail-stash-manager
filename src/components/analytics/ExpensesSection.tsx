@@ -8,6 +8,7 @@ import { ChevronDown, Plus, Printer, Receipt, Trash2, Repeat, BadgeCheck } from 
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { ProductionOrdersSection } from "./ProductionOrdersSection";
 
