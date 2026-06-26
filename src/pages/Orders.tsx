@@ -1133,9 +1133,9 @@ Status: ${order.status}
 
 ${itemsText}
 
-Subtotal: $${order.subtotal.toFixed(2)}
+Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount: −$${Number(order.discount_amount).toFixed(2)}` : ''}
 Tax: $${order.tax.toFixed(2)}
-Total: $${order.total.toFixed(2)}
+Total: $${order.total.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `  (you saved $${Number(order.discount_amount).toFixed(2)})` : ''}
 
 Thank you!`;
     return { subject, body };
