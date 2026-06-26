@@ -18,7 +18,10 @@ interface Expense {
   amount: number;
   expense_date: string;
   notes: string | null;
+  is_recurring: boolean;
+  recurring_frequency: string | null;
 }
+
 
 interface Props {
   periodStart: Date;
