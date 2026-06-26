@@ -79,6 +79,7 @@ interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  discount_amount?: number | null;
   notes: string | null;
   technician_name?: string | null;
   created_at: string;
@@ -175,6 +176,8 @@ const Orders = () => {
     profile_id: "",
     notes: "",
     technician_name: "",
+    discount: "",
+    discountType: "amount" as "amount" | "percent",
   });
 
   const [newUserData, setNewUserData] = useState({
@@ -605,8 +608,14 @@ const Orders = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const subtotal = calculateTotal();
-      const tax = calculateTax(subtotal);
-      const total = subtotal + tax;
+      const discountInput = parseFloat(formData.discount) || 0;
+      const discountAmount = Math.min(
+        subtotal,
+        Math.max(0, formData.discountType === "percent" ? subtotal * (discountInput / 100) : discountInput)
+      );
+      const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+      const tax = calculateTax(discountedSubtotal);
+      const total = discountedSubtotal + tax;
 
       // === OFFLINE PATH: queue locally and bail out ===
       if (!isOnline()) {
@@ -643,7 +652,7 @@ const Orders = () => {
           description: "It will sync automatically when you're back online.",
         });
         setIsDialogOpen(false);
-        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
+        setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
         setDetectedReferrer(null);
         setOrderItems([]);
         return;
@@ -662,6 +671,7 @@ const Orders = () => {
             subtotal,
             tax,
             total,
+            discount_amount: discountAmount > 0 ? discountAmount : null,
           },
         ])
         .select()
@@ -799,7 +809,7 @@ const Orders = () => {
 
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
-      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "" });
+      setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
       setDetectedReferrer(null);
       setOrderItems([]);
       fetchData();
@@ -899,7 +909,7 @@ const Orders = () => {
       }));
 
       setOrderItems(orderItemsData);
-      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}`, technician_name: order.technician_name || '' });
+      setFormData({ salon_id: order.salon_id || '', profile_id: '', notes: `Reorder from ${new Date(order.order_date).toLocaleDateString()}`, technician_name: order.technician_name || '', discount: "", discountType: "amount" });
       setIsDialogOpen(true);
       toast({ title: "Quick Reorder", description: "Order items loaded. Update and submit." });
     } catch (error: any) {
@@ -1074,8 +1084,10 @@ const Orders = () => {
 
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
+          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div><div class="totals-row"><span>After discount</span><span>$${Math.max(0, order.subtotal - Number(order.discount_amount)).toFixed(2)}</span></div>` : ''}
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
           ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
+          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#888;text-decoration:line-through;font-size:13px;"><span>Was</span><span>$${(order.subtotal + order.tax + (order.shipping ?? 0)).toFixed(2)}</span></div>` : ''}
           <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
         </div>
 
@@ -1121,9 +1133,9 @@ Status: ${order.status}
 
 ${itemsText}
 
-Subtotal: $${order.subtotal.toFixed(2)}
+Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount: −$${Number(order.discount_amount).toFixed(2)}` : ''}
 Tax: $${order.tax.toFixed(2)}
-Total: $${order.total.toFixed(2)}
+Total: $${order.total.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `  (you saved $${Number(order.discount_amount).toFixed(2)})` : ''}
 
 Thank you!`;
     return { subject, body };
@@ -1701,28 +1713,70 @@ Thank you!`;
                   />
                 </div>
               </div>
-              {/* Cart summary row */}
-              {orderItems.length > 0 && (
-                <div className="flex items-center justify-between">
-                  <Button
-                    type="button"
-                    variant={showCartOnly ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => setShowCartOnly(!showCartOnly)}
-                    className="gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
-                  </Button>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
-                    {taxRate > 0 && (
-                      <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${calculateTax(calculateTotal()).toFixed(2)}</div>
-                    )}
-                    <div className="font-bold text-lg">${(calculateTotal() + calculateTax(calculateTotal())).toFixed(2)}</div>
-                  </div>
+              {/* Discount row */}
+              <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="discount" className="text-xs">Discount</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    placeholder="0"
+                  />
                 </div>
-              )}
+                <div className="flex rounded-md border overflow-hidden h-10">
+                  <button
+                    type="button"
+                    className={`px-3 text-sm ${formData.discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                    onClick={() => setFormData({ ...formData, discountType: "amount" })}
+                  >$</button>
+                  <button
+                    type="button"
+                    className={`px-3 text-sm ${formData.discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                    onClick={() => setFormData({ ...formData, discountType: "percent" })}
+                  >%</button>
+                </div>
+              </div>
+              {/* Cart summary row */}
+              {orderItems.length > 0 && (() => {
+                const sub = calculateTotal();
+                const dInput = parseFloat(formData.discount) || 0;
+                const dAmt = Math.min(sub, Math.max(0, formData.discountType === "percent" ? sub * (dInput / 100) : dInput));
+                const discounted = Math.max(0, sub - dAmt);
+                const taxAmt = calculateTax(discounted);
+                return (
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant={showCartOnly ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setShowCartOnly(!showCartOnly)}
+                      className="gap-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      View Cart ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})
+                    </Button>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">{orderItems.length} product(s)</div>
+                      {dAmt > 0 && (
+                        <div className="text-xs text-emerald-500">
+                          Discount{formData.discountType === "percent" ? ` (${dInput}%)` : ""}: −${dAmt.toFixed(2)}
+                        </div>
+                      )}
+                      {taxRate > 0 && (
+                        <div className="text-xs text-muted-foreground">Tax ({taxRate}%): ${taxAmt.toFixed(2)}</div>
+                      )}
+                      {dAmt > 0 && (
+                        <div className="text-xs text-muted-foreground line-through">${(sub + calculateTax(sub)).toFixed(2)}</div>
+                      )}
+                      <div className="font-bold text-lg">${(discounted + taxAmt).toFixed(2)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
               
               {/* Actions */}
               <div className="flex justify-end gap-2">
