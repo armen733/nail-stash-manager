@@ -289,11 +289,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         (a, r) => ({
           units: a.units + r.units_sold,
           revenue: a.revenue + r.revenue,
+          profit: a.profit + r.profit,
           bad: a.bad + (r.is_bad_performer ? 1 : 0),
           neverSold: a.neverSold + (r.badges.includes("never-sold") ? 1 : 0),
           selling: a.selling + (r.units_sold > 0 ? 1 : 0),
         }),
-        { units: 0, revenue: 0, bad: 0, neverSold: 0, selling: 0 },
+        { units: 0, revenue: 0, profit: 0, bad: 0, neverSold: 0, selling: 0 },
       ),
     [filtered],
   );
