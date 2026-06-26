@@ -997,7 +997,7 @@ const Analytics = () => {
                 </ToggleGroup>
               )}
               <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("revenueTrend")} aria-label={isChartVisible("revenueTrend") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("revenueTrend") ? (<><EyeOff className="h-4 w-4" /><span className="text-xs">Hide</span></>) : (<><Eye className="h-4 w-4" /><span className="text-xs">Show</span></>)}
+                {isChartVisible("revenueTrend") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </div>
@@ -1161,7 +1161,7 @@ const Analytics = () => {
                 Cumulative Revenue
               </CardTitle>
               <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("cumulative")} aria-label={isChartVisible("cumulative") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("cumulative") ? (<><EyeOff className="h-4 w-4" /><span className="text-xs">Hide</span></>) : (<><Eye className="h-4 w-4" /><span className="text-xs">Show</span></>)}
+                {isChartVisible("cumulative") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </CardHeader>
@@ -1221,7 +1221,7 @@ const Analytics = () => {
                 Avg Order Value Trend
               </CardTitle>
               <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("avgOrder")} aria-label={isChartVisible("avgOrder") ? "Hide chart" : "Show chart"}>
-                {isChartVisible("avgOrder") ? (<><EyeOff className="h-4 w-4" /><span className="text-xs">Hide</span></>) : (<><Eye className="h-4 w-4" /><span className="text-xs">Show</span></>)}
+                {isChartVisible("avgOrder") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
           </CardHeader>
@@ -1268,7 +1268,7 @@ const Analytics = () => {
               Daily Orders Volume
             </CardTitle>
             <Button variant="outline" size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => toggleChart("ordersVolume")} aria-label={isChartVisible("ordersVolume") ? "Hide chart" : "Show chart"}>
-              {isChartVisible("ordersVolume") ? (<><EyeOff className="h-4 w-4" /><span className="text-xs">Hide</span></>) : (<><Eye className="h-4 w-4" /><span className="text-xs">Show</span></>)}
+              {isChartVisible("ordersVolume") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
         </CardHeader>
