@@ -494,6 +494,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                     <th className="text-left p-2 hidden md:table-cell">Variant</th>
                       <th className="text-right p-2">Sold</th>
                     <th className="text-right p-2 hidden sm:table-cell">Revenue</th>
+                    <th className="text-right p-2 hidden md:table-cell">Profit</th>
                     <th className="text-right p-2 hidden sm:table-cell">Stock</th>
                     <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
                     <th className="text-left p-2">Flags</th>
