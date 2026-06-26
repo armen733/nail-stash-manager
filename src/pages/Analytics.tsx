@@ -20,6 +20,7 @@ import { ExpensesSection } from "@/components/analytics/ExpensesSection";
 import LowStock from "@/pages/LowStock";
 import { AlertTriangle } from "lucide-react";
 import { ProductionOrdersSection } from "@/components/analytics/ProductionOrdersSection";
+import { InventoryOverview } from "@/components/analytics/InventoryOverview";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -2012,39 +2013,8 @@ const Analytics = () => {
         {/* Inventory Tab */}
         <TabsContent value="inventory" className="mt-4 space-y-4">
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-            {/* Bestsellers */}
-            <Card className="shadow-[var(--shadow-card)]">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  Bestsellers
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-                {loading || topProducts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {loading ? "Loading..." : "No data available"}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {topProducts.slice(0, 5).map((product, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-green-500/5 border border-green-500/10">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                            #{index + 1}
-                          </Badge>
-                          <span className="font-medium text-sm truncate max-w-[150px]">{product.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-sm">{product.quantity} sold</p>
-                          <p className="text-xs text-muted-foreground">${product.revenue.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Inventory (all SKUs with stock + filters) */}
+            <InventoryOverview />
 
             {/* Slow Moving */}
             <Card className="shadow-[var(--shadow-card)]">
