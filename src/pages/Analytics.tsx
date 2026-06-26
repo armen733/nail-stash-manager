@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
-  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse, Eye, EyeOff
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
@@ -102,6 +102,21 @@ const Analytics = () => {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [chartVisibility, setChartVisibility] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("analytics-chart-visibility");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { revenueTrend: true, cumulative: true, avgOrder: true, ordersVolume: true };
+  });
+  const toggleChart = (key: string) => {
+    setChartVisibility((prev) => {
+      const next = { ...prev, [key]: !(prev[key] ?? true) };
+      try { localStorage.setItem("analytics-chart-visibility", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+  const isChartVisible = (key: string) => chartVisibility[key] ?? true;
   const { toast } = useToast();
 
   // Custom active shape for pie chart hover effect
@@ -962,24 +977,32 @@ const Analytics = () => {
               <TrendingUp className="h-5 w-5 text-primary" />
               Revenue & Orders Trend
             </CardTitle>
-            <ToggleGroup 
-              type="single" 
-              value={chartType} 
-              onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
-              className="bg-muted/50 rounded-lg p-1"
-            >
-              <ToggleGroupItem value="area" aria-label="Area chart" className="h-8 w-8 p-0">
-                <AreaChartIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="line" aria-label="Line chart" className="h-8 w-8 p-0">
-                <LineChartIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="bar" aria-label="Bar chart" className="h-8 w-8 p-0">
-                <BarChart2 className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+            <div className="flex items-center gap-2">
+              {isChartVisible("revenueTrend") && (
+                <ToggleGroup 
+                  type="single" 
+                  value={chartType} 
+                  onValueChange={(value) => value && setChartType(value as "area" | "line" | "bar")}
+                  className="bg-muted/50 rounded-lg p-1"
+                >
+                  <ToggleGroupItem value="area" aria-label="Area chart" className="h-8 w-8 p-0">
+                    <AreaChartIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="line" aria-label="Line chart" className="h-8 w-8 p-0">
+                    <LineChartIcon className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="bar" aria-label="Bar chart" className="h-8 w-8 p-0">
+                    <BarChart2 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("revenueTrend")} aria-label={isChartVisible("revenueTrend") ? "Hide chart" : "Show chart"}>
+                {isChartVisible("revenueTrend") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </CardHeader>
+        {isChartVisible("revenueTrend") && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">Loading...</div>
@@ -1124,6 +1147,7 @@ const Analytics = () => {
             </ChartContainer>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Additional Charts Row */}
@@ -1131,11 +1155,17 @@ const Analytics = () => {
         {/* Cumulative Revenue Line Chart */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              Cumulative Revenue
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                Cumulative Revenue
+              </CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("cumulative")} aria-label={isChartVisible("cumulative") ? "Hide chart" : "Show chart"}>
+                {isChartVisible("cumulative") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </CardHeader>
+          {isChartVisible("cumulative") && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {loading ? (
               <div className="h-[250px] flex items-center justify-center text-muted-foreground">Loading...</div>
@@ -1179,16 +1209,23 @@ const Analytics = () => {
               </ChartContainer>
             )}
           </CardContent>
+          )}
         </Card>
 
         {/* Average Order Value Trend */}
         <Card className="shadow-[var(--shadow-card)]">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-purple-500" />
-              Avg Order Value Trend
-            </CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                Avg Order Value Trend
+              </CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("avgOrder")} aria-label={isChartVisible("avgOrder") ? "Hide chart" : "Show chart"}>
+                {isChartVisible("avgOrder") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </CardHeader>
+          {isChartVisible("avgOrder") && (
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {loading ? (
               <div className="h-[250px] flex items-center justify-center text-muted-foreground">Loading...</div>
@@ -1218,17 +1255,24 @@ const Analytics = () => {
               </ChartContainer>
             )}
           </CardContent>
+          )}
         </Card>
       </div>
 
       {/* Orders Volume Chart */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-blue-500" />
-            Daily Orders Volume
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-blue-500" />
+              Daily Orders Volume
+            </CardTitle>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleChart("ordersVolume")} aria-label={isChartVisible("ordersVolume") ? "Hide chart" : "Show chart"}>
+              {isChartVisible("ordersVolume") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
         </CardHeader>
+        {isChartVisible("ordersVolume") && (
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
             <div className="h-[200px] flex items-center justify-center text-muted-foreground">Loading...</div>
@@ -1265,6 +1309,7 @@ const Analytics = () => {
             </ChartContainer>
           )}
         </CardContent>
+        )}
       </Card>
 
       {/* Tabs for different analytics sections */}
