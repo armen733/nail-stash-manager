@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign, Share2 } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign, Share2, MessageSquare, Send } from "lucide-react";
+import { ContactCustomerDialog } from "@/components/users/ContactCustomerDialog";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newsletterOnly, setNewsletterOnly] = useState(false);
+  const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -469,6 +471,18 @@ export default function Users() {
                             <Badge variant="secondary" className={`text-xs ${getTierColor(tier?.current_tier)}`}>
                               {getTierLabel(tier?.current_tier)}
                             </Badge>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 shrink-0"
+                              title="Send email or text"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContactTarget(user);
+                              }}
+                            >
+                              <Send className="h-4 w-4 text-primary" />
+                            </Button>
                             <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
                           </div>
                         </div>
@@ -523,6 +537,29 @@ export default function Users() {
                       </span>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[40px]"
+                      onClick={() => setContactTarget(selectedUser)}
+                      disabled={!selectedUser.email || selectedUser.email.endsWith("@placeholder.local")}
+                    >
+                      <Mail className="h-4 w-4 mr-2" />
+                      Email
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-h-[40px]"
+                      onClick={() => setContactTarget(selectedUser)}
+                      disabled={!selectedUser.phone}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Text
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Stats Cards */}
@@ -710,6 +747,12 @@ export default function Users() {
           )}
         </SheetContent>
       </Sheet>
+
+      <ContactCustomerDialog
+        open={!!contactTarget}
+        onOpenChange={(o) => !o && setContactTarget(null)}
+        customer={contactTarget}
+      />
     </div>
   );
 }
