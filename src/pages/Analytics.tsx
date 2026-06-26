@@ -1005,26 +1005,33 @@ const Analytics = () => {
 
       {/* KPI Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          title={showRevenueAsProfit ? "Clean Profit" : "Total Revenue"}
-          value={(showRevenueAsProfit ? totalProfit : totalRevenue).toFixed(2)} 
-          icon={DollarSign} 
-          change={showRevenueAsProfit ? undefined : revenueChange}
-          prefix="$"
-          previousValue={showRevenueAsProfit ? undefined : previousPeriodStats.revenue}
-          sparkData={dailyRevenue}
-          sparkKey="revenue"
-          sparkColor={showRevenueAsProfit ? "#22c55e" : "#10B981"}
-          onClick={() => setShowRevenueAsProfit(v => !v)}
-          highlight={showRevenueAsProfit}
-          description={
-            showRevenueAsProfit
-              ? (totalRevenue > 0
-                  ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
-                  : "Tap to see revenue")
-              : `$${totalProfit.toFixed(2)} profit · tap for profit`
-          }
-        />
+        {(() => {
+          const netProfit = totalProfit - periodExpensesTotal;
+          const cardValue = revenueView === "revenue" ? totalRevenue : revenueView === "profit" ? totalProfit : netProfit;
+          const cardTitle = revenueView === "revenue" ? "Total Revenue" : revenueView === "profit" ? "Clean Profit" : "Net Profit";
+          const nextLabel = revenueView === "revenue" ? "tap for profit" : revenueView === "profit" ? "tap for net (− expenses)" : "tap to see revenue";
+          const desc = revenueView === "revenue"
+            ? `$${totalProfit.toFixed(2)} profit · ${nextLabel}`
+            : revenueView === "profit"
+              ? (totalRevenue > 0 ? `${((totalProfit / totalRevenue) * 100).toFixed(1)}% margin · ${nextLabel}` : nextLabel)
+              : `− $${periodExpensesTotal.toFixed(2)} expenses · ${nextLabel}`;
+          return (
+            <StatCard
+              title={cardTitle}
+              value={cardValue.toFixed(2)}
+              icon={DollarSign}
+              change={revenueView === "revenue" ? revenueChange : undefined}
+              prefix="$"
+              previousValue={revenueView === "revenue" ? previousPeriodStats.revenue : undefined}
+              sparkData={dailyRevenue}
+              sparkKey="revenue"
+              sparkColor={revenueView === "revenue" ? "#10B981" : "#22c55e"}
+              onClick={() => setRevenueView(v => v === "revenue" ? "profit" : v === "profit" ? "net" : "revenue")}
+              highlight={revenueView !== "revenue"}
+              description={desc}
+            />
+          );
+        })()}
         <StatCard 
           title="Total Orders" 
           value={totalOrders} 
