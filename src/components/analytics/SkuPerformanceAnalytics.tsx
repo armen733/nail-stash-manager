@@ -23,8 +23,11 @@ interface SkuRow {
   variant: string | null;
   units_sold: number;
   revenue: number;
+  profit: number;
   total_units_sold: number;
   total_revenue: number;
+  total_profit: number;
+  cost_usd: number;
   stock: number;
   reorder_level: number;
   velocity_per_day: number;
