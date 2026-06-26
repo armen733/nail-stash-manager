@@ -16,6 +16,7 @@ import {
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
 import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
+import { ExpensesSection } from "@/components/analytics/ExpensesSection";
 import { LazyAnalyticsMap } from "@/components/lazy";
 import { format, subDays, startOfMonth, startOfWeek, eachDayOfInterval, parseISO, differenceInDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -227,6 +228,8 @@ const Analytics = () => {
 
     return { periodStart, periodEnd, previousStart, previousEnd };
   };
+
+  const periodDates = useMemo(() => getPeriodDates(), [period, dateRange, selectedMonth]);
 
   const fetchAnalytics = async () => {
     try {
@@ -1314,6 +1317,9 @@ const Analytics = () => {
           </CardContent>
           )}
         </Card>
+
+        {/* Business Expenses */}
+        <ExpensesSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
 
         {/* Average Order Value Trend */}
         <Card className="shadow-[var(--shadow-card)]">
