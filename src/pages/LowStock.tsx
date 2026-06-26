@@ -261,6 +261,7 @@ const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
   return (
     <div className="space-y-3 sm:space-y-5 animate-fade-in">
       {/* Compact header */}
+      {!embedded && (
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
@@ -310,6 +311,7 @@ const LowStock = ({ embedded = false }: { embedded?: boolean } = {}) => {
           </Button>
         </div>
       </div>
+      )}
 
       {/* Compact filters row */}
       <div className="flex flex-wrap items-center gap-2">
