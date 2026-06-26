@@ -1882,7 +1882,7 @@ Thank you!`;
 
             {/* Sticky Actions */}
             <div className="flex justify-end gap-2 px-6 py-3 border-t bg-background pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
-              <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setShowCartOnly(false); }}>
+              <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); setShowCartOnly(false); setShowOrderDetails(false); }}>
                 Cancel
               </Button>
               <Button type="submit" disabled={orderItems.length === 0}>
