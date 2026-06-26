@@ -66,6 +66,7 @@ interface CustomerInsight {
 }
 
 interface ProductPerformance {
+  id?: string;
   name: string;
   revenue: number;
   quantity: number;
