@@ -28,6 +28,9 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [stats, setStats] = useState({ totalUnits: 0, totalRevenue: 0, totalProfit: 0, orderCount: 0, firstSold: "", lastSold: "" });
   const [stock, setStock] = useState<number | null>(null);
+  const [unitCost, setUnitCost] = useState<number | null>(null);
+  const [unitPrice, setUnitPrice] = useState<number | null>(null);
+  const [unitMargin, setUnitMargin] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open || !productId) return;
