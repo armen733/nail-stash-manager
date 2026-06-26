@@ -220,10 +220,15 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
               </div>
             </div>
           ) : (
-            <Button onClick={() => setAdding(true)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Add expense
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setAdding(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add expense
+              </Button>
+              <Button variant="outline" onClick={handlePrint} disabled={expenses.length === 0}>
+                <Printer className="h-4 w-4 mr-2" /> Print
+              </Button>
+            </div>
           )}
 
           {/* List */}
