@@ -335,14 +335,25 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
               </div>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <Button onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add expense
               </Button>
-              <Button variant="outline" onClick={handlePrint} disabled={expenses.length === 0}>
+              <Button variant="outline" onClick={handlePrint} disabled={filteredExpenses.length === 0}>
                 <Printer className="h-4 w-4 mr-2" /> Print
               </Button>
+              <div className="flex items-center gap-2 ml-auto">
+                <Switch
+                  id="subscriptions-only"
+                  checked={subscriptionsOnly}
+                  onCheckedChange={setSubscriptionsOnly}
+                />
+                <Label htmlFor="subscriptions-only" className="cursor-pointer text-sm flex items-center gap-1">
+                  <Repeat className="h-4 w-4 text-purple-500" />
+                  Subscriptions only
+                </Label>
+              </div>
             </div>
           )}
 
