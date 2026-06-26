@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign, Share2 } from "lucide-react";
+import { Users as UsersIcon, Mail, Calendar, Phone, Plus, Star, ShoppingBag, Award, ChevronRight, X, Search, DollarSign, Share2, MessageSquare, Send } from "lucide-react";
+import { ContactCustomerDialog } from "@/components/users/ContactCustomerDialog";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newsletterOnly, setNewsletterOnly] = useState(false);
+  const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
