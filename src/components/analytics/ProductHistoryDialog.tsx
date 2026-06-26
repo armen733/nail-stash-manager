@@ -83,7 +83,7 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
           quantity: it.quantity,
           unit_price: Number(it.unit_price),
           line_total: Number(it.line_total),
-          profit: (Number(it.unit_price) - cost) * it.quantity,
+          profit: (Number(it.unit_price) - effectiveCost) * it.quantity,
         };
       });
 
