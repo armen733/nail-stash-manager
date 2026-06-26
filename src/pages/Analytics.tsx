@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users, 
   BarChart3, ArrowUpRight, ArrowDownRight, Boxes, CalendarIcon, Download, GitCompare, FileText, ChevronRight,
-  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse
+  RefreshCw, AreaChartIcon, LineChartIcon, BarChart2, MapPin, Warehouse, Eye, EyeOff
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
