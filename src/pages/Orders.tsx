@@ -608,8 +608,14 @@ const Orders = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const subtotal = calculateTotal();
-      const tax = calculateTax(subtotal);
-      const total = subtotal + tax;
+      const discountInput = parseFloat(formData.discount) || 0;
+      const discountAmount = Math.min(
+        subtotal,
+        Math.max(0, formData.discountType === "percent" ? subtotal * (discountInput / 100) : discountInput)
+      );
+      const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+      const tax = calculateTax(discountedSubtotal);
+      const total = discountedSubtotal + tax;
 
       // === OFFLINE PATH: queue locally and bail out ===
       if (!isOnline()) {
