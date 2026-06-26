@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,10 +23,14 @@ interface SkuRow {
   variant: string | null;
   units_sold: number;
   revenue: number;
+  total_units_sold: number;
+  total_revenue: number;
   stock: number;
   reorder_level: number;
   velocity_per_day: number;
   days_of_stock: number | null;
+  product_age_days: number;
+  is_bad_performer: boolean;
   badges: string[];
 }
 
@@ -58,53 +61,75 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       setLoading(true);
       setAiResult(null);
       try {
-        // 1) Get order IDs in period (paginated — Supabase caps at 1000 per page)
-        const orderIds: string[] = [];
         const PAGE = 1000;
-        for (let from = 0; ; from += PAGE) {
-          const { data, error } = await supabase
+
+        const fetchOrderIds = async (start?: Date, end?: Date) => {
+          const ids: string[] = [];
+          for (let from = 0; ; from += PAGE) {
+            let query: any = supabase
             .from("orders")
             .select("id")
-            .gte("created_at", periodStart.toISOString())
-            .lte("created_at", periodEnd.toISOString())
             .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"])
+            .order("created_at", { ascending: true })
             .range(from, from + PAGE - 1);
-          if (error) throw error;
-          if (!data || data.length === 0) break;
-          orderIds.push(...data.map((o) => o.id));
-          if (data.length < PAGE) break;
-        }
 
-        // 2) Get order_items for those orders, in chunks of order IDs and paginated rows
-        const salesByProduct = new Map<string, { units: number; revenue: number }>();
-        const ID_CHUNK = 300;
-        for (let i = 0; i < orderIds.length; i += ID_CHUNK) {
-          const chunk = orderIds.slice(i, i + ID_CHUNK);
-          for (let from = 0; ; from += PAGE) {
-            const { data, error } = await supabase
-              .from("order_items")
-              .select("product_id, quantity, line_total")
-              .in("order_id", chunk)
-              .range(from, from + PAGE - 1);
+            if (start) query = query.gte("created_at", start.toISOString());
+            if (end) query = query.lte("created_at", end.toISOString());
+
+            const { data, error } = await query;
             if (error) throw error;
             if (!data || data.length === 0) break;
-            data.forEach((it: any) => {
-              if (!it.product_id) return;
-              const cur = salesByProduct.get(it.product_id) ?? { units: 0, revenue: 0 };
-              cur.units += Number(it.quantity ?? 0);
-              cur.revenue += Number(it.line_total ?? 0);
-              salesByProduct.set(it.product_id, cur);
-            });
+            ids.push(...data.map((o: any) => o.id));
             if (data.length < PAGE) break;
           }
-        }
+          return ids;
+        };
+
+        const fetchSalesByProduct = async (orderIds: string[]) => {
+          const sales = new Map<string, { units: number; revenue: number }>();
+          if (orderIds.length === 0) return sales;
+
+          const ID_CHUNK = 300;
+          for (let i = 0; i < orderIds.length; i += ID_CHUNK) {
+            const chunk = orderIds.slice(i, i + ID_CHUNK);
+            for (let from = 0; ; from += PAGE) {
+              const { data, error } = await supabase
+                .from("order_items")
+                .select("product_id, quantity, line_total")
+                .in("order_id", chunk)
+                .range(from, from + PAGE - 1);
+              if (error) throw error;
+              if (!data || data.length === 0) break;
+              data.forEach((it: any) => {
+                if (!it.product_id) return;
+                const cur = sales.get(it.product_id) ?? { units: 0, revenue: 0 };
+                cur.units += Number(it.quantity ?? 0);
+                cur.revenue += Number(it.line_total ?? 0);
+                sales.set(it.product_id, cur);
+              });
+              if (data.length < PAGE) break;
+            }
+          }
+          return sales;
+        };
+
+        const [periodOrderIds, lifetimeOrderIds] = await Promise.all([
+          fetchOrderIds(periodStart, periodEnd),
+          fetchOrderIds(),
+        ]);
+
+        const [salesByProduct, lifetimeSalesByProduct] = await Promise.all([
+          fetchSalesByProduct(periodOrderIds),
+          fetchSalesByProduct(lifetimeOrderIds),
+        ]);
 
         // 3) Get ALL products (paginated)
         const productsAll: any[] = [];
         for (let from = 0; ; from += PAGE) {
           const { data, error } = await supabase
             .from("products")
-            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level")
+            .select("id, sku, name, category, variant_name, bit_type, stock_on_hand, reorder_level, created_at")
+            .order("sku", { ascending: true })
             .range(from, from + PAGE - 1);
           if (error) throw error;
           if (!data || data.length === 0) break;
@@ -114,9 +139,13 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
 
         const built: SkuRow[] = productsAll.map((p: any) => {
           const s = salesByProduct.get(p.id) ?? { units: 0, revenue: 0 };
+          const lifetime = lifetimeSalesByProduct.get(p.id) ?? { units: 0, revenue: 0 };
           const velocity = s.units / periodDays;
           const stock = Number(p.stock_on_hand ?? 0);
           const dos = velocity > 0 ? stock / velocity : stock > 0 ? null : 0;
+          const productAgeDays = p.created_at
+            ? Math.max(0, differenceInDays(periodEnd, new Date(p.created_at)))
+            : periodDays;
           return {
             productId: p.id,
             sku: p.sku || "",
@@ -125,15 +154,26 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             variant: p.variant_name || p.bit_type || null,
             units_sold: s.units,
             revenue: s.revenue,
+            total_units_sold: lifetime.units,
+            total_revenue: lifetime.revenue,
             stock,
             reorder_level: Number(p.reorder_level ?? 0),
             velocity_per_day: velocity,
             days_of_stock: dos,
+            product_age_days: productAgeDays,
+            is_bad_performer: false,
             badges: [],
           };
         });
 
-        // Compute badges per (category, variant) group
+        const percentile = (values: number[], pct: number) => {
+          if (values.length === 0) return 0;
+          const sorted = [...values].sort((a, b) => a - b);
+          const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * pct)));
+          return sorted[index];
+        };
+
+        // Compute performance inside each category / variant, not across unrelated products.
         const groupMap = new Map<string, SkuRow[]>();
         built.forEach((r) => {
           const key = `${r.category}::${r.variant ?? ""}`;
@@ -142,14 +182,37 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           groupMap.set(key, arr);
         });
         groupMap.forEach((group) => {
-          const sold = group.filter((g) => g.units_sold > 0).sort((a, b) => a.units_sold - b.units_sold);
-          const bottomCount = Math.max(1, Math.floor(sold.length * 0.2));
-          const bottomSet = new Set(sold.slice(0, bottomCount).map((g) => g.productId));
+          const currentSold = group.filter((g) => g.units_sold > 0).map((g) => g.units_sold);
+          const lifetimeSold = group.filter((g) => g.total_units_sold > 0).map((g) => g.total_units_sold);
+          const currentLowCutoff = Math.max(1, percentile(currentSold, 0.2));
+          const currentMedian = percentile(currentSold, 0.5);
+          const lifetimeLowCutoff = percentile(lifetimeSold, 0.25);
+          const oldEnough = Math.min(14, periodDays);
+
           group.forEach((g) => {
-            if (g.units_sold === 0) g.badges.push("no-sales");
-            else if (g.units_sold <= 2) g.badges.push("zero-sales");
-            if (bottomSet.has(g.productId) && g.badges.length === 0) g.badges.push("low-units");
-            if (g.stock > 0 && (g.days_of_stock === null || g.days_of_stock > 90)) g.badges.push("overstocked");
+            const isOldEnough = g.product_age_days >= oldEnough;
+            const neverSold = g.total_units_sold === 0 && isOldEnough;
+            const noPeriodSales = g.total_units_sold > 0 && g.units_sold === 0 && isOldEnough;
+            const nearZero = g.units_sold > 0 && g.units_sold <= currentLowCutoff && currentSold.length >= 5;
+            const slowVsGroup =
+              group.length >= 8 &&
+              g.total_units_sold > 0 &&
+              g.total_units_sold <= lifetimeLowCutoff &&
+              g.units_sold <= currentLowCutoff &&
+              isOldEnough;
+            const stockRisk =
+              g.stock > 0 &&
+              (g.days_of_stock === null || g.days_of_stock > 150) &&
+              g.units_sold <= currentMedian;
+
+            if (g.product_age_days < oldEnough && g.total_units_sold === 0) g.badges.push("new");
+            if (neverSold) g.badges.push("never-sold");
+            else if (noPeriodSales) g.badges.push("no-period-sales");
+            if (!neverSold && nearZero) g.badges.push("near-zero");
+            if (!neverSold && slowVsGroup && !g.badges.includes("near-zero")) g.badges.push("slow-mover");
+            if (stockRisk && !neverSold && !noPeriodSales) g.badges.push("stock-risk");
+
+            g.is_bad_performer = neverSold || noPeriodSales || nearZero || slowVsGroup;
           });
         });
 
@@ -179,20 +242,36 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const sortTopFirst = (a: SkuRow, b: SkuRow) =>
+      b.units_sold - a.units_sold ||
+      b.revenue - a.revenue ||
+      b.total_units_sold - a.total_units_sold ||
+      a.sku.localeCompare(b.sku);
+
+    const badRank = (r: SkuRow) => {
+      if (r.badges.includes("never-sold")) return 0;
+      if (r.badges.includes("no-period-sales")) return 1;
+      if (r.badges.includes("near-zero")) return 2;
+      if (r.badges.includes("slow-mover")) return 3;
+      return 4;
+    };
+
     const base = rows
       .filter((r) => category === ALL || r.category === category)
       .filter((r) => variant === ALL || r.variant === variant)
       .filter(
         (r) => !q || r.sku.toLowerCase().includes(q) || r.name.toLowerCase().includes(q),
       )
-      .sort((a, b) => b.units_sold - a.units_sold);
+      .sort(sortTopFirst);
 
     if (mode === "top") {
-      // top performers: any with sales, ordered by units desc
-      return base.filter((r) => r.units_sold > 0 && !r.badges.includes("low-units"));
+      // Top means every SKU with sales in the selected period, ordered best to lowest.
+      return base.filter((r) => r.units_sold > 0).sort(sortTopFirst);
     }
     if (mode === "bad") {
-      return base.filter((r) => r.badges.length > 0);
+      return base
+        .filter((r) => r.is_bad_performer)
+        .sort((a, b) => badRank(a) - badRank(b) || a.units_sold - b.units_sold || b.stock - a.stock || a.sku.localeCompare(b.sku));
     }
     return base;
   }, [rows, category, variant, mode, search]);
@@ -203,9 +282,11 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         (a, r) => ({
           units: a.units + r.units_sold,
           revenue: a.revenue + r.revenue,
-          bad: a.bad + (r.badges.length > 0 ? 1 : 0),
+          bad: a.bad + (r.is_bad_performer ? 1 : 0),
+          neverSold: a.neverSold + (r.badges.includes("never-sold") ? 1 : 0),
+          selling: a.selling + (r.units_sold > 0 ? 1 : 0),
         }),
-        { units: 0, revenue: 0, bad: 0 },
+        { units: 0, revenue: 0, bad: 0, neverSold: 0, selling: 0 },
       ),
     [filtered],
   );
@@ -289,10 +370,14 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <Badge variant="secondary">{filtered.length} SKUs</Badge>
+            <Badge variant="secondary">{totals.selling} selling</Badge>
             <Badge variant="secondary">{totals.units.toLocaleString()} units</Badge>
             <Badge variant="secondary">${totals.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} revenue</Badge>
             {totals.bad > 0 && (
               <Badge variant="destructive">{totals.bad} flagged</Badge>
+            )}
+            {totals.neverSold > 0 && (
+              <Badge variant="outline">{totals.neverSold} never sold</Badge>
             )}
             <span className="ml-auto">Period: {periodDays} day{periodDays === 1 ? "" : "s"}</span>
           </div>
@@ -389,14 +474,14 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           {filtered.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">No SKUs match these filters.</div>
           ) : (
-            <ScrollArea className="max-h-[600px]">
+            <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
                     <th className="text-left p-2">SKU</th>
                     <th className="text-left p-2">Name</th>
                     <th className="text-left p-2 hidden md:table-cell">Variant</th>
-                    <th className="text-right p-2">Sold</th>
+                      <th className="text-right p-2">Sold</th>
                     <th className="text-right p-2 hidden sm:table-cell">Revenue</th>
                     <th className="text-right p-2 hidden sm:table-cell">Stock</th>
                     <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
@@ -412,7 +497,12 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                         <div className="text-[10px] text-muted-foreground">{r.category}</div>
                       </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{r.variant ?? "—"}</td>
-                      <td className="p-2 text-right font-semibold">{r.units_sold}</td>
+                      <td className="p-2 text-right">
+                        <div className="font-semibold">{r.units_sold}</div>
+                        {r.total_units_sold !== r.units_sold && (
+                          <div className="text-[10px] text-muted-foreground">All {r.total_units_sold}</div>
+                        )}
+                      </td>
                       <td className="p-2 text-right hidden sm:table-cell">${r.revenue.toFixed(0)}</td>
                       <td className="p-2 text-right hidden sm:table-cell">{r.stock}</td>
                       <td className="p-2 text-right hidden md:table-cell">
@@ -424,24 +514,34 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                       </td>
                       <td className="p-2">
                         <div className="flex flex-wrap gap-1">
-                          {r.badges.includes("no-sales") && (
+                          {r.badges.includes("new") && (
+                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 gap-0.5">
+                              New
+                            </Badge>
+                          )}
+                          {r.badges.includes("never-sold") && (
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
+                              <Snowflake className="h-2.5 w-2.5" /> Never sold
+                            </Badge>
+                          )}
+                          {r.badges.includes("no-period-sales") && (
                             <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
                               <Snowflake className="h-2.5 w-2.5" /> No sales
                             </Badge>
                           )}
-                          {r.badges.includes("zero-sales") && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
-                              <Snowflake className="h-2.5 w-2.5" /> Near-zero
-                            </Badge>
-                          )}
-                          {r.badges.includes("low-units") && (
+                          {r.badges.includes("near-zero") && (
                             <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
-                              <TrendingDown className="h-2.5 w-2.5" /> Low
+                              <TrendingDown className="h-2.5 w-2.5" /> Near-zero
                             </Badge>
                           )}
-                          {r.badges.includes("overstocked") && (
+                          {r.badges.includes("slow-mover") && (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
+                              <TrendingDown className="h-2.5 w-2.5" /> Slow
+                            </Badge>
+                          )}
+                          {r.badges.includes("stock-risk") && (
                             <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-amber-500/50 text-amber-600">
-                              <PackageX className="h-2.5 w-2.5" /> Overstock
+                              <PackageX className="h-2.5 w-2.5" /> Stock risk
                             </Badge>
                           )}
                         </div>
@@ -450,7 +550,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                   ))}
                 </tbody>
               </table>
-            </ScrollArea>
+            </div>
           )}
         </CardContent>
       </Card>
