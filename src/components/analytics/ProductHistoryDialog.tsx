@@ -127,6 +127,13 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
               <StatCard icon={<Calendar className="h-4 w-4" />} label="Orders" value={stats.orderCount.toString()} sub={stock !== null ? `${stock} in stock` : undefined} />
             </div>
 
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard icon={<DollarSign className="h-4 w-4" />} label="Unit Cost" value={unitCost !== null ? `$${unitCost.toFixed(2)}` : "—"} color="text-rose-500" />
+              <StatCard icon={<DollarSign className="h-4 w-4" />} label="Resell Price" value={unitPrice !== null ? `$${unitPrice.toFixed(2)}` : "—"} color="text-primary" />
+              <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Unit Profit" value={unitCost !== null && unitPrice !== null ? `$${(unitPrice - unitCost).toFixed(2)}` : "—"} color="text-green-500" />
+              <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Unit Margin" value={unitMargin !== null ? `${unitMargin.toFixed(1)}%` : "—"} sub={unitMargin !== null && unitMargin < 20 ? "low" : undefined} color={unitMargin !== null && unitMargin < 20 ? "text-amber-500" : "text-green-500"} />
+            </div>
+
             {stats.firstSold && (
               <div className="text-xs text-muted-foreground">
                 First sold: {format(new Date(stats.firstSold), "MMM dd, yyyy")} · Last sold: {format(new Date(stats.lastSold), "MMM dd, yyyy")}
