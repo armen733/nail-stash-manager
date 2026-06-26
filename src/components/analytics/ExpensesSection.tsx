@@ -300,9 +300,38 @@ export function ExpensesSection({ periodStart, periodEnd }: Props) {
                   />
                 </div>
               </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center rounded-lg border p-3 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={setIsRecurring}
+                  />
+                  <Label htmlFor="recurring" className="cursor-pointer flex items-center gap-1">
+                    <Repeat className="h-4 w-4 text-purple-500" />
+                    Recurring payment / subscription
+                  </Label>
+                </div>
+                {isRecurring && (
+                  <div className="flex items-center gap-2 sm:ml-auto">
+                    <Label className="text-xs text-muted-foreground">Frequency</Label>
+                    <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+                      <SelectTrigger className="w-36 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
-                <Button onClick={handleAdd}>Save expense</Button>
+                <Button onClick={handleAdd}>{isRecurring ? "Save subscription" : "Save expense"}</Button>
               </div>
             </div>
           ) : (
