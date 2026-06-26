@@ -89,7 +89,8 @@ const Analytics = () => {
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
   const [allSoldProducts, setAllSoldProducts] = useState<ProductPerformance[]>([]);
   const [topCustomers, setTopCustomers] = useState<CustomerInsight[]>([]);
-  const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number }[]>([]);
+  const [salonStats, setSalonStats] = useState<{ name: string; revenue: number; orderCount: number; avgOrder: number; profit: number }[]>([]);
+  const [salonRevenueView, setSalonRevenueView] = useState<"revenue" | "profit">("revenue");
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
   const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
