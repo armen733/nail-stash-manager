@@ -409,6 +409,7 @@ const Analytics = () => {
           // every DDB### into a single misleading row.
           if (!productMap[productSku]) {
             productMap[productSku] = {
+              id: product.id,
               name: productName,
               revenue: 0,
               quantity: 0,
