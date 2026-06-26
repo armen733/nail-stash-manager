@@ -312,7 +312,7 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start font-normal">
                         {selectedProduct
-                          ? `${selectedProduct.sku ?? "—"} · ${selectedProduct.name}`
+                          ? `${selectedProduct.sku ?? "—"}${selectedProduct.supplier_sku ? ` / Supp: ${selectedProduct.supplier_sku}` : ""} · ${selectedProduct.name}`
                           : "Select product…"}
                       </Button>
                     </PopoverTrigger>
@@ -325,14 +325,17 @@ export function ProductionOrdersSection({ periodStart, periodEnd }: Props) {
                             {products.map((p) => (
                               <CommandItem
                                 key={p.id}
-                                value={`${p.sku ?? ""} ${p.name}`}
+                                value={`${p.sku ?? ""} ${p.supplier_sku ?? ""} ${p.name}`}
                                 onSelect={() => {
                                   setSelectedProduct(p);
                                   setProductPickerOpen(false);
                                 }}
                               >
                                 <span className="font-mono text-xs mr-2 text-muted-foreground">{p.sku ?? "—"}</span>
-                                {p.name}
+                                <span className="flex-1 truncate">{p.name}</span>
+                                {p.supplier_sku && (
+                                  <span className="font-mono text-xs text-blue-500 ml-2">Supp: {p.supplier_sku}</span>
+                                )}
                               </CommandItem>
                             ))}
                           </CommandGroup>
