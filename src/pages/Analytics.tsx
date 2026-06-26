@@ -2288,6 +2288,14 @@ const Analytics = () => {
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <ProductHistoryDialog
+        productId={historyProduct?.id || null}
+        productName={historyProduct?.name}
+        sku={historyProduct?.sku}
+        open={!!historyProduct}
+        onOpenChange={(o) => !o && setHistoryProduct(null)}
+      />
     </div>
   );
 };
