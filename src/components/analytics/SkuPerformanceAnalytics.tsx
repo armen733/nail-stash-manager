@@ -4,7 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List, Warehouse } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List, Warehouse, HelpCircle } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -572,7 +578,23 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                     {mode !== "stock" && <th className="text-right p-2">Sold</th>}
                     {mode !== "stock" && <th className="text-right p-2 hidden sm:table-cell">Revenue</th>}
                     {mode !== "stock" && <th className="text-right p-2 hidden md:table-cell">Profit</th>}
-                    <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
+                    {mode !== "stock" && (
+                      <th className="text-right p-2 hidden md:table-cell">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 cursor-help">
+                                Days of stock
+                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">Estimated days current stock will last based on sales velocity during the selected period.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </th>
+                    )}
                     {mode !== "stock" && <th className="text-left p-2">Flags</th>}
                   </tr>
                 </thead>
@@ -603,13 +625,15 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                           {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
                         </td>
                       )}
-                      <td className="p-2 text-right hidden md:table-cell">
-                        {r.days_of_stock === null
-                          ? "∞"
-                          : r.days_of_stock === 0
-                          ? "—"
-                          : Math.round(r.days_of_stock)}
-                      </td>
+                      {mode !== "stock" && (
+                        <td className="p-2 text-right hidden md:table-cell">
+                          {r.days_of_stock === null
+                            ? "No sales"
+                            : r.days_of_stock === 0
+                            ? "—"
+                            : Math.round(r.days_of_stock)}
+                        </td>
+                      )}
                       {mode !== "stock" && (
                         <td className="p-2">
                           <div className="flex flex-wrap gap-1">
