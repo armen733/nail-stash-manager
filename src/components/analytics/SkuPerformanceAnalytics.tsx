@@ -4,7 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List, Warehouse } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List, Warehouse, HelpCircle } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
