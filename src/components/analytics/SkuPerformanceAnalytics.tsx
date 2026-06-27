@@ -625,13 +625,15 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                           {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
                         </td>
                       )}
-                      <td className="p-2 text-right hidden md:table-cell">
-                        {r.days_of_stock === null
-                          ? "∞"
-                          : r.days_of_stock === 0
-                          ? "—"
-                          : Math.round(r.days_of_stock)}
-                      </td>
+                      {mode !== "stock" && (
+                        <td className="p-2 text-right hidden md:table-cell">
+                          {r.days_of_stock === null
+                            ? "No sales"
+                            : r.days_of_stock === 0
+                            ? "—"
+                            : Math.round(r.days_of_stock)}
+                        </td>
+                      )}
                       {mode !== "stock" && (
                         <td className="p-2">
                           <div className="flex flex-wrap gap-1">
