@@ -382,7 +382,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             <ToggleGroup
               type="single"
               value={mode}
-              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never")}
+              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never" | "stock")}
               className="justify-start"
             >
               <ToggleGroupItem value="all" className="text-xs">
@@ -396,6 +396,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               </ToggleGroupItem>
               <ToggleGroupItem value="never" className="text-xs">
                 <Snowflake className="h-3.5 w-3.5 mr-1" /> Never
+              </ToggleGroupItem>
+              <ToggleGroupItem value="stock" className="text-xs">
+                <Warehouse className="h-3.5 w-3.5 mr-1" /> Stock
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
