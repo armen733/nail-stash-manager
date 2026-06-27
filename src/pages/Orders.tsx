@@ -208,7 +208,7 @@ const Orders = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [showCartOnly, setShowCartOnly] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
-  const [showSelectedPreview, setShowSelectedPreview] = useState(false);
+  
 
   // Referral tracking
   const [detectedReferrer, setDetectedReferrer] = useState<{ id: string; name: string; commission_rate: number } | null>(null);
@@ -1288,16 +1288,25 @@ Thank you!`;
               <div className="space-y-3 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between">
                   <Label>Products *</Label>
-                  {showCartOnly && (
+                  {orderItems.length > 0 && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowCartOnly(false)}
+                      onClick={() => setShowCartOnly(!showCartOnly)}
                       className="text-muted-foreground"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Back to products
+                      {showCartOnly ? (
+                        <>
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Back to products
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Edit cart
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -1424,93 +1433,6 @@ Thank you!`;
 
             {/* Sticky footer */}
             <div className="border-t px-6 py-3 bg-background space-y-3">
-              {/* Selected products summary - visible and compact */}
-              {orderItems.length > 0 && (
-                <Collapsible open={showSelectedPreview && !showCartOnly} onOpenChange={setShowSelectedPreview}>
-                  <div className="flex items-center justify-between gap-2">
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs gap-1 px-2 flex-1 justify-start"
-                        disabled={showCartOnly}
-                      >
-                        <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", showSelectedPreview && !showCartOnly && "rotate-90")} />
-                        <span className="font-semibold">Selected ({orderItems.reduce((sum, i) => sum + i.quantity, 0)})</span>
-                      </Button>
-                    </CollapsibleTrigger>
-                    <Button
-                      type="button"
-                      variant={showCartOnly ? "secondary" : "ghost"}
-                      size="sm"
-                      onClick={() => setShowCartOnly(!showCartOnly)}
-                      className="h-7 text-xs gap-1 px-2"
-                    >
-                      <ShoppingCart className="h-3 w-3" />
-                      {showCartOnly ? "Back to products" : "Edit cart"}
-                    </Button>
-                  </div>
-                  <CollapsibleContent>
-                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 pt-2">
-                      {orderItems.map((item) => {
-                        const product = products.find(p => p.id === item.product_id);
-                        if (!product) return null;
-                        const imageUrl = product.image_url || product.product_images?.[0]?.image_url;
-                        return (
-                          <div key={item.product_id} className="flex-shrink-0 w-[140px] bg-muted/50 rounded-lg p-2 border">
-                            <div className="h-16 w-full rounded bg-muted flex items-center justify-center overflow-hidden mb-1.5">
-                              {imageUrl ? (
-                                <img src={imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                              ) : (
-                                <Package className="h-6 w-6 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div className="text-xs font-medium truncate" title={product.name}>{product.name}</div>
-                            <div className="text-[10px] text-muted-foreground truncate">{product.sku}</div>
-                            <div className="flex items-center justify-between mt-1">
-                              <div className="flex items-center gap-0.5 bg-background rounded border">
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-6 w-6"
-                                  onClick={() => {
-                                    if (item.quantity <= 1) {
-                                      setOrderItems(orderItems.filter(i => i.product_id !== item.product_id));
-                                    } else {
-                                      setOrderItems(orderItems.map(i =>
-                                        i.product_id === item.product_id ? { ...i, quantity: i.quantity - 1 } : i
-                                      ));
-                                    }
-                                  }}
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="w-5 text-center text-xs font-semibold">{item.quantity}</span>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-6 w-6"
-                                  onClick={() => {
-                                    setOrderItems(orderItems.map(i =>
-                                      i.product_id === item.product_id ? { ...i, quantity: i.quantity + 1 } : i
-                                    ));
-                                  }}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                              </div>
-                              <span className="text-xs font-semibold">${(item.unit_price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
 
               {/* Collapsible order details (Customer / Salon / Tech / Notes / Discount) */}
               <Collapsible open={showOrderDetails || showNewUserForm || showNewSalonForm} onOpenChange={(open) => {
