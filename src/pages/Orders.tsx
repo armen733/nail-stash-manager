@@ -208,7 +208,7 @@ const Orders = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [showCartOnly, setShowCartOnly] = useState(false);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
-  const [showSelectedPreview, setShowSelectedPreview] = useState(false);
+  
 
   // Referral tracking
   const [detectedReferrer, setDetectedReferrer] = useState<{ id: string; name: string; commission_rate: number } | null>(null);
