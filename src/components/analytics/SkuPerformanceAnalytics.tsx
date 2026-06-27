@@ -578,7 +578,23 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                     {mode !== "stock" && <th className="text-right p-2">Sold</th>}
                     {mode !== "stock" && <th className="text-right p-2 hidden sm:table-cell">Revenue</th>}
                     {mode !== "stock" && <th className="text-right p-2 hidden md:table-cell">Profit</th>}
-                    <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
+                    {mode !== "stock" && (
+                      <th className="text-right p-2 hidden md:table-cell">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 cursor-help">
+                                Days of stock
+                                <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs">Estimated days current stock will last based on sales velocity during the selected period.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </th>
+                    )}
                     {mode !== "stock" && <th className="text-left p-2">Flags</th>}
                   </tr>
                 </thead>
