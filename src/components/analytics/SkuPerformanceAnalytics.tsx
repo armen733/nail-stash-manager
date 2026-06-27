@@ -295,6 +295,10 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         .filter((r) => r.badges.includes("never-sold"))
         .sort((a, b) => b.product_age_days - a.product_age_days || a.sku.localeCompare(b.sku));
     }
+    if (mode === "stock") {
+      // Highest current stock first.
+      return [...base].sort((a, b) => b.stock - a.stock || a.sku.localeCompare(b.sku));
+    }
     return base;
 
   }, [rows, category, variant, mode, search]);
