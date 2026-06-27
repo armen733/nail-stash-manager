@@ -271,6 +271,10 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       b.revenue - a.revenue ||
       b.total_units_sold - a.total_units_sold ||
       a.sku.localeCompare(b.sku);
+    const sortStockFirst = (a: SkuRow, b: SkuRow) =>
+      b.stock - a.stock ||
+      b.reorder_level - a.reorder_level ||
+      a.sku.localeCompare(b.sku);
 
     const base = rows
       .filter((r) => category === ALL || r.category === category)
@@ -296,8 +300,8 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         .sort((a, b) => b.product_age_days - a.product_age_days || a.sku.localeCompare(b.sku));
     }
     if (mode === "stock") {
-      // Highest current stock first.
-      return [...base].sort((a, b) => b.stock - a.stock || a.sku.localeCompare(b.sku));
+      // Current inventory ranking: highest stock quantity first.
+      return [...base].sort(sortStockFirst);
     }
     return base;
 
@@ -310,14 +314,17 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           units: a.units + r.units_sold,
           revenue: a.revenue + r.revenue,
           profit: a.profit + r.profit,
+          stock: a.stock + r.stock,
           bad: a.bad + (r.is_bad_performer ? 1 : 0),
           neverSold: a.neverSold + (r.badges.includes("never-sold") ? 1 : 0),
           selling: a.selling + (r.units_sold > 0 ? 1 : 0),
         }),
-        { units: 0, revenue: 0, profit: 0, bad: 0, neverSold: 0, selling: 0 },
+        { units: 0, revenue: 0, profit: 0, stock: 0, bad: 0, neverSold: 0, selling: 0 },
       ),
     [filtered],
   );
+
+  const topStockProduct = mode === "stock" ? filtered[0] : null;
 
   const handleAi = async () => {
     if (filtered.length === 0) {
@@ -359,7 +366,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
           <div className="flex items-center gap-2 text-sm font-medium">
             <Filter className="h-4 w-4 text-primary" /> Filter SKUs
           </div>
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-4">
+          <div className="grid gap-2 grid-cols-1 md:grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_minmax(240px,1.4fr)]">
             <Select value={category} onValueChange={(v) => { setCategory(v); setVariant(ALL); }}>
               <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
               <SelectContent>
@@ -379,37 +386,64 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs font-medium text-muted-foreground">View</div>
             <ToggleGroup
               type="single"
               value={mode}
               onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never" | "stock")}
-              className="justify-start"
+              className="w-full flex-wrap justify-start sm:w-auto"
             >
-              <ToggleGroupItem value="all" className="text-xs">
+              <ToggleGroupItem value="all" className="h-9 px-3 text-sm">
                 <List className="h-3.5 w-3.5 mr-1" /> All
               </ToggleGroupItem>
-              <ToggleGroupItem value="top" className="text-xs">
+              <ToggleGroupItem value="top" className="h-9 px-3 text-sm">
                 <TrendingUp className="h-3.5 w-3.5 mr-1" /> Top
               </ToggleGroupItem>
-              <ToggleGroupItem value="bad" className="text-xs">
+              <ToggleGroupItem value="bad" className="h-9 px-3 text-sm">
                 <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Bad
               </ToggleGroupItem>
-              <ToggleGroupItem value="never" className="text-xs">
+              <ToggleGroupItem value="never" className="h-9 px-3 text-sm">
                 <Snowflake className="h-3.5 w-3.5 mr-1" /> Never
               </ToggleGroupItem>
-              <ToggleGroupItem value="stock" className="text-xs">
-                <Warehouse className="h-3.5 w-3.5 mr-1" /> Stock
+              <ToggleGroupItem value="stock" className="h-9 px-3 text-sm font-semibold data-[state=on]:border-primary data-[state=on]:bg-primary/15 data-[state=on]:text-primary">
+                <Warehouse className="h-4 w-4 mr-1.5" /> Stock ranking
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
+          {mode === "stock" && (
+            <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="font-semibold text-primary">Current stock ranking</div>
+                  <div className="text-xs text-muted-foreground">Products are sorted by current stock quantity, highest stock first.</div>
+                </div>
+                <div className="text-left sm:text-right">
+                  <div className="font-bold">{totals.stock.toLocaleString()} units in stock</div>
+                  {topStockProduct && (
+                    <div className="text-xs text-muted-foreground">
+                      Top: {topStockProduct.sku || "—"} · {topStockProduct.stock.toLocaleString()} units
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
             <Badge variant="secondary">{filtered.length} SKUs</Badge>
-            <Badge variant="secondary">{totals.selling} selling</Badge>
-            <Badge variant="secondary">{totals.units.toLocaleString()} units</Badge>
-            <Badge variant="secondary">${totals.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} revenue</Badge>
-            <Badge variant="secondary" className={totals.profit >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}>
-              ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
-            </Badge>
+            {mode === "stock" ? (
+              <Badge variant="secondary">{totals.stock.toLocaleString()} current stock units</Badge>
+            ) : (
+              <>
+                <Badge variant="secondary">{totals.selling} selling</Badge>
+                <Badge variant="secondary">{totals.units.toLocaleString()} units</Badge>
+                <Badge variant="secondary">${totals.revenue.toLocaleString(undefined, { maximumFractionDigits: 0 })} revenue</Badge>
+                <Badge variant="secondary" className={totals.profit >= 0 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-destructive/15 text-destructive"}>
+                  ${totals.profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} profit
+                </Badge>
+              </>
+            )}
             {totals.bad > 0 && (
               <Badge
                 variant="destructive"
@@ -517,7 +551,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
       {/* SKU table */}
       <Card className="shadow-[var(--shadow-card)]">
         <CardHeader className="p-4 flex flex-row items-center justify-between gap-3 space-y-0">
-          <CardTitle className="text-base">SKU performance</CardTitle>
+          <CardTitle className="text-base">{mode === "stock" ? "Current stock ranking" : "SKU performance"}</CardTitle>
           <Badge variant="secondary" className="shrink-0">
             Showing {filtered.length} of {rows.length} SKUs
           </Badge>
@@ -530,37 +564,45 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
+                    {mode === "stock" && <th className="text-right p-2 w-12">Rank</th>}
                     <th className="text-left p-2">SKU</th>
                     <th className="text-left p-2">Name</th>
                     <th className="text-left p-2 hidden md:table-cell">Variant</th>
-                      <th className={`text-right p-2 ${mode === "stock" ? "font-bold text-primary" : ""}`}>Sold</th>
-                    <th className="text-right p-2 hidden sm:table-cell">Revenue</th>
-                    <th className="text-right p-2 hidden md:table-cell">Profit</th>
-                    <th className={`text-right p-2 hidden sm:table-cell ${mode === "stock" ? "font-bold text-primary" : ""}`}>Stock</th>
+                    <th className={`text-right p-2 ${mode === "stock" ? "font-bold text-primary" : ""}`}>Current stock</th>
+                    {mode !== "stock" && <th className="text-right p-2">Sold</th>}
+                    {mode !== "stock" && <th className="text-right p-2 hidden sm:table-cell">Revenue</th>}
+                    {mode !== "stock" && <th className="text-right p-2 hidden md:table-cell">Profit</th>}
                     <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
-                    <th className="text-left p-2">Flags</th>
+                    {mode !== "stock" && <th className="text-left p-2">Flags</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((r) => (
+                  {filtered.map((r, index) => (
                     <tr key={r.productId} className="border-t hover:bg-muted/30">
+                      {mode === "stock" && <td className="p-2 text-right font-semibold text-muted-foreground">#{index + 1}</td>}
                       <td className="p-2 font-mono">{r.sku || "—"}</td>
                       <td className="p-2">
                         <div className="font-medium">{r.name}</div>
                         <div className="text-[10px] text-muted-foreground">{r.category}</div>
                       </td>
                       <td className="p-2 hidden md:table-cell text-muted-foreground">{r.variant ?? "—"}</td>
-                      <td className="p-2 text-right">
-                        <div className="font-semibold">{r.units_sold}</div>
-                        {r.total_units_sold !== r.units_sold && (
-                          <div className="text-[10px] text-muted-foreground">All {r.total_units_sold}</div>
-                        )}
+                      <td className={`p-2 text-right ${mode === "stock" ? "text-base font-bold text-primary" : "font-semibold"}`}>
+                        {r.stock.toLocaleString()}
                       </td>
-                      <td className="p-2 text-right hidden sm:table-cell">${r.revenue.toFixed(0)}</td>
-                      <td className={`p-2 text-right hidden md:table-cell ${r.profit < 0 ? "text-destructive" : r.profit > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
-                        {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className={`p-2 text-right hidden sm:table-cell ${mode === "stock" ? "font-bold text-primary" : ""}`}>{r.stock}</td>
+                      {mode !== "stock" && (
+                        <td className="p-2 text-right">
+                          <div className="font-semibold">{r.units_sold}</div>
+                          {r.total_units_sold !== r.units_sold && (
+                            <div className="text-[10px] text-muted-foreground">All {r.total_units_sold}</div>
+                          )}
+                        </td>
+                      )}
+                      {mode !== "stock" && <td className="p-2 text-right hidden sm:table-cell">${r.revenue.toFixed(0)}</td>}
+                      {mode !== "stock" && (
+                        <td className={`p-2 text-right hidden md:table-cell ${r.profit < 0 ? "text-destructive" : r.profit > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                          {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      )}
                       <td className="p-2 text-right hidden md:table-cell">
                         {r.days_of_stock === null
                           ? "∞"
@@ -568,46 +610,50 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                           ? "—"
                           : Math.round(r.days_of_stock)}
                       </td>
-                      <td className="p-2">
-                        <div className="flex flex-wrap gap-1">
-                          {r.badges.includes("new") && (
-                            <Badge variant="secondary" className="text-[9px] h-4 px-1.5 gap-0.5">
-                              New
-                            </Badge>
-                          )}
-                          {r.badges.includes("never-sold") && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
-                              <Snowflake className="h-2.5 w-2.5" /> Never sold
-                            </Badge>
-                          )}
-                          {r.badges.includes("no-period-sales") && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
-                              <Snowflake className="h-2.5 w-2.5" /> No sales
-                            </Badge>
-                          )}
-                          {r.badges.includes("near-zero") && (
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
-                              <TrendingDown className="h-2.5 w-2.5" /> Near-zero
-                            </Badge>
-                          )}
-                          {r.badges.includes("slow-mover") && (
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
-                              <TrendingDown className="h-2.5 w-2.5" /> Slow
-                            </Badge>
-                          )}
-                          {r.badges.includes("stock-risk") && (
-                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-amber-500/50 text-amber-600">
-                              <PackageX className="h-2.5 w-2.5" /> Stock risk
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
+                      {mode !== "stock" && (
+                        <td className="p-2">
+                          <div className="flex flex-wrap gap-1">
+                            {r.badges.includes("new") && (
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 gap-0.5">
+                                New
+                              </Badge>
+                            )}
+                            {r.badges.includes("never-sold") && (
+                              <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
+                                <Snowflake className="h-2.5 w-2.5" /> Never sold
+                              </Badge>
+                            )}
+                            {r.badges.includes("no-period-sales") && (
+                              <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-0.5">
+                                <Snowflake className="h-2.5 w-2.5" /> No sales
+                              </Badge>
+                            )}
+                            {r.badges.includes("near-zero") && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
+                                <TrendingDown className="h-2.5 w-2.5" /> Near-zero
+                              </Badge>
+                            )}
+                            {r.badges.includes("slow-mover") && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-orange-500/50 text-orange-600">
+                                <TrendingDown className="h-2.5 w-2.5" /> Slow
+                              </Badge>
+                            )}
+                            {r.badges.includes("stock-risk") && (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 gap-0.5 border-amber-500/50 text-amber-600">
+                                <PackageX className="h-2.5 w-2.5" /> Stock risk
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                Showing {filtered.length} SKU{filtered.length === 1 ? "" : "s"} from {rows.length} loaded product SKU{rows.length === 1 ? "" : "s"}.
+                {mode === "stock"
+                  ? `Showing ${filtered.length} SKU${filtered.length === 1 ? "" : "s"} ranked by current stock quantity from highest to lowest.`
+                  : `Showing ${filtered.length} SKU${filtered.length === 1 ? "" : "s"} from ${rows.length} loaded product SKU${rows.length === 1 ? "" : "s"}.`}
               </div>
             </div>
           )}
