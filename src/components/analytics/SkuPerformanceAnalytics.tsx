@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List } from "lucide-react";
+import { Sparkles, AlertTriangle, TrendingDown, TrendingUp, PackageX, Snowflake, Loader2, BarChart3, Filter, List, Warehouse } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +53,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
   const [category, setCategory] = useState<string>(ALL);
   const [variant, setVariant] = useState<string>(ALL);
   const [search, setSearch] = useState("");
-  const [mode, setMode] = useState<"all" | "top" | "bad" | "never">("all");
+  const [mode, setMode] = useState<"all" | "top" | "bad" | "never" | "stock">("all");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
 
@@ -295,6 +295,10 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
         .filter((r) => r.badges.includes("never-sold"))
         .sort((a, b) => b.product_age_days - a.product_age_days || a.sku.localeCompare(b.sku));
     }
+    if (mode === "stock") {
+      // Highest current stock first.
+      return [...base].sort((a, b) => b.stock - a.stock || a.sku.localeCompare(b.sku));
+    }
     return base;
 
   }, [rows, category, variant, mode, search]);
@@ -378,7 +382,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             <ToggleGroup
               type="single"
               value={mode}
-              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never")}
+              onValueChange={(v) => v && setMode(v as "all" | "top" | "bad" | "never" | "stock")}
               className="justify-start"
             >
               <ToggleGroupItem value="all" className="text-xs">
@@ -392,6 +396,9 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
               </ToggleGroupItem>
               <ToggleGroupItem value="never" className="text-xs">
                 <Snowflake className="h-3.5 w-3.5 mr-1" /> Never
+              </ToggleGroupItem>
+              <ToggleGroupItem value="stock" className="text-xs">
+                <Warehouse className="h-3.5 w-3.5 mr-1" /> Stock
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -526,10 +533,10 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                     <th className="text-left p-2">SKU</th>
                     <th className="text-left p-2">Name</th>
                     <th className="text-left p-2 hidden md:table-cell">Variant</th>
-                      <th className="text-right p-2">Sold</th>
+                      <th className={`text-right p-2 ${mode === "stock" ? "font-bold text-primary" : ""}`}>Sold</th>
                     <th className="text-right p-2 hidden sm:table-cell">Revenue</th>
                     <th className="text-right p-2 hidden md:table-cell">Profit</th>
-                    <th className="text-right p-2 hidden sm:table-cell">Stock</th>
+                    <th className={`text-right p-2 hidden sm:table-cell ${mode === "stock" ? "font-bold text-primary" : ""}`}>Stock</th>
                     <th className="text-right p-2 hidden md:table-cell">Days of stock</th>
                     <th className="text-left p-2">Flags</th>
                   </tr>
@@ -553,7 +560,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
                       <td className={`p-2 text-right hidden md:table-cell ${r.profit < 0 ? "text-destructive" : r.profit > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
                         {r.cost_usd > 0 ? `$${r.profit.toFixed(0)}` : <span className="text-muted-foreground">—</span>}
                       </td>
-                      <td className="p-2 text-right hidden sm:table-cell">{r.stock}</td>
+                      <td className={`p-2 text-right hidden sm:table-cell ${mode === "stock" ? "font-bold text-primary" : ""}`}>{r.stock}</td>
                       <td className="p-2 text-right hidden md:table-cell">
                         {r.days_of_stock === null
                           ? "∞"
