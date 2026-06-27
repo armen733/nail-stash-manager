@@ -1288,16 +1288,25 @@ Thank you!`;
               <div className="space-y-3 flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between">
                   <Label>Products *</Label>
-                  {showCartOnly && (
+                  {orderItems.length > 0 && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowCartOnly(false)}
+                      onClick={() => setShowCartOnly(!showCartOnly)}
                       className="text-muted-foreground"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Back to products
+                      {showCartOnly ? (
+                        <>
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Back to products
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Edit cart
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>
