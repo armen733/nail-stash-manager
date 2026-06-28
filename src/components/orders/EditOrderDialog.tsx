@@ -89,7 +89,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [notes, setNotes] = useState("");
   const [technicianName, setTechnicianName] = useState("");
   const [discountCode, setDiscountCode] = useState("");
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountInput, setDiscountInput] = useState<string>("");
+  const [discountType, setDiscountType] = useState<"amount" | "percent">("amount");
   const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
   const [loyalty, setLoyalty] = useState<{ available: number; perDollar: number; minRedeem: number; redeemValue: number } | null>(null);
 
