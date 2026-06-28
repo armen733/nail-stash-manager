@@ -940,6 +940,7 @@ export default function Warehouse() {
                 <SelectContent>
                   <SelectItem value="warehouse">Warehouse / Office</SelectItem>
                   <SelectItem value="fba">Amazon FBA</SelectItem>
+                  <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Driver Van</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
                 </SelectContent>
