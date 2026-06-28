@@ -341,65 +341,73 @@ const Referrals = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">Referrals & Affiliates</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => printSupplyInvitation()}>
-            <Printer className="h-4 w-4 mr-1" /> Print Supply Invitation
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={() => printSupplyInvitation()}>
+            <Printer className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Print Supply Invitation</span>
+            <span className="sm:hidden">Supply Invite</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printSalonInvitation()}>
-            <Printer className="h-4 w-4 mr-1" /> Print Salon Invitation
+          <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={() => printSalonInvitation()}>
+            <Printer className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Print Salon Invitation</span>
+            <span className="sm:hidden">Salon Invite</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => printAffiliateInvitation()}>
-            <Printer className="h-4 w-4 mr-1" /> Print Affiliate Invitation
+          <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={() => printAffiliateInvitation()}>
+            <Printer className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Print Affiliate Invitation</span>
+            <span className="sm:hidden">Affiliate Invite</span>
           </Button>
-          <Button onClick={openCreateDialog} size="sm">
-            <Plus className="h-4 w-4 mr-1" /> Add Referrer
+          <Button onClick={openCreateDialog} size="sm" className="w-full sm:w-auto justify-center">
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Add Referrer</span>
+            <span className="sm:hidden">Add Referrer</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Card>
-          <CardContent className="p-3 text-center">
-            <Users className="h-5 w-5 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.totalReferrers}</p>
-            <p className="text-xs text-muted-foreground">Active Referrers</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">{stats.totalReferrers}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Active Referrers</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <UserPlus className="h-5 w-5 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">{stats.totalCustomersReferred}</p>
-            <p className="text-xs text-muted-foreground">Referred Customers</p>
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">{stats.totalCustomersReferred}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Referred Customers</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <DollarSign className="h-5 w-5 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">${stats.totalRevenue.toFixed(0)}</p>
-            <p className="text-xs text-muted-foreground">Revenue Generated</p>
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">${stats.totalRevenue.toFixed(0)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Revenue Generated</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <TrendingUp className="h-5 w-5 mx-auto text-accent-foreground mb-1" />
-            <p className="text-lg font-bold">${stats.totalCommission.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Total Commission</p>
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-accent-foreground mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">${stats.totalCommission.toFixed(2)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Total Commission</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <Clock className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-            <p className="text-lg font-bold">${stats.unpaidCommission.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Unpaid</p>
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-muted-foreground mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">${stats.unpaidCommission.toFixed(2)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Unpaid</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-3 text-center">
-            <CheckCircle className="h-5 w-5 mx-auto text-primary mb-1" />
-            <p className="text-lg font-bold">${stats.paidCommission.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Paid Out</p>
+        <Card className="min-w-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mx-auto text-primary mb-1" />
+            <p className="text-base sm:text-lg font-bold truncate">${stats.paidCommission.toFixed(2)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Paid Out</p>
           </CardContent>
         </Card>
       </div>
