@@ -633,14 +633,36 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                 <Input value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} placeholder="Optional" />
               </div>
               <div>
-                <Label>Discount amount ($)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(parseFloat(e.target.value || "0"))}
-                />
+                <Label>Discount</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    placeholder="0"
+                  />
+                  <div className="flex border rounded-md overflow-hidden">
+                    <button
+                      type="button"
+                      className={`px-3 text-xs ${discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                      onClick={() => setDiscountType("amount")}
+                    >
+                      $
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 text-xs ${discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                      onClick={() => setDiscountType("percent")}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+                {discountType === "percent" && discountAmount > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">= ${discountAmount.toFixed(2)} off</p>
+                )}
               </div>
             </div>
 
