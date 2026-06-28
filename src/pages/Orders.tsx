@@ -1061,8 +1061,24 @@ const Orders = () => {
         </style>
       </head>
       <body>
-        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #333;">
-          <img src="${NERA_PACKING_LOGO}" alt="NERA Beauty" style="height: 80px; width: auto;" />
+        <div class="header">
+          <div class="logo">
+            <img src="${NERA_PACKING_LOGO}" alt="NERA Beauty" style="height: 80px; width: auto;" />
+          </div>
+          <div class="order-info">
+            <div class="order-id">Order #${order.id.slice(0, 8).toUpperCase()}</div>
+            <div class="date">${new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div class="status-badge status-${order.status}" style="margin-top: 6px;">${order.status}</div>
+            ${(order.discount_amount ?? 0) > 0 ? `<div style="margin-top: 6px; color: #059669; font-weight: 600;">Discounted order −$${Number(order.discount_amount).toFixed(2)}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="addresses">
+          <div class="address-block">
+            <h3>Ship To</h3>
+            <p>${order.salons?.name || order.customer_name || '—'}</p>
+            ${order.salons?.address ? `<p>${order.salons.address}</p>` : ''}
+          </div>
         </div>
 
 
