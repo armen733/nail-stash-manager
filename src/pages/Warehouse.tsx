@@ -842,6 +842,7 @@ export default function Warehouse() {
                   <SelectItem value="all">All types</SelectItem>
                   <SelectItem value="warehouse">Warehouse</SelectItem>
                   <SelectItem value="fba">Amazon FBA</SelectItem>
+                  <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Drivers</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
                 </SelectContent>
