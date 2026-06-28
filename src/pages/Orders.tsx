@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
+import { NERA_PACKING_LOGO } from "@/lib/packingLogo";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Calendar } from "@/components/ui/calendar";
@@ -1059,25 +1060,10 @@ const Orders = () => {
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="logo"><img src="${window.location.origin}/images/nera-logo-packing.png" alt="NERA Beauty" style="height: 60px; width: auto;" onerror="this.style.display='none'" /></div>
-            <div class="order-info">
-              <div class="order-id">Order #${order.id.slice(0, 8).toUpperCase()}</div>
-              <div class="date">${new Date(order.order_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-              <div style="margin-top: 8px;"><span class="status-badge status-${order.status}">${order.status}</span></div>
-              ${(order.discount_amount ?? 0) > 0 ? `<div style="margin-top: 8px; font-size: 13px; color: #fff; background: #10b981; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600;">Discounted order −$${Number(order.discount_amount).toFixed(2)}</div>` : ''}
-            </div>
+        <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #333;">
+          <img src="${NERA_PACKING_LOGO}" alt="NERA Beauty" style="height: 80px; width: auto;" />
         </div>
 
-        <div class="addresses">
-          <div class="address-block">
-            <h3>Ship To</h3>
-            <p><strong>${order.customer_name || order.salons?.name || '—'}</strong></p>
-            ${order.customer_address ? `<p>${order.customer_address}</p>` : ''}
-            ${order.customer_phone ? `<p>${order.customer_phone}</p>` : ''}
-            ${order.customer_email ? `<p>${order.customer_email}</p>` : ''}
-          </div>
-        </div>
 
         <table>
           <thead>
@@ -1095,10 +1081,9 @@ const Orders = () => {
 
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
-          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;font-weight:600;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div><div class="totals-row"><span>After discount</span><span>$${Math.max(0, order.subtotal - Number(order.discount_amount)).toFixed(2)}</span></div>` : ''}
+          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;font-weight:600;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div>` : ''}
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
           ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
-          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#888;text-decoration:line-through;font-size:13px;"><span>Was</span><span>$${(order.subtotal + order.tax + (order.shipping ?? 0)).toFixed(2)}</span></div>` : ''}
           <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
         </div>
 
