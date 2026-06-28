@@ -1740,7 +1740,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      validate_referral_code: {
+        Args: { code: string }
+        Returns: {
+          commission_rate: number
+          is_valid: boolean
+          referral_code: string
+          referrer_id: string
+          referrer_name: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role: "Owner" | "Sales Rep" | "Customer"
