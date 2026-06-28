@@ -516,6 +516,7 @@ export default function Warehouse() {
       fba: [],
       driver: [],
       consignment: [],
+      tiktok: [],
     };
     filtered.forEach((l) => g[l.type].push(l));
     return g;
