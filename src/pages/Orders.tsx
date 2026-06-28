@@ -753,6 +753,7 @@ const Orders = () => {
             customer_address: selectedSalon?.address || selectedProfile ? 'Customer Order' : 'In-Store Pickup',
             items: notificationItems,
             subtotal,
+            discount_amount: discountAmount > 0 ? discountAmount : null,
             total,
             notes: formData.notes || null,
             technician_name: formData.technician_name || null,
