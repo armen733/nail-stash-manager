@@ -30,6 +30,7 @@ import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { PayoutsTab } from "@/components/referrals/PayoutsTab";
 import { printAffiliateInvitation } from "@/lib/affiliate-invitation-print";
+import { printSalonInvitation } from "@/lib/salon-invitation-print";
 
 interface Referrer {
   id: string;
@@ -342,8 +343,11 @@ const Referrals = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">Referrals & Affiliates</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => printSalonInvitation()}>
+            <Printer className="h-4 w-4 mr-1" /> Print Salon Invitation
+          </Button>
           <Button variant="outline" size="sm" onClick={() => printAffiliateInvitation()}>
-            <Printer className="h-4 w-4 mr-1" /> Print Invitation
+            <Printer className="h-4 w-4 mr-1" /> Print Affiliate Invitation
           </Button>
           <Button onClick={openCreateDialog} size="sm">
             <Plus className="h-4 w-4 mr-1" /> Add Referrer
