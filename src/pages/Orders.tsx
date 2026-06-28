@@ -1095,7 +1095,7 @@ const Orders = () => {
 
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
-          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div><div class="totals-row"><span>After discount</span><span>$${Math.max(0, order.subtotal - Number(order.discount_amount)).toFixed(2)}</span></div>` : ''}
+          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;font-weight:600;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div><div class="totals-row"><span>After discount</span><span>$${Math.max(0, order.subtotal - Number(order.discount_amount)).toFixed(2)}</span></div>` : ''}
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
           ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
           ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#888;text-decoration:line-through;font-size:13px;"><span>Was</span><span>$${(order.subtotal + order.tax + (order.shipping ?? 0)).toFixed(2)}</span></div>` : ''}
