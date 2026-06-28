@@ -2062,6 +2062,14 @@ Thank you!`;
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>${viewOrder.subtotal.toFixed(2)}</span>
                   </div>
+                  {(viewOrder.discount_amount ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                      <span>
+                        Discount{viewOrder.discount_code ? ` (Referral: ${viewOrder.discount_code})` : ''}
+                      </span>
+                      <span>−${Number(viewOrder.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span>${viewOrder.tax.toFixed(2)}</span>
