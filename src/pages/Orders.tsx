@@ -1024,6 +1024,9 @@ const Orders = () => {
       </tr>
     `).join('');
 
+    const salonDetails = salons.find(s => s.id === order.salon_id);
+    const shipName = order.salons?.name || order.customer_name || '—';
+    const shipAddress = salonDetails?.address || order.customer_address || '';
     const htmlContent = `
       <!DOCTYPE html>
       <html>
