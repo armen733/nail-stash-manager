@@ -154,6 +154,11 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
     [items]
   );
+  const discountAmount = useMemo(() => {
+    const v = parseFloat(discountInput) || 0;
+    const raw = discountType === "percent" ? subtotal * (v / 100) : v;
+    return Math.min(subtotal, Math.max(0, raw));
+  }, [discountInput, discountType, subtotal]);
   const loyaltyDiscount = useMemo(() => {
     if (!loyalty || !pointsRedeemed) return 0;
     const blocks = Math.floor(pointsRedeemed / loyalty.minRedeem);
