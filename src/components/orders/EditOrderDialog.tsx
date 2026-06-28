@@ -89,7 +89,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
   const [notes, setNotes] = useState("");
   const [technicianName, setTechnicianName] = useState("");
   const [discountCode, setDiscountCode] = useState("");
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountInput, setDiscountInput] = useState<string>("");
+  const [discountType, setDiscountType] = useState<"amount" | "percent">("amount");
   const [pointsRedeemed, setPointsRedeemed] = useState<number>(0);
   const [loyalty, setLoyalty] = useState<{ available: number; perDollar: number; minRedeem: number; redeemValue: number } | null>(null);
 
@@ -120,7 +121,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setNotes(order.notes || "");
     setTechnicianName(order.technician_name || "");
     setDiscountCode(order.discount_code || "");
-    setDiscountAmount(Number(order.discount_amount || 0));
+    setDiscountInput(order.discount_amount ? String(order.discount_amount) : "");
+    setDiscountType("amount");
     setPointsRedeemed(Number((order as any).points_redeemed || 0));
     setWarningAccepted(false);
   }, [order, open]);
@@ -152,6 +154,11 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
     [items]
   );
+  const discountAmount = useMemo(() => {
+    const v = parseFloat(discountInput) || 0;
+    const raw = discountType === "percent" ? subtotal * (v / 100) : v;
+    return Math.min(subtotal, Math.max(0, raw));
+  }, [discountInput, discountType, subtotal]);
   const loyaltyDiscount = useMemo(() => {
     if (!loyalty || !pointsRedeemed) return 0;
     const blocks = Math.floor(pointsRedeemed / loyalty.minRedeem);
@@ -633,14 +640,36 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                 <Input value={discountCode} onChange={(e) => setDiscountCode(e.target.value)} placeholder="Optional" />
               </div>
               <div>
-                <Label>Discount amount ($)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(parseFloat(e.target.value || "0"))}
-                />
+                <Label>Discount</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    placeholder="0"
+                  />
+                  <div className="flex border rounded-md overflow-hidden">
+                    <button
+                      type="button"
+                      className={`px-3 text-xs ${discountType === "amount" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                      onClick={() => setDiscountType("amount")}
+                    >
+                      $
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 text-xs ${discountType === "percent" ? "bg-primary text-primary-foreground" : "bg-background"}`}
+                      onClick={() => setDiscountType("percent")}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+                {discountType === "percent" && discountAmount > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">= ${discountAmount.toFixed(2)} off</p>
+                )}
               </div>
             </div>
 
