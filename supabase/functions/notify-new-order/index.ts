@@ -33,6 +33,8 @@ serve(async (req: Request) => {
     ).join('\n') || 'No items';
 
     const isInStore = orderData.customer_address === 'In-Store Pickup';
+    const discountAmount = Number(orderData.discount_amount) || 0;
+    const discountLabel = orderData.discount_code || (discountAmount > 0 ? 'Discount' : null);
     
     const message = `━━━━━━━━━━━━━━━━━━
 🛒 *NEW ORDER RECEIVED!*
@@ -53,7 +55,7 @@ ${itemsList}
 
 💰 *Order Summary:*
 • Subtotal: $${orderData.subtotal?.toFixed(2) || '0.00'}
-${orderData.discount_code ? `• Discount (${orderData.discount_code}): -$${orderData.discount_amount?.toFixed(2) || '0.00'}` : ''}
+${discountAmount > 0 ? `• Discount${discountLabel ? ` (${discountLabel})` : ''}: -$${discountAmount.toFixed(2)}` : ''}
 ${orderData.points_redeemed ? `• Points Redeemed: ${orderData.points_redeemed} pts` : ''}
 • *Total: $${orderData.total?.toFixed(2) || '0.00'}*
 
