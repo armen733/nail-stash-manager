@@ -1755,7 +1755,7 @@ export type Database = {
     }
     Enums: {
       app_role: "Owner" | "Sales Rep" | "Customer"
-      location_type: "warehouse" | "fba" | "consignment" | "driver"
+      location_type: "warehouse" | "fba" | "consignment" | "driver" | "tiktok"
       movement_type:
         | "receive"
         | "transfer"
@@ -1892,7 +1892,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["Owner", "Sales Rep", "Customer"],
-      location_type: ["warehouse", "fba", "consignment", "driver"],
+      location_type: ["warehouse", "fba", "consignment", "driver", "tiktok"],
       movement_type: [
         "receive",
         "transfer",

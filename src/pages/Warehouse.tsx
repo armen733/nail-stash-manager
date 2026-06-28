@@ -47,7 +47,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { LogoUploader } from "@/components/LogoUploader";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 
-type LocationType = "warehouse" | "fba" | "consignment" | "driver";
+type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok";
 
 interface StockLocation {
   id: string;
@@ -127,9 +127,16 @@ const TYPE_META: Record<
     color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     border: "border-l-purple-500",
   },
+  tiktok: {
+    label: "TikTok Shop",
+    plural: "TikTok Shops",
+    icon: Store,
+    color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
+    border: "border-l-pink-500",
+  },
 };
 
-const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "driver", "consignment"];
+const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "tiktok", "driver", "consignment"];
 
 function formatCompactUsd(n: number): string {
   const v = Math.round(n);
@@ -509,6 +516,7 @@ export default function Warehouse() {
       fba: [],
       driver: [],
       consignment: [],
+      tiktok: [],
     };
     filtered.forEach((l) => g[l.type].push(l));
     return g;
@@ -834,6 +842,7 @@ export default function Warehouse() {
                   <SelectItem value="all">All types</SelectItem>
                   <SelectItem value="warehouse">Warehouse</SelectItem>
                   <SelectItem value="fba">Amazon FBA</SelectItem>
+                  <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Drivers</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
                 </SelectContent>
@@ -931,6 +940,7 @@ export default function Warehouse() {
                 <SelectContent>
                   <SelectItem value="warehouse">Warehouse / Office</SelectItem>
                   <SelectItem value="fba">Amazon FBA</SelectItem>
+                  <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Driver Van</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
                 </SelectContent>
@@ -945,6 +955,8 @@ export default function Warehouse() {
                     ? "e.g. Van – Mike"
                     : form.type === "fba"
                     ? "e.g. Amazon FBA – US"
+                    : form.type === "tiktok"
+                    ? "e.g. TikTok Shop – US"
                     : form.type === "consignment"
                     ? "e.g. Universal Nail Supplies"
                     : "e.g. Main Warehouse"
