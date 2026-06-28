@@ -24,11 +24,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Search, Plus, Users, DollarSign, TrendingUp, Download, Edit, Trash2,
-  CheckCircle, Clock, UserPlus, Copy, RefreshCw, Banknote,
+  CheckCircle, Clock, UserPlus, Copy, RefreshCw, Banknote, Printer,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { PayoutsTab } from "@/components/referrals/PayoutsTab";
+import { printAffiliateInvitation } from "@/lib/affiliate-invitation-print";
 
 interface Referrer {
   id: string;
