@@ -103,7 +103,6 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
       ${contactEmail ? `<div>${esc(contactEmail)}</div>` : ""}
       ${contactPhone ? `<div>${esc(contactPhone)}</div>` : ""}
       ${website ? `<div>${esc(website)}</div>` : ""}
-      ${instagram ? `<div>@${esc(instagram)}</div>` : ""}
     </div>
   </header>
 
