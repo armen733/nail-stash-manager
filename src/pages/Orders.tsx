@@ -2608,6 +2608,11 @@ Thank you!`;
                                       Edited
                                     </Badge>
                                   )}
+                                  {order.discount_code && (
+                                    <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
+                                      Ref: {order.discount_code}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <span className="text-sm text-muted-foreground flex-shrink-0">
                                   {new Date(order.order_date).toLocaleDateString()}
