@@ -121,7 +121,8 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setNotes(order.notes || "");
     setTechnicianName(order.technician_name || "");
     setDiscountCode(order.discount_code || "");
-    setDiscountAmount(Number(order.discount_amount || 0));
+    setDiscountInput(order.discount_amount ? String(order.discount_amount) : "");
+    setDiscountType("amount");
     setPointsRedeemed(Number((order as any).points_redeemed || 0));
     setWarningAccepted(false);
   }, [order, open]);
