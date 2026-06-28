@@ -1073,11 +1073,15 @@ const Orders = () => {
           </div>
         </div>
 
+        const salonDetails = salons.find(s => s.id === order.salon_id);
+        const shipName = order.salons?.name || order.customer_name || '—';
+        const shipAddress = salonDetails?.address || order.customer_address || '';
+
         <div class="addresses">
           <div class="address-block">
             <h3>Ship To</h3>
-            <p>${order.salons?.name || order.customer_name || '—'}</p>
-            ${order.salons?.address ? `<p>${order.salons.address}</p>` : ''}
+            <p>${shipName}</p>
+            ${shipAddress ? `<p>${shipAddress}</p>` : ''}
           </div>
         </div>
 
