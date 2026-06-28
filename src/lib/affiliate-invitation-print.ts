@@ -111,28 +111,32 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
 
   <div class="greeting">${greeting}</div>
 
-  <p>We'd love to partner with you. As a ${esc(companyName)} affiliate, you'll earn a real commission every time someone shops with your personal code — no caps, no expiration.</p>
+  <p>We'd love to partner with you. As a ${esc(companyName)} affiliate, you'll earn a real commission every time someone shops with your personal code — for as long as we collaborate, with no caps.</p>
 
   ${codeBlock}
 
   <div class="benefits">
     <h3>What you get</h3>
     <ul>
-      <li><b>${commissionRate}% commission</b> on every qualifying order placed with your code</li>
-      <li><b>Lifetime tracking</b> — your customers stay linked to you forever</li>
-      <li><b>Monthly payouts</b> via your preferred method (Zelle, Venmo, CashApp, bank)</li>
-      <li><b>Free marketing assets</b> — product photos, captions, and promo material</li>
-      <li><b>Early access</b> to new launches and exclusive partner-only promos</li>
+      <li><b>Free starter tools</b> to begin your journey as a ${esc(companyName)} artist — on us.</li>
+      <li><b>15% artist discount</b> on all ${esc(companyName)} products during your starting phase, with room to grow as you scale.</li>
+      <li><b>${commissionRate}% commission</b> on every qualifying order placed with your code — online sales and local customers who come through you both count as your referrals.</li>
+      <li><b>Long-term tracking</b> — your customers stay linked to you for the duration of our collaboration.</li>
+      <li><b>Monthly payouts</b> via your preferred method (Zelle, Venmo, CashApp, bank).</li>
+      <li><b>Free marketing assets</b> — product photos, captions, and promo material.</li>
+      <li><b>Early access</b> to new launches and exclusive partner-only promos.</li>
     </ul>
   </div>
 
   <div class="how">
     <h3>How it works</h3>
-    <div class="step"><div class="step-num">1</div><div class="step-text">Share your unique code with friends, clients, and on social media.</div></div>
-    <div class="step"><div class="step-num">2</div><div class="step-text">They enter it at checkout — and often unlock a small discount themselves.</div></div>
-    <div class="step"><div class="step-num">3</div><div class="step-text">We track every order automatically and credit your account.</div></div>
-    <div class="step"><div class="step-num">4</div><div class="step-text">Get paid monthly. Simple, transparent, no minimums.</div></div>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Create content highlighting ${esc(companyName)} products — TikTok, Instagram Reels, and social posts that drive views and sales through our TikTok Shop and store.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Share your unique code with clients, followers, and friends. Online buyers and local walk-ins from you both count.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">They enter your code at checkout — often unlocking a small discount for themselves too.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">We track every order automatically and credit ${commissionRate}% of the sale to your account.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Get paid monthly. Simple, transparent, no minimums — and the more you grow, the more your perks grow with you.</div></div>
   </div>
+
 
   <p>If you'd like to join, just reply to this invitation${contactEmail ? ` at <b>${esc(contactEmail)}</b>` : ""} and we'll activate your account right away.</p>
 
