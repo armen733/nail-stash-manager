@@ -1744,6 +1744,7 @@ export type Database = {
         Args: { code: string }
         Returns: {
           commission_rate: number
+          customer_discount_rate: number
           is_valid: boolean
           referral_code: string
           referrer_id: string
