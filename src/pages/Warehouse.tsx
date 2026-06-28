@@ -955,6 +955,8 @@ export default function Warehouse() {
                     ? "e.g. Van – Mike"
                     : form.type === "fba"
                     ? "e.g. Amazon FBA – US"
+                    : form.type === "tiktok"
+                    ? "e.g. TikTok Shop – US"
                     : form.type === "consignment"
                     ? "e.g. Universal Nail Supplies"
                     : "e.g. Main Warehouse"
