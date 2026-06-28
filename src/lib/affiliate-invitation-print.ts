@@ -42,12 +42,12 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
     ? `<div class="code-card">
          <div class="code-label">Your Personal Referral Code</div>
          <div class="code-value">${esc(referralCode)}</div>
-         <div class="code-rate">${commissionRate}% commission on every order</div>
+         <div class="code-rate">Starter Partner — ${commissionRate}% commission on every order</div>
        </div>`
     : `<div class="code-card placeholder">
          <div class="code-label">Your Personal Referral Code</div>
          <div class="code-value">— TO BE ASSIGNED —</div>
-         <div class="code-rate">${commissionRate}% commission on every order</div>
+         <div class="code-rate">Starter Partner — ${commissionRate}% commission on every order</div>
        </div>`;
 
   const html = `<!doctype html>
@@ -62,8 +62,8 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
   .brand-name{font-size:24px;font-weight:700;letter-spacing:.5px}
   .tagline{font-size:11px;color:#666;margin-top:2px}
   .meta{font-size:11px;color:#555;text-align:right;line-height:1.5}
-  h1{font-size:26px;margin:0 0 6px 0;letter-spacing:.3px}
-  .subtitle{color:#666;font-size:13px;margin-bottom:24px}
+  h1{font-size:28px;margin:0 0 8px 0;letter-spacing:.3px;line-height:1.15}
+  .subtitle{color:#444;font-size:14px;margin-bottom:24px;max-width:620px}
   .greeting{font-size:14px;margin-bottom:16px;font-weight:600}
   p{font-size:13px;margin:0 0 12px 0}
   .code-card{margin:26px 0;padding:22px;border:2px solid #111;border-radius:8px;text-align:center;background:#faf7f2}
@@ -75,6 +75,11 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
   .benefits h3{margin:0 0 10px 0;font-size:14px}
   .benefits ul{margin:0;padding-left:20px;font-size:12.5px}
   .benefits li{margin-bottom:6px}
+  .tiers{margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:6px;background:#fff}
+  .tiers h3{margin:0 0 10px 0;font-size:13px}
+  .tier-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #eee;font-size:12.5px}
+  .tier-row:last-child{border-bottom:none}
+  .tier-name{font-weight:600}
   .how{margin:22px 0}
   .how h3{margin:0 0 10px 0;font-size:14px}
   .step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
@@ -95,7 +100,7 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
       <img src="${NERA_PACKING_LOGO}" alt="logo" />
       <div>
         <div class="brand-name">${esc(companyName)}</div>
-        <div class="tagline">Premium nail care · Affiliate Program</div>
+        <div class="tagline">Premium nail care · Affiliate & Educator Program</div>
       </div>
     </div>
     <div class="meta">
@@ -106,26 +111,35 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
     </div>
   </header>
 
-  <h1>You're Invited to Join Our Affiliate Program</h1>
-  <div class="subtitle">Earn commission by sharing the products you love.</div>
+  <h1>Grow Your Income With ${esc(companyName)}</h1>
+  <div class="subtitle">Partner with ${esc(companyName)} and earn from every referral. We are building a community of professional nail artists, educators, salon owners, and content creators who share our passion for premium nail tools.</div>
 
   <div class="greeting">${greeting}</div>
 
-  <p>We'd love to partner with you. As a ${esc(companyName)} affiliate, you'll earn a real commission every time someone shops with your personal code — for as long as we collaborate, with no caps.</p>
+  <p>We would love to have you on board. As a ${esc(companyName)} partner, you earn real commission every time someone shops with your personal code — for as long as we collaborate, with no caps.</p>
 
   ${codeBlock}
 
   <div class="benefits">
     <h3>What you get</h3>
     <ul>
-      <li><b>Free starter tools</b> to begin your journey as a ${esc(companyName)} artist — on us.</li>
+      <li><b>Selected partners may qualify</b> for complimentary product samples based on content quality and audience fit.</li>
       <li><b>15% artist discount</b> on all ${esc(companyName)} products during your starting phase, with room to grow as you scale.</li>
-      <li><b>${commissionRate}% commission</b> on every qualifying order placed with your code — online sales and local customers who come through you both count as your referrals.</li>
+      <li><b>Commission on every qualifying order</b> placed with your code — online sales and local customers who come through you both count as your referrals.</li>
       <li><b>Long-term tracking</b> — your customers stay linked to you for the duration of our collaboration.</li>
       <li><b>Monthly payouts</b> via your preferred method (Zelle, Venmo, CashApp, bank).</li>
       <li><b>Free marketing assets</b> — product photos, captions, and promo material.</li>
       <li><b>Early access</b> to new launches and exclusive partner-only promos.</li>
+      <li><b>Educator and salon partnership opportunities</b> available for artists who teach or run their own business.</li>
     </ul>
+  </div>
+
+  <div class="tiers">
+    <h3>Performance Tiers</h3>
+    <div class="tier-row"><span class="tier-name">Starter Partner</span><span>10% commission</span></div>
+    <div class="tier-row"><span class="tier-name">Pro Partner</span><span>15% commission</span></div>
+    <div class="tier-row"><span class="tier-name">Elite Partner</span><span>20% commission</span></div>
+    <div style="font-size:11px;color:#666;margin-top:8px">Tiers are reviewed based on your content quality, sales volume, and audience fit.</div>
   </div>
 
   <div class="how">
@@ -133,12 +147,12 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
     <div class="step"><div class="step-num">1</div><div class="step-text">Create content highlighting ${esc(companyName)} products — TikTok, Instagram Reels, and social posts that drive views and sales through our TikTok Shop and store.</div></div>
     <div class="step"><div class="step-num">2</div><div class="step-text">Share your unique code with clients, followers, and friends. Online buyers and local walk-ins from you both count.</div></div>
     <div class="step"><div class="step-num">3</div><div class="step-text">They enter your code at checkout — often unlocking a small discount for themselves too.</div></div>
-    <div class="step"><div class="step-num">4</div><div class="step-text">We track every order automatically and credit ${commissionRate}% of the sale to your account.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">We track every order automatically and credit the commission to your account.</div></div>
     <div class="step"><div class="step-num">5</div><div class="step-text">Get paid monthly. Simple, transparent, no minimums — and the more you grow, the more your perks grow with you.</div></div>
   </div>
 
 
-  <p>If you'd like to join, just reply to this invitation${contactEmail ? ` at <b>${esc(contactEmail)}</b>` : ""} and we'll activate your account right away.</p>
+  <p>If you would like to join, just reply to this invitation${contactEmail ? ` at <b>${esc(contactEmail)}</b>` : ""} and we will activate your account right away.</p>
 
   <div class="signature">
     Warm regards,
