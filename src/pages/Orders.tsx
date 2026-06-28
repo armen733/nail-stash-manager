@@ -1056,6 +1056,7 @@ const Orders = () => {
           .status-Shipped { background: #e9d5ff; color: #7c3aed; }
           .status-Delivered { background: #d1fae5; color: #065f46; }
           .status-Paid { background: #d1fae5; color: #065f46; }
+          @page { margin: 0; }
           @media print { body { padding: 20px; } .no-print { display: none !important; } }
         </style>
       </head>
