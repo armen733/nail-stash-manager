@@ -86,6 +86,7 @@ interface Order {
   tax: number;
   total: number;
   discount_amount?: number | null;
+  discount_code?: string | null;
   notes: string | null;
   technician_name?: string | null;
   created_at: string;
@@ -1101,7 +1102,7 @@ const Orders = () => {
 
         <div class="totals">
           <div class="totals-row"><span>Subtotal</span><span>$${order.subtotal.toFixed(2)}</span></div>
-          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;font-weight:600;"><span>Discount</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div>` : ''}
+          ${(order.discount_amount ?? 0) > 0 ? `<div class="totals-row" style="color:#059669;font-weight:600;"><span>Discount${order.discount_code ? ` (Referral: ${order.discount_code})` : ''}</span><span>−$${Number(order.discount_amount).toFixed(2)}</span></div>` : ''}
           <div class="totals-row"><span>Tax</span><span>$${order.tax.toFixed(2)}</span></div>
           ${((order.shipping ?? 0) > 0 || order.shipping_zone) ? `<div class="totals-row"><span>Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ''}</span><span>${(order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : 'FREE'}</span></div>` : ''}
           <div class="totals-row total"><span>Total</span><span>$${order.total.toFixed(2)}</span></div>
@@ -1149,7 +1150,7 @@ Status: ${order.status}
 
 ${itemsText}
 
-Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount: −$${Number(order.discount_amount).toFixed(2)}` : ''}
+Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount${order.discount_code ? ` (Referral: ${order.discount_code})` : ''}: −$${Number(order.discount_amount).toFixed(2)}` : ''}
 Tax: $${order.tax.toFixed(2)}
 Total: $${order.total.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `  (you saved $${Number(order.discount_amount).toFixed(2)})` : ''}
 
@@ -2061,6 +2062,14 @@ Thank you!`;
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>${viewOrder.subtotal.toFixed(2)}</span>
                   </div>
+                  {(viewOrder.discount_amount ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                      <span>
+                        Discount{viewOrder.discount_code ? ` (Referral: ${viewOrder.discount_code})` : ''}
+                      </span>
+                      <span>−${Number(viewOrder.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
                     <span>${viewOrder.tax.toFixed(2)}</span>
@@ -2607,6 +2616,11 @@ Thank you!`;
                                       Edited
                                     </Badge>
                                   )}
+                                  {order.discount_code && (
+                                    <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
+                                      Ref: {order.discount_code}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <span className="text-sm text-muted-foreground flex-shrink-0">
                                   {new Date(order.order_date).toLocaleDateString()}
@@ -2758,6 +2772,11 @@ Thank you!`;
                                   onClick={(e) => { e.stopPropagation(); setHistoryOrderId(order.id); }}
                                 >
                                   Edited
+                                </Badge>
+                              )}
+                              {order.discount_code && (
+                                <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
+                                  Ref: {order.discount_code}
                                 </Badge>
                               )}
                             </div>
