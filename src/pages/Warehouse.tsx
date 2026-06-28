@@ -47,7 +47,7 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { LogoUploader } from "@/components/LogoUploader";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 
-type LocationType = "warehouse" | "fba" | "consignment" | "driver";
+type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok";
 
 interface StockLocation {
   id: string;
