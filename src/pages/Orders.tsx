@@ -2766,6 +2766,11 @@ Thank you!`;
                                   Edited
                                 </Badge>
                               )}
+                              {order.discount_code && (
+                                <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
+                                  Ref: {order.discount_code}
+                                </Badge>
+                              )}
                             </div>
                             {getStatusBadge(order.status)}
                           </div>
