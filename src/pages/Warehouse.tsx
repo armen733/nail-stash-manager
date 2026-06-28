@@ -127,9 +127,16 @@ const TYPE_META: Record<
     color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     border: "border-l-purple-500",
   },
+  tiktok: {
+    label: "TikTok Shop",
+    plural: "TikTok Shops",
+    icon: Store,
+    color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
+    border: "border-l-pink-500",
+  },
 };
 
-const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "driver", "consignment"];
+const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "tiktok", "driver", "consignment"];
 
 function formatCompactUsd(n: number): string {
   const v = Math.round(n);
