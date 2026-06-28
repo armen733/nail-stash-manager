@@ -1061,7 +1061,7 @@ const Orders = () => {
       </head>
       <body>
         <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #333;">
-          <img src="${NERA_PACKING_LOGO}" alt="NERA Beauty" style="height: 60px; width: auto;" />
+          <img src="${NERA_PACKING_LOGO}" alt="NERA Beauty" style="height: 80px; width: auto;" />
         </div>
 
 
