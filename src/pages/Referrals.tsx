@@ -30,6 +30,7 @@ import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { PayoutsTab } from "@/components/referrals/PayoutsTab";
 import { printAffiliateInvitation } from "@/lib/affiliate-invitation-print";
+import { printSalonInvitation } from "@/lib/salon-invitation-print";
 
 interface Referrer {
   id: string;
