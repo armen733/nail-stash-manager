@@ -480,6 +480,19 @@ const Referrals = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Print affiliate invitation"
+                            onClick={() => printAffiliateInvitation({
+                              referrerName: ref.name,
+                              referralCode: ref.referral_code,
+                              commissionRate: Number(ref.commission_rate),
+                            })}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(ref)}>
                             <Edit className="h-4 w-4" />
                           </Button>
