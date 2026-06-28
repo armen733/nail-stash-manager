@@ -341,9 +341,14 @@ const Referrals = () => {
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">Referrals & Affiliates</h1>
-        <Button onClick={openCreateDialog} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Add Referrer
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => printAffiliateInvitation()}>
+            <Printer className="h-4 w-4 mr-1" /> Print Invitation
+          </Button>
+          <Button onClick={openCreateDialog} size="sm">
+            <Plus className="h-4 w-4 mr-1" /> Add Referrer
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
