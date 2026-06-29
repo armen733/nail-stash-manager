@@ -1,3 +1,5 @@
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { computePricing } from "./wholesale-pricing";
 import type { WholesaleCatalogRow } from "./wholesale-export";
 
@@ -28,248 +30,245 @@ export interface PrintableCatalogInput {
   groups?: PrintableCatalogGroup[];
 }
 
-const escapeHtml = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+const money = (n: number) => `$${Number(n || 0).toFixed(2)}`;
+
+const safeFilePart = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "wholesale-order";
+
+const formatPhone = (raw: string): string => {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return raw.trim();
+};
+
+const loadImageDataUrl = async (url: string | null): Promise<string | null> => {
+  if (!url) return null;
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
 
 export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
-  const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  void createWholesalePdf({ brand, store, rows, groups });
+}
 
+async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatalogInput) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
-
-  // Receipt mode if ANY row across any section has a positive quantity.
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  const logo = await loadImageDataUrl(brand.logo_url);
+  let grandUnits = 0;
+  let grandSubtotal = 0;
 
-  let allTimeUnits = 0;
-  let allTimeSubtotal = 0;
+  const drawHeader = () => {
+    let leftX = 14;
+    if (logo) {
+      doc.addImage(logo, "PNG", leftX, 12, 12, 12);
+      leftX += 18;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(17, 17, 17);
+    doc.text(brand.company_name || "NÉRA Beauty", leftX, 20);
+    if (brand.tagline) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(90);
+      doc.text(brand.tagline, leftX, 25);
+    }
 
-  const renderSection = (group: PrintableCatalogGroup, idx: number): string => {
-    let subtotal = 0;
+    const phoneLines = (brand.contact_phone ?? "")
+      .split(/[,;\n]/)
+      .map((s) => formatPhone(s))
+      .filter(Boolean);
+    const contactLines = [...phoneLines, brand.contact_email, brand.website].filter(Boolean) as string[];
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(68);
+    contactLines.slice(0, 4).forEach((line, idx) => {
+      doc.text(line, pageWidth - 14, 16 + idx * 4, { align: "right" });
+    });
+
+    doc.setDrawColor(17, 17, 17);
+    doc.setLineWidth(0.5);
+    doc.line(14, 31, pageWidth - 14, 31);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(17);
+    doc.text(isReceipt ? "Wholesale Order · Supply Partnership" : "Wholesale Catalog · Supply Partnership", 14, 40);
+
+    doc.setFontSize(9);
+    doc.text(`For: ${store.name}`, 14, 46);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(90);
+    let y = 51;
+    if (store.contact_name) {
+      doc.text(store.contact_name, 14, y);
+      y += 4;
+    }
+    if (store.address) {
+      const lines = doc.splitTextToSize(store.address, 105);
+      doc.text(lines, 14, y);
+    }
+    doc.text(`Date: ${today}`, pageWidth - 14, 46, { align: "right" });
+  };
+
+  const drawFooter = () => {
+    doc.setDrawColor(220);
+    doc.line(14, pageHeight - 19, pageWidth - 14, pageHeight - 19);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Prices in USD. Subject to change. ${brand.company_name || "NÉRA Beauty"} wholesale partnership.`, 14, pageHeight - 13);
+  };
+
+  sections.forEach((section, index) => {
+    if (index > 0) doc.addPage();
+    drawHeader();
+
+    let startY = 60;
+    if (section.title) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(17);
+      doc.text(section.title, 14, startY);
+      if (section.subtitle) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(90);
+        doc.text(section.subtitle, pageWidth - 14, startY, { align: "right" });
+      }
+      startY += 5;
+    }
+
     let units = 0;
-    const tableRows = group.rows
-      .map((r) => {
-        const p = computePricing({
-          basePrice: r.basePrice,
-          discountPercent: r.discountPercent,
-          markupPercent: r.markupPercent,
+    let subtotal = 0;
+    const tableRows = section.rows
+      .map((row) => {
+        const pricing = computePricing({
+          basePrice: Number(row.basePrice ?? 0),
+          discountPercent: Number(row.discountPercent ?? 0),
+          markupPercent: Number(row.markupPercent ?? 0),
         });
-        const qty = Math.max(0, Math.floor(Number(r.quantity ?? 0)));
-        const lineTotal = +(p.storeCost * qty).toFixed(2);
-        if (isReceipt) {
-          subtotal += lineTotal;
-          units += qty;
-          if (qty <= 0) return "";
-          return `
-        <tr>
-          <td>${escapeHtml(r.sku)}</td>
-          <td>${escapeHtml(r.name)}</td>
-          <td>${escapeHtml(r.category)}</td>
-          <td class="num">$${r.basePrice.toFixed(2)}</td>
-          <td class="num">${p.discountPercent}%</td>
-          <td class="num strong">$${p.storeCost.toFixed(2)}</td>
-          <td class="num">${qty}</td>
-          <td class="num strong">$${lineTotal.toFixed(2)}</td>
-          <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
-        </tr>`;
-        }
-        return `
-        <tr>
-          <td>${escapeHtml(r.sku)}</td>
-          <td>${escapeHtml(r.name)}</td>
-          <td>${escapeHtml(r.category)}</td>
-          <td class="num">$${r.basePrice.toFixed(2)}</td>
-          <td class="num">${p.discountPercent}%</td>
-          <td class="num strong">$${p.storeCost.toFixed(2)}</td>
-          <td class="num muted">$${p.suggestedRetail.toFixed(2)}</td>
-        </tr>`;
+        const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+        if (isReceipt && qty <= 0) return null;
+        const lineTotal = +(pricing.storeCost * qty).toFixed(2);
+        units += qty;
+        subtotal += lineTotal;
+        return isReceipt
+          ? [
+              row.sku,
+              row.name,
+              row.category,
+              money(pricing.basePrice),
+              `${pricing.discountPercent}%`,
+              money(pricing.storeCost),
+              String(qty),
+              money(lineTotal),
+              money(pricing.suggestedRetail),
+            ]
+          : [
+              row.sku,
+              row.name,
+              row.category,
+              money(pricing.basePrice),
+              `${pricing.discountPercent}%`,
+              money(pricing.storeCost),
+              money(pricing.suggestedRetail),
+            ];
       })
-      .join("");
+      .filter(Boolean) as string[][];
 
-    allTimeUnits += units;
-    allTimeSubtotal += subtotal;
+    grandUnits += units;
+    grandSubtotal += subtotal;
 
-    const headerBlock = group.title
-      ? `<div class="section-head">
-           <div class="section-title">${escapeHtml(group.title)}</div>
-           ${group.subtitle ? `<div class="section-sub">${escapeHtml(group.subtitle)}</div>` : ""}
-         </div>`
-      : "";
+    autoTable(doc, {
+      startY,
+      head: isReceipt
+        ? [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Qty", "Line Total", "Sugg. Retail"]]
+        : [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Sugg. Retail"]],
+      body: tableRows,
+      margin: { left: 14, right: 14, bottom: 24 },
+      styles: { fontSize: 7.6, cellPadding: 2, textColor: [45, 45, 45], overflow: "linebreak" },
+      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 7.2 },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      columnStyles: isReceipt
+        ? {
+            0: { cellWidth: 21 },
+            1: { cellWidth: 38 },
+            2: { cellWidth: 32 },
+            3: { halign: "right", cellWidth: 18 },
+            4: { halign: "right", cellWidth: 14 },
+            5: { halign: "right", cellWidth: 20, fontStyle: "bold" },
+            6: { halign: "right", cellWidth: 12 },
+            7: { halign: "right", cellWidth: 21, fontStyle: "bold" },
+            8: { halign: "right", cellWidth: 22, textColor: [100, 100, 100] },
+          }
+        : {
+            0: { cellWidth: 24 },
+            1: { cellWidth: 55 },
+            2: { cellWidth: 40 },
+            3: { halign: "right" },
+            4: { halign: "right" },
+            5: { halign: "right", fontStyle: "bold" },
+            6: { halign: "right", textColor: [100, 100, 100] },
+          },
+      didDrawPage: drawFooter,
+    });
 
-    return `
-      <section class="delivery${idx > 0 ? " page-break" : ""}">
-        ${headerBlock}
-        <table>
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Product</th>
-              <th>Category</th>
-              <th class="num">List</th>
-              <th class="num">Disc.</th>
-              <th class="num">Unit Cost</th>
-              ${isReceipt ? `<th class="num">Qty</th><th class="num">Line Total</th><th class="num">Sugg. Retail</th>` : `<th class="num">Sugg. Retail</th>`}
-            </tr>
-          </thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-        ${isReceipt ? `
-        <div class="totals">
-          <div class="totals-row"><span>Units</span><span class="num">${units}</span></div>
-          <div class="totals-row grand"><span>Subtotal</span><span class="num">$${subtotal.toFixed(2)}</span></div>
-        </div>` : ""}
-      </section>`;
-  };
-
-  const sectionsHtml = sections.map(renderSection).join("");
-  const grandUnits = allTimeUnits;
-  const grandSubtotal = allTimeSubtotal;
-  const showGrandTotals = isReceipt && sections.length > 1;
-
-  const formatPhone = (raw: string): string => {
-    const digits = raw.replace(/\D/g, "");
-    // US/Canada: 11 digits starting with 1, or 10 digits
-    if (digits.length === 11 && digits.startsWith("1")) {
-      return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    if (isReceipt) {
+      const finalY = (doc as any).lastAutoTable?.finalY ?? startY + 20;
+      const totalsY = Math.min(finalY + 10, pageHeight - 38);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(40);
+      doc.text("Units", pageWidth - 78, totalsY);
+      doc.text(String(units), pageWidth - 14, totalsY, { align: "right" });
+      doc.setDrawColor(17);
+      doc.line(pageWidth - 78, totalsY + 4, pageWidth - 14, totalsY + 4);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Subtotal", pageWidth - 78, totalsY + 11);
+      doc.text(money(subtotal), pageWidth - 14, totalsY + 11, { align: "right" });
     }
-    if (digits.length === 10) {
-      return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-    }
-    return raw.trim();
-  };
+  });
 
-  const phoneLines = (brand.contact_phone ?? "")
-    .split(/[,;\n]/)
-    .map((s) => formatPhone(s))
-    .filter(Boolean);
-
-  const brandLines = [
-    { text: brand.address, nowrap: false },
-    ...phoneLines.map((p) => ({ text: p, nowrap: true })),
-    { text: brand.contact_email, nowrap: true },
-    { text: brand.website, nowrap: true },
-    { text: brand.instagram ? `@${brand.instagram.replace(/^@/, "")}` : null, nowrap: true },
-  ]
-    .filter((l) => !!l.text)
-    .map(
-      (l) =>
-        `<div${l.nowrap ? ' style="white-space:nowrap"' : ""}>${escapeHtml(l.text!)}</div>`,
-    )
-    .join("");
-
-  const html = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8" />
-<title>Wholesale Catalog — ${escapeHtml(store.name)}</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; color: #111; padding: 32px; }
-  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 2px solid #111; padding-bottom: 16px; margin-bottom: 20px; }
-  .brand { display: flex; gap: 14px; align-items: center; }
-  .brand img { height: 56px; width: auto; object-fit: contain; }
-  .brand-name { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
-  .tagline { font-size: 11px; color: #666; margin-top: 2px; }
-  .brand-info { font-size: 11px; color: #444; text-align: right; line-height: 1.5; }
-  .doc-title { font-size: 18px; font-weight: 700; margin: 0 0 4px 0; }
-  .meta { font-size: 12px; color: #555; margin-bottom: 18px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .meta .store { font-weight: 600; color: #111; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  thead th { background: #111; color: #fff; text-align: left; padding: 8px 10px; font-weight: 600; }
-  tbody td { padding: 7px 10px; border-bottom: 1px solid #eee; }
-  tbody tr:nth-child(even) { background: #fafafa; }
-  .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .strong { font-weight: 700; }
-  .muted { color: #666; }
-  .totals { margin-top: 16px; margin-left: auto; width: 280px; font-size: 12px; }
-  .totals-row { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #eee; }
-  .totals-row.grand { font-size: 14px; font-weight: 700; border-bottom: none; border-top: 2px solid #111; margin-top: 4px; }
-  footer { margin-top: 24px; font-size: 10px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; display: flex; justify-content: space-between; gap: 16px; }
-  .delivery { margin-bottom: 28px; }
-  .delivery + .delivery { border-top: 1px dashed #999; padding-top: 18px; }
-  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
-  .section-title { font-size: 14px; font-weight: 700; color: #111; }
-  .section-sub { font-size: 11px; color: #666; }
-  .grand-totals { margin-top: 12px; margin-left: auto; width: 320px; font-size: 13px; border: 2px solid #111; padding: 8px 12px; }
-  .grand-totals .grand { font-size: 15px; font-weight: 700; border-top: 1px solid #111; margin-top: 4px; padding-top: 6px; display: flex; justify-content: space-between; }
-  .grand-totals .row { display: flex; justify-content: space-between; padding: 2px 0; }
-  @page { size: auto; margin: 0mm; }
-  .print-bar { position: sticky; top: 0; z-index: 9999; background: #111; color: #fff; padding: 10px 14px; display: flex; gap: 8px; justify-content: flex-end; align-items: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-  .print-bar .hint { margin-right: auto; font-size: 11px; opacity: 0.8; }
-  .print-bar button { background: #fff; color: #111; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; }
-  .print-bar button:active { opacity: 0.7; }
-  @media print {
-    html, body { margin: 0 !important; }
-    body { padding: 14mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    thead { display: table-header-group; }
-    tr { page-break-inside: avoid; }
-    .page-break { page-break-before: always; }
-    .print-bar { display: none !important; }
-    /* Suppress browser URL/date/page footers */
-    html { margin: 0 !important; }
-    body { margin: 0 !important; padding: 14mm 12mm 20mm 12mm !important; }
+  if (isReceipt && sections.length > 1) {
+    const finalY = (doc as any).lastAutoTable?.finalY ?? 70;
+    const y = Math.min(finalY + 24, pageHeight - 42);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Total units (all deliveries)", pageWidth - 88, y);
+    doc.text(String(grandUnits), pageWidth - 14, y, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.text("Grand total", pageWidth - 88, y + 8);
+    doc.text(money(grandSubtotal), pageWidth - 14, y + 8, { align: "right" });
   }
-</style>
-</head>
-<body>
-  <div class="print-bar">
-    <span class="hint">Tap Print → pinch the preview → Share → Save to Files</span>
-    <button onclick="window.print()">Print / Save PDF</button>
-  </div>
-  <header>`;
-  // Inject the rest of the body
-  const bodyRest = `
-    <div class="brand">
-      ${brand.logo_url ? `<img src="${escapeHtml(brand.logo_url)}" alt="logo" />` : ""}
-      <div>
-        <div class="brand-name">${escapeHtml(brand.company_name || "")}</div>
-        ${brand.tagline ? `<div class="tagline">${escapeHtml(brand.tagline)}</div>` : ""}
-      </div>
-    </div>
-    <div class="brand-info">${brandLines}</div>
-  </header>
 
-  <h1 class="doc-title">${isReceipt ? "Wholesale Order · Supply Partnership" : "Wholesale Catalog · Supply Partnership"}</h1>
-  <div class="meta">
-    <div>
-      <div class="store">For: ${escapeHtml(store.name)}</div>
-      ${store.contact_name ? `<div>${escapeHtml(store.contact_name)}</div>` : ""}
-      ${store.address ? `<div>${escapeHtml(store.address)}</div>` : ""}
-    </div>
-    <div>Date: ${escapeHtml(today)}</div>
-  </div>
-
-  ${sectionsHtml}
-
-  ${showGrandTotals ? `
-  <div class="grand-totals">
-    <div class="row"><span>Total units (all deliveries)</span><span class="num">${grandUnits}</span></div>
-    <div class="grand"><span>Grand total</span><span class="num">$${grandSubtotal.toFixed(2)}</span></div>
-  </div>` : ""}
-  <footer>
-    <div>Prices in USD. Subject to change. ${escapeHtml(brand.company_name || "")} wholesale partnership.</div>
-    <div>${escapeHtml(brand.website || "")}</div>
-  </footer>
-
-  <script>
-    (function() {
-      function tryPrint() {
-        setTimeout(function() { window.print(); }, 400);
-      }
-      if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        tryPrint();
-      } else {
-        window.addEventListener('load', tryPrint);
-      }
-    })();
-  </script>
-</body>
-</html>`;
-
-  const finalHtml = html + bodyRest;
-
-  // Open a clean print window so the printed URL/footer is not a long blob: link.
-  const w = window.open("", "_blank");
-  if (!w) return;
-  w.document.open();
-  w.document.write(finalHtml);
-  w.document.close();
+  const filename = isReceipt
+    ? `${safeFilePart(store.name)}-order.pdf`
+    : `${safeFilePart(store.name)}-pricing-sheet.pdf`;
+  doc.save(filename);
 }
