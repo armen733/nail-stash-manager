@@ -192,17 +192,28 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
   .grand-totals .grand { font-size: 15px; font-weight: 700; border-top: 1px solid #111; margin-top: 4px; padding-top: 6px; display: flex; justify-content: space-between; }
   .grand-totals .row { display: flex; justify-content: space-between; padding: 2px 0; }
   @page { size: auto; margin: 0mm; }
+  .print-bar { position: sticky; top: 0; z-index: 9999; background: #111; color: #fff; padding: 10px 14px; display: flex; gap: 8px; justify-content: flex-end; align-items: center; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .print-bar .hint { margin-right: auto; font-size: 11px; opacity: 0.8; }
+  .print-bar button { background: #fff; color: #111; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  .print-bar button:active { opacity: 0.7; }
   @media print {
     html, body { margin: 0 !important; }
     body { padding: 14mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     thead { display: table-header-group; }
     tr { page-break-inside: avoid; }
     .page-break { page-break-before: always; }
+    .print-bar { display: none !important; }
   }
 </style>
 </head>
 <body>
-  <header>
+  <div class="print-bar">
+    <span class="hint">On iPhone: tap Print → pinch the preview → Share → Save to Files</span>
+    <button onclick="window.print()">Print / Save PDF</button>
+  </div>
+  <header>`;
+  // Inject the rest of the body
+  const bodyRest = `
     <div class="brand">
       ${brand.logo_url ? `<img src="${escapeHtml(brand.logo_url)}" alt="logo" />` : ""}
       <div>
@@ -236,15 +247,38 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
   </footer>
 
   <script>
-    window.addEventListener('load', () => { setTimeout(() => window.print(), 300); });
+    (function() {
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (!isMobile) {
+        window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 300); });
+      }
+    })();
   </script>
 </body>
 </html>`;
 
-  // ALWAYS use window.open — Safari compatibility (per project memory).
+  const finalHtml = html + bodyRest;
+
+  // Use Blob URL so iOS Safari can Share → Save to Files from the rendered page.
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    const blob = new Blob([finalHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
+  }
+
+  // Desktop: ALWAYS use window.open — Safari compatibility (per project memory).
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.open();
-  w.document.write(html);
+  w.document.write(finalHtml);
   w.document.close();
 }
