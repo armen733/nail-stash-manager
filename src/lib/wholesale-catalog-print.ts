@@ -211,12 +211,7 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
     <span class="hint">On iPhone: tap Print → pinch the preview → Share → Save to Files</span>
     <button onclick="window.print()">Print / Save PDF</button>
   </div>
-  <header>
-${sectionsHtml ? "" : ""}
-${""}
-${""}
-${""}
-${""}`;
+  <header>`;
   // Inject the rest of the body
   const bodyRest = `
     <div class="brand">
