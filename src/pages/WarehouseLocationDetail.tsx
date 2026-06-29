@@ -539,8 +539,9 @@ export default function WarehouseLocationDetail() {
               : storeDefaultMarkup,
             quantity: v.qty,
           };
-
+        })
         .filter(Boolean) as DeliveryGroup["rows"];
+
 
       const totalLabel =
         batches.length === 1 ? "Delivery" : `Delivery #${batches.length - idx}`;
