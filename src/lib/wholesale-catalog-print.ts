@@ -203,12 +203,15 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
     tr { page-break-inside: avoid; }
     .page-break { page-break-before: always; }
     .print-bar { display: none !important; }
+    /* Suppress browser URL/date/page footers */
+    html { margin: 0 !important; }
+    body { margin: 0 !important; padding: 14mm 12mm 20mm 12mm !important; }
   }
 </style>
 </head>
 <body>
   <div class="print-bar">
-    <span class="hint">On iPhone: tap Print → pinch the preview → Share → Save to Files</span>
+    <span class="hint">Tap Print → pinch the preview → Share → Save to Files</span>
     <button onclick="window.print()">Print / Save PDF</button>
   </div>
   <header>`;
@@ -248,9 +251,13 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
 
   <script>
     (function() {
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (!isMobile) {
-        window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 300); });
+      function tryPrint() {
+        setTimeout(function() { window.print(); }, 400);
+      }
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        tryPrint();
+      } else {
+        window.addEventListener('load', tryPrint);
       }
     })();
   </script>
@@ -259,23 +266,7 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
 
   const finalHtml = html + bodyRest;
 
-  // Use Blob URL so iOS Safari can Share → Save to Files from the rendered page.
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    const blob = new Blob([finalHtml], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    return;
-  }
-
-  // Desktop: ALWAYS use window.open — Safari compatibility (per project memory).
+  // Open a clean print window so the printed URL/footer is not a long blob: link.
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.open();
