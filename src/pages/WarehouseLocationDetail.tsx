@@ -534,9 +534,18 @@ export default function WarehouseLocationDetail() {
             category: p.category,
             basePrice: list,
             discountPercent: discountPct,
-            markupPercent: 0,
+          return {
+            sku: p.sku,
+            name: p.name,
+            category: p.category,
+            basePrice: list,
+            discountPercent: discountPct,
+            markupPercent: markupOverrides.has(pid)
+              ? (markupOverrides.get(pid) as number)
+              : storeDefaultMarkup,
             quantity: v.qty,
           };
+
         })
         .filter(Boolean) as DeliveryGroup["rows"];
 
