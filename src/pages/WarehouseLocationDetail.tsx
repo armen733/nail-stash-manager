@@ -406,7 +406,8 @@ export default function WarehouseLocationDetail() {
     if (!location) return;
     setPrintLoading(true);
     setPrintDialogOpen(true);
-    const [brandRes, movesRes, prodRes] = await Promise.all([
+    const isSupply = location.type === "consignment" && !!location.supply_store_id;
+    const [brandRes, movesRes, prodRes, storeRes, sspRes] = await Promise.all([
       supabase
         .from("company_settings")
         .select(
@@ -424,7 +425,29 @@ export default function WarehouseLocationDetail() {
         .from("products")
         .select("id, sku, name, category, price_usd")
         .limit(5000),
+      isSupply
+        ? supabase
+            .from("supply_stores")
+            .select("default_markup_percent, default_discount_percent")
+            .eq("id", location.supply_store_id!)
+            .maybeSingle()
+        : Promise.resolve({ data: null } as any),
+      isSupply
+        ? supabase
+            .from("supply_store_products")
+            .select("product_id, markup_percent_override")
+            .eq("supply_store_id", location.supply_store_id!)
+        : Promise.resolve({ data: [] } as any),
     ]);
+
+    const storeDefaultMarkup = Number((storeRes as any)?.data?.default_markup_percent ?? 0);
+    const markupOverrides = new Map<string, number>();
+    (((sspRes as any)?.data ?? []) as any[]).forEach((r) => {
+      if (r.markup_percent_override != null) {
+        markupOverrides.set(r.product_id, Number(r.markup_percent_override));
+      }
+    });
+
 
     const baseBrand: CompanyBrand = (brandRes.data as CompanyBrand) ?? {
       company_name: "",
