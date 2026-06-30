@@ -124,7 +124,8 @@ export const ActiveSessions = () => {
   };
 
   const renderDeviceLabel = (deviceName?: string | null, os?: string | null) =>
-    [deviceName, os].filter(Boolean).join(" · ") || "Older saved device";
+    [deviceName, os].filter(Boolean).join(" · ") || "Unknown device";
+
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
