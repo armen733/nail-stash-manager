@@ -202,15 +202,16 @@ export const ActiveSessions = () => {
           <div className="space-y-2 pt-2">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Bell className="h-3.5 w-3.5" />
-              Saved notification devices ({pushDevices.length})
+              Push notification devices ({pushDevices.length})
             </div>
             <p className="text-[11px] text-muted-foreground -mt-1">
-              Devices that enabled push notifications. Older entries don't have full details — they'll refresh next time you open the app on that device.
+              These are <strong>not</strong> active sign-ins — they are devices that once enabled notifications. They will keep receiving alerts even if you are not currently signed in there.
             </p>
             {pushDevices.map((device) => {
               const inferred = inferFromEndpoint(device.endpoint);
               const label = [device.device_name, device.os].filter(Boolean).join(" · ") || inferred.label;
               const browser = device.browser || inferred.browser;
+              const isRecentlySeen = device.last_seen_at && (Date.now() - new Date(device.last_seen_at).getTime()) < 24 * 60 * 60 * 1000;
               return (
                 <div key={device.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/25">
                   <div className="mt-1 text-muted-foreground">
@@ -220,7 +221,8 @@ export const ActiveSessions = () => {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium text-sm">{label}</span>
                       {browser && <Badge variant="outline" className="text-[10px]">{browser}</Badge>}
-                      <Badge variant="secondary" className="text-[10px]">Notifications</Badge>
+                      <Badge variant="secondary" className="text-[10px] bg-purple-600 hover:bg-purple-600 text-white">Push notifications on</Badge>
+                      {isRecentlySeen && <Badge className="text-[10px] bg-green-600 hover:bg-green-600">Active now</Badge>}
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
