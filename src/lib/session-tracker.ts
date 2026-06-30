@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_TOKEN_KEY = "app_session_token";
+const IP_LOOKUP_TIMEOUT_MS = 2500;
 
 function generateToken(): string {
   return crypto.randomUUID();
@@ -31,23 +32,27 @@ function parseUserAgent(ua: string) {
   else if (/Windows/i.test(ua)) { os = "Windows"; device_name = "Windows PC"; }
   else if (/Linux/i.test(ua)) { os = "Linux"; device_name = "Linux"; }
 
-  if (/Edg\//i.test(ua)) browser = "Edge";
-  else if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
-  else if (/Firefox\//i.test(ua)) browser = "Firefox";
+  if (/Edg\//i.test(ua) || /EdgiOS/i.test(ua)) browser = "Edge";
+  else if (/CriOS/i.test(ua) || (/Chrome\//i.test(ua) && !/Chromium/i.test(ua))) browser = "Chrome";
+  else if (/Firefox\//i.test(ua) || /FxiOS/i.test(ua)) browser = "Firefox";
   else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
 
   return { device_type, device_name, os, browser };
 }
 
 async function fetchIpInfo(): Promise<{ ip?: string; location?: string }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), IP_LOOKUP_TIMEOUT_MS);
   try {
-    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+    const res = await fetch("https://ipapi.co/json/", { cache: "no-store", signal: controller.signal });
     if (!res.ok) return {};
     const data = await res.json();
     const location = [data.city, data.region, data.country_name].filter(Boolean).join(", ");
     return { ip: data.ip, location };
   } catch {
     return {};
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 
@@ -58,20 +63,28 @@ export async function recordSession() {
   const token = getOrCreateSessionToken();
   const ua = navigator.userAgent;
   const parsed = parseUserAgent(ua);
-  const { ip, location } = await fetchIpInfo();
 
-  await supabase.from("user_sessions").upsert({
+  const baseSession = {
     user_id: user.id,
     session_token: token,
     device_type: parsed.device_type,
     device_name: parsed.device_name,
     browser: parsed.browser,
     os: parsed.os,
-    ip_address: ip,
-    location,
     user_agent: ua,
     last_seen_at: new Date().toISOString(),
-  }, { onConflict: "user_id,session_token" });
+  };
+
+  await supabase.from("user_sessions").upsert(baseSession, { onConflict: "user_id,session_token" });
+
+  const { ip, location } = await fetchIpInfo();
+  if (ip || location) {
+    await supabase
+      .from("user_sessions")
+      .update({ ip_address: ip, location })
+      .eq("user_id", user.id)
+      .eq("session_token", token);
+  }
 }
 
 export async function heartbeatSession() {
@@ -79,11 +92,17 @@ export async function heartbeatSession() {
   if (!user) return;
   const token = localStorage.getItem(SESSION_TOKEN_KEY);
   if (!token) return;
-  await supabase
+  const { data } = await supabase
     .from("user_sessions")
     .update({ last_seen_at: new Date().toISOString() })
     .eq("user_id", user.id)
-    .eq("session_token", token);
+    .eq("session_token", token)
+    .select("id")
+    .maybeSingle();
+
+  if (!data) {
+    await recordSession();
+  }
 }
 
 export function getCurrentSessionToken(): string | null {
