@@ -264,18 +264,30 @@ async function createWholesalePdf({
 
     if (isReceipt) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? startY + 20;
-      const totalsY = finalY + 12 > pageHeight - 36 ? pageHeight - 36 : finalY + 12;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(40);
-      doc.text("Units", pageWidth - 80, totalsY);
-      doc.text(String(units), pageWidth - 14, totalsY, { align: "right" });
-      doc.setDrawColor(17);
-      doc.line(pageWidth - 80, totalsY + 5, pageWidth - 14, totalsY + 5);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Subtotal", pageWidth - 80, totalsY + 14);
-      doc.text(money(subtotal), pageWidth - 14, totalsY + 14, { align: "right" });
+      const totalsY = finalY + 12 > pageHeight - 42 ? pageHeight - 42 : finalY + 12;
+      autoTable(doc, {
+        startY: totalsY,
+        body: [
+          ["Units", String(units)],
+          ["Subtotal", money(subtotal)],
+        ],
+        margin: { left: pageWidth - 82, right: 14 },
+        tableWidth: 68,
+        styles: { fontSize: 9, cellPadding: 2.2, lineWidth: 0, textColor: [40, 40, 40] },
+        columnStyles: {
+          0: { cellWidth: 36 },
+          1: { cellWidth: 32, halign: "right" },
+        },
+        didParseCell: (data) => {
+          if (data.row.index === 1) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.fontSize = 11;
+            data.cell.styles.lineWidth = { top: 0.35, right: 0, bottom: 0, left: 0 };
+            data.cell.styles.lineColor = [17, 17, 17];
+          }
+        },
+        didDrawPage: drawFooter,
+      });
     }
   });
 
