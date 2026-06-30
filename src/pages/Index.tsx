@@ -57,6 +57,7 @@ interface TopProduct {
 
 interface StockValue {
   product_name: string;
+  sku: string;
   stock: number;
   price: number;
   value: number;
@@ -236,7 +237,7 @@ const Index = () => {
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
-        supabase.from("products").select("id, name, stock_on_hand, price_usd, reorder_level, image_url"),
+        supabase.from("products").select("id, name, sku, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
         supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
@@ -457,6 +458,7 @@ const Index = () => {
         .filter(p => p.stock_on_hand > 0)
         .map(p => ({
           product_name: p.name,
+          sku: p.sku || "",
           stock: p.stock_on_hand,
           price: p.price_usd,
           value: p.stock_on_hand * p.price_usd,
@@ -1812,9 +1814,14 @@ const Index = () => {
                 <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
                   <div className="flex-1">
                     <p className="font-medium">{item.product_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.stock} pieces × ${item.price.toFixed(2)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      {item.sku && (
+                        <span className="text-xs text-muted-foreground/60 font-mono">{item.sku}</span>
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {item.stock} pieces × ${item.price.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                   <p className="font-semibold text-primary">${item.value.toFixed(2)}</p>
                 </div>
