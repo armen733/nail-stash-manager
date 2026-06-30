@@ -38,6 +38,35 @@ const deviceIcon = (type: string | null) => {
   return <Monitor className="h-5 w-5" />;
 };
 
+// Infer device info from the push endpoint URL when metadata is missing
+// (older subscriptions saved before we started capturing user agent details).
+const inferFromEndpoint = (endpoint: string) => {
+  if (endpoint.includes("web.push.apple.com")) {
+    return { label: "Apple device (iPhone / iPad / Mac)", browser: "Safari", icon: <Smartphone className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("fcm.googleapis.com") || endpoint.includes("android.googleapis.com")) {
+    return { label: "Android device", browser: "Chrome", icon: <Smartphone className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("mozilla.com")) {
+    return { label: "Firefox device", browser: "Firefox", icon: <Monitor className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("windows.com") || endpoint.includes("notify.windows.com")) {
+    return { label: "Windows device", browser: "Edge", icon: <Monitor className="h-5 w-5" /> };
+  }
+  return { label: "Unknown device", browser: null, icon: <Monitor className="h-5 w-5" /> };
+};
+
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 export const ActiveSessions = () => {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [pushDevices, setPushDevices] = useState<PushDevice[]>([]);
@@ -95,7 +124,8 @@ export const ActiveSessions = () => {
   };
 
   const renderDeviceLabel = (deviceName?: string | null, os?: string | null) =>
-    [deviceName, os].filter(Boolean).join(" · ") || "Older saved device";
+    [deviceName, os].filter(Boolean).join(" · ") || "Unknown device";
+
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
@@ -145,8 +175,13 @@ export const ActiveSessions = () => {
                   )}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    Last active {formatDistanceToNow(new Date(s.last_seen_at), { addSuffix: true })}
+                    Last active {formatDistanceToNow(new Date(s.last_seen_at), { addSuffix: true })} · {formatDate(s.last_seen_at)}
                   </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 opacity-60" />
+                    First signed in {formatDate(s.created_at)}
+                  </div>
+
                 </div>
                 {!isCurrent && (
                   <Button
@@ -169,31 +204,47 @@ export const ActiveSessions = () => {
               <Bell className="h-3.5 w-3.5" />
               Saved notification devices ({pushDevices.length})
             </div>
-            {pushDevices.map((device) => (
-              <div key={device.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/25">
-                <div className="mt-1 text-muted-foreground">{deviceIcon(device.device_type)}</div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-sm">{renderDeviceLabel(device.device_name, device.os)}</span>
-                    {device.browser && <Badge variant="outline" className="text-[10px]">{device.browser}</Badge>}
-                    <Badge variant="secondary" className="text-[10px]">Notifications</Badge>
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              Devices that enabled push notifications. Older entries don't have full details — they'll refresh next time you open the app on that device.
+            </p>
+            {pushDevices.map((device) => {
+              const inferred = inferFromEndpoint(device.endpoint);
+              const label = [device.device_name, device.os].filter(Boolean).join(" · ") || inferred.label;
+              const browser = device.browser || inferred.browser;
+              return (
+                <div key={device.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/25">
+                  <div className="mt-1 text-muted-foreground">
+                    {device.device_type ? deviceIcon(device.device_type) : inferred.icon}
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    Saved {formatDistanceToNow(new Date(device.last_seen_at || device.created_at), { addSuffix: true })}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-sm">{label}</span>
+                      {browser && <Badge variant="outline" className="text-[10px]">{browser}</Badge>}
+                      <Badge variant="secondary" className="text-[10px]">Notifications</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Added {formatDate(device.created_at)}
+                    </div>
+                    {device.last_seen_at && device.last_seen_at !== device.created_at && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        Last seen {formatDistanceToNow(new Date(device.last_seen_at), { addSuffix: true })}
+                      </div>
+                    )}
                   </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removePushDevice(device)}
+                    disabled={removingPushId === device.id}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => removePushDevice(device)}
-                  disabled={removingPushId === device.id}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <p className="text-[11px] text-muted-foreground pt-1">
