@@ -201,7 +201,7 @@ async function createMobilePrintablePage({
             : ""
         }
 
-        <table>
+        <table class="${isReceipt ? "receipt" : "catalog"}">
           <thead>
             <tr>
               ${
