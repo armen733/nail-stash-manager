@@ -235,16 +235,16 @@ async function createWholesalePdf({
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: isReceipt
         ? {
-            0: { cellWidth: 19 },
-            1: { cellWidth: 34 },
-            2: { cellWidth: 27 },
-            3: { halign: "right", cellWidth: 17 },
+            0: { cellWidth: 18 },
+            1: { cellWidth: 31 },
+            2: { cellWidth: 24 },
+            3: { halign: "right", cellWidth: 16 },
             4: { halign: "right", cellWidth: 13 },
-            5: { halign: "right", cellWidth: 18, fontStyle: "bold" },
+            5: { halign: "right", cellWidth: 17, fontStyle: "bold" },
             6: { halign: "right", cellWidth: 10 },
-            7: { halign: "right", cellWidth: 20, fontStyle: "bold" },
-            8: { halign: "right", cellWidth: 14, textColor: [100, 100, 100] },
-            9: { halign: "right", cellWidth: 20, textColor: [100, 100, 100] },
+            7: { halign: "right", cellWidth: 18, fontStyle: "bold" },
+            8: { halign: "right", cellWidth: 13, textColor: [100, 100, 100] },
+            9: { halign: "right", cellWidth: 18, textColor: [100, 100, 100] },
           }
         : {
             0: { cellWidth: 24 },
