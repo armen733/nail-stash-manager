@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { parseUserAgent } from "@/lib/session-tracker";
 
 // Basic feature detection helpers
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -80,6 +81,7 @@ export const subscribeToPushNotifications = async () => {
     });
 
     const subscriptionJSON = subscription.toJSON();
+    const parsedDevice = parseUserAgent(navigator.userAgent);
 
     // Save to database - use user_id and endpoint as the unique key for upsert
     const { error } = await supabase
@@ -88,7 +90,13 @@ export const subscribeToPushNotifications = async () => {
         user_id: user.id,
         endpoint: subscriptionJSON.endpoint!,
         p256dh: subscriptionJSON.keys!.p256dh!,
-        auth: subscriptionJSON.keys!.auth!
+        auth: subscriptionJSON.keys!.auth!,
+        device_type: parsedDevice.device_type,
+        device_name: parsedDevice.device_name,
+        browser: parsedDevice.browser,
+        os: parsedDevice.os,
+        user_agent: navigator.userAgent,
+        last_seen_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,endpoint'
       });
