@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
+import { recordSession, heartbeatSession, getCurrentSessionToken } from "@/lib/session-tracker";
 
 interface AuthState {
   user: User | null;
@@ -34,6 +35,9 @@ const initAuth = () => {
       loading: false,
     };
     notifyListeners();
+    if (event === "SIGNED_IN" && session?.user) {
+      setTimeout(() => { recordSession().catch(() => {}); }, 0);
+    }
   });
 
   // Get initial session
@@ -44,7 +48,13 @@ const initAuth = () => {
       loading: false,
     };
     notifyListeners();
+    if (session?.user) {
+      setTimeout(() => { recordSession().catch(() => {}); }, 0);
+    }
   });
+
+  // Heartbeat every 5 minutes
+  setInterval(() => { heartbeatSession().catch(() => {}); }, 5 * 60 * 1000);
 };
 
 export const useAuth = () => {
@@ -62,6 +72,14 @@ export const useAuth = () => {
   }, []);
 
   const signOut = useCallback(async () => {
+    try {
+      const token = getCurrentSessionToken();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && token) {
+        await supabase.from("user_sessions").delete()
+          .eq("user_id", user.id).eq("session_token", token);
+      }
+    } catch {}
     await supabase.auth.signOut();
   }, []);
 

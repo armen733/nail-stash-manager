@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { isPushSupported, subscribeToPushNotifications, unsubscribeFromPushNotifications } from "@/lib/push-notifications";
+import { ActiveSessions } from "@/components/profile/ActiveSessions";
 
 interface Profile {
   id: string;
@@ -288,6 +289,8 @@ const Profile = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ActiveSessions />
     </div>
   );
 };
