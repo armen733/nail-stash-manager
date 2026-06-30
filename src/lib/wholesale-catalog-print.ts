@@ -229,25 +229,25 @@ async function createWholesalePdf({
     autoTable(doc, {
       startY,
       head: isReceipt
-        ? [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Qty", "Line Total", "Markup", "Sugg. Retail"]]
-        : [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Markup", "Sugg. Retail"]],
+        ? [["SKU", "Product", "Category", "List", "Disc.", "Cost", "Qty", "Total", "Markup %", "Retail"]]
+        : [["SKU", "Product", "Category", "List", "Disc.", "Cost", "Markup %", "Retail"]],
       body: tableRows,
       margin: { left: 14, right: 14, bottom: 24 },
-      styles: { fontSize: 7.1, cellPadding: 1.7, textColor: [45, 45, 45], overflow: "linebreak" },
-      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.8 },
+      styles: { fontSize: 6.9, cellPadding: 1.4, textColor: [45, 45, 45], overflow: "linebreak" },
+      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.5 },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: isReceipt
         ? {
-            0: { cellWidth: 18 },
-            1: { cellWidth: 31 },
-            2: { cellWidth: 24 },
-            3: { halign: "right", cellWidth: 16 },
-            4: { halign: "right", cellWidth: 13 },
-            5: { halign: "right", cellWidth: 17, fontStyle: "bold" },
-            6: { halign: "right", cellWidth: 10 },
-            7: { halign: "right", cellWidth: 18, fontStyle: "bold" },
-            8: { halign: "right", cellWidth: 13, textColor: [100, 100, 100] },
-            9: { halign: "right", cellWidth: 18, textColor: [100, 100, 100] },
+            0: { cellWidth: 17 },
+            1: { cellWidth: 29 },
+            2: { cellWidth: 22 },
+            3: { halign: "right", cellWidth: 15 },
+            4: { halign: "right", cellWidth: 12 },
+            5: { halign: "right", cellWidth: 16, fontStyle: "bold" },
+            6: { halign: "right", cellWidth: 9 },
+            7: { halign: "right", cellWidth: 17, fontStyle: "bold" },
+            8: { halign: "right", cellWidth: 16, textColor: [100, 100, 100] },
+            9: { halign: "right", cellWidth: 17, textColor: [100, 100, 100] },
           }
         : {
             0: { cellWidth: 24 },
