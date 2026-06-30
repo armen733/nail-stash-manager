@@ -268,15 +268,15 @@ async function createMobilePrintablePage({
           tbody tr:nth-child(odd) td { background: #f8f8f8; }
           /* Receipt: 10 columns */
           .receipt th:nth-child(1), .receipt td:nth-child(1) { width: 9%; }
-          .receipt th:nth-child(2), .receipt td:nth-child(2) { width: 15%; }
+          .receipt th:nth-child(2), .receipt td:nth-child(2) { width: 14%; }
           .receipt th:nth-child(3), .receipt td:nth-child(3) { width: 13%; }
           .receipt th:nth-child(4), .receipt td:nth-child(4) { width: 9%; }
           .receipt th:nth-child(5), .receipt td:nth-child(5) { width: 7%; }
           .receipt th:nth-child(6), .receipt td:nth-child(6) { width: 9%; }
           .receipt th:nth-child(7), .receipt td:nth-child(7) { width: 5%; }
           .receipt th:nth-child(8), .receipt td:nth-child(8) { width: 11%; }
-          .receipt th:nth-child(9), .receipt td:nth-child(9) { width: 10%; }
-          .receipt th:nth-child(10), .receipt td:nth-child(10) { width: 12%; }
+          .receipt th:nth-child(9), .receipt td:nth-child(9) { width: 12%; }
+          .receipt th:nth-child(10), .receipt td:nth-child(10) { width: 11%; }
           /* Catalog: 8 columns */
           .catalog th:nth-child(1), .catalog td:nth-child(1) { width: 12%; }
           .catalog th:nth-child(2), .catalog td:nth-child(2) { width: 28%; }
