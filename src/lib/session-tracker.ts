@@ -16,7 +16,7 @@ export function getOrCreateSessionToken(): string {
   return token;
 }
 
-function parseUserAgent(ua: string) {
+export function parseUserAgent(ua: string) {
   let device_type = "Desktop";
   let device_name = "";
   let os = "Unknown";
