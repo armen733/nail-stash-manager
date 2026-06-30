@@ -279,7 +279,7 @@ async function createWholesalePdf({
       doc.line(boxX, totalsY + 5.5, boxX + boxW, totalsY + 5.5);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("Subtotal", boxX + 2, totalsY + 13);
+      doc.text("Total", boxX + 2, totalsY + 13);
       doc.text(money(subtotal), boxX + boxW - 2, totalsY + 13, { align: "right" });
     }
   });
