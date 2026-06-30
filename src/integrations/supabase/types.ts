@@ -1040,26 +1040,44 @@ export type Database = {
       push_subscriptions: {
         Row: {
           auth: string
+          browser: string | null
           created_at: string
+          device_name: string | null
+          device_type: string | null
           endpoint: string
           id: string
+          last_seen_at: string
+          os: string | null
           p256dh: string
+          user_agent: string | null
           user_id: string
         }
         Insert: {
           auth: string
+          browser?: string | null
           created_at?: string
+          device_name?: string | null
+          device_type?: string | null
           endpoint: string
           id?: string
+          last_seen_at?: string
+          os?: string | null
           p256dh: string
+          user_agent?: string | null
           user_id: string
         }
         Update: {
           auth?: string
+          browser?: string | null
           created_at?: string
+          device_name?: string | null
+          device_type?: string | null
           endpoint?: string
           id?: string
+          last_seen_at?: string
+          os?: string | null
           p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
