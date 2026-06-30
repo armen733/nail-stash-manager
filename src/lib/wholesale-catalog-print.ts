@@ -264,18 +264,18 @@ async function createWholesalePdf({
 
     if (isReceipt) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? startY + 20;
-      const totalsY = Math.min(finalY + 10, pageHeight - 38);
+      const totalsY = finalY + 12 > pageHeight - 36 ? pageHeight - 36 : finalY + 12;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(40);
-      doc.text("Units", pageWidth - 78, totalsY);
+      doc.text("Units", pageWidth - 80, totalsY);
       doc.text(String(units), pageWidth - 14, totalsY, { align: "right" });
       doc.setDrawColor(17);
-      doc.line(pageWidth - 78, totalsY + 4, pageWidth - 14, totalsY + 4);
+      doc.line(pageWidth - 80, totalsY + 5, pageWidth - 14, totalsY + 5);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("Subtotal", pageWidth - 78, totalsY + 11);
-      doc.text(money(subtotal), pageWidth - 14, totalsY + 11, { align: "right" });
+      doc.text("Subtotal", pageWidth - 80, totalsY + 14);
+      doc.text(money(subtotal), pageWidth - 14, totalsY + 14, { align: "right" });
     }
   });
 
