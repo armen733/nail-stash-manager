@@ -32,6 +32,9 @@ export interface PrintableCatalogInput {
 
 const money = (n: number) => `$${Number(n || 0).toFixed(2)}`;
 
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char] ?? char);
+
 const safeFilePart = (value: string) =>
   value
     .trim()
@@ -295,7 +298,40 @@ async function createWholesalePdf({
   if (popup) {
     const blob = doc.output("blob");
     const url = URL.createObjectURL(blob);
-    popup.location.href = url;
+    popup.document.open();
+    popup.document.write(`<!doctype html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>${escapeHtml(filename)}</title>
+          <style>
+            html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f6f6; color: #111; }
+            .bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 10px; align-items: center; padding: 12px; background: #111; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+            button, a { border: 0; border-radius: 8px; padding: 11px 14px; font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-decoration: none; }
+            button { background: #2f2f2f; color: #fff; }
+            a { background: #fff; color: #111; }
+            .hint { color: #ddd; font-size: 12px; margin-left: auto; }
+            iframe { width: 100%; height: calc(100% - 58px); border: 0; display: block; background: #fff; }
+            @media (max-width: 640px) { .hint { display: none; } .bar { padding: 10px; } button, a { flex: 1; text-align: center; } }
+          </style>
+        </head>
+        <body>
+          <div class="bar">
+            <button type="button" id="backBtn">Back to app</button>
+            <a id="openBtn" href=${JSON.stringify(url)} download=${JSON.stringify(filename)} target="_self">Open / Save PDF</a>
+            <span class="hint">If the PDF preview is blank, tap Open / Save PDF.</span>
+          </div>
+          <iframe title="Supply PDF" src=${JSON.stringify(url)}></iframe>
+          <script>
+            document.getElementById('backBtn').addEventListener('click', function () { window.close(); });
+            setTimeout(function () {
+              var iframe = document.querySelector('iframe');
+              if (iframe && !iframe.contentWindow) document.getElementById('openBtn').click();
+            }, 700);
+          </script>
+        </body>
+      </html>`);
+    popup.document.close();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   } else {
     doc.save(filename);
