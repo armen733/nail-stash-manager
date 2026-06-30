@@ -233,7 +233,7 @@ async function createWholesalePdf({
         : [["SKU", "Product", "Category", "List", "Disc.", "Cost", "Markup %", "Retail"]],
       body: tableRows,
       margin: { left: 14, right: 14, bottom: 24 },
-      styles: { fontSize: 6.9, cellPadding: 1.4, textColor: [45, 45, 45], overflow: "linebreak" },
+      styles: { fontSize: 6.9, cellPadding: 1.4, textColor: [45, 45, 45], overflow: "linebreak", minCellWidth: 2 },
       headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.5 },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: isReceipt
