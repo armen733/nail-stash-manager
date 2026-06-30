@@ -270,5 +270,28 @@ async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatal
   const filename = isReceipt
     ? `${safeFilePart(store.name)}-order.pdf`
     : `${safeFilePart(store.name)}-pricing-sheet.pdf`;
-  doc.save(filename);
+
+  // iOS Safari blocks doc.save() (programmatic <a download>). Use a blob URL
+  // and open it in a new tab so the browser shows the native share/save sheet.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS || isSafari) {
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank");
+    if (!win) {
+      // Popup blocked — fall back to an anchor click in the same tab.
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } else {
+    doc.save(filename);
+  }
 }
