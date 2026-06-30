@@ -38,6 +38,35 @@ const deviceIcon = (type: string | null) => {
   return <Monitor className="h-5 w-5" />;
 };
 
+// Infer device info from the push endpoint URL when metadata is missing
+// (older subscriptions saved before we started capturing user agent details).
+const inferFromEndpoint = (endpoint: string) => {
+  if (endpoint.includes("web.push.apple.com")) {
+    return { label: "Apple device (iPhone / iPad / Mac)", browser: "Safari", icon: <Smartphone className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("fcm.googleapis.com") || endpoint.includes("android.googleapis.com")) {
+    return { label: "Android device", browser: "Chrome", icon: <Smartphone className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("mozilla.com")) {
+    return { label: "Firefox device", browser: "Firefox", icon: <Monitor className="h-5 w-5" /> };
+  }
+  if (endpoint.includes("windows.com") || endpoint.includes("notify.windows.com")) {
+    return { label: "Windows device", browser: "Edge", icon: <Monitor className="h-5 w-5" /> };
+  }
+  return { label: "Unknown device", browser: null, icon: <Monitor className="h-5 w-5" /> };
+};
+
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
 export const ActiveSessions = () => {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [pushDevices, setPushDevices] = useState<PushDevice[]>([]);
