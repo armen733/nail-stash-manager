@@ -67,10 +67,27 @@ const loadImageDataUrl = async (url: string | null): Promise<string | null> => {
 };
 
 export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
-  void createWholesalePdf({ brand, store, rows, groups });
+  const isMobile = /Android|iPad|iPhone|iPod/i.test(navigator.userAgent) && !(window as any).MSStream;
+  const popup = isMobile ? window.open("", "_blank") : null;
+  if (popup) {
+    popup.document.write(
+      '<!doctype html><title>Preparing PDF</title><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#111">Preparing PDF…</body>',
+    );
+  }
+
+  void createWholesalePdf({ brand, store, rows, groups, popup }).catch((error) => {
+    console.error("Failed to create wholesale PDF", error);
+    popup?.close();
+  });
 }
 
-async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatalogInput) {
+async function createWholesalePdf({
+  brand,
+  store,
+  rows,
+  groups,
+  popup,
+}: PrintableCatalogInput & { popup?: Window | null }) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
@@ -187,6 +204,7 @@ async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatal
               money(pricing.storeCost),
               String(qty),
               money(lineTotal),
+              `${pricing.markupPercent}%`,
               money(pricing.suggestedRetail),
             ]
           : [
@@ -196,6 +214,7 @@ async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatal
               money(pricing.basePrice),
               `${pricing.discountPercent}%`,
               money(pricing.storeCost),
+              `${pricing.markupPercent}%`,
               money(pricing.suggestedRetail),
             ];
       })
@@ -207,33 +226,35 @@ async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatal
     autoTable(doc, {
       startY,
       head: isReceipt
-        ? [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Qty", "Line Total", "Sugg. Retail"]]
-        : [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Sugg. Retail"]],
+        ? [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Qty", "Line Total", "Markup", "Sugg. Retail"]]
+        : [["SKU", "Product", "Category", "List", "Disc.", "Unit Cost", "Markup", "Sugg. Retail"]],
       body: tableRows,
       margin: { left: 14, right: 14, bottom: 24 },
-      styles: { fontSize: 7.6, cellPadding: 2, textColor: [45, 45, 45], overflow: "linebreak" },
-      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 7.2 },
+      styles: { fontSize: 7.1, cellPadding: 1.7, textColor: [45, 45, 45], overflow: "linebreak" },
+      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.8 },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: isReceipt
         ? {
-            0: { cellWidth: 21 },
-            1: { cellWidth: 38 },
-            2: { cellWidth: 32 },
-            3: { halign: "right", cellWidth: 18 },
-            4: { halign: "right", cellWidth: 14 },
-            5: { halign: "right", cellWidth: 20, fontStyle: "bold" },
-            6: { halign: "right", cellWidth: 12 },
-            7: { halign: "right", cellWidth: 21, fontStyle: "bold" },
-            8: { halign: "right", cellWidth: 22, textColor: [100, 100, 100] },
+            0: { cellWidth: 19 },
+            1: { cellWidth: 34 },
+            2: { cellWidth: 27 },
+            3: { halign: "right", cellWidth: 17 },
+            4: { halign: "right", cellWidth: 13 },
+            5: { halign: "right", cellWidth: 18, fontStyle: "bold" },
+            6: { halign: "right", cellWidth: 10 },
+            7: { halign: "right", cellWidth: 20, fontStyle: "bold" },
+            8: { halign: "right", cellWidth: 14, textColor: [100, 100, 100] },
+            9: { halign: "right", cellWidth: 20, textColor: [100, 100, 100] },
           }
         : {
             0: { cellWidth: 24 },
-            1: { cellWidth: 55 },
-            2: { cellWidth: 40 },
+            1: { cellWidth: 49 },
+            2: { cellWidth: 34 },
             3: { halign: "right" },
             4: { halign: "right" },
             5: { halign: "right", fontStyle: "bold" },
             6: { halign: "right", textColor: [100, 100, 100] },
+            7: { halign: "right", textColor: [100, 100, 100] },
           },
       didDrawPage: drawFooter,
     });
@@ -271,22 +292,10 @@ async function createWholesalePdf({ brand, store, rows, groups }: PrintableCatal
     ? `${safeFilePart(store.name)}-order.pdf`
     : `${safeFilePart(store.name)}-pricing-sheet.pdf`;
 
-  // iOS Safari: window.open after await loses user-gesture and gets blocked.
-  // Use an anchor click on a blob URL — that reliably opens the PDF in a new
-  // tab where the user can tap Share → Save to Files.
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-
-  if (isIOS) {
+  if (popup) {
     const blob = doc.output("blob");
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    // Note: iOS ignores `download` for blob URLs but will open the PDF inline.
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    popup.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   } else {
     doc.save(filename);
