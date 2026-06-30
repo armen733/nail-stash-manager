@@ -458,6 +458,7 @@ const Index = () => {
         .filter(p => p.stock_on_hand > 0)
         .map(p => ({
           product_name: p.name,
+          sku: p.sku || "",
           stock: p.stock_on_hand,
           price: p.price_usd,
           value: p.stock_on_hand * p.price_usd,
