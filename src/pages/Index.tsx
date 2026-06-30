@@ -1814,9 +1814,14 @@ const Index = () => {
                 <div key={index} className="flex items-center justify-between border-b pb-2 last:border-0">
                   <div className="flex-1">
                     <p className="font-medium">{item.product_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.stock} pieces × ${item.price.toFixed(2)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      {item.sku && (
+                        <span className="text-xs text-muted-foreground/60 font-mono">{item.sku}</span>
+                      )}
+                      <span className="text-sm text-muted-foreground">
+                        {item.stock} pieces × ${item.price.toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                   <p className="font-semibold text-primary">${item.value.toFixed(2)}</p>
                 </div>
