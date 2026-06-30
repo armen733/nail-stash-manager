@@ -201,7 +201,7 @@ async function createMobilePrintablePage({
             : ""
         }
 
-        <table>
+        <table class="${isReceipt ? "receipt" : "catalog"}">
           <thead>
             <tr>
               ${
@@ -262,13 +262,30 @@ async function createMobilePrintablePage({
           .title-row > div { min-width: 0; }
           .section-title { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 4mm; font-size: 10px; }
           .section-title span { color: #666; font-size: 9px; }
-          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7px; }
-          th { background: #111; color: #fff; text-align: left; padding: 2.2px 3px; font-weight: 700; }
-          td { padding: 2.6px 3px; border-bottom: 1px solid #eee; vertical-align: top; overflow-wrap: anywhere; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.5px; }
+          th { background: #111; color: #fff; text-align: left; padding: 3px 4px; font-weight: 700; }
+          td { padding: 4px 4px; border-bottom: 1px solid #eee; vertical-align: top; overflow-wrap: anywhere; }
           tbody tr:nth-child(odd) td { background: #f8f8f8; }
-          th:nth-child(1), td:nth-child(1) { width: 10%; }
-          th:nth-child(2), td:nth-child(2) { width: ${isReceipt ? "17%" : "27%"}; }
-          th:nth-child(3), td:nth-child(3) { width: ${isReceipt ? "18%" : "18%"}; }
+          /* Receipt: 10 columns */
+          .receipt th:nth-child(1), .receipt td:nth-child(1) { width: 9%; }
+          .receipt th:nth-child(2), .receipt td:nth-child(2) { width: 14%; }
+          .receipt th:nth-child(3), .receipt td:nth-child(3) { width: 13%; }
+          .receipt th:nth-child(4), .receipt td:nth-child(4) { width: 9%; }
+          .receipt th:nth-child(5), .receipt td:nth-child(5) { width: 7%; }
+          .receipt th:nth-child(6), .receipt td:nth-child(6) { width: 9%; }
+          .receipt th:nth-child(7), .receipt td:nth-child(7) { width: 5%; }
+          .receipt th:nth-child(8), .receipt td:nth-child(8) { width: 11%; }
+          .receipt th:nth-child(9), .receipt td:nth-child(9) { width: 12%; }
+          .receipt th:nth-child(10), .receipt td:nth-child(10) { width: 11%; }
+          /* Catalog: 8 columns */
+          .catalog th:nth-child(1), .catalog td:nth-child(1) { width: 12%; }
+          .catalog th:nth-child(2), .catalog td:nth-child(2) { width: 28%; }
+          .catalog th:nth-child(3), .catalog td:nth-child(3) { width: 18%; }
+          .catalog th:nth-child(4), .catalog td:nth-child(4) { width: 10%; }
+          .catalog th:nth-child(5), .catalog td:nth-child(5) { width: 8%; }
+          .catalog th:nth-child(6), .catalog td:nth-child(6) { width: 11%; }
+          .catalog th:nth-child(7), .catalog td:nth-child(7) { width: 7%; }
+          .catalog th:nth-child(8), .catalog td:nth-child(8) { width: 6%; }
           .num { text-align: right; white-space: nowrap; }
           .strong { font-weight: 700; }
           .muted { color: #666; }
