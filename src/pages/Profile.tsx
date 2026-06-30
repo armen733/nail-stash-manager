@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { isPushSupported, subscribeToPushNotifications, unsubscribeFromPushNotifications } from "@/lib/push-notifications";
 import { ActiveSessions } from "@/components/profile/ActiveSessions";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Profile {
   id: string;
@@ -29,6 +30,7 @@ const Profile = () => {
   const [pushSupported, setPushSupported] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   useEffect(() => {
     fetchProfile();
@@ -143,7 +145,7 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     navigate("/auth");
   };
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Smartphone, Tablet, Monitor, MapPin, Clock, Trash2, Globe } from "lucide-react";
+import { Smartphone, Tablet, Monitor, MapPin, Clock, Trash2, Globe, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentSessionToken } from "@/lib/session-tracker";
@@ -21,6 +21,17 @@ interface UserSession {
   created_at: string;
 }
 
+interface PushDevice {
+  id: string;
+  endpoint: string;
+  device_type: string | null;
+  device_name: string | null;
+  browser: string | null;
+  os: string | null;
+  created_at: string;
+  last_seen_at: string | null;
+}
+
 const deviceIcon = (type: string | null) => {
   if (type === "Mobile") return <Smartphone className="h-5 w-5" />;
   if (type === "Tablet") return <Tablet className="h-5 w-5" />;
@@ -29,20 +40,30 @@ const deviceIcon = (type: string | null) => {
 
 export const ActiveSessions = () => {
   const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [pushDevices, setPushDevices] = useState<PushDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [removingPushId, setRemovingPushId] = useState<string | null>(null);
   const { toast } = useToast();
   const currentToken = getCurrentSessionToken();
 
   const fetchSessions = async () => {
-    const { data, error } = await supabase
-      .from("user_sessions")
-      .select("*")
-      .order("last_seen_at", { ascending: false });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    const [{ data, error }, { data: pushData, error: pushError }] = await Promise.all([
+      supabase
+        .from("user_sessions")
+        .select("*")
+        .order("last_seen_at", { ascending: false }),
+      supabase
+        .from("push_subscriptions")
+        .select("id, endpoint, device_type, device_name, browser, os, created_at, last_seen_at")
+        .order("last_seen_at", { ascending: false }),
+    ]);
+
+    if (error || pushError) {
+      toast({ title: "Error", description: error?.message || pushError?.message, variant: "destructive" });
     } else {
       setSessions(data || []);
+      setPushDevices(pushData || []);
     }
     setLoading(false);
   };
@@ -60,6 +81,21 @@ export const ActiveSessions = () => {
     }
     setRevokingId(null);
   };
+
+  const removePushDevice = async (device: PushDevice) => {
+    setRemovingPushId(device.id);
+    const { error } = await supabase.from("push_subscriptions").delete().eq("id", device.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Device removed", description: "That notification device was removed from the list." });
+      setPushDevices(prev => prev.filter(x => x.id !== device.id));
+    }
+    setRemovingPushId(null);
+  };
+
+  const renderDeviceLabel = (deviceName?: string | null, os?: string | null) =>
+    [deviceName, os].filter(Boolean).join(" · ") || "Older saved device";
 
   return (
     <Card className="shadow-[var(--shadow-card)]">
@@ -127,8 +163,41 @@ export const ActiveSessions = () => {
             );
           })
         )}
+        {pushDevices.length > 0 && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Bell className="h-3.5 w-3.5" />
+              Saved notification devices ({pushDevices.length})
+            </div>
+            {pushDevices.map((device) => (
+              <div key={device.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/25">
+                <div className="mt-1 text-muted-foreground">{deviceIcon(device.device_type)}</div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-sm">{renderDeviceLabel(device.device_name, device.os)}</span>
+                    {device.browser && <Badge variant="outline" className="text-[10px]">{device.browser}</Badge>}
+                    <Badge variant="secondary" className="text-[10px]">Notifications</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Saved {formatDistanceToNow(new Date(device.last_seen_at || device.created_at), { addSuffix: true })}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removePushDevice(device)}
+                  disabled={removingPushId === device.id}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <p className="text-[11px] text-muted-foreground pt-1">
-          Removing a device only clears it from this list. To force sign-out everywhere, change your password.
+          Removing an entry clears it from this list. To force sign-out everywhere, change your password.
         </p>
       </CardContent>
     </Card>
