@@ -75,24 +75,7 @@ export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCa
       (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) &&
     !(window as any).MSStream;
 
-  if (isMobile) {
-    const popup = window.open("", "_blank");
-    if (!popup) {
-      toastUnavailablePopup();
-      return;
-    }
-    popup.document.write(
-      '<!doctype html><title>Preparing document</title><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#111">Preparing document…</body>',
-    );
-
-    void createMobilePrintablePage({ brand, store, rows, groups, popup }).catch((error) => {
-      console.error("Failed to create mobile wholesale document", error);
-      popup.document.body.innerHTML = "Unable to prepare this document. Please go back and try again.";
-    });
-    return;
-  }
-
-  void createWholesalePdf({ brand, store, rows, groups }).catch((error) => {
+  void createWholesalePdf({ brand, store, rows, groups, deliveryMode: isMobile ? "share" : "save" }).catch((error) => {
     console.error("Failed to create wholesale PDF", error);
   });
 }
@@ -329,7 +312,8 @@ async function createWholesalePdf({
   store,
   rows,
   groups,
-}: PrintableCatalogInput) {
+  deliveryMode = "save",
+}: PrintableCatalogInput & { deliveryMode?: "save" | "share" }) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
@@ -407,7 +391,7 @@ async function createWholesalePdf({
     if (index > 0) doc.addPage();
     drawHeader();
 
-    let startY = 60;
+    let startY = 56;
     if (section.title) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -419,7 +403,7 @@ async function createWholesalePdf({
         doc.setTextColor(90);
         doc.text(section.subtitle, pageWidth - 14, startY, { align: "right" });
       }
-      startY += 5;
+      startY += 4;
     }
 
     let units = 0;
@@ -471,9 +455,9 @@ async function createWholesalePdf({
         ? [["SKU", "Product", "Category", "List", "Disc.", "Cost", "Qty", "Total", "Markup %", "Retail"]]
         : [["SKU", "Product", "Category", "List", "Disc.", "Cost", "Markup %", "Retail"]],
       body: tableRows,
-      margin: { left: 14, right: 14, bottom: 24 },
-      styles: { fontSize: 6.9, cellPadding: 1.4, textColor: [45, 45, 45], overflow: "linebreak", minCellWidth: 2 },
-      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.5 },
+      margin: { left: 14, right: 14, bottom: 22 },
+      styles: { fontSize: 6.4, cellPadding: 1.05, textColor: [45, 45, 45], overflow: "linebreak", minCellWidth: 2 },
+      headStyles: { fillColor: [17, 17, 17], textColor: 255, fontStyle: "bold", fontSize: 6.1, cellPadding: 1.05 },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: isReceipt
         ? {
@@ -499,6 +483,8 @@ async function createWholesalePdf({
             7: { halign: "right", textColor: [100, 100, 100] },
           },
       didDrawPage: drawFooter,
+      pageBreak: "auto",
+      rowPageBreak: "avoid",
     });
 
     if (isReceipt) {
@@ -539,5 +525,38 @@ async function createWholesalePdf({
     ? `${safeFilePart(store.name)}-order.pdf`
     : `${safeFilePart(store.name)}-pricing-sheet.pdf`;
 
+  if (deliveryMode === "share") {
+    await shareOrOpenPdf(doc, filename);
+    return;
+  }
+
   doc.save(filename);
+}
+
+async function shareOrOpenPdf(doc: jsPDF, filename: string) {
+  const blob = doc.output("blob");
+  const file = new File([blob], filename, { type: "application/pdf" });
+  const nav = navigator as Navigator & {
+    canShare?: (data: ShareData & { files?: File[] }) => boolean;
+    share?: (data: ShareData & { files?: File[] }) => Promise<void>;
+  };
+
+  if (nav.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
+    try {
+      await nav.share({ files: [file], title: filename });
+      return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
