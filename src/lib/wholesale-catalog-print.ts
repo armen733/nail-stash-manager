@@ -70,18 +70,241 @@ const loadImageDataUrl = async (url: string | null): Promise<string | null> => {
 };
 
 export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
-  const isMobile = /Android|iPad|iPhone|iPod/i.test(navigator.userAgent) && !(window as any).MSStream;
-  const popup = isMobile ? window.open("", "_blank") : null;
-  if (popup) {
+  const isMobile =
+    (/Android|iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+      (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) &&
+    !(window as any).MSStream;
+
+  if (isMobile) {
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      toastUnavailablePopup();
+      return;
+    }
     popup.document.write(
-      '<!doctype html><title>Preparing PDF</title><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#111">Preparing PDF…</body>',
+      '<!doctype html><title>Preparing document</title><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:24px;color:#111">Preparing document…</body>',
     );
+
+    void createMobilePrintablePage({ brand, store, rows, groups, popup }).catch((error) => {
+      console.error("Failed to create mobile wholesale document", error);
+      popup.document.body.innerHTML = "Unable to prepare this document. Please go back and try again.";
+    });
+    return;
   }
 
-  void createWholesalePdf({ brand, store, rows, groups, popup }).catch((error) => {
+  void createWholesalePdf({ brand, store, rows, groups }).catch((error) => {
     console.error("Failed to create wholesale PDF", error);
-    popup?.close();
   });
+}
+
+const toastUnavailablePopup = () => {
+  // Keep this dependency-free because this utility is used from several pages.
+  alert("Please allow pop-ups for this app, then try printing again.");
+};
+
+async function createMobilePrintablePage({
+  brand,
+  store,
+  rows,
+  groups,
+  popup,
+}: PrintableCatalogInput & { popup: Window }) {
+  const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
+  const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
+  const today = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  const logo = await loadImageDataUrl(brand.logo_url);
+  const phoneLines = (brand.contact_phone ?? "")
+    .split(/[,;\n]/)
+    .map((s) => formatPhone(s))
+    .filter(Boolean);
+  const contactLines = [...phoneLines, brand.contact_email, brand.website].filter(Boolean) as string[];
+  let grandUnits = 0;
+  let grandSubtotal = 0;
+
+  const sectionHtml = sections
+    .map((section, sectionIndex) => {
+      let units = 0;
+      let subtotal = 0;
+      const tableRows = section.rows
+        .map((row) => {
+          const pricing = computePricing({
+            basePrice: Number(row.basePrice ?? 0),
+            discountPercent: Number(row.discountPercent ?? 0),
+            markupPercent: Number(row.markupPercent ?? 0),
+          });
+          const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+          if (isReceipt && qty <= 0) return "";
+          const lineTotal = +(pricing.storeCost * qty).toFixed(2);
+          units += qty;
+          subtotal += lineTotal;
+          return isReceipt
+            ? `<tr>
+                <td>${escapeHtml(row.sku)}</td>
+                <td>${escapeHtml(row.name)}</td>
+                <td>${escapeHtml(row.category)}</td>
+                <td class="num">${money(pricing.basePrice)}</td>
+                <td class="num">${pricing.discountPercent}%</td>
+                <td class="num strong">${money(pricing.storeCost)}</td>
+                <td class="num">${qty}</td>
+                <td class="num strong">${money(lineTotal)}</td>
+                <td class="num muted">${pricing.markupPercent}%</td>
+                <td class="num muted">${money(pricing.suggestedRetail)}</td>
+              </tr>`
+            : `<tr>
+                <td>${escapeHtml(row.sku)}</td>
+                <td>${escapeHtml(row.name)}</td>
+                <td>${escapeHtml(row.category)}</td>
+                <td class="num">${money(pricing.basePrice)}</td>
+                <td class="num">${pricing.discountPercent}%</td>
+                <td class="num strong">${money(pricing.storeCost)}</td>
+                <td class="num muted">${pricing.markupPercent}%</td>
+                <td class="num muted">${money(pricing.suggestedRetail)}</td>
+              </tr>`;
+        })
+        .join("");
+
+      grandUnits += units;
+      grandSubtotal += subtotal;
+
+      return `<section class="paper ${sectionIndex > 0 ? "new-page" : ""}">
+        <header class="doc-header">
+          <div class="brand-block">
+            ${logo ? `<img src="${logo}" alt="${escapeHtml(brand.company_name || "NÉRA Beauty")}" />` : ""}
+            <div>
+              <h1>${escapeHtml(brand.company_name || "NÉRA Beauty")}</h1>
+              ${brand.tagline ? `<p>${escapeHtml(brand.tagline)}</p>` : ""}
+            </div>
+          </div>
+          <div class="contact-lines">
+            ${contactLines
+              .slice(0, 4)
+              .map((line) => `<div>${escapeHtml(line)}</div>`)
+              .join("")}
+          </div>
+        </header>
+
+        <div class="rule"></div>
+
+        <div class="title-row">
+          <div>
+            <h2>${isReceipt ? "Wholesale Order · Supply Partnership" : "Wholesale Catalog · Supply Partnership"}</h2>
+            <h3>For: ${escapeHtml(store.name)}</h3>
+            ${store.contact_name ? `<p>${escapeHtml(store.contact_name)}</p>` : ""}
+            ${store.address ? `<p>${escapeHtml(store.address)}</p>` : ""}
+          </div>
+          <p>Date: ${escapeHtml(today)}</p>
+        </div>
+
+        ${
+          section.title
+            ? `<div class="section-title"><strong>${escapeHtml(section.title)}</strong>${section.subtitle ? `<span>${escapeHtml(section.subtitle)}</span>` : ""}</div>`
+            : ""
+        }
+
+        <table>
+          <thead>
+            <tr>
+              ${
+                isReceipt
+                  ? "<th>SKU</th><th>Product</th><th>Category</th><th>List</th><th>Disc.</th><th>Cost</th><th>Qty</th><th>Total</th><th>Markup %</th><th>Retail</th>"
+                  : "<th>SKU</th><th>Product</th><th>Category</th><th>List</th><th>Disc.</th><th>Cost</th><th>Markup %</th><th>Retail</th>"
+              }
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+
+        ${
+          isReceipt
+            ? `<div class="totals">
+                <div><span>Units</span><strong>${units}</strong></div>
+                <div class="grand"><span>Total</span><strong>${money(subtotal)}</strong></div>
+              </div>`
+            : ""
+        }
+
+        ${
+          isReceipt && sections.length > 1 && sectionIndex === sections.length - 1
+            ? `<div class="grand-totals"><div><span>Total units (all deliveries)</span><strong>${grandUnits}</strong></div><div><span>Grand total</span><strong>${money(grandSubtotal)}</strong></div></div>`
+            : ""
+        }
+
+        <footer>Prices in USD. Subject to change. ${escapeHtml(brand.company_name || "NÉRA Beauty")} wholesale partnership.</footer>
+      </section>`;
+    })
+    .join("");
+
+  popup.document.open();
+  popup.document.write(`<!doctype html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(isReceipt ? `${store.name} order` : `${store.name} pricing sheet`)}</title>
+        <style>
+          * { box-sizing: border-box; }
+          html, body { margin: 0; min-height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #111; color: #111; }
+          .toolbar { position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; padding: 10px; background: #111; box-shadow: 0 2px 14px rgba(0,0,0,.28); }
+          .toolbar button { flex: 1; border: 0; border-radius: 8px; min-height: 46px; font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+          .toolbar .back { background: #2f2f2f; color: #fff; }
+          .toolbar .print { background: #fff; color: #111; }
+          .preview { padding: 12px 10px 28px; }
+          .paper { position: relative; width: 216mm; min-height: 279mm; max-width: 100%; margin: 0 auto 14px; padding: 15mm 14mm 20mm; background: #fff; overflow: hidden; }
+          .doc-header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+          .brand-block { display: flex; align-items: center; gap: 10px; min-width: 0; }
+          .brand-block img { width: 14mm; height: 14mm; object-fit: contain; flex: 0 0 auto; }
+          h1 { margin: 0; font-size: 18px; line-height: 1.15; }
+          h2 { margin: 0 0 5px; font-size: 13px; line-height: 1.25; }
+          h3 { margin: 0 0 3px; font-size: 10px; line-height: 1.25; }
+          p { margin: 0 0 2px; font-size: 9px; line-height: 1.35; color: #666; }
+          .contact-lines { text-align: right; font-size: 8px; line-height: 1.35; color: #444; white-space: nowrap; }
+          .rule { height: 0; border-top: 1.4px solid #111; margin: 7mm 0 5mm; }
+          .title-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5mm; }
+          .title-row > div { min-width: 0; }
+          .section-title { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 4mm; font-size: 10px; }
+          .section-title span { color: #666; font-size: 9px; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7px; }
+          th { background: #111; color: #fff; text-align: left; padding: 2.2px 3px; font-weight: 700; }
+          td { padding: 2.6px 3px; border-bottom: 1px solid #eee; vertical-align: top; overflow-wrap: anywhere; }
+          tbody tr:nth-child(odd) td { background: #f8f8f8; }
+          th:nth-child(1), td:nth-child(1) { width: 10%; }
+          th:nth-child(2), td:nth-child(2) { width: ${isReceipt ? "17%" : "27%"}; }
+          th:nth-child(3), td:nth-child(3) { width: ${isReceipt ? "18%" : "18%"}; }
+          .num { text-align: right; white-space: nowrap; }
+          .strong { font-weight: 700; }
+          .muted { color: #666; }
+          .totals, .grand-totals { width: 34%; min-width: 54mm; margin: 10mm 0 0 auto; font-size: 10px; }
+          .totals div, .grand-totals div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 6px; background: #f7f7f7; }
+          .totals .grand, .grand-totals div:last-child { margin-top: 4px; border-top: 1.2px solid #111; background: #fff; font-size: 12px; }
+          footer { position: absolute; left: 14mm; right: 14mm; bottom: 12mm; border-top: 1px solid #ddd; padding-top: 4mm; font-size: 8px; color: #777; }
+          @media screen and (max-width: 720px) {
+            .paper { transform-origin: top center; font-size: 1px; }
+          }
+          @page { size: letter; margin: 0; }
+          @media print {
+            html, body { background: #fff; }
+            .toolbar { display: none !important; }
+            .preview { padding: 0; }
+            .paper { width: 216mm; min-height: 279mm; max-width: none; margin: 0; box-shadow: none; page-break-after: always; }
+            .paper:last-child { page-break-after: auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="toolbar">
+          <button class="back" type="button" id="backBtn">Back to app</button>
+          <button class="print" type="button" id="printBtn">Print / Save</button>
+        </div>
+        <main class="preview">${sectionHtml}</main>
+        <script>
+          document.getElementById('backBtn').addEventListener('click', function () {
+            if (window.opener) window.close();
+            else history.back();
+          });
+          document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+        </script>
+      </body>
+    </html>`);
+  popup.document.close();
 }
 
 async function createWholesalePdf({
@@ -89,8 +312,7 @@ async function createWholesalePdf({
   store,
   rows,
   groups,
-  popup,
-}: PrintableCatalogInput & { popup?: Window | null }) {
+}: PrintableCatalogInput) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
@@ -300,45 +522,5 @@ async function createWholesalePdf({
     ? `${safeFilePart(store.name)}-order.pdf`
     : `${safeFilePart(store.name)}-pricing-sheet.pdf`;
 
-  if (popup) {
-    const blob = doc.output("blob");
-    const url = URL.createObjectURL(blob);
-    popup.document.open();
-    popup.document.write(`<!doctype html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>${escapeHtml(filename)}</title>
-          <style>
-            html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f6f6; color: #111; }
-            .bar { position: sticky; top: 0; z-index: 2; display: flex; gap: 10px; align-items: center; padding: 12px; background: #111; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
-            button, a { border: 0; border-radius: 8px; padding: 11px 14px; font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-decoration: none; }
-            button { background: #2f2f2f; color: #fff; }
-            a { background: #fff; color: #111; }
-            .hint { color: #ddd; font-size: 12px; margin-left: auto; }
-            iframe { width: 100%; height: calc(100% - 58px); border: 0; display: block; background: #fff; }
-            @media (max-width: 640px) { .hint { display: none; } .bar { padding: 10px; } button, a { flex: 1; text-align: center; } }
-          </style>
-        </head>
-        <body>
-          <div class="bar">
-            <button type="button" id="backBtn">Back to app</button>
-            <a id="openBtn" href=${JSON.stringify(url)} download=${JSON.stringify(filename)} target="_self">Open / Save PDF</a>
-            <span class="hint">If the PDF preview is blank, tap Open / Save PDF.</span>
-          </div>
-          <iframe title="Supply PDF" src=${JSON.stringify(url)}></iframe>
-          <script>
-            document.getElementById('backBtn').addEventListener('click', function () { window.close(); });
-            setTimeout(function () {
-              var iframe = document.querySelector('iframe');
-              if (iframe && !iframe.contentWindow) document.getElementById('openBtn').click();
-            }, 700);
-          </script>
-        </body>
-      </html>`);
-    popup.document.close();
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } else {
-    doc.save(filename);
-  }
+  doc.save(filename);
 }
