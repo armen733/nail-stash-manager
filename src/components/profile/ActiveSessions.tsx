@@ -175,8 +175,13 @@ export const ActiveSessions = () => {
                   )}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    Last active {formatDistanceToNow(new Date(s.last_seen_at), { addSuffix: true })}
+                    Last active {formatDistanceToNow(new Date(s.last_seen_at), { addSuffix: true })} · {formatDate(s.last_seen_at)}
                   </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 opacity-60" />
+                    First signed in {formatDate(s.created_at)}
+                  </div>
+
                 </div>
                 {!isCurrent && (
                   <Button
