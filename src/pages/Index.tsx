@@ -57,6 +57,7 @@ interface TopProduct {
 
 interface StockValue {
   product_name: string;
+  sku: string;
   stock: number;
   price: number;
   value: number;
