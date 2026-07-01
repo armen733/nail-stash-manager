@@ -55,43 +55,45 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
 <title>Affiliate Invitation${referrerName ? ` — ${esc(referrerName)}` : ""}</title>
 <style>
   *{box-sizing:border-box}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;color:#111;padding:36px;line-height:1.55}
-  header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #111;padding-bottom:18px;margin-bottom:28px}
-  .brand{display:flex;gap:14px;align-items:center}
-  .brand img{height:64px;width:auto;object-fit:contain}
-  .brand-name{font-size:24px;font-weight:700;letter-spacing:.5px}
-  .tagline{font-size:11px;color:#666;margin-top:2px}
-  .meta{font-size:11px;color:#555;text-align:right;line-height:1.5}
-  h1{font-size:28px;margin:0 0 8px 0;letter-spacing:.3px;line-height:1.15}
-  .subtitle{color:#444;font-size:14px;margin-bottom:24px;max-width:620px}
-  .greeting{font-size:14px;margin-bottom:16px;font-weight:600}
-  p{font-size:13px;margin:0 0 12px 0}
-  .code-card{margin:26px 0;padding:22px;border:2px solid #111;border-radius:8px;text-align:center;background:#faf7f2}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;color:#111;padding:10mm 12mm;line-height:1.35;font-size:10px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1.5px solid #111;padding-bottom:6px;margin-bottom:8px}
+  .brand{display:flex;gap:8px;align-items:center}
+  .brand img{height:36px;width:auto;object-fit:contain}
+  .brand-name{font-size:16px;font-weight:700;letter-spacing:.3px}
+  .tagline{font-size:8.5px;color:#666;margin-top:1px}
+  .meta{font-size:8.5px;color:#555;text-align:right;line-height:1.35}
+  h1{font-size:17px;margin:0 0 4px 0;letter-spacing:.2px;line-height:1.15}
+  .subtitle{color:#444;font-size:10px;margin-bottom:8px;max-width:620px}
+  .greeting{font-size:10.5px;margin-bottom:6px;font-weight:600}
+  p{font-size:10px;margin:0 0 5px 0}
+  .code-card{margin:8px 0;padding:8px;border:1.5px solid #111;border-radius:6px;text-align:center;background:#faf7f2}
   .code-card.placeholder{background:#fff;border-style:dashed}
-  .code-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:6px}
-  .code-value{font-size:32px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:3px;margin-bottom:6px}
-  .code-rate{font-size:12px;color:#111;font-weight:600}
-  .benefits{margin:22px 0;padding:18px;background:#f7f7f5;border-radius:6px}
-  .benefits h3{margin:0 0 10px 0;font-size:14px}
-  .benefits ul{margin:0;padding-left:20px;font-size:12.5px}
-  .benefits li{margin-bottom:6px}
-  .tiers{margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:6px;background:#fff}
-  .tiers h3{margin:0 0 10px 0;font-size:13px}
-  .tier-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #eee;font-size:12.5px}
+  .code-label{font-size:8px;text-transform:uppercase;letter-spacing:1.2px;color:#666;margin-bottom:2px}
+  .code-value{font-size:20px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:2px;margin-bottom:2px}
+  .code-rate{font-size:9.5px;color:#111;font-weight:600}
+  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;margin:8px 0}
+  .benefits{padding:8px 10px;background:#f7f7f5;border-radius:5px}
+  .benefits h3{margin:0 0 4px 0;font-size:10.5px}
+  .benefits ul{margin:0;padding-left:14px;font-size:9.5px}
+  .benefits li{margin-bottom:2px}
+  .tiers{padding:8px 10px;border:1px solid #ddd;border-radius:5px;background:#fff}
+  .tiers h3{margin:0 0 4px 0;font-size:10.5px}
+  .tier-row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #eee;font-size:9.5px}
   .tier-row:last-child{border-bottom:none}
   .tier-name{font-weight:600}
-  .how{margin:22px 0}
-  .how h3{margin:0 0 10px 0;font-size:14px}
-  .step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
-  .step-num{flex:0 0 28px;height:28px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
-  .step-text{font-size:12.5px;flex:1}
-  .signature{margin-top:30px;font-size:13px}
-  .signature .name{font-weight:700;margin-top:4px}
-  footer{margin-top:36px;font-size:10px;color:#777;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between;gap:16px}
-  @page{size:auto;margin:0mm}
+  .tier-note{font-size:8.5px;color:#666;margin-top:4px}
+  .how{margin:8px 0}
+  .how h3{margin:0 0 4px 0;font-size:10.5px}
+  .step{display:flex;gap:6px;margin-bottom:3px;align-items:flex-start}
+  .step-num{flex:0 0 16px;height:16px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px}
+  .step-text{font-size:9.5px;flex:1;line-height:1.35}
+  .signature{margin-top:8px;font-size:10px}
+  .signature .name{font-weight:700;margin-top:2px}
+  footer{margin-top:8px;font-size:8px;color:#777;border-top:1px solid #ddd;padding-top:4px;display:flex;justify-content:space-between;gap:12px}
+  @page{size:Letter;margin:0}
   @media print{
     html,body{margin:0!important}
-    body{padding:14mm 12mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
 </style></head>
 <body>
