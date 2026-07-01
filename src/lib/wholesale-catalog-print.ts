@@ -28,6 +28,8 @@ export interface PrintableCatalogInput {
   rows: PrintableRow[];
   /** Optional grouped sections (e.g. one per delivery date). When provided, `rows` is ignored. */
   groups?: PrintableCatalogGroup[];
+  /** Show totals box even for non-receipt catalog sheets (e.g. sample pricing sheet). */
+  showTotals?: boolean;
 }
 
 const money = (n: number) => `$${Number(n || 0).toFixed(2)}`;
