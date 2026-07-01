@@ -68,13 +68,13 @@ const loadImageDataUrl = async (url: string | null): Promise<string | null> => {
   }
 };
 
-export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
+export function openPrintableCatalog({ brand, store, rows, groups, showTotals }: PrintableCatalogInput) {
   const isMobile =
     (/Android|iPad|iPhone|iPod/i.test(navigator.userAgent) ||
       (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) &&
     !(window as any).MSStream;
 
-  void createWholesalePdf({ brand, store, rows, groups, deliveryMode: isMobile ? "share" : "save" }).catch((error) => {
+  void createWholesalePdf({ brand, store, rows, groups, showTotals, deliveryMode: isMobile ? "share" : "save" }).catch((error) => {
     console.error("Failed to create wholesale PDF", error);
   });
 }
@@ -84,10 +84,12 @@ async function createWholesalePdf({
   store,
   rows,
   groups,
+  showTotals,
   deliveryMode = "save",
 }: PrintableCatalogInput & { deliveryMode?: "save" | "share" }) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
+  const shouldShowTotals = showTotals || isReceipt;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -95,6 +97,8 @@ async function createWholesalePdf({
   const logo = await loadImageDataUrl(brand.logo_url);
   let grandUnits = 0;
   let grandSubtotal = 0;
+  let grandTotalDiscount = 0;
+  let grandTotal = 0;
 
   const drawHeader = () => {
     let leftX = 14;
