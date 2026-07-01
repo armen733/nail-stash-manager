@@ -122,35 +122,36 @@ export function printAffiliateInvitation(input: AffiliateInvitationInput = {}) {
 
   ${codeBlock}
 
-  <div class="benefits">
-    <h3>What you get</h3>
-    <ul>
-      <li><b>Selected partners may qualify</b> for complimentary product samples based on content quality and audience fit.</li>
-      <li><b>15% artist discount</b> on all ${esc(companyName)} products during your starting phase, with room to grow as you scale.</li>
-      <li><b>Commission on every qualifying order</b> placed with your code — online sales and local customers who come through you both count as your referrals.</li>
-      <li><b>Long-term tracking</b> — your customers stay linked to you for the duration of our collaboration.</li>
-      <li><b>Monthly payouts</b> via your preferred method (Zelle, Venmo, CashApp, bank).</li>
-      <li><b>Free marketing assets</b> — product photos, captions, and promo material.</li>
-      <li><b>Early access</b> to new launches and exclusive partner-only promos.</li>
-      <li><b>Educator and salon partnership opportunities</b> available for artists who teach or run their own business.</li>
-    </ul>
-  </div>
-
-  <div class="tiers">
-    <h3>Performance Tiers</h3>
-    <div class="tier-row"><span class="tier-name">Starter Partner</span><span>10% commission</span></div>
-    <div class="tier-row"><span class="tier-name">Pro Partner</span><span>15% commission</span></div>
-    <div class="tier-row"><span class="tier-name">Elite Partner</span><span>20% commission</span></div>
-    <div style="font-size:11px;color:#666;margin-top:8px">Tiers are reviewed based on your content quality, sales volume, and audience fit.</div>
+  <div class="cols">
+    <div class="benefits">
+      <h3>What you get</h3>
+      <ul>
+        <li><b>Complimentary samples</b> for selected partners based on content quality & fit.</li>
+        <li><b>15% artist discount</b> on all ${esc(companyName)} products during starting phase.</li>
+        <li><b>Commission on every qualifying order</b> — online & local customers both count.</li>
+        <li><b>Long-term tracking</b> — customers stay linked to you.</li>
+        <li><b>Monthly payouts</b> (Zelle, Venmo, CashApp, bank).</li>
+        <li><b>Free marketing assets</b> — photos, captions, promo material.</li>
+        <li><b>Early access</b> to new launches and partner-only promos.</li>
+        <li><b>Educator & salon partnership</b> opportunities.</li>
+      </ul>
+    </div>
+    <div class="tiers">
+      <h3>Performance Tiers</h3>
+      <div class="tier-row"><span class="tier-name">Starter</span><span>10% commission</span></div>
+      <div class="tier-row"><span class="tier-name">Pro</span><span>15% commission</span></div>
+      <div class="tier-row"><span class="tier-name">Elite</span><span>20% commission</span></div>
+      <div class="tier-note">Tiers reviewed based on content quality, sales volume, and audience fit.</div>
+    </div>
   </div>
 
   <div class="how">
     <h3>How it works</h3>
-    <div class="step"><div class="step-num">1</div><div class="step-text">Create content highlighting ${esc(companyName)} products — TikTok, Instagram Reels, and social posts that drive views and sales through our TikTok Shop and store.</div></div>
-    <div class="step"><div class="step-num">2</div><div class="step-text">Share your unique code with clients, followers, and friends. Online buyers and local walk-ins from you both count.</div></div>
-    <div class="step"><div class="step-num">3</div><div class="step-text">They enter your code at checkout — often unlocking a small discount for themselves too.</div></div>
-    <div class="step"><div class="step-num">4</div><div class="step-text">We track every order automatically and credit the commission to your account.</div></div>
-    <div class="step"><div class="step-num">5</div><div class="step-text">Get paid monthly. Simple, transparent, no minimums — and the more you grow, the more your perks grow with you.</div></div>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Create content highlighting ${esc(companyName)} — TikTok, Reels, and posts that drive views & sales.</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Share your code with clients, followers, friends. Online & walk-ins both count.</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">They enter your code at checkout — often unlocking a discount for themselves too.</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-text">We track every order and credit the commission automatically.</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Get paid monthly. No minimums — the more you grow, the more your perks grow.</div></div>
   </div>
 
 
