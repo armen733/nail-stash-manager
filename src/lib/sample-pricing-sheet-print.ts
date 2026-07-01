@@ -71,5 +71,6 @@ export async function printSamplePricingSheet() {
       address: null,
     },
     rows,
+    showTotals: true,
   });
 }
