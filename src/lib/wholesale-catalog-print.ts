@@ -310,16 +310,20 @@ async function createWholesalePdf({
     }
   });
 
-  if (isReceipt && sections.length > 1) {
+  if (shouldShowTotals && sections.length > 1) {
     const finalY = (doc as any).lastAutoTable?.finalY ?? 70;
     const y = Math.min(finalY + 24, pageHeight - 42);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text("Total units (all deliveries)", pageWidth - 88, y);
     doc.text(String(grandUnits), pageWidth - 14, y, { align: "right" });
+    doc.text("Subtotal", pageWidth - 88, y + 6);
+    doc.text(money(grandSubtotal), pageWidth - 14, y + 6, { align: "right" });
+    doc.text("Discount", pageWidth - 88, y + 12);
+    doc.text(`-${money(grandTotalDiscount)}`, pageWidth - 14, y + 12, { align: "right" });
     doc.setFont("helvetica", "bold");
-    doc.text("Grand total", pageWidth - 88, y + 8);
-    doc.text(money(grandSubtotal), pageWidth - 14, y + 8, { align: "right" });
+    doc.text("Grand total", pageWidth - 88, y + 20);
+    doc.text(money(grandTotal), pageWidth - 14, y + 20, { align: "right" });
   }
 
   const filename = isReceipt
