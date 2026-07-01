@@ -28,6 +28,8 @@ export interface PrintableCatalogInput {
   rows: PrintableRow[];
   /** Optional grouped sections (e.g. one per delivery date). When provided, `rows` is ignored. */
   groups?: PrintableCatalogGroup[];
+  /** Show totals box even for non-receipt catalog sheets (e.g. sample pricing sheet). */
+  showTotals?: boolean;
 }
 
 const money = (n: number) => `$${Number(n || 0).toFixed(2)}`;
@@ -66,13 +68,13 @@ const loadImageDataUrl = async (url: string | null): Promise<string | null> => {
   }
 };
 
-export function openPrintableCatalog({ brand, store, rows, groups }: PrintableCatalogInput) {
+export function openPrintableCatalog({ brand, store, rows, groups, showTotals }: PrintableCatalogInput) {
   const isMobile =
     (/Android|iPad|iPhone|iPod/i.test(navigator.userAgent) ||
       (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) &&
     !(window as any).MSStream;
 
-  void createWholesalePdf({ brand, store, rows, groups, deliveryMode: isMobile ? "share" : "save" }).catch((error) => {
+  void createWholesalePdf({ brand, store, rows, groups, showTotals, deliveryMode: isMobile ? "share" : "save" }).catch((error) => {
     console.error("Failed to create wholesale PDF", error);
   });
 }
@@ -82,10 +84,12 @@ async function createWholesalePdf({
   store,
   rows,
   groups,
+  showTotals,
   deliveryMode = "save",
 }: PrintableCatalogInput & { deliveryMode?: "save" | "share" }) {
   const sections: PrintableCatalogGroup[] = groups && groups.length > 0 ? groups : [{ title: "", rows }];
   const isReceipt = sections.some((g) => g.rows.some((r) => Number(r.quantity ?? 0) > 0));
+  const shouldShowTotals = showTotals || isReceipt;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -93,6 +97,8 @@ async function createWholesalePdf({
   const logo = await loadImageDataUrl(brand.logo_url);
   let grandUnits = 0;
   let grandSubtotal = 0;
+  let grandTotalDiscount = 0;
+  let grandTotal = 0;
 
   const drawHeader = () => {
     let leftX = 14;
@@ -177,7 +183,9 @@ async function createWholesalePdf({
     }
 
     let units = 0;
-    let subtotal = 0;
+    let baseSubtotal = 0;
+    let totalDiscount = 0;
+    let total = 0;
     const tableRows = section.rows
       .map((row) => {
         const pricing = computePricing({
@@ -185,11 +193,15 @@ async function createWholesalePdf({
           discountPercent: Number(row.discountPercent ?? 0),
           markupPercent: Number(row.markupPercent ?? 0),
         });
-        const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+        const qty = isReceipt ? Math.max(0, Math.floor(Number(row.quantity ?? 0))) : 1;
         if (isReceipt && qty <= 0) return null;
-        const lineTotal = +(pricing.storeCost * qty).toFixed(2);
+        const lineList = +(pricing.basePrice * qty).toFixed(2);
+        const lineCost = +(pricing.storeCost * qty).toFixed(2);
+        const lineDiscount = +(lineList - lineCost).toFixed(2);
         units += qty;
-        subtotal += lineTotal;
+        baseSubtotal += lineList;
+        totalDiscount += lineDiscount;
+        total += lineCost;
         return isReceipt
           ? [
               row.sku,
@@ -199,7 +211,7 @@ async function createWholesalePdf({
               `${pricing.discountPercent}%`,
               money(pricing.storeCost),
               String(qty),
-              money(lineTotal),
+              money(lineCost),
               `${pricing.markupPercent}%`,
               money(pricing.suggestedRetail),
             ]
@@ -217,7 +229,9 @@ async function createWholesalePdf({
       .filter(Boolean) as string[][];
 
     grandUnits += units;
-    grandSubtotal += subtotal;
+    grandSubtotal += baseSubtotal;
+    grandTotalDiscount += totalDiscount;
+    grandTotal += total;
 
     autoTable(doc, {
       startY,
@@ -257,38 +271,59 @@ async function createWholesalePdf({
       rowPageBreak: "avoid",
     });
 
-    if (isReceipt) {
+    if (shouldShowTotals) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? startY + 20;
       const totalsY = finalY + 12 > pageHeight - 42 ? pageHeight - 42 : finalY + 12;
       const boxX = pageWidth - 82;
       const boxW = 68;
+      const lineHeight = 5.5;
+      let rowY = totalsY - 5.5;
+      const rows = [
+        ...(isReceipt ? [{ label: "Units", value: String(units) }] : []),
+        { label: "Subtotal", value: money(baseSubtotal) },
+        { label: "Discount", value: `-${money(totalDiscount)}` },
+        { label: "Total", value: money(total), bold: true },
+      ];
+      const boxH = rows.length * lineHeight + 2;
       doc.setFillColor(248, 248, 248);
-      doc.rect(boxX, totalsY - 5.5, boxW, 11, "F");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(40);
-      doc.text("Units", boxX + 2, totalsY);
-      doc.text(String(units), boxX + boxW - 2, totalsY, { align: "right" });
+      doc.rect(boxX, rowY, boxW, boxH, "F");
       doc.setDrawColor(17);
       doc.setLineWidth(0.35);
-      doc.line(boxX, totalsY + 5.5, boxX + boxW, totalsY + 5.5);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Total", boxX + 2, totalsY + 13);
-      doc.text(money(subtotal), boxX + boxW - 2, totalsY + 13, { align: "right" });
+      rows.forEach((r, idx) => {
+        const y = rowY + idx * lineHeight + 4.2;
+        if (r.bold) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(17);
+        } else {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(40);
+        }
+        doc.text(r.label, boxX + 2, y);
+        doc.text(r.value, boxX + boxW - 2, y, { align: "right" });
+        if (idx === rows.length - 2) {
+          doc.setDrawColor(17);
+          doc.line(boxX, y + 1.2, boxX + boxW, y + 1.2);
+        }
+      });
     }
   });
 
-  if (isReceipt && sections.length > 1) {
+  if (shouldShowTotals && sections.length > 1) {
     const finalY = (doc as any).lastAutoTable?.finalY ?? 70;
     const y = Math.min(finalY + 24, pageHeight - 42);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text("Total units (all deliveries)", pageWidth - 88, y);
     doc.text(String(grandUnits), pageWidth - 14, y, { align: "right" });
+    doc.text("Subtotal", pageWidth - 88, y + 6);
+    doc.text(money(grandSubtotal), pageWidth - 14, y + 6, { align: "right" });
+    doc.text("Discount", pageWidth - 88, y + 12);
+    doc.text(`-${money(grandTotalDiscount)}`, pageWidth - 14, y + 12, { align: "right" });
     doc.setFont("helvetica", "bold");
-    doc.text("Grand total", pageWidth - 88, y + 8);
-    doc.text(money(grandSubtotal), pageWidth - 14, y + 8, { align: "right" });
+    doc.text("Grand total", pageWidth - 88, y + 20);
+    doc.text(money(grandTotal), pageWidth - 14, y + 20, { align: "right" });
   }
 
   const filename = isReceipt
