@@ -271,25 +271,42 @@ async function createWholesalePdf({
       rowPageBreak: "avoid",
     });
 
-    if (isReceipt) {
+    if (shouldShowTotals) {
       const finalY = (doc as any).lastAutoTable?.finalY ?? startY + 20;
       const totalsY = finalY + 12 > pageHeight - 42 ? pageHeight - 42 : finalY + 12;
       const boxX = pageWidth - 82;
       const boxW = 68;
+      const lineHeight = 5.5;
+      let rowY = totalsY - 5.5;
+      const rows = [
+        ...(isReceipt ? [{ label: "Units", value: String(units) }] : []),
+        { label: "Subtotal", value: money(baseSubtotal) },
+        { label: "Discount", value: `-${money(totalDiscount)}` },
+        { label: "Total", value: money(total), bold: true },
+      ];
+      const boxH = rows.length * lineHeight + 2;
       doc.setFillColor(248, 248, 248);
-      doc.rect(boxX, totalsY - 5.5, boxW, 11, "F");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(40);
-      doc.text("Units", boxX + 2, totalsY);
-      doc.text(String(units), boxX + boxW - 2, totalsY, { align: "right" });
+      doc.rect(boxX, rowY, boxW, boxH, "F");
       doc.setDrawColor(17);
       doc.setLineWidth(0.35);
-      doc.line(boxX, totalsY + 5.5, boxX + boxW, totalsY + 5.5);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Total", boxX + 2, totalsY + 13);
-      doc.text(money(subtotal), boxX + boxW - 2, totalsY + 13, { align: "right" });
+      rows.forEach((r, idx) => {
+        const y = rowY + idx * lineHeight + 4.2;
+        if (r.bold) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(11);
+          doc.setTextColor(17);
+        } else {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.setTextColor(40);
+        }
+        doc.text(r.label, boxX + 2, y);
+        doc.text(r.value, boxX + boxW - 2, y, { align: "right" });
+        if (idx === rows.length - 2) {
+          doc.setDrawColor(17);
+          doc.line(boxX, y + 1.2, boxX + boxW, y + 1.2);
+        }
+      });
     }
   });
 
