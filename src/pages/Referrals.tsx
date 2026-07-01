@@ -32,6 +32,7 @@ import { PayoutsTab } from "@/components/referrals/PayoutsTab";
 import { printAffiliateInvitation } from "@/lib/affiliate-invitation-print";
 import { printSalonInvitation } from "@/lib/salon-invitation-print";
 import { printSupplyInvitation } from "@/lib/supply-invitation-print";
+import { printSamplePricingSheet } from "@/lib/sample-pricing-sheet-print";
 
 interface Referrer {
   id: string;
@@ -348,6 +349,11 @@ const Referrals = () => {
             <Printer className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Print Supply Invitation</span>
             <span className="sm:hidden">Supply Invite</span>
+          </Button>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={() => printSamplePricingSheet()}>
+            <Printer className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">Print Sample Pricing Sheet</span>
+            <span className="sm:hidden">Sample Pricing</span>
           </Button>
           <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={() => printSalonInvitation()}>
             <Printer className="h-4 w-4 sm:mr-1" />
