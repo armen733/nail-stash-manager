@@ -183,7 +183,9 @@ async function createWholesalePdf({
     }
 
     let units = 0;
-    let subtotal = 0;
+    let baseSubtotal = 0;
+    let totalDiscount = 0;
+    let total = 0;
     const tableRows = section.rows
       .map((row) => {
         const pricing = computePricing({
@@ -191,11 +193,15 @@ async function createWholesalePdf({
           discountPercent: Number(row.discountPercent ?? 0),
           markupPercent: Number(row.markupPercent ?? 0),
         });
-        const qty = Math.max(0, Math.floor(Number(row.quantity ?? 0)));
+        const qty = isReceipt ? Math.max(0, Math.floor(Number(row.quantity ?? 0))) : 1;
         if (isReceipt && qty <= 0) return null;
-        const lineTotal = +(pricing.storeCost * qty).toFixed(2);
+        const lineList = +(pricing.basePrice * qty).toFixed(2);
+        const lineCost = +(pricing.storeCost * qty).toFixed(2);
+        const lineDiscount = +(lineList - lineCost).toFixed(2);
         units += qty;
-        subtotal += lineTotal;
+        baseSubtotal += lineList;
+        totalDiscount += lineDiscount;
+        total += lineCost;
         return isReceipt
           ? [
               row.sku,
@@ -205,7 +211,7 @@ async function createWholesalePdf({
               `${pricing.discountPercent}%`,
               money(pricing.storeCost),
               String(qty),
-              money(lineTotal),
+              money(lineCost),
               `${pricing.markupPercent}%`,
               money(pricing.suggestedRetail),
             ]
@@ -223,7 +229,9 @@ async function createWholesalePdf({
       .filter(Boolean) as string[][];
 
     grandUnits += units;
-    grandSubtotal += subtotal;
+    grandSubtotal += baseSubtotal;
+    grandTotalDiscount += totalDiscount;
+    grandTotal += total;
 
     autoTable(doc, {
       startY,
