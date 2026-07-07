@@ -167,7 +167,7 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
   if ((order.discount_amount ?? 0) > 0) {
     totals.push({
       label: `Discount${order.discount_code ? ` (${order.discount_code})` : ""}`,
-      value: `−$${Number(order.discount_amount).toFixed(2)}`,
+      value: `-$${Number(order.discount_amount).toFixed(2)}`,
       color: [5, 150, 105],
     });
   }
