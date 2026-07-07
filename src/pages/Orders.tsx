@@ -10,7 +10,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
-import { NERA_PACKING_LOGO } from "@/lib/packingLogo";
 import { generateOrderReceiptPDF } from "@/lib/order-receipt-pdf";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
