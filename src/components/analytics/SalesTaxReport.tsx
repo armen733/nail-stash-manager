@@ -289,7 +289,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                   orders.map((o) => {
                     const sub = Number(o.subtotal || 0);
                     const tax = Number(o.tax || 0);
-                    const calc = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+                    const calc = computeCalc(sub, tax);
                     return (
                       <tr key={o.id} className="border-t">
                         <td className="p-2">{format(new Date(o.order_date), "MMM dd, yyyy")}</td>
