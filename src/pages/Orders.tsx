@@ -869,9 +869,14 @@ const Orders = () => {
 
   // Memoize filter function to avoid recreating on every render
   const filterOrders = useCallback((order: Order) => {
-    const normalizedSearch = searchTerm.toLowerCase();
+    const normalizedSearch = searchTerm.toLowerCase().trim();
     const name = order.salons?.name || order.customer_name || '';
-    const matchesSearch = name.toLowerCase().includes(normalizedSearch);
+    const orderIdShort = (order.id || '').toLowerCase();
+    const invoice = ((order as any).invoice_number || '').toLowerCase();
+    const matchesSearch = !normalizedSearch
+      || name.toLowerCase().includes(normalizedSearch)
+      || orderIdShort.includes(normalizedSearch.replace(/^#/, ''))
+      || invoice.includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     
     // Date range filter - compare date strings to avoid timezone issues
