@@ -228,6 +228,15 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                 Order #
               </ToggleGroupItem>
             </ToggleGroup>
+            <Button
+              type="button"
+              variant={forceTaxable ? "default" : "outline"}
+              size="sm"
+              onClick={() => setForceTaxable((v) => !v)}
+              className="h-8 text-xs"
+            >
+              {forceTaxable ? "All Taxable: ON" : "All Taxable: OFF"}
+            </Button>
             <div className="flex-1" />
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
