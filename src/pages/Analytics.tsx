@@ -1367,6 +1367,10 @@ const Analytics = () => {
         {/* Business Expenses (includes Production Orders) */}
         <ExpensesSection periodStart={periodDates.periodStart} periodEnd={periodDates.periodEnd} />
 
+        {/* Sales Tax Report (Accountant) */}
+        <SalesTaxReport />
+
+
         {/* Low Stock (collapsible) */}
         <Card className="shadow-[var(--shadow-card)] lg:col-span-2">
           <CardHeader
