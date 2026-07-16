@@ -5,6 +5,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, CalendarIcon, FileText, Download, Receipt } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -38,6 +39,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
   });
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [docNumberMode, setDocNumberMode] = useState<"invoice" | "order">("invoice");
 
   const activeRate = taxRate || Number(taxSettings?.tax_rate) || 0;
   const taxName = taxSettings?.tax_name || "Sales Tax";
@@ -81,6 +83,9 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
   );
 
+  const getDocNumber = (o: OrderRow) =>
+    docNumberMode === "invoice" ? o.invoice_number ?? "—" : o.id.slice(0, 8).toUpperCase();
+
   const printPDF = () => {
     if (!range?.from || !range?.to) return;
     const doc = new jsPDF();
@@ -118,14 +123,14 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
 
     autoTable(doc, {
       startY: 70,
-      head: [["Date", "Invoice #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
+      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
       body: orders.map((o) => {
         const sub = Number(o.subtotal || 0);
         const tax = Number(o.tax || 0);
         const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
-          o.invoice_number ?? "—",
+          getDocNumber(o),
           `$${sub.toFixed(2)}`,
           `$${tax.toFixed(2)}`,
           `$${calcTax.toFixed(2)}`,
@@ -204,6 +209,20 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
             <Badge variant="outline">
               {taxName}: {activeRate}%{!taxSettings?.is_active && " (inactive)"}
             </Badge>
+            <ToggleGroup
+              type="single"
+              value={docNumberMode}
+              onValueChange={(v) => v && setDocNumberMode(v as "invoice" | "order")}
+              size="sm"
+              className="border rounded-md p-0.5"
+            >
+              <ToggleGroupItem value="invoice" aria-label="Show invoice number" className="text-xs px-2 py-1 h-7">
+                Invoice #
+              </ToggleGroupItem>
+              <ToggleGroupItem value="order" aria-label="Show order number" className="text-xs px-2 py-1 h-7">
+                Order #
+              </ToggleGroupItem>
+            </ToggleGroup>
             <div className="flex-1" />
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
@@ -241,7 +260,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
               <thead className="bg-muted/40">
                 <tr>
                   <th className="text-left p-2">Date</th>
-                  <th className="text-left p-2">Invoice #</th>
+                  <th className="text-left p-2">{docNumberMode === "invoice" ? "Invoice #" : "Order #"}</th>
                   <th className="text-right p-2">Subtotal</th>
                   <th className="text-right p-2">Tax Collected</th>
                   <th className="text-right p-2">Calc. Tax</th>
@@ -269,7 +288,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                     return (
                       <tr key={o.id} className="border-t">
                         <td className="p-2">{format(new Date(o.order_date), "MMM dd, yyyy")}</td>
-                        <td className="p-2 font-mono text-xs">{o.invoice_number ?? "—"}</td>
+                        <td className="p-2 font-mono text-xs">{getDocNumber(o)}</td>
                         <td className="p-2 text-right">${sub.toFixed(2)}</td>
                         <td className="p-2 text-right text-emerald-600">${tax.toFixed(2)}</td>
                         <td className="p-2 text-right">${calc.toFixed(2)}</td>
