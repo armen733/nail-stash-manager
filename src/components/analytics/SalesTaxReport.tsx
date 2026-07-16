@@ -83,6 +83,9 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
   );
 
+  const getDocNumber = (o: OrderRow) =>
+    docNumberMode === "invoice" ? o.invoice_number ?? "—" : o.id.slice(0, 8).toUpperCase();
+
   const printPDF = () => {
     if (!range?.from || !range?.to) return;
     const doc = new jsPDF();
