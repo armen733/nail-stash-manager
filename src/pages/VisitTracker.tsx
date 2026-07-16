@@ -57,6 +57,7 @@ export default function VisitTracker() {
   const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
   const [salons, setSalons] = useState<SalonWithVisit[]>([]);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
+  const [ordersByDay, setOrdersByDay] = useState<Map<string, { count: number; salonIds: Set<string>; hasWalkin: boolean }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "overdue" | "recent" | "never">("all");
