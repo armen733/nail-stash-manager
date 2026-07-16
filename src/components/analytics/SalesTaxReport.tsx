@@ -103,12 +103,15 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
+    try {
+      doc.addImage(NERA_PACKING_LOGO, "JPEG", 14, 10, 28, 14);
+    } catch {}
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text(companyName, 14, 18);
+    doc.text(companyName, 46, 18);
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text("Sales Tax Report", 14, 25);
+    doc.text("Sales Tax Report", 46, 25);
 
     doc.setFontSize(9);
     doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy")}`, pageWidth - 14, 18, { align: "right" });
