@@ -343,16 +343,23 @@ const Index = () => {
         if (v) supplyRevenueAll += v.revenue;
       });
 
-      // Period order profit = sum over period order_items of (line_total - cost*qty)
+      // Period order profit = order.total (net of discount, incl. tax) - COGS
+      // Note: line_total is stored gross (pre-discount), so summing it inflates profit
+      // whenever a discount is applied. Use order.total as the revenue base instead.
       const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
-      let orderProfitPeriod = 0;
+      const orderCogsMap = new Map<string, number>();
       (orderItemsRes.data || []).forEach((it: any) => {
         if (!periodOrderIds.has(it.order_id)) return;
         const pricing = productPricingMap.get(it.product_id);
         const cost = pricing ? pricing.cost : 0;
-        const lineRevenue = Number(it.line_total ?? 0);
         const lineCost = cost * Number(it.quantity ?? 0);
-        orderProfitPeriod += lineRevenue - lineCost;
+        orderCogsMap.set(it.order_id, (orderCogsMap.get(it.order_id) ?? 0) + lineCost);
+      });
+      let orderProfitPeriod = 0;
+      periodOrders.forEach((o: any) => {
+        const netRevenue = Number(o.total ?? 0) - Number(o.tax ?? 0);
+        const cogs = orderCogsMap.get(o.id) ?? 0;
+        orderProfitPeriod += netRevenue - cogs;
       });
 
       const newStats: Stats = {
