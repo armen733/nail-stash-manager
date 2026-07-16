@@ -41,8 +41,14 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
   const [loading, setLoading] = useState(false);
   const [docNumberMode, setDocNumberMode] = useState<"invoice" | "order">("invoice");
   const [forceTaxable, setForceTaxable] = useState(false);
+  const [overrideRate, setOverrideRate] = useState<string>("");
 
-  const activeRate = taxRate || Number(taxSettings?.tax_rate) || 0;
+  const settingsRate = taxRate || Number(taxSettings?.tax_rate) || 0;
+  const parsedOverride = parseFloat(overrideRate);
+  const activeRate =
+    forceTaxable && !isNaN(parsedOverride) && parsedOverride > 0
+      ? parsedOverride
+      : settingsRate;
   const taxName = taxSettings?.tax_name || "Sales Tax";
 
   useEffect(() => {
