@@ -123,7 +123,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
 
     autoTable(doc, {
       startY: 70,
-      head: [["Date", "Invoice #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
+      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
       body: orders.map((o) => {
         const sub = Number(o.subtotal || 0);
         const tax = Number(o.tax || 0);
