@@ -288,7 +288,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                     return (
                       <tr key={o.id} className="border-t">
                         <td className="p-2">{format(new Date(o.order_date), "MMM dd, yyyy")}</td>
-                        <td className="p-2 font-mono text-xs">{o.invoice_number ?? "—"}</td>
+                        <td className="p-2 font-mono text-xs">{getDocNumber(o)}</td>
                         <td className="p-2 text-right">${sub.toFixed(2)}</td>
                         <td className="p-2 text-right text-emerald-600">${tax.toFixed(2)}</td>
                         <td className="p-2 text-right">${calc.toFixed(2)}</td>
