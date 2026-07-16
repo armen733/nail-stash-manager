@@ -872,7 +872,7 @@ const Orders = () => {
     const normalizedSearch = searchTerm.toLowerCase().trim();
     const name = order.salons?.name || order.customer_name || '';
     const orderIdShort = (order.id || '').toLowerCase();
-    const invoice = (order.invoice_number || '').toLowerCase();
+    const invoice = ((order as any).invoice_number || '').toLowerCase();
     const matchesSearch = !normalizedSearch
       || name.toLowerCase().includes(normalizedSearch)
       || orderIdShort.includes(normalizedSearch.replace(/^#/, ''))
