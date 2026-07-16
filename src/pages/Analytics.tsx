@@ -275,7 +275,7 @@ const Analytics = () => {
         .select("id, total, profile_id, customer_email, created_at")
         .gte("created_at", previousStart.toISOString())
         .lte("created_at", previousEnd.toISOString())
-        .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
+        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"]);
 
       // Calculate previous period stats
       const prevRevenue = previousOrders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
