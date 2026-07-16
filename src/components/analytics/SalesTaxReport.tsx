@@ -104,7 +104,10 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     try {
-      doc.addImage(NERA_PACKING_LOGO, "JPEG", 14, 10, 28, 14);
+      const props = doc.getImageProperties(NERA_PACKING_LOGO);
+      const targetH = 16;
+      const targetW = (props.width / props.height) * targetH;
+      doc.addImage(NERA_PACKING_LOGO, "PNG", 14, 10, targetW, targetH);
     } catch {}
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
