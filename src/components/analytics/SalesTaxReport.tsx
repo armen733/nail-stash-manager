@@ -41,8 +41,14 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
   const [loading, setLoading] = useState(false);
   const [docNumberMode, setDocNumberMode] = useState<"invoice" | "order">("invoice");
   const [forceTaxable, setForceTaxable] = useState(false);
+  const [overrideRate, setOverrideRate] = useState<string>("");
 
-  const activeRate = taxRate || Number(taxSettings?.tax_rate) || 0;
+  const settingsRate = taxRate || Number(taxSettings?.tax_rate) || 0;
+  const parsedOverride = parseFloat(overrideRate);
+  const activeRate =
+    forceTaxable && !isNaN(parsedOverride) && parsedOverride > 0
+      ? parsedOverride
+      : settingsRate;
   const taxName = taxSettings?.tax_name || "Sales Tax";
 
   useEffect(() => {
@@ -235,8 +241,20 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
               onClick={() => setForceTaxable((v) => !v)}
               className="h-8 text-xs"
             >
-              {forceTaxable ? "All Taxable: ON" : "All Taxable: OFF"}
+              {forceTaxable ? `All Taxable: ON (${activeRate}%)` : "All Taxable: OFF"}
             </Button>
+            {forceTaxable && (
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Rate %"
+                value={overrideRate}
+                onChange={(e) => setOverrideRate(e.target.value)}
+                className="h-8 w-20 text-xs px-2 rounded-md border bg-background"
+                title="Override tax rate for calculation"
+              />
+            )}
             <div className="flex-1" />
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
