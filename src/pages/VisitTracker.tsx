@@ -57,6 +57,7 @@ export default function VisitTracker() {
   const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
   const [salons, setSalons] = useState<SalonWithVisit[]>([]);
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
+  const [ordersByDay, setOrdersByDay] = useState<Map<string, { count: number; salonIds: Set<string>; hasWalkin: boolean }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "overdue" | "recent" | "never">("all");
@@ -75,10 +76,23 @@ export default function VisitTracker() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: salonsData }, { data: visitsData }] = await Promise.all([
+      const [{ data: salonsData }, { data: visitsData }, { data: ordersData }] = await Promise.all([
         supabase.from("salons").select("id, name, address, city, phone, contact_name, is_active").order("name"),
         supabase.from("salon_visits").select("id, salon_id, visit_type, notes, visited_at, order_id").order("visited_at", { ascending: false }),
+        supabase.from("orders").select("id, salon_id, created_at").order("created_at", { ascending: false }).limit(5000),
       ]);
+
+      // Build orders-by-day map (counts ALL orders, incl. walk-ins with no salon_id)
+      const oMap = new Map<string, { count: number; salonIds: Set<string>; hasWalkin: boolean }>();
+      for (const o of ordersData || []) {
+        const key = toLocalDateStr(o.created_at);
+        const entry = oMap.get(key) || { count: 0, salonIds: new Set<string>(), hasWalkin: false };
+        entry.count++;
+        if (o.salon_id) entry.salonIds.add(o.salon_id);
+        else entry.hasWalkin = true;
+        oMap.set(key, entry);
+      }
+      setOrdersByDay(oMap);
 
       const salonMap = new Map((salonsData || []).map(s => [s.id, s.name]));
       const enrichedVisits = (visitsData || []).map(v => ({
@@ -308,8 +322,12 @@ export default function VisitTracker() {
                   const selected = selectedDate && isSameDay(day, selectedDate);
                    const orderVisits = dayVisits.filter(v => v.visit_type === "order");
                    const manualVisits = dayVisits.filter(v => v.visit_type === "manual");
-                   const uniqueSalonIds = new Set(dayVisits.map(v => v.salon_id));
-                   const uniqueSalonCount = uniqueSalonIds.size;
+                   // Prefer real orders table for accurate counts (includes walk-ins w/o salon_id)
+                   const dayOrders = ordersByDay.get(key);
+                   const orderCount = dayOrders?.count ?? orderVisits.length;
+                   const salonIdSet = new Set<string>(dayVisits.map(v => v.salon_id).filter(Boolean) as string[]);
+                   dayOrders?.salonIds.forEach(id => salonIdSet.add(id));
+                   const uniqueSalonCount = salonIdSet.size + (dayOrders?.hasWalkin ? 1 : 0);
 
                   return (
                     <button
@@ -330,11 +348,11 @@ export default function VisitTracker() {
                       </span>
                       {/* Visit dots */}
                       <div className="mt-0.5 space-y-0.5 overflow-hidden">
-                        {orderVisits.length > 0 && (
+                        {orderCount > 0 && (
                           <div className="flex items-center gap-0.5 truncate">
                             <ShoppingCart className="h-2.5 w-2.5 text-primary flex-shrink-0" />
                             <span className="text-[9px] md:text-[10px] text-primary truncate">
-                              {orderVisits.length === 1 ? orderVisits[0].salon_name : `${orderVisits.length} orders`}
+                              {orderCount === 1 && orderVisits[0] ? orderVisits[0].salon_name : `${orderCount} orders`}
                             </span>
                           </div>
                         )}
