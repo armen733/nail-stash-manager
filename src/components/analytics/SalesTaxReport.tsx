@@ -209,6 +209,20 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
             <Badge variant="outline">
               {taxName}: {activeRate}%{!taxSettings?.is_active && " (inactive)"}
             </Badge>
+            <ToggleGroup
+              type="single"
+              value={docNumberMode}
+              onValueChange={(v) => v && setDocNumberMode(v as "invoice" | "order")}
+              size="sm"
+              className="border rounded-md p-0.5"
+            >
+              <ToggleGroupItem value="invoice" aria-label="Show invoice number" className="text-xs px-2 py-1 h-7">
+                Invoice #
+              </ToggleGroupItem>
+              <ToggleGroupItem value="order" aria-label="Show order number" className="text-xs px-2 py-1 h-7">
+                Order #
+              </ToggleGroupItem>
+            </ToggleGroup>
             <div className="flex-1" />
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
