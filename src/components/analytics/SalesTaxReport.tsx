@@ -132,7 +132,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
       body: orders.map((o) => {
         const sub = Number(o.subtotal || 0);
         const tax = Number(o.tax || 0);
-        const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+        const calcTax = computeCalc(sub, tax);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
           getDocNumber(o),
