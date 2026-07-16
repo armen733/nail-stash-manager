@@ -78,7 +78,7 @@ export function SkuPerformanceAnalytics({ periodStart, periodEnd }: Props) {
             let query: any = supabase
             .from("orders")
             .select("id")
-            .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"])
+            .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"])
             .order("created_at", { ascending: true })
             .range(from, from + PAGE - 1);
 
