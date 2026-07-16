@@ -348,11 +348,11 @@ export default function VisitTracker() {
                       </span>
                       {/* Visit dots */}
                       <div className="mt-0.5 space-y-0.5 overflow-hidden">
-                        {orderVisits.length > 0 && (
+                        {orderCount > 0 && (
                           <div className="flex items-center gap-0.5 truncate">
                             <ShoppingCart className="h-2.5 w-2.5 text-primary flex-shrink-0" />
                             <span className="text-[9px] md:text-[10px] text-primary truncate">
-                              {orderVisits.length === 1 ? orderVisits[0].salon_name : `${orderVisits.length} orders`}
+                              {orderCount === 1 && orderVisits[0] ? orderVisits[0].salon_name : `${orderCount} orders`}
                             </span>
                           </div>
                         )}
