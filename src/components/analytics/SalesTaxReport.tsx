@@ -130,7 +130,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
         const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
-          o.invoice_number ?? "—",
+          getDocNumber(o),
           `$${sub.toFixed(2)}`,
           `$${tax.toFixed(2)}`,
           `$${calcTax.toFixed(2)}`,
