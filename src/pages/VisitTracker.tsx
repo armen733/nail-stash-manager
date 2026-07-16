@@ -76,10 +76,23 @@ export default function VisitTracker() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: salonsData }, { data: visitsData }] = await Promise.all([
+      const [{ data: salonsData }, { data: visitsData }, { data: ordersData }] = await Promise.all([
         supabase.from("salons").select("id, name, address, city, phone, contact_name, is_active").order("name"),
         supabase.from("salon_visits").select("id, salon_id, visit_type, notes, visited_at, order_id").order("visited_at", { ascending: false }),
+        supabase.from("orders").select("id, salon_id, created_at").order("created_at", { ascending: false }).limit(5000),
       ]);
+
+      // Build orders-by-day map (counts ALL orders, incl. walk-ins with no salon_id)
+      const oMap = new Map<string, { count: number; salonIds: Set<string>; hasWalkin: boolean }>();
+      for (const o of ordersData || []) {
+        const key = toLocalDateStr(o.created_at);
+        const entry = oMap.get(key) || { count: 0, salonIds: new Set<string>(), hasWalkin: false };
+        entry.count++;
+        if (o.salon_id) entry.salonIds.add(o.salon_id);
+        else entry.hasWalkin = true;
+        oMap.set(key, entry);
+      }
+      setOrdersByDay(oMap);
 
       const salonMap = new Map((salonsData || []).map(s => [s.id, s.name]));
       const enrichedVisits = (visitsData || []).map(v => ({
