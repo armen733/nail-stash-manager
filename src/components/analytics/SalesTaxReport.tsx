@@ -260,7 +260,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
               <thead className="bg-muted/40">
                 <tr>
                   <th className="text-left p-2">Date</th>
-                  <th className="text-left p-2">Invoice #</th>
+                  <th className="text-left p-2">{docNumberMode === "invoice" ? "Invoice #" : "Order #"}</th>
                   <th className="text-right p-2">Subtotal</th>
                   <th className="text-right p-2">Tax Collected</th>
                   <th className="text-right p-2">Calc. Tax</th>
