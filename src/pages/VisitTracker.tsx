@@ -322,8 +322,12 @@ export default function VisitTracker() {
                   const selected = selectedDate && isSameDay(day, selectedDate);
                    const orderVisits = dayVisits.filter(v => v.visit_type === "order");
                    const manualVisits = dayVisits.filter(v => v.visit_type === "manual");
-                   const uniqueSalonIds = new Set(dayVisits.map(v => v.salon_id));
-                   const uniqueSalonCount = uniqueSalonIds.size;
+                   // Prefer real orders table for accurate counts (includes walk-ins w/o salon_id)
+                   const dayOrders = ordersByDay.get(key);
+                   const orderCount = dayOrders?.count ?? orderVisits.length;
+                   const salonIdSet = new Set<string>(dayVisits.map(v => v.salon_id).filter(Boolean) as string[]);
+                   dayOrders?.salonIds.forEach(id => salonIdSet.add(id));
+                   const uniqueSalonCount = salonIdSet.size + (dayOrders?.hasWalkin ? 1 : 0);
 
                   return (
                     <button
