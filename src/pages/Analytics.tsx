@@ -257,7 +257,7 @@ const Analytics = () => {
         `)
         .gte("created_at", periodStart.toISOString())
         .lte("created_at", periodEnd.toISOString())
-        .in("status", ["Confirmed", "Shipped", "Delivered", "Paid"]);
+        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"]);
 
       if (ordersError) throw ordersError;
 
