@@ -14,6 +14,7 @@ import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { NERA_PACKING_LOGO } from "@/lib/packingLogo";
 
 interface OrderRow {
   id: string;
