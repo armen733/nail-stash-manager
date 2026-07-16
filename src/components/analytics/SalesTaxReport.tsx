@@ -40,6 +40,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [docNumberMode, setDocNumberMode] = useState<"invoice" | "order">("invoice");
+  const [forceTaxable, setForceTaxable] = useState(false);
 
   const activeRate = taxRate || Number(taxSettings?.tax_rate) || 0;
   const taxName = taxSettings?.tax_name || "Sales Tax";
@@ -66,18 +67,22 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     })();
   }, [open, range?.from, range?.to, toast]);
 
+  const computeCalc = (sub: number, tax: number) =>
+    forceTaxable ? +(sub * (activeRate / 100)).toFixed(2) : tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+
   const totals = orders.reduce(
     (a, o) => {
       const sub = Number(o.subtotal || 0);
       const tax = Number(o.tax || 0);
       const total = Number(o.total || 0);
-      const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+      const calcTax = computeCalc(sub, tax);
+      const uncollectedPer = Math.max(calcTax - tax, 0);
       return {
         subtotal: a.subtotal + sub,
         total: a.total + total,
         collected: a.collected + tax,
         calculated: a.calculated + calcTax,
-        uncollected: a.uncollected + (tax > 0 ? 0 : calcTax),
+        uncollected: a.uncollected + uncollectedPer,
       };
     },
     { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
@@ -127,7 +132,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
       body: orders.map((o) => {
         const sub = Number(o.subtotal || 0);
         const tax = Number(o.tax || 0);
-        const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+        const calcTax = computeCalc(sub, tax);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
           getDocNumber(o),
@@ -223,6 +228,15 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                 Order #
               </ToggleGroupItem>
             </ToggleGroup>
+            <Button
+              type="button"
+              variant={forceTaxable ? "default" : "outline"}
+              size="sm"
+              onClick={() => setForceTaxable((v) => !v)}
+              className="h-8 text-xs"
+            >
+              {forceTaxable ? "All Taxable: ON" : "All Taxable: OFF"}
+            </Button>
             <div className="flex-1" />
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
@@ -284,7 +298,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                   orders.map((o) => {
                     const sub = Number(o.subtotal || 0);
                     const tax = Number(o.tax || 0);
-                    const calc = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+                    const calc = computeCalc(sub, tax);
                     return (
                       <tr key={o.id} className="border-t">
                         <td className="p-2">{format(new Date(o.order_date), "MMM dd, yyyy")}</td>
