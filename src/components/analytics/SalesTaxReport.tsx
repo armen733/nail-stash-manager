@@ -53,7 +53,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
         .select("id, invoice_number, order_date, subtotal, tax, total, status")
         .gte("order_date", from)
         .lte("order_date", to)
-        .neq("status", "Cancelled")
+        .in("status", ["Draft", "Confirmed", "Paid", "Shipped", "Delivered"])
         .order("order_date", { ascending: true });
       if (error) {
         toast({ title: "Failed to load orders", description: error.message, variant: "destructive" });
