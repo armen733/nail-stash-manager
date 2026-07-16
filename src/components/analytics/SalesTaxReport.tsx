@@ -67,18 +67,22 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     })();
   }, [open, range?.from, range?.to, toast]);
 
+  const computeCalc = (sub: number, tax: number) =>
+    forceTaxable ? +(sub * (activeRate / 100)).toFixed(2) : tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+
   const totals = orders.reduce(
     (a, o) => {
       const sub = Number(o.subtotal || 0);
       const tax = Number(o.tax || 0);
       const total = Number(o.total || 0);
-      const calcTax = tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+      const calcTax = computeCalc(sub, tax);
+      const uncollectedPer = Math.max(calcTax - tax, 0);
       return {
         subtotal: a.subtotal + sub,
         total: a.total + total,
         collected: a.collected + tax,
         calculated: a.calculated + calcTax,
-        uncollected: a.uncollected + (tax > 0 ? 0 : calcTax),
+        uncollected: a.uncollected + uncollectedPer,
       };
     },
     { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
