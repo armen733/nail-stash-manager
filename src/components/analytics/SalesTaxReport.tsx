@@ -40,6 +40,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [docNumberMode, setDocNumberMode] = useState<"invoice" | "order">("invoice");
+  const [forceTaxable, setForceTaxable] = useState(false);
 
   const activeRate = taxRate || Number(taxSettings?.tax_rate) || 0;
   const taxName = taxSettings?.tax_name || "Sales Tax";
