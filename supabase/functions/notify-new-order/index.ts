@@ -13,10 +13,10 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { orderId, orderData } = body;
+    const { orderId, orderData, isEdit, changes } = body;
     
-    console.log('=== NEW ORDER NOTIFICATION ===');
-    console.log('Order ID:', orderId);
+    console.log('=== ORDER NOTIFICATION ===');
+    console.log('Order ID:', orderId, 'isEdit:', !!isEdit);
 
     const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
     const telegramChatId = Deno.env.get('TELEGRAM_CHAT_ID');
@@ -35,13 +35,19 @@ serve(async (req: Request) => {
     const isInStore = orderData.customer_address === 'In-Store Pickup';
     const discountAmount = Number(orderData.discount_amount) || 0;
     const referralCode = orderData.discount_code || null;
-    
-    const message = `━━━━━━━━━━━━━━━━━━
-🛒 *NEW ORDER RECEIVED!*
-━━━━━━━━━━━━━━━━━━
+
+    const header = isEdit
+      ? `━━━━━━━━━━━━━━━━━━\n✏️ *EDITED ORDER*\n━━━━━━━━━━━━━━━━━━`
+      : `━━━━━━━━━━━━━━━━━━\n🛒 *NEW ORDER RECEIVED!*\n━━━━━━━━━━━━━━━━━━`;
+
+    const changesBlock = isEdit && Array.isArray(changes) && changes.length > 0
+      ? `\n🔧 *Changes:*\n${changes.map((c: string) => `  • ${c}`).join('\n')}\n`
+      : '';
+
+    const message = `${header}
 
 📦 *Order ID:* \`${orderId.slice(0, 8).toUpperCase()}\`
-
+${changesBlock}
 👤 *Customer:*
 • Name: ${orderData.customer_name || 'Walk-in'}
 • Email: ${orderData.customer_email || 'N/A'}
