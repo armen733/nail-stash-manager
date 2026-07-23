@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -150,6 +151,20 @@ export default function Users() {
       return usersWithTiers as UserWithTier[];
     },
   });
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const uid = searchParams.get("userId");
+    if (uid && users && !selectedUser) {
+      const u = users.find((x) => x.id === uid);
+      if (u) {
+        setSelectedUser(u);
+        searchParams.delete("userId");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, users, selectedUser, setSearchParams]);
+
 
   const { data: userOrders, isLoading: ordersLoading } = useQuery({
     queryKey: ["user-orders", selectedUser?.id, selectedUser?.email],

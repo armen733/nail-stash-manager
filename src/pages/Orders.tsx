@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,7 @@ interface Order {
   customer_phone?: string | null;
   customer_address?: string | null;
   created_by?: string | null;
+  profile_id?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
   salons: {
@@ -151,6 +152,7 @@ interface OrderItem {
 
 const Orders = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -1831,9 +1833,22 @@ Thank you!`;
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground">Name</Label>
-                    <div className="font-medium mt-1">{viewOrder.customer_name || viewOrder.salons?.name || "—"}</div>
+                    <div className="font-medium mt-1">
+                      {viewOrder.profile_id ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/users?userId=${viewOrder.profile_id}`)}
+                          className="text-primary hover:underline text-left"
+                        >
+                          {viewOrder.customer_name || viewOrder.salons?.name || "—"}
+                        </button>
+                      ) : (
+                        viewOrder.customer_name || viewOrder.salons?.name || "—"
+                      )}
+                    </div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
+
                     <Label className="text-xs text-muted-foreground">Email</Label>
                     <div className="font-medium mt-1 break-all">
                       {viewOrder.customer_email ? (
