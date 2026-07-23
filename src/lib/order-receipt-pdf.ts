@@ -172,6 +172,13 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
       color: [5, 150, 105],
     });
   }
+  if ((order.points_redeemed ?? 0) > 0) {
+    totals.push({
+      label: `Points Redeemed (${order.points_redeemed} pts)`,
+      value: '',
+      color: [5, 150, 105],
+    });
+  }
   totals.push({ label: "Tax", value: `$${order.tax.toFixed(2)}` });
   if ((order.shipping ?? 0) > 0 || order.shipping_zone) {
     totals.push({
