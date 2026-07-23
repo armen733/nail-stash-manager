@@ -1925,8 +1925,19 @@ Thank you!`;
                     const productImage = it.products?.image_url || 
                       (it.products?.product_images && it.products.product_images[0]?.image_url) || 
                       null;
+                    const edit = viewOrderItemEdits[it.id];
                     return (
-                      <div key={it.id} className="flex justify-between items-center bg-muted/50 rounded-lg p-3">
+                      <div
+                        key={it.id}
+                        className={cn(
+                          "flex justify-between items-center rounded-lg p-3 border",
+                          edit?.status === 'added'
+                            ? "bg-green-500/10 border-green-500/40"
+                            : edit?.status === 'changed'
+                            ? "bg-amber-500/10 border-amber-500/40"
+                            : "bg-muted/50 border-transparent"
+                        )}
+                      >
                         <div className="flex items-center gap-3">
                           {productImage ? (
                             <img 
@@ -1940,11 +1951,21 @@ Thank you!`;
                             </div>
                           )}
                           <div>
-                            <span className="font-medium">{it.products?.name}</span>
-                            <span className="text-muted-foreground ml-2">× {it.quantity}</span>
-                            {it.products?.sku && (
-                              <span className="text-xs text-muted-foreground/60 ml-2">({it.products.sku})</span>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">{it.products?.name}</span>
+                              <span className="text-muted-foreground">× {it.quantity}</span>
+                              {it.products?.sku && (
+                                <span className="text-xs text-muted-foreground/60">({it.products.sku})</span>
+                              )}
+                              {edit?.status === 'added' && (
+                                <Badge variant="outline" className="text-[10px] border-green-500/50 text-green-600 dark:text-green-400">Added</Badge>
+                              )}
+                              {edit?.status === 'changed' && (
+                                <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400">
+                                  Qty {edit.from} → {it.quantity}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
