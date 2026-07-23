@@ -1102,7 +1102,7 @@ Status: ${order.status}
 
 ${itemsText}
 
-Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount${order.discount_code ? ` (Referral: ${order.discount_code})` : ''}: −$${Number(order.discount_amount).toFixed(2)}` : ''}
+Subtotal: $${order.subtotal.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `\nDiscount${order.discount_code ? ` (Referral: ${order.discount_code})` : ''}: −$${Number(order.discount_amount).toFixed(2)}` : ''}${((order as any).points_redeemed ?? 0) > 0 ? `\nPoints Redeemed: ${(order as any).points_redeemed} pts` : ''}
 Tax: $${order.tax.toFixed(2)}
 Total: $${order.total.toFixed(2)}${(order.discount_amount ?? 0) > 0 ? `  (you saved $${Number(order.discount_amount).toFixed(2)})` : ''}
 

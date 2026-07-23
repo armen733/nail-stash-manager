@@ -11,6 +11,7 @@ export interface ReceiptOrder {
   total: number;
   discount_amount?: number | null;
   discount_code?: string | null;
+  points_redeemed?: number | null;
   notes?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
@@ -168,6 +169,13 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
     totals.push({
       label: `Discount${order.discount_code ? ` (${order.discount_code})` : ""}`,
       value: `-$${Number(order.discount_amount).toFixed(2)}`,
+      color: [5, 150, 105],
+    });
+  }
+  if ((order.points_redeemed ?? 0) > 0) {
+    totals.push({
+      label: `Points Redeemed (${order.points_redeemed} pts)`,
+      value: '',
       color: [5, 150, 105],
     });
   }
