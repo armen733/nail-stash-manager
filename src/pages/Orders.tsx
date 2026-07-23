@@ -317,7 +317,7 @@ const Orders = () => {
         .limit(1);
       const original = data?.[0]?.snapshot;
       if (!original?.items) { setViewOrderItemEdits({}); return; }
-      const origQty = new Map<string, number>();
+      const origQty: Record<string, number> = {};
       for (const it of original.items) {
         origQty.set(it.product_id, (origQty.get(it.product_id) || 0) + Number(it.quantity || 0));
       }
