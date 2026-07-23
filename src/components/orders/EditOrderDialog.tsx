@@ -404,6 +404,74 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
         },
       });
 
+      // Send Telegram edit notification (best effort)
+      try {
+        const origQtyByPid = new Map<string, number>();
+        const origItemByPid = new Map<string, any>();
+        (order.order_items || []).forEach((oi) => {
+          origQtyByPid.set(oi.product_id, (origQtyByPid.get(oi.product_id) || 0) + oi.quantity);
+          origItemByPid.set(oi.product_id, oi);
+        });
+        const changes: string[] = [];
+        if (statusChanged) changes.push(`Status: ${order.status} → ${status}`);
+        if (totalChanged) changes.push(`Total: $${Number(order.total).toFixed(2)} → $${total.toFixed(2)}`);
+        const currentPids = new Set(items.map((it) => it.product_id));
+        for (const it of items) {
+          const p = products.find((pp) => pp.id === it.product_id);
+          const label = p ? `${p.name}${p.sku ? ` (${p.sku})` : ''}` : 'Item';
+          const prev = origQtyByPid.get(it.product_id);
+          if (prev === undefined) changes.push(`Added: ${label} x${it.quantity}`);
+          else if (prev !== it.quantity) changes.push(`Qty: ${label} ${prev} → ${it.quantity}`);
+        }
+        for (const [pid, qty] of origQtyByPid.entries()) {
+          if (!currentPids.has(pid)) {
+            const oi = origItemByPid.get(pid);
+            const label = oi?.products?.name ? `${oi.products.name}${oi.products.sku ? ` (${oi.products.sku})` : ''}` : 'Item';
+            changes.push(`Removed: ${label} x${qty}`);
+          }
+        }
+        if (order.notes !== (notes || null)) changes.push('Notes updated');
+        if ((order.technician_name || null) !== (technicianName || null)) changes.push(`Technician → ${technicianName || 'N/A'}`);
+        if ((order.discount_amount || 0) !== (discountAmount || 0)) {
+          changes.push(`Discount: $${Number(order.discount_amount || 0).toFixed(2)} → $${(discountAmount || 0).toFixed(2)}`);
+        }
+
+        const itemsPayload = items.map((it) => {
+          const p = products.find((pp) => pp.id === it.product_id);
+          return {
+            product_name: p?.name || 'Product',
+            sku: p?.sku || '',
+            quantity: it.quantity,
+            line_total: it.quantity * it.unit_price,
+          };
+        });
+
+        const salonObj = salons.find((s) => s.id === salonId);
+        await supabase.functions.invoke('notify-new-order', {
+          body: {
+            orderId: order.id,
+            isEdit: true,
+            changes,
+            orderData: {
+              customer_name: customerName || salonObj?.name || null,
+              customer_email: customerEmail || null,
+              customer_phone: customerPhone || null,
+              customer_address: customerAddress || null,
+              items: itemsPayload,
+              subtotal,
+              tax,
+              total,
+              discount_amount: discountAmount || 0,
+              discount_code: discountCode || null,
+              technician_name: technicianName || null,
+              notes: notes || null,
+            },
+          },
+        });
+      } catch (notifyErr) {
+        console.error('Telegram edit notification failed:', notifyErr);
+      }
+
       toast({ title: "Order updated", description: "Items, stock, and totals were updated." });
       onSaved();
       onOpenChange(false);
