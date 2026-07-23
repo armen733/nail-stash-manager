@@ -75,7 +75,10 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
 
   // Logo
   try {
-    doc.addImage(NERA_PACKING_LOGO, "JPEG", 14, 12, 28, 14);
+    const props = doc.getImageProperties(NERA_PACKING_LOGO);
+    const logoH = 18;
+    const logoW = (props.width / props.height) * logoH;
+    doc.addImage(NERA_PACKING_LOGO, "JPEG", 14, 10, logoW, logoH);
   } catch {
     // If logo fails, fall back to text
     doc.setFont("helvetica", "bold");
