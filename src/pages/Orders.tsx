@@ -87,6 +87,8 @@ interface Order {
   total: number;
   discount_amount?: number | null;
   discount_code?: string | null;
+  points_redeemed?: number | null;
+  auto_redeem_points?: boolean | null;
   notes: string | null;
   technician_name?: string | null;
   created_at: string;
