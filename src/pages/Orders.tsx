@@ -1748,7 +1748,7 @@ Thank you!`;
         </SheetContent>
       </Sheet>
 
-      <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
+      <Dialog open={!!viewOrder} onOpenChange={(open) => { if (!open) { setViewOrder(null); setViewOrderItemEdits({}); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
