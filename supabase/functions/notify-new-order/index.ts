@@ -69,7 +69,7 @@ ${referralCode ? `\n🎟️ *Referral code used:* \`${referralCode}\`` : ''}
 
 ${orderData.technician_name ? `💅 *Technician:* ${orderData.technician_name}\n` : ''}${orderData.notes ? `📝 *Notes:* ${orderData.notes}\n` : ''}📅 ${new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })}
 
-${isInStore ? '🏪 In-Store Quick Order' : '💳 Online Order'}
+${isInPerson ? '🤝 In-Person Order' : (isInStore ? '🏪 In-Store Quick Order' : '💳 Online Order')}
 ━━━━━━━━━━━━━━━━━━`;
 
     const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
