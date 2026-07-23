@@ -169,6 +169,8 @@ const Orders = () => {
   const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
+  type ItemEdit = { status: 'added' | 'changed'; from?: number };
+  const [viewOrderItemEdits, setViewOrderItemEdits] = useState<Record<string, ItemEdit>>({});
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -301,6 +303,34 @@ const Orders = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location, toast]);
+
+  // Compute per-item edit status for the currently-viewed order
+  useEffect(() => {
+    if (!viewOrder) { setViewOrderItemEdits({}); return; }
+    if (!editedOrderIds.has(viewOrder.id)) { setViewOrderItemEdits({}); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("order_edit_history")
+        .select("snapshot, edited_at")
+        .eq("order_id", viewOrder.id)
+        .order("edited_at", { ascending: true })
+        .limit(1);
+      const original = data?.[0]?.snapshot;
+      if (!original?.items) { setViewOrderItemEdits({}); return; }
+      const origQty: Record<string, number> = {};
+      for (const it of original.items) {
+        origQty[it.product_id] = (origQty[it.product_id] || 0) + Number(it.quantity || 0);
+      }
+      const edits: Record<string, ItemEdit> = {};
+      for (const it of (viewOrder.order_items || [])) {
+        const prev = origQty[it.product_id];
+        if (prev === undefined) edits[it.id] = { status: 'added' };
+        else if (prev !== it.quantity) edits[it.id] = { status: 'changed', from: prev };
+      }
+      setViewOrderItemEdits(edits);
+    })();
+  }, [viewOrder, editedOrderIds]);
+
 
   // Auto-detect referrer when customer is selected
   useEffect(() => {
@@ -1746,7 +1776,7 @@ Thank you!`;
         </SheetContent>
       </Sheet>
 
-      <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
+      <Dialog open={!!viewOrder} onOpenChange={(open) => { if (!open) { setViewOrder(null); setViewOrderItemEdits({}); } }}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
@@ -1895,8 +1925,19 @@ Thank you!`;
                     const productImage = it.products?.image_url || 
                       (it.products?.product_images && it.products.product_images[0]?.image_url) || 
                       null;
+                    const edit = viewOrderItemEdits[it.id];
                     return (
-                      <div key={it.id} className="flex justify-between items-center bg-muted/50 rounded-lg p-3">
+                      <div
+                        key={it.id}
+                        className={cn(
+                          "flex justify-between items-center rounded-lg p-3 border",
+                          edit?.status === 'added'
+                            ? "bg-green-500/10 border-green-500/40"
+                            : edit?.status === 'changed'
+                            ? "bg-amber-500/10 border-amber-500/40"
+                            : "bg-muted/50 border-transparent"
+                        )}
+                      >
                         <div className="flex items-center gap-3">
                           {productImage ? (
                             <img 
@@ -1910,11 +1951,21 @@ Thank you!`;
                             </div>
                           )}
                           <div>
-                            <span className="font-medium">{it.products?.name}</span>
-                            <span className="text-muted-foreground ml-2">× {it.quantity}</span>
-                            {it.products?.sku && (
-                              <span className="text-xs text-muted-foreground/60 ml-2">({it.products.sku})</span>
-                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">{it.products?.name}</span>
+                              <span className="text-muted-foreground">× {it.quantity}</span>
+                              {it.products?.sku && (
+                                <span className="text-xs text-muted-foreground/60">({it.products.sku})</span>
+                              )}
+                              {edit?.status === 'added' && (
+                                <Badge variant="outline" className="text-[10px] border-green-500/50 text-green-600 dark:text-green-400">Added</Badge>
+                              )}
+                              {edit?.status === 'changed' && (
+                                <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 dark:text-amber-400">
+                                  Qty {edit.from} → {it.quantity}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <span className="font-semibold">${(it.quantity * it.unit_price).toFixed(2)}</span>
