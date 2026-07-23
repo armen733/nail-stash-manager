@@ -169,7 +169,8 @@ const Orders = () => {
   const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
-  const [viewOrderItemEdits, setViewOrderItemEdits] = useState<Map<string, { status: 'added' | 'changed'; from?: number }>>(new Map());
+  type ItemEdit = { status: 'added' | 'changed'; from?: number };
+  const [viewOrderItemEdits, setViewOrderItemEdits] = useState<Record<string, ItemEdit>>({});
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
