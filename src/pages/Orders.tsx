@@ -308,8 +308,6 @@ const Orders = () => {
 
   // Compute per-item edit status for the currently-viewed order
   useEffect(() => {
-    if (!viewOrder) { setViewOrderItemEdits({}); return; }
-  useEffect(() => {
     if (!viewOrder) { setViewOrderItemEdits({}); setViewOrderRemovedItems([]); return; }
     if (!editedOrderIds.has(viewOrder.id)) { setViewOrderItemEdits({}); setViewOrderRemovedItems([]); return; }
     (async () => {
