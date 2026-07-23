@@ -309,7 +309,9 @@ const Orders = () => {
   // Compute per-item edit status for the currently-viewed order
   useEffect(() => {
     if (!viewOrder) { setViewOrderItemEdits({}); return; }
-    if (!editedOrderIds.has(viewOrder.id)) { setViewOrderItemEdits({}); return; }
+  useEffect(() => {
+    if (!viewOrder) { setViewOrderItemEdits({}); setViewOrderRemovedItems([]); return; }
+    if (!editedOrderIds.has(viewOrder.id)) { setViewOrderItemEdits({}); setViewOrderRemovedItems([]); return; }
     (async () => {
       const { data } = await (supabase as any)
         .from("order_edit_history")
@@ -318,20 +320,39 @@ const Orders = () => {
         .order("edited_at", { ascending: true })
         .limit(1);
       const original = data?.[0]?.snapshot;
-      if (!original?.items) { setViewOrderItemEdits({}); return; }
+      if (!original?.items) { setViewOrderItemEdits({}); setViewOrderRemovedItems([]); return; }
       const origQty: Record<string, number> = {};
+      const origItemByPid: Record<string, any> = {};
       for (const it of original.items) {
         origQty[it.product_id] = (origQty[it.product_id] || 0) + Number(it.quantity || 0);
+        origItemByPid[it.product_id] = it;
       }
+      const currentPids = new Set((viewOrder.order_items || []).map((it) => it.product_id));
       const edits: Record<string, ItemEdit> = {};
       for (const it of (viewOrder.order_items || [])) {
         const prev = origQty[it.product_id];
         if (prev === undefined) edits[it.id] = { status: 'added' };
         else if (prev !== it.quantity) edits[it.id] = { status: 'changed', from: prev };
       }
+      // Compute removed items (in original but not in current)
+      const removed: RemovedItem[] = [];
+      for (const pid of Object.keys(origQty)) {
+        if (!currentPids.has(pid)) {
+          const orig = origItemByPid[pid];
+          const product = products.find(p => p.id === pid);
+          removed.push({
+            product_id: pid,
+            name: product?.name || orig?.name || 'Unknown product',
+            sku: product?.sku || orig?.sku,
+            quantity: origQty[pid],
+            unit_price: Number(orig?.unit_price || 0),
+          });
+        }
+      }
       setViewOrderItemEdits(edits);
+      setViewOrderRemovedItems(removed);
     })();
-  }, [viewOrder, editedOrderIds]);
+  }, [viewOrder, editedOrderIds, products]);
 
 
   // Auto-detect referrer when customer is selected
