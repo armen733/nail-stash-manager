@@ -46,6 +46,7 @@ import WarehouseLocationsMap, { type WarehousePin } from "@/components/warehouse
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { LogoUploader } from "@/components/LogoUploader";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
+import { todayLocalStr, toLocalDateStr } from "@/lib/timezone";
 
 type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok";
 
@@ -75,6 +76,8 @@ interface ProductValueAuditRow {
   sku: string | null;
   name: string;
   category: string | null;
+  createdAt: string | null;
+  addedToday: boolean;
   stock: number;
   cost: number;
   price: number;
@@ -186,6 +189,7 @@ export default function Warehouse() {
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showValueAudit, setShowValueAudit] = useState(false);
+  const [valueAuditScope, setValueAuditScope] = useState<"all" | "today">("today");
   const [productValueAudit, setProductValueAudit] = useState<ProductValueAuditRow[]>([]);
 
   const [search, setSearch] = useState("");
@@ -240,7 +244,7 @@ export default function Warehouse() {
       supabase.from("salons").select("id, name").order("name"),
       supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url, default_discount_percent"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
-      supabase.from("products").select("id, name, sku, category, cost_usd, price_usd, wholesale_price_usd, reorder_level, stock_on_hand"),
+      supabase.from("products").select("id, name, sku, category, created_at, cost_usd, price_usd, wholesale_price_usd, reorder_level, stock_on_hand"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
       // For supply stores, lifetime cost/revenue must match the detail page,
@@ -289,11 +293,14 @@ export default function Warehouse() {
     const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number; stock: number }>();
     const productTotals: LocationStats = { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
     const auditRows: ProductValueAuditRow[] = [];
+    const todayStr = todayLocalStr();
     (prodRes.data ?? []).forEach((p: any) => {
       const stock = Number(p.stock_on_hand ?? 0);
       const cost = Number(p.cost_usd ?? 0);
       const price = Number(p.price_usd ?? 0);
       const reorder = Number(p.reorder_level ?? 0);
+      const createdAt = p.created_at ?? null;
+      const addedToday = createdAt ? toLocalDateStr(createdAt) === todayStr : false;
       productMap.set(p.id, {
         cost,
         price,
@@ -315,6 +322,8 @@ export default function Warehouse() {
           sku: p.sku ?? null,
           name: p.name ?? "Untitled product",
           category: p.category ?? null,
+          createdAt,
+          addedToday,
           stock,
           cost,
           price,
@@ -611,6 +620,27 @@ export default function Warehouse() {
     filtered.forEach((l) => g[l.type].push(l));
     return g;
   }, [filtered]);
+
+  const visibleProductValueAudit = useMemo(() => {
+    if (valueAuditScope === "today") {
+      return productValueAudit.filter((p) => p.addedToday);
+    }
+    return productValueAudit;
+  }, [productValueAudit, valueAuditScope]);
+
+  const valueAuditSummary = useMemo(
+    () =>
+      visibleProductValueAudit.reduce(
+        (sum, p) => ({
+          skus: sum.skus + 1,
+          units: sum.units + p.stock,
+          cost: sum.cost + p.costTotal,
+          retail: sum.retail + p.retailTotal,
+        }),
+        { skus: 0, units: 0, cost: 0, retail: 0 },
+      ),
+    [visibleProductValueAudit],
+  );
 
   const supplyLogoByLocationId = useMemo(() => {
     const supplyMap = new Map(supplyStores.map((s) => [s.id, s]));
@@ -909,6 +939,34 @@ export default function Warehouse() {
 
                 {showValueAudit && (
                   <div className="rounded-md border overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 p-2 bg-muted/20 border-b flex-wrap">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant={valueAuditScope === "today" ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setValueAuditScope("today")}
+                        >
+                          Added today
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={valueAuditScope === "all" ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => setValueAuditScope("all")}
+                        >
+                          All SKUs
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground ml-auto">
+                        <span><strong className="text-foreground">{valueAuditSummary.skus}</strong> SKU</span>
+                        <span><strong className="text-foreground">{valueAuditSummary.units.toLocaleString()}</strong> u</span>
+                        <span><strong className="text-foreground">{formatMoney(valueAuditSummary.cost)}</strong> cost</span>
+                        <span><strong className="text-primary">{formatMoney(valueAuditSummary.retail)}</strong> retail</span>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-[1.2fr_0.6fr_0.7fr_0.8fr_0.8fr] gap-2 px-2 py-1.5 text-[10px] uppercase text-muted-foreground bg-muted/40">
                       <span>SKU</span>
                       <span className="text-right">Stock</span>
@@ -917,7 +975,11 @@ export default function Warehouse() {
                       <span className="text-right">Retail total</span>
                     </div>
                     <div className="max-h-72 overflow-y-auto divide-y">
-                      {productValueAudit.map((p) => (
+                      {visibleProductValueAudit.length === 0 ? (
+                        <div className="px-2 py-5 text-center text-xs text-muted-foreground">
+                          No products in this audit view.
+                        </div>
+                      ) : visibleProductValueAudit.map((p) => (
                         <div
                           key={p.id}
                           className="grid grid-cols-[1.2fr_0.6fr_0.7fr_0.8fr_0.8fr] gap-2 px-2 py-2 text-xs items-center"
@@ -928,6 +990,11 @@ export default function Warehouse() {
                             {p.missingCost && (
                               <Badge variant="destructive" className="mt-1 text-[10px] px-1.5 py-0 h-4">
                                 Missing cost
+                              </Badge>
+                            )}
+                            {p.addedToday && valueAuditScope === "all" && (
+                              <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0 h-4">
+                                Added today
                               </Badge>
                             )}
                           </div>
