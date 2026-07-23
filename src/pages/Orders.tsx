@@ -95,6 +95,7 @@ interface Order {
   customer_phone?: string | null;
   customer_address?: string | null;
   created_by?: string | null;
+  profile_id?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
   salons: {
