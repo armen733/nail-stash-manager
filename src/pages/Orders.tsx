@@ -304,6 +304,34 @@ const Orders = () => {
     }
   }, [location, toast]);
 
+  // Compute per-item edit status for the currently-viewed order
+  useEffect(() => {
+    if (!viewOrder) { setViewOrderItemEdits({}); return; }
+    if (!editedOrderIds.has(viewOrder.id)) { setViewOrderItemEdits({}); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("order_edit_history")
+        .select("snapshot, edited_at")
+        .eq("order_id", viewOrder.id)
+        .order("edited_at", { ascending: true })
+        .limit(1);
+      const original = data?.[0]?.snapshot;
+      if (!original?.items) { setViewOrderItemEdits({}); return; }
+      const origQty = new Map<string, number>();
+      for (const it of original.items) {
+        origQty.set(it.product_id, (origQty.get(it.product_id) || 0) + Number(it.quantity || 0));
+      }
+      const edits: Record<string, ItemEdit> = {};
+      for (const it of (viewOrder.order_items || [])) {
+        const prev = origQty.get(it.product_id);
+        if (prev === undefined) edits[it.id] = { status: 'added' };
+        else if (prev !== it.quantity) edits[it.id] = { status: 'changed', from: prev };
+      }
+      setViewOrderItemEdits(edits);
+    })();
+  }, [viewOrder, editedOrderIds]);
+
+
   // Auto-detect referrer when customer is selected
   useEffect(() => {
     const detectReferrer = async () => {
