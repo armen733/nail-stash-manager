@@ -549,6 +549,7 @@ export type Database = {
       orders: {
         Row: {
           amount_paid: number
+          auto_redeem_points: boolean
           balance_due: number
           created_at: string
           created_by: string | null
@@ -579,6 +580,7 @@ export type Database = {
         }
         Insert: {
           amount_paid?: number
+          auto_redeem_points?: boolean
           balance_due?: number
           created_at?: string
           created_by?: string | null
@@ -609,6 +611,7 @@ export type Database = {
         }
         Update: {
           amount_paid?: number
+          auto_redeem_points?: boolean
           balance_due?: number
           created_at?: string
           created_by?: string | null
