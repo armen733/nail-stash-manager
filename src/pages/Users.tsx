@@ -152,6 +152,20 @@ export default function Users() {
     },
   });
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const uid = searchParams.get("userId");
+    if (uid && users && !selectedUser) {
+      const u = users.find((x) => x.id === uid);
+      if (u) {
+        setSelectedUser(u);
+        searchParams.delete("userId");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, users, selectedUser, setSearchParams]);
+
+
   const { data: userOrders, isLoading: ordersLoading } = useQuery({
     queryKey: ["user-orders", selectedUser?.id, selectedUser?.email],
     queryFn: async () => {
