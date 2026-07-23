@@ -1996,6 +1996,29 @@ Thank you!`;
                   {(!viewOrder.order_items || viewOrder.order_items.length === 0) && (
                     <div className="text-muted-foreground text-center py-4">No items in this order</div>
                   )}
+                  {viewOrderRemovedItems.map((r) => (
+                    <div
+                      key={`removed-${r.product_id}`}
+                      className="flex justify-between items-center rounded-lg p-3 border bg-red-500/10 border-red-500/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center">
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium line-through text-muted-foreground">{r.name}</span>
+                            <span className="text-muted-foreground line-through">× {r.quantity}</span>
+                            {r.sku && (
+                              <span className="text-xs text-muted-foreground/60">({r.sku})</span>
+                            )}
+                            <Badge variant="outline" className="text-[10px] border-red-500/50 text-red-600 dark:text-red-400">Removed</Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="font-semibold line-through text-muted-foreground">${(r.quantity * r.unit_price).toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
