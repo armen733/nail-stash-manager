@@ -170,7 +170,9 @@ const Orders = () => {
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [editedOrderIds, setEditedOrderIds] = useState<Set<string>>(new Set());
   type ItemEdit = { status: 'added' | 'changed'; from?: number };
+  type RemovedItem = { product_id: string; name: string; sku?: string; quantity: number; unit_price: number };
   const [viewOrderItemEdits, setViewOrderItemEdits] = useState<Record<string, ItemEdit>>({});
+  const [viewOrderRemovedItems, setViewOrderRemovedItems] = useState<RemovedItem[]>([]);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
