@@ -802,13 +802,14 @@ const Orders = () => {
             customer_name: selectedProfile?.full_name || selectedSalon?.name || 'Walk-in Customer',
             customer_email: selectedProfile?.email || selectedSalon?.email || 'N/A',
             customer_phone: selectedProfile?.phone || selectedSalon?.phone || null,
-            customer_address: selectedSalon?.address || selectedProfile ? 'Customer Order' : 'In-Store Pickup',
+            customer_address: selectedSalon?.address || (selectedProfile ? 'Customer Order' : 'In-Store Pickup'),
             items: notificationItems,
             subtotal,
             discount_amount: discountAmount > 0 ? discountAmount : null,
             total,
             notes: formData.notes || null,
             technician_name: formData.technician_name || null,
+            isInPerson: true,
           }
         };
         
