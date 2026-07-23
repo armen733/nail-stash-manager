@@ -87,6 +87,8 @@ interface Order {
   total: number;
   discount_amount?: number | null;
   discount_code?: string | null;
+  points_redeemed?: number | null;
+  auto_redeem_points?: boolean | null;
   notes: string | null;
   technician_name?: string | null;
   created_at: string;
@@ -2074,9 +2076,15 @@ Thank you!`;
                   {(viewOrder.discount_amount ?? 0) > 0 && (
                     <div className="flex justify-between text-sm text-emerald-600 font-medium">
                       <span>
-                        Discount{viewOrder.discount_code ? ` (Referral: ${viewOrder.discount_code})` : ''}
+                        Discount{viewOrder.discount_code ? ` (Referral: ${viewOrder.discount_code})` : ((viewOrder.points_redeemed ?? 0) > 0 ? ' (Loyalty)' : '')}
                       </span>
                       <span>−${Number(viewOrder.discount_amount).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {((viewOrder.points_redeemed ?? 0) > 0) && (
+                    <div className="flex justify-between text-sm text-amber-600 font-medium">
+                      <span>Loyalty Points Redeemed</span>
+                      <span>{viewOrder.points_redeemed} pts</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
