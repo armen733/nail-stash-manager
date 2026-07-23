@@ -274,11 +274,11 @@ export default function Warehouse() {
     });
 
     const aggregated: Record<string, LocationStats> = {};
-    const netQtyByProduct = new Map<string, number>();
+    const productsAtLoc = new Map<string, Set<string>>();
+    const allProductsWithRows = new Set<string>();
     (stockRes.data ?? []).forEach((row: any) => {
       const qty = Number(row.quantity ?? 0);
-      if (qty === 0) return;
-      netQtyByProduct.set(row.product_id, (netQtyByProduct.get(row.product_id) ?? 0) + qty);
+      allProductsWithRows.add(row.product_id);
       const prod = productMap.get(row.product_id);
       // True manufacturing cost — do NOT fall back to retail price (that inflates cost).
       const costPer = prod?.cost ?? 0;
@@ -307,14 +307,28 @@ export default function Warehouse() {
       cur.units += qty;
       cur.value += qty * costPer;
       cur.retail += qty * retailPer;
-      if (qty > 0) cur.skus += 1;
+      // Count every product that has a stock row at this location as a SKU,
+      // even if its current on-hand quantity is 0 or negative — the product
+      // still lives at this warehouse.
+      let locSet = productsAtLoc.get(row.location_id);
+      if (!locSet) {
+        locSet = new Set<string>();
+        productsAtLoc.set(row.location_id, locSet);
+      }
+      if (!locSet.has(row.product_id)) {
+        locSet.add(row.product_id);
+        cur.skus += 1;
+      }
       if (prod && prod.reorder > 0 && qty > 0 && qty <= prod.reorder) {
         cur.lowSkus += 1;
         cur.lowUnits += qty;
       }
       aggregated[row.location_id] = cur;
     });
-    setTotalSkuCount([...netQtyByProduct.values()].filter((qty) => qty > 0).length);
+    // Header total = every product that appears in inventory anywhere
+    // (matches the Products page count, since new products auto-provision
+    // a Main Warehouse row).
+    setTotalSkuCount(Math.max(allProductsWithRows.size, productMap.size));
 
     // For supply-store (consignment) locations, replace `value` (cost) and `retail`
     // with LIFETIME totals from stock_movements so the card matches the detail page:
