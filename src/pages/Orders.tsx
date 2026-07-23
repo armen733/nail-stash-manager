@@ -319,11 +319,11 @@ const Orders = () => {
       if (!original?.items) { setViewOrderItemEdits({}); return; }
       const origQty: Record<string, number> = {};
       for (const it of original.items) {
-        origQty.set(it.product_id, (origQty.get(it.product_id) || 0) + Number(it.quantity || 0));
+        origQty[it.product_id] = (origQty[it.product_id] || 0) + Number(it.quantity || 0);
       }
       const edits: Record<string, ItemEdit> = {};
       for (const it of (viewOrder.order_items || [])) {
-        const prev = origQty.get(it.product_id);
+        const prev = origQty[it.product_id];
         if (prev === undefined) edits[it.id] = { status: 'added' };
         else if (prev !== it.quantity) edits[it.id] = { status: 'changed', from: prev };
       }
