@@ -183,11 +183,17 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
     });
   }
   totals.push({ label: "Tax", value: `$${order.tax.toFixed(2)}` });
-  if ((order.shipping ?? 0) > 0 || order.shipping_zone) {
-    totals.push({
-      label: `Shipping${order.shipping_zone ? ` (${order.shipping_zone})` : ""}`,
-      value: (order.shipping ?? 0) > 0 ? `$${(order.shipping ?? 0).toFixed(2)}` : "FREE",
-    });
+  {
+    const rawZone = (order.shipping_zone ?? "").trim();
+    const isPlaceholder = /enter address/i.test(rawZone);
+    const zone = isPlaceholder ? "" : rawZone;
+    const amt = order.shipping ?? 0;
+    if (amt > 0 || zone) {
+      totals.push({
+        label: `Shipping${zone ? ` (${zone})` : ""}`,
+        value: amt > 0 ? `$${amt.toFixed(2)}` : "FREE",
+      });
+    }
   }
   totals.push({ label: "Total", value: `$${order.total.toFixed(2)}`, bold: true });
 
