@@ -343,6 +343,16 @@ export default function Warehouse() {
 
   useEffect(() => {
     loadData();
+    const onFocus = () => loadData();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") loadData();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const openCreate = () => {
