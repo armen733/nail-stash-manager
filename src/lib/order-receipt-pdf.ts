@@ -11,6 +11,7 @@ export interface ReceiptOrder {
   total: number;
   discount_amount?: number | null;
   discount_code?: string | null;
+  points_redeemed?: number | null;
   notes?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
