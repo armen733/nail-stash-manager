@@ -70,6 +70,19 @@ interface LocationStats {
   lowUnits: number;
 }
 
+interface ProductValueAuditRow {
+  id: string;
+  sku: string | null;
+  name: string;
+  category: string | null;
+  stock: number;
+  cost: number;
+  price: number;
+  costTotal: number;
+  retailTotal: number;
+  missingCost: boolean;
+}
+
 interface Profile {
   id: string;
   full_name: string;
@@ -172,6 +185,8 @@ export default function Warehouse() {
   const [editing, setEditing] = useState<StockLocation | null>(null);
   const [pricingSheetOpen, setPricingSheetOpen] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showValueAudit, setShowValueAudit] = useState(false);
+  const [productValueAudit, setProductValueAudit] = useState<ProductValueAuditRow[]>([]);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<LocationType | "all">("all");
@@ -225,7 +240,7 @@ export default function Warehouse() {
       supabase.from("salons").select("id, name").order("name"),
       supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url, default_discount_percent"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
-      supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level, stock_on_hand"),
+      supabase.from("products").select("id, name, sku, category, cost_usd, price_usd, wholesale_price_usd, reorder_level, stock_on_hand"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
       // For supply stores, lifetime cost/revenue must match the detail page,
@@ -273,6 +288,7 @@ export default function Warehouse() {
 
     const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number; stock: number }>();
     const productTotals: LocationStats = { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
+    const auditRows: ProductValueAuditRow[] = [];
     (prodRes.data ?? []).forEach((p: any) => {
       const stock = Number(p.stock_on_hand ?? 0);
       const cost = Number(p.cost_usd ?? 0);
@@ -293,7 +309,22 @@ export default function Warehouse() {
         productTotals.lowSkus += 1;
         productTotals.lowUnits += stock;
       }
+      if (stock !== 0) {
+        auditRows.push({
+          id: p.id,
+          sku: p.sku ?? null,
+          name: p.name ?? "Untitled product",
+          category: p.category ?? null,
+          stock,
+          cost,
+          price,
+          costTotal: stock * cost,
+          retailTotal: stock * price,
+          missingCost: p.cost_usd == null,
+        });
+      }
     });
+    setProductValueAudit(auditRows.sort((a, b) => Math.abs(b.retailTotal) - Math.abs(a.retailTotal)));
 
     const aggregated: Record<string, LocationStats> = {};
     const productsAtLoc = new Map<string, Set<string>>();
@@ -809,7 +840,8 @@ export default function Warehouse() {
           </button>
 
           {showBreakdown && (
-            <div className="mt-3 pt-3 border-t space-y-1">
+            <div className="mt-3 pt-3 border-t space-y-3">
+              <div className="space-y-1">
               {locations.length === 0 ? (
                 <div className="text-xs text-muted-foreground italic">No locations yet.</div>
               ) : (
@@ -861,6 +893,54 @@ export default function Warehouse() {
                     );
                   })
               )}
+              </div>
+
+              <div className="pt-3 border-t space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-between h-8 text-xs"
+                  onClick={() => setShowValueAudit((v) => !v)}
+                >
+                  <span>Value audit — exact SKU math</span>
+                  {showValueAudit ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+
+                {showValueAudit && (
+                  <div className="rounded-md border overflow-hidden">
+                    <div className="grid grid-cols-[1.2fr_0.6fr_0.7fr_0.8fr_0.8fr] gap-2 px-2 py-1.5 text-[10px] uppercase text-muted-foreground bg-muted/40">
+                      <span>SKU</span>
+                      <span className="text-right">Stock</span>
+                      <span className="text-right">Cost ea</span>
+                      <span className="text-right">Cost total</span>
+                      <span className="text-right">Retail total</span>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto divide-y">
+                      {productValueAudit.map((p) => (
+                        <div
+                          key={p.id}
+                          className="grid grid-cols-[1.2fr_0.6fr_0.7fr_0.8fr_0.8fr] gap-2 px-2 py-2 text-xs items-center"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{p.sku || "No SKU"}</div>
+                            <div className="text-[10px] text-muted-foreground truncate">{p.name}</div>
+                            {p.missingCost && (
+                              <Badge variant="destructive" className="mt-1 text-[10px] px-1.5 py-0 h-4">
+                                Missing cost
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-right font-medium">{p.stock.toLocaleString()}</span>
+                          <span className="text-right">{formatMoney(p.cost)}</span>
+                          <span className="text-right font-medium">{formatMoney(p.costTotal)}</span>
+                          <span className="text-right font-semibold text-primary">{formatMoney(p.retailTotal)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
