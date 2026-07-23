@@ -155,6 +155,14 @@ export default function Warehouse() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState<StockLocation[]>([]);
   const [stats, setStats] = useState<Record<string, LocationStats>>({});
+  const [overallStats, setOverallStats] = useState<LocationStats>({
+    units: 0,
+    value: 0,
+    retail: 0,
+    skus: 0,
+    lowSkus: 0,
+    lowUnits: 0,
+  });
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [supplyStores, setSupplyStores] = useState<SupplyStoreLite[]>([]);
@@ -217,7 +225,7 @@ export default function Warehouse() {
       supabase.from("salons").select("id, name").order("name"),
       supabase.from("supply_stores").select("id, name, city, address, latitude, longitude, contact_name, phone, email, website, logo_url, default_discount_percent"),
       supabase.from("product_stock").select("location_id, product_id, quantity"),
-      supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level"),
+      supabase.from("products").select("id, cost_usd, price_usd, wholesale_price_usd, reorder_level, stock_on_hand"),
       supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
       supabase.from("location_product_prices").select("location_id, product_id, price_usd"),
       // For supply stores, lifetime cost/revenue must match the detail page,
@@ -263,14 +271,28 @@ export default function Warehouse() {
       }
     });
 
-    const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number }>();
+    const productMap = new Map<string, { cost: number; price: number; wholesale: number; reorder: number; stock: number }>();
+    const productTotals: LocationStats = { units: 0, value: 0, retail: 0, skus: 0, lowSkus: 0, lowUnits: 0 };
     (prodRes.data ?? []).forEach((p: any) => {
+      const stock = Number(p.stock_on_hand ?? 0);
+      const cost = Number(p.cost_usd ?? 0);
+      const price = Number(p.price_usd ?? 0);
+      const reorder = Number(p.reorder_level ?? 0);
       productMap.set(p.id, {
-        cost: Number(p.cost_usd ?? 0),
-        price: Number(p.price_usd ?? 0),
+        cost,
+        price,
         wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
-        reorder: Number(p.reorder_level ?? 0),
+        reorder,
+        stock,
       });
+      productTotals.units += stock;
+      productTotals.value += stock * cost;
+      productTotals.retail += stock * price;
+      productTotals.skus += 1;
+      if (reorder > 0 && stock > 0 && stock <= reorder) {
+        productTotals.lowSkus += 1;
+        productTotals.lowUnits += stock;
+      }
     });
 
     const aggregated: Record<string, LocationStats> = {};
@@ -329,6 +351,18 @@ export default function Warehouse() {
     // (matches the Products page count, since new products auto-provision
     // a Main Warehouse row).
     setTotalSkuCount(Math.max(allProductsWithRows.size, productMap.size));
+    setOverallStats({
+      ...productTotals,
+      skus: Math.max(allProductsWithRows.size, productMap.size),
+    });
+
+    const defaultLocation = locationsData.find((loc) => loc.is_default);
+    if (defaultLocation) {
+      aggregated[defaultLocation.id] = {
+        ...productTotals,
+        skus: Math.max(allProductsWithRows.size, productMap.size),
+      };
+    }
 
     // For supply-store (consignment) locations, replace `value` (cost) and `retail`
     // with LIFETIME totals from stock_movements so the card matches the detail page:
@@ -509,15 +543,12 @@ export default function Warehouse() {
     loadData();
   };
 
-  const totals = Object.values(stats).reduce(
-    (acc, s) => ({
-      units: acc.units + s.units,
-      value: acc.value + s.value,
-      retail: acc.retail + s.retail,
-      skus: totalSkuCount,
-    }),
-    { units: 0, value: 0, retail: 0, skus: 0 }
-  );
+  const totals = {
+    units: overallStats.units,
+    value: overallStats.value,
+    retail: overallStats.retail,
+    skus: totalSkuCount,
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
