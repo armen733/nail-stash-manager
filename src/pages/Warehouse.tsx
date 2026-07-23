@@ -158,6 +158,7 @@ export default function Warehouse() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [supplyStores, setSupplyStores] = useState<SupplyStoreLite[]>([]);
+  const [totalSkuCount, setTotalSkuCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<StockLocation | null>(null);
@@ -273,9 +274,11 @@ export default function Warehouse() {
     });
 
     const aggregated: Record<string, LocationStats> = {};
+    const netQtyByProduct = new Map<string, number>();
     (stockRes.data ?? []).forEach((row: any) => {
       const qty = Number(row.quantity ?? 0);
-      if (qty <= 0) return;
+      if (qty === 0) return;
+      netQtyByProduct.set(row.product_id, (netQtyByProduct.get(row.product_id) ?? 0) + qty);
       const prod = productMap.get(row.product_id);
       // True manufacturing cost — do NOT fall back to retail price (that inflates cost).
       const costPer = prod?.cost ?? 0;
@@ -304,13 +307,14 @@ export default function Warehouse() {
       cur.units += qty;
       cur.value += qty * costPer;
       cur.retail += qty * retailPer;
-      cur.skus += 1;
-      if (prod && prod.reorder > 0 && qty <= prod.reorder) {
+      if (qty > 0) cur.skus += 1;
+      if (prod && prod.reorder > 0 && qty > 0 && qty <= prod.reorder) {
         cur.lowSkus += 1;
         cur.lowUnits += qty;
       }
       aggregated[row.location_id] = cur;
     });
+    setTotalSkuCount([...netQtyByProduct.values()].filter((qty) => qty > 0).length);
 
     // For supply-store (consignment) locations, replace `value` (cost) and `retail`
     // with LIFETIME totals from stock_movements so the card matches the detail page:
@@ -496,7 +500,7 @@ export default function Warehouse() {
       units: acc.units + s.units,
       value: acc.value + s.value,
       retail: acc.retail + s.retail,
-      skus: acc.skus + s.skus,
+      skus: totalSkuCount,
     }),
     { units: 0, value: 0, retail: 0, skus: 0 }
   );
