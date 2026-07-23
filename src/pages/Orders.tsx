@@ -1833,9 +1833,22 @@ Thank you!`;
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-muted/50 rounded-lg p-3">
                     <Label className="text-xs text-muted-foreground">Name</Label>
-                    <div className="font-medium mt-1">{viewOrder.customer_name || viewOrder.salons?.name || "—"}</div>
+                    <div className="font-medium mt-1">
+                      {viewOrder.profile_id ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/users?userId=${viewOrder.profile_id}`)}
+                          className="text-primary hover:underline text-left"
+                        >
+                          {viewOrder.customer_name || viewOrder.salons?.name || "—"}
+                        </button>
+                      ) : (
+                        viewOrder.customer_name || viewOrder.salons?.name || "—"
+                      )}
+                    </div>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3">
+
                     <Label className="text-xs text-muted-foreground">Email</Label>
                     <div className="font-medium mt-1 break-all">
                       {viewOrder.customer_email ? (
