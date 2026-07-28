@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { memo } from "react";
 import { Package, Pencil, Copy, Trash2, ShoppingCart, Eye, Minus, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,19 +33,10 @@ const ProductCardComponent = ({
   onAddToCart,
   onRemoveFromCart,
 }: ProductCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
   const stockLevel = product.stock_on_hand || 0;
   const reorderLevel = product.reorder_level || 10;
   const isOutOfStock = stockLevel === 0;
   const isLowStock = stockLevel > 0 && stockLevel <= reorderLevel;
-
-  const firstImage = product.images && product.images.length > 0
-    ? product.images[0].image_url
-    : product.image_url;
-  const secondImage = product.images && product.images.length > 1
-    ? product.images[1].image_url
-    : null;
-
 
   return (
     <Card 
@@ -54,21 +45,28 @@ const ProductCardComponent = ({
         isSelected && "ring-2 ring-primary"
       )}
     >
-      <div
+      <div 
         className="aspect-square bg-muted relative overflow-hidden"
         onClick={onQuickView}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
-        {firstImage ? (
-          <LazyImage
-            src={firstImage}
+        {(product.images && product.images.length > 0) ? (
+          <LazyImage 
+            src={product.images[0].image_url} 
             alt={product.name}
             aspectRatio="square"
-            className={cn(
-              "w-full h-full transition-transform duration-500",
-              isHovered && secondImage ? "scale-100" : "group-hover:scale-105"
-            )}
+            className="w-full h-full group-hover:scale-105 transition-transform"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <Package className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+            }
+          />
+        ) : product.image_url ? (
+          <LazyImage 
+            src={product.image_url} 
+            alt={product.name}
+            aspectRatio="square"
+            className="w-full h-full group-hover:scale-105 transition-transform"
             fallback={
               <div className="w-full h-full flex items-center justify-center bg-muted">
                 <Package className="h-8 w-8 text-muted-foreground/30" />
@@ -79,18 +77,6 @@ const ProductCardComponent = ({
           <div className="w-full h-full flex items-center justify-center">
             <Package className="h-8 w-8 text-muted-foreground/30" />
           </div>
-        )}
-        {secondImage && (
-          <LazyImage
-            src={secondImage}
-            alt={`${product.name} - alternate view`}
-            aspectRatio="square"
-            className={cn(
-              "absolute inset-0 w-full h-full transition-opacity duration-500",
-              isHovered ? "opacity-100" : "opacity-0"
-            )}
-            fallback={null}
-          />
         )}
         <div className="absolute top-2 left-2" onClick={(e) => e.stopPropagation()}>
           <Checkbox
