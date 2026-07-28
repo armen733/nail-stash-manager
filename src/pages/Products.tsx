@@ -2603,13 +2603,33 @@ const Products = () => {
                         />
                       </div>
                       <div className="aspect-square bg-muted flex items-center justify-center overflow-hidden group relative">
-                        {(product.images && product.images.length > 0) ? (
-                          <img src={product.images[0].image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                        ) : product.image_url ? (
-                          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                        ) : (
-                          <Package className="h-16 w-16 text-muted-foreground/30" />
-                        )}
+                        {(() => {
+                          const firstImage = product.images && product.images.length > 0
+                            ? product.images[0].image_url
+                            : product.image_url;
+                          const secondImage = product.images && product.images.length > 1
+                            ? product.images[1].image_url
+                            : null;
+                          return firstImage ? (
+                            <>
+                              <img
+                                src={firstImage}
+                                alt={product.name}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                              {secondImage && (
+                                <img
+                                  src={secondImage}
+                                  alt={`${product.name} - alternate view`}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <Package className="h-16 w-16 text-muted-foreground/30" />
+                          );
+                        })()}
                         <Button
                           size="sm"
                           variant="secondary"
