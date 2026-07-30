@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toLocalDateStr } from "@/lib/timezone";
+import WebsiteCustomersMap, { CustomerPin } from "@/components/salons/WebsiteCustomersMap";
+import { Map as MapIcon } from "lucide-react";
 
 interface WebOrder {
   id: string;
@@ -46,6 +48,7 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 const WebsiteOrders = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [mapOpen, setMapOpen] = useState(false);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["website-orders-page"],
@@ -156,6 +159,11 @@ const WebsiteOrders = () => {
     .map(([city, v]) => ({ city, ...v }))
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
+
+  const mapPins: CustomerPin[] = customers
+    .filter((c) => !!c.address)
+    .map((c) => ({ name: c.name, address: c.address as string, orders: c.orders, revenue: c.revenue }));
+
 
   const goProfile = (id: string | null) =>
     id && navigate(`/users?userId=${id}&from=${encodeURIComponent("/salons/website-orders")}`);
@@ -331,11 +339,22 @@ const WebsiteOrders = () => {
         {/* LOCATIONS */}
         <TabsContent value="locations" className="mt-3">
           <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader className="p-3 sm:p-6">
+            <CardHeader className="p-3 sm:p-6 flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" /> Top shipping locations
               </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 shrink-0"
+                disabled={mapPins.length === 0}
+                onClick={() => setMapOpen(true)}
+              >
+                <MapIcon className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">View map</span>
+              </Button>
             </CardHeader>
+
             <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-2">
               {topCities.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
@@ -427,7 +446,10 @@ const WebsiteOrders = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={mapPins} />
     </div>
+
   );
 };
 
