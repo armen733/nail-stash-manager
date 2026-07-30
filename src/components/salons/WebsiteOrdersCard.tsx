@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Globe, ChevronDown, ChevronUp, User, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateShort } from "@/lib/timezone";
+import { toLocalDateStr } from "@/lib/timezone";
 
 interface WebOrder {
   id: string;
@@ -85,7 +85,7 @@ export const WebsiteOrdersCard = () => {
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {o.invoice_number ? `${o.invoice_number} · ` : ""}
-                    {formatDateShort(o.order_date)}
+                    {toLocalDateStr(o.order_date)}
                     {o.customer_email ? ` · ${o.customer_email}` : ""}
                   </p>
                 </div>
