@@ -1842,7 +1842,7 @@ Thank you!`;
                       {viewOrder.profile_id ? (
                         <button
                           type="button"
-                          onClick={() => navigate(`/users?userId=${viewOrder.profile_id}`)}
+                          onClick={() => navigate(`/users?userId=${viewOrder.profile_id}&from=${encodeURIComponent("/orders")}`)}
                           className="text-primary hover:underline text-left"
                         >
                           {viewOrder.customer_name || viewOrder.salons?.name || "—"}
