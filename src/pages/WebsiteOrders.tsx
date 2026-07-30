@@ -157,6 +157,11 @@ const WebsiteOrders = () => {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
 
+  const mapPins: CustomerPin[] = customers
+    .filter((c) => !!c.address)
+    .map((c) => ({ name: c.name, address: c.address as string, orders: c.orders, revenue: c.revenue }));
+
+
   const goProfile = (id: string | null) =>
     id && navigate(`/users?userId=${id}&from=${encodeURIComponent("/salons/website-orders")}`);
 
