@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toLocalDateStr } from "@/lib/timezone";
+import WebsiteCustomersMap, { CustomerPin } from "@/components/salons/WebsiteCustomersMap";
+import { Map as MapIcon } from "lucide-react";
 
 interface WebOrder {
   id: string;
