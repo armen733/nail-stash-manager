@@ -746,7 +746,7 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : (() => {
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : timePeriod === "custom" ? (customStart && customEnd ? `${customStart} → ${customEnd}` : "Custom range") : (() => {
     const [y, m] = timePeriod.split("-").map(Number);
     return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   })();
