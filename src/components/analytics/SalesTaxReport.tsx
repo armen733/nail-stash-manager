@@ -258,16 +258,17 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const firstDataRow = headerRow.number + 1;
 
     orders.forEach((o) => {
-      const s = Number(o.subtotal || 0);
+      const base = taxableBase(o);
       const t = Number(o.tax || 0);
       const r = ws.addRow([
         format(new Date(o.order_date), "MMM dd, yyyy"),
         getDocNumber(o),
-        s,
+        base,
         t,
-        computeCalc(s, t),
+        computeCalc(o),
         Number(o.total || 0),
       ]);
+
       r.eachCell((c, col) => {
         c.font = { name: "Arial" };
         if (col >= 3) c.numFmt = '$#,##0.00;($#,##0.00);"-"';
