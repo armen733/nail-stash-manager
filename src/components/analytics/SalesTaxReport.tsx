@@ -24,7 +24,13 @@ interface OrderRow {
   tax: number;
   total: number;
   status: string;
+  discount_amount: number | null;
+  shipping: number | null;
 }
+
+const taxableBase = (o: OrderRow) =>
+  Math.max(Number(o.subtotal || 0) - Number(o.discount_amount || 0), 0);
+
 
 interface Props {
   companyName?: string;
