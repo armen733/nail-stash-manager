@@ -39,7 +39,12 @@ interface WebOrder {
   order_items?: {
     quantity: number;
     line_total: number;
-    products: { name: string; sku: string; image_url: string | null } | null;
+    products: {
+      name: string;
+      sku: string;
+      image_url: string | null;
+      product_images?: { image_url: string; display_order: number }[] | null;
+    } | null;
   }[];
 }
 
@@ -56,7 +61,7 @@ const WebsiteOrders = () => {
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id, order_date, status, total, subtotal, invoice_number, customer_name, customer_email, customer_phone, customer_address, profile_id, order_items(quantity, line_total, products(name, sku, image_url))"
+          "id, order_date, status, total, subtotal, invoice_number, customer_name, customer_email, customer_phone, customer_address, profile_id, order_items(quantity, line_total, products(name, sku, image_url, product_images(image_url, display_order)))"
         )
         .is("salon_id", null)
         .is("created_by", null)
@@ -133,7 +138,12 @@ const WebsiteOrders = () => {
       const p = productMap.get(key) || {
         name: i.products.name,
         sku: i.products.sku,
-        image: i.products.image_url,
+        image:
+          i.products.image_url ||
+          [...(i.products.product_images || [])].sort(
+            (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+          )[0]?.image_url ||
+          null,
         qty: 0,
         revenue: 0,
       };
