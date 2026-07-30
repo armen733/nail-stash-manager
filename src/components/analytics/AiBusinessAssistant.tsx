@@ -437,6 +437,7 @@ export function AiBusinessAssistant() {
 
           <div className="flex gap-2">
             <Textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -446,7 +447,7 @@ export function AiBusinessAssistant() {
                 }
               }}
               placeholder="Ask about last month's sales, best salons, restocking…"
-              className="min-h-[44px] max-h-32 resize-none text-sm"
+              className={fullscreen ? "min-h-[60px] max-h-40 resize-none text-sm" : "min-h-[44px] max-h-32 resize-none text-sm"}
             />
             <Button onClick={() => ask(input)} disabled={loading || !input.trim()} size="icon" className="h-11 w-11 shrink-0">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
