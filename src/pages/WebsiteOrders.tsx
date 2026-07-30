@@ -446,7 +446,10 @@ const WebsiteOrders = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={mapPins} />
     </div>
+
   );
 };
 
