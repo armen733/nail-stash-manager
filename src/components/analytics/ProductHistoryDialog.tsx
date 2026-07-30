@@ -28,6 +28,7 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [stats, setStats] = useState({ totalUnits: 0, totalRevenue: 0, totalProfit: 0, orderCount: 0, firstSold: "", lastSold: "" });
   const [stock, setStock] = useState<number | null>(null);
+  const [thumb, setThumb] = useState<string | null>(null);
   const [unitCost, setUnitCost] = useState<number | null>(null);
   const [unitPrice, setUnitPrice] = useState<number | null>(null);
   const [unitMargin, setUnitMargin] = useState<number | null>(null);
@@ -36,12 +37,25 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
     if (!open || !productId) return;
     (async () => {
       setLoading(true);
+      setThumb(null);
       const { data: prod } = await supabase
         .from("products")
-        .select("stock_on_hand, cost_usd, wholesale_price_usd, price_usd, sku")
+        .select("stock_on_hand, cost_usd, wholesale_price_usd, price_usd, sku, image_url")
         .eq("id", productId)
         .maybeSingle();
       setStock(prod?.stock_on_hand ?? null);
+      if (prod?.image_url) {
+        setThumb(prod.image_url);
+      } else {
+        const { data: imgs } = await supabase
+          .from("product_images")
+          .select("image_url")
+          .eq("product_id", productId)
+          .order("display_order")
+          .limit(1);
+        setThumb(imgs?.[0]?.image_url ?? null);
+      }
+
       const costUsd = Number(prod?.cost_usd || 0);
       const resellPrice = Number(prod?.wholesale_price_usd || prod?.price_usd || 0);
       // Fallback to wholesale_price as cost only for profit calc when cost is missing
