@@ -229,11 +229,14 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const summary: [string, number][] = [
       ["Orders", orders.length],
       ["Total revenue (gross)", totals.total],
-      ["Taxable subtotal", totals.subtotal],
+      ["Discounts", totals.discounts],
+      ["Shipping (non-taxable)", totals.shipping],
+      ["Taxable base (after discounts)", totals.subtotal],
       ["Tax collected", totals.collected],
       ["Tax uncollected (calc.)", totals.uncollected],
       ["Total tax owed", totals.calculated],
     ];
+
     summary.forEach(([label, value], i) => {
       const r = ws.addRow([label, value]);
       r.getCell(1).font = { name: "Arial" };
