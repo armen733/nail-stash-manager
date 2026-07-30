@@ -158,6 +158,7 @@ const Orders = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
