@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown } from "lucide-react";
+import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
@@ -181,7 +181,68 @@ export function AiBusinessAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [days, setDays] = useState(90);
+  const [restored, setRestored] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Restore the saved conversation for the signed-in user
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      const { data } = await supabase
+        .from("ai_report_sessions")
+        .select("messages, days, updated_at")
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+      if (!active) return;
+      if (data) {
+        const saved = (data.messages as unknown as Msg[]) || [];
+        if (saved.length) setMessages(saved);
+        if (data.days) setDays(data.days);
+        setSavedAt(data.updated_at as string);
+      }
+      setRestored(true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Auto-save the conversation whenever it changes
+  useEffect(() => {
+    if (!restored || loading) return;
+    let active = true;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user || !active) return;
+      const { error } = await supabase
+        .from("ai_report_sessions")
+        .upsert(
+          { user_id: auth.user.id, messages: messages as unknown as any, days },
+          { onConflict: "user_id" }
+        );
+      if (error) {
+        console.error("Could not save AI report conversation", error);
+        return;
+      }
+      if (active) setSavedAt(new Date().toISOString());
+    })();
+    return () => {
+      active = false;
+    };
+  }, [messages, days, restored, loading]);
+
+  const clearConversation = async () => {
+    setMessages([]);
+    setSavedAt(null);
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      await supabase.from("ai_report_sessions").delete().eq("user_id", auth.user.id);
+    }
+    toast.success("Conversation cleared");
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -236,6 +297,16 @@ export function AiBusinessAssistant() {
               <option value={180}>Last 180 days</option>
               <option value={365}>Last year</option>
             </select>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              disabled={messages.length === 0}
+              title="Clear saved conversation"
+              onClick={clearConversation}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -299,6 +370,12 @@ export function AiBusinessAssistant() {
               </div>
             )}
           </div>
+
+          {savedAt && messages.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Conversation saved · last updated {format(new Date(savedAt), "MMM dd, yyyy p")}
+            </p>
+          )}
 
           <div className="flex gap-2">
             <Textarea
