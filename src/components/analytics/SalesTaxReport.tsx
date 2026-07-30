@@ -189,7 +189,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     doc.setFontSize(8);
     doc.setTextColor(120);
     doc.text(
-      "Calculated Tax = Tax Collected when charged, otherwise Subtotal × current tax rate. Cancelled orders excluded.",
+      "Calculated Tax = Tax Collected when charged, otherwise taxable base (subtotal − discounts, shipping excluded) × current tax rate. Cancelled orders excluded.",
       pageWidth / 2,
       pageHeight - 10,
       { align: "center" }
@@ -299,7 +299,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
 
     ws.addRow([]);
     const note = ws.addRow([
-      "Calculated Tax = Tax Collected when charged, otherwise Subtotal × current tax rate. Cancelled orders excluded.",
+      "Calculated Tax = Tax Collected when charged, otherwise taxable base (subtotal − discounts, shipping excluded) × current tax rate. Cancelled orders excluded.",
     ]);
     note.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF787878" } };
 
