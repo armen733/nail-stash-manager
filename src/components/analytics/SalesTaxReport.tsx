@@ -66,7 +66,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
       const to = format(range.to!, "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("orders")
-        .select("id, invoice_number, order_date, subtotal, tax, total, status")
+        .select("id, invoice_number, order_date, subtotal, tax, total, status, discount_amount, shipping")
         .gte("order_date", from)
         .lte("order_date", to)
         .in("status", ["Draft", "Confirmed", "Paid", "Shipped", "Delivered"])
@@ -80,26 +80,34 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     })();
   }, [open, range?.from, range?.to, toast]);
 
-  const computeCalc = (sub: number, tax: number) =>
-    forceTaxable ? +(sub * (activeRate / 100)).toFixed(2) : tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+  // Tax is owed on the discounted merchandise subtotal (shipping excluded).
+  const computeCalc = (o: OrderRow) => {
+    const base = taxableBase(o);
+    const tax = Number(o.tax || 0);
+    if (forceTaxable) return +(base * (activeRate / 100)).toFixed(2);
+    return tax > 0 ? tax : +(base * (activeRate / 100)).toFixed(2);
+  };
 
   const totals = orders.reduce(
     (a, o) => {
-      const sub = Number(o.subtotal || 0);
+      const base = taxableBase(o);
       const tax = Number(o.tax || 0);
       const total = Number(o.total || 0);
-      const calcTax = computeCalc(sub, tax);
+      const calcTax = computeCalc(o);
       const uncollectedPer = Math.max(calcTax - tax, 0);
       return {
-        subtotal: a.subtotal + sub,
+        subtotal: a.subtotal + base,
+        discounts: a.discounts + Number(o.discount_amount || 0),
+        shipping: a.shipping + Number(o.shipping || 0),
         total: a.total + total,
         collected: a.collected + tax,
         calculated: a.calculated + calcTax,
         uncollected: a.uncollected + uncollectedPer,
       };
     },
-    { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
+    { subtotal: 0, discounts: 0, shipping: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
   );
+
 
   const getDocNumber = (o: OrderRow) =>
     docNumberMode === "invoice" ? o.invoice_number ?? "—" : o.id.slice(0, 8).toUpperCase();
