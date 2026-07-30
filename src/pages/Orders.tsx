@@ -2535,11 +2535,11 @@ Thank you!`;
               
               <div className="hidden sm:block h-6 w-px bg-border mx-1" />
               
-              {/* Status Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Status:</span>
+              {/* Status & Source Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground shrink-0">Status:</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-[130px] text-xs">
+                  <SelectTrigger className="h-8 w-[110px] text-xs">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2551,13 +2551,10 @@ Thank you!`;
                     <SelectItem value="Paid">Paid</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              {/* Source Filter */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Source:</span>
+                <span className="text-sm text-muted-foreground shrink-0">Source:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                  <SelectTrigger className="h-8 w-[120px] text-xs">
                     <SelectValue placeholder="All sources" />
                   </SelectTrigger>
                   <SelectContent>
