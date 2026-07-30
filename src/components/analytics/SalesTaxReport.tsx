@@ -24,7 +24,13 @@ interface OrderRow {
   tax: number;
   total: number;
   status: string;
+  discount_amount: number | null;
+  shipping: number | null;
 }
+
+const taxableBase = (o: OrderRow) =>
+  Math.max(Number(o.subtotal || 0) - Number(o.discount_amount || 0), 0);
+
 
 interface Props {
   companyName?: string;
@@ -60,7 +66,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
       const to = format(range.to!, "yyyy-MM-dd");
       const { data, error } = await supabase
         .from("orders")
-        .select("id, invoice_number, order_date, subtotal, tax, total, status")
+        .select("id, invoice_number, order_date, subtotal, tax, total, status, discount_amount, shipping")
         .gte("order_date", from)
         .lte("order_date", to)
         .in("status", ["Draft", "Confirmed", "Paid", "Shipped", "Delivered"])
@@ -74,26 +80,34 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     })();
   }, [open, range?.from, range?.to, toast]);
 
-  const computeCalc = (sub: number, tax: number) =>
-    forceTaxable ? +(sub * (activeRate / 100)).toFixed(2) : tax > 0 ? tax : +(sub * (activeRate / 100)).toFixed(2);
+  // Tax is owed on the discounted merchandise subtotal (shipping excluded).
+  const computeCalc = (o: OrderRow) => {
+    const base = taxableBase(o);
+    const tax = Number(o.tax || 0);
+    if (forceTaxable) return +(base * (activeRate / 100)).toFixed(2);
+    return tax > 0 ? tax : +(base * (activeRate / 100)).toFixed(2);
+  };
 
   const totals = orders.reduce(
     (a, o) => {
-      const sub = Number(o.subtotal || 0);
+      const base = taxableBase(o);
       const tax = Number(o.tax || 0);
       const total = Number(o.total || 0);
-      const calcTax = computeCalc(sub, tax);
+      const calcTax = computeCalc(o);
       const uncollectedPer = Math.max(calcTax - tax, 0);
       return {
-        subtotal: a.subtotal + sub,
+        subtotal: a.subtotal + base,
+        discounts: a.discounts + Number(o.discount_amount || 0),
+        shipping: a.shipping + Number(o.shipping || 0),
         total: a.total + total,
         collected: a.collected + tax,
         calculated: a.calculated + calcTax,
         uncollected: a.uncollected + uncollectedPer,
       };
     },
-    { subtotal: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
+    { subtotal: 0, discounts: 0, shipping: 0, total: 0, collected: 0, calculated: 0, uncollected: 0 }
   );
+
 
   const getDocNumber = (o: OrderRow) =>
     docNumberMode === "invoice" ? o.invoice_number ?? "—" : o.id.slice(0, 8).toUpperCase();
@@ -133,28 +147,30 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     doc.setFont("helvetica", "normal");
     doc.text(`Orders: ${orders.length}`, 14, 48);
     doc.text(`Total revenue (gross): $${totals.total.toFixed(2)}`, 14, 54);
-    doc.text(`Taxable subtotal: $${totals.subtotal.toFixed(2)}`, 14, 60);
+    doc.text(`Taxable base (after discounts, excl. shipping): $${totals.subtotal.toFixed(2)}`, 14, 60);
+    doc.text(`Discounts: $${totals.discounts.toFixed(2)}   Shipping: $${totals.shipping.toFixed(2)}`, 14, 66);
     doc.text(`Tax collected: $${totals.collected.toFixed(2)}`, pageWidth - 14, 48, { align: "right" });
     doc.text(`Tax uncollected (calc.): $${totals.uncollected.toFixed(2)}`, pageWidth - 14, 54, { align: "right" });
     doc.setFont("helvetica", "bold");
     doc.text(`Total tax owed: $${totals.calculated.toFixed(2)}`, pageWidth - 14, 60, { align: "right" });
 
     autoTable(doc, {
-      startY: 70,
-      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
+      startY: 76,
+      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Taxable Base", "Tax Collected", "Calculated Tax", "Total"]],
       body: orders.map((o) => {
-        const sub = Number(o.subtotal || 0);
+        const base = taxableBase(o);
         const tax = Number(o.tax || 0);
-        const calcTax = computeCalc(sub, tax);
+        const calcTax = computeCalc(o);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
           getDocNumber(o),
-          `$${sub.toFixed(2)}`,
+          `$${base.toFixed(2)}`,
           `$${tax.toFixed(2)}`,
           `$${calcTax.toFixed(2)}`,
           `$${Number(o.total || 0).toFixed(2)}`,
         ];
       }),
+
       foot: [[
         "",
         "Totals",
@@ -173,7 +189,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     doc.setFontSize(8);
     doc.setTextColor(120);
     doc.text(
-      "Calculated Tax = Tax Collected when charged, otherwise Subtotal × current tax rate. Cancelled orders excluded.",
+      "Calculated Tax = Tax Collected when charged, otherwise taxable base (subtotal − discounts, shipping excluded) × current tax rate. Cancelled orders excluded.",
       pageWidth / 2,
       pageHeight - 10,
       { align: "center" }
@@ -213,11 +229,14 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const summary: [string, number][] = [
       ["Orders", orders.length],
       ["Total revenue (gross)", totals.total],
-      ["Taxable subtotal", totals.subtotal],
+      ["Discounts", totals.discounts],
+      ["Shipping (non-taxable)", totals.shipping],
+      ["Taxable base (after discounts)", totals.subtotal],
       ["Tax collected", totals.collected],
       ["Tax uncollected (calc.)", totals.uncollected],
       ["Total tax owed", totals.calculated],
     ];
+
     summary.forEach(([label, value], i) => {
       const r = ws.addRow([label, value]);
       r.getCell(1).font = { name: "Arial" };
@@ -229,7 +248,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const headerRow = ws.addRow([
       "Date",
       docNumberMode === "invoice" ? "Invoice #" : "Order #",
-      "Subtotal",
+      "Taxable Base",
       "Tax Collected",
       "Calculated Tax",
       "Total",
@@ -242,16 +261,17 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const firstDataRow = headerRow.number + 1;
 
     orders.forEach((o) => {
-      const s = Number(o.subtotal || 0);
+      const base = taxableBase(o);
       const t = Number(o.tax || 0);
       const r = ws.addRow([
         format(new Date(o.order_date), "MMM dd, yyyy"),
         getDocNumber(o),
-        s,
+        base,
         t,
-        computeCalc(s, t),
+        computeCalc(o),
         Number(o.total || 0),
       ]);
+
       r.eachCell((c, col) => {
         c.font = { name: "Arial" };
         if (col >= 3) c.numFmt = '$#,##0.00;($#,##0.00);"-"';
@@ -279,7 +299,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
 
     ws.addRow([]);
     const note = ws.addRow([
-      "Calculated Tax = Tax Collected when charged, otherwise Subtotal × current tax rate. Cancelled orders excluded.",
+      "Calculated Tax = Tax Collected when charged, otherwise taxable base (subtotal − discounts, shipping excluded) × current tax rate. Cancelled orders excluded.",
     ]);
     note.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF787878" } };
 
@@ -418,7 +438,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                 <tr>
                   <th className="text-left p-2">Date</th>
                   <th className="text-left p-2">{docNumberMode === "invoice" ? "Invoice #" : "Order #"}</th>
-                  <th className="text-right p-2">Subtotal</th>
+                  <th className="text-right p-2">Taxable Base</th>
                   <th className="text-right p-2">Tax Collected</th>
                   <th className="text-right p-2">Calc. Tax</th>
                   <th className="text-right p-2">Total</th>
@@ -439,9 +459,10 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                   </tr>
                 ) : (
                   orders.map((o) => {
-                    const sub = Number(o.subtotal || 0);
+                    const sub = taxableBase(o);
                     const tax = Number(o.tax || 0);
-                    const calc = computeCalc(sub, tax);
+                    const calc = computeCalc(o);
+
                     return (
                       <tr key={o.id} className="border-t">
                         <td className="p-2">{format(new Date(o.order_date), "MMM dd, yyyy")}</td>
@@ -472,7 +493,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
           <p className="text-[11px] text-muted-foreground">
             <FileText className="h-3 w-3 inline mr-1" />
             "Calc. Tax" uses the tax actually charged on the order when present; otherwise it applies the
-            current {taxName} rate ({activeRate}%) to the subtotal. This lets you report the full tax
+            current {taxName} rate ({activeRate}%) to the taxable base (subtotal minus discounts, shipping excluded). This lets you report the full tax
             liability even for orders that weren't charged tax at checkout.
           </p>
         </CardContent>
