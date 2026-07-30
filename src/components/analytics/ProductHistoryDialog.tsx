@@ -124,11 +124,21 @@ export function ProductHistoryDialog({ productId, productName, sku, open, onOpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
-            {productName}
-            {sku && <Badge variant="outline" className="font-mono text-xs">{sku}</Badge>}
+          <DialogTitle className="flex items-center gap-3">
+            <div className="h-14 w-14 shrink-0 rounded-md border bg-muted overflow-hidden flex items-center justify-center">
+              {thumb ? (
+                <img src={thumb} alt={productName || "Product"} className="h-full w-full object-cover" loading="lazy" />
+              ) : (
+                <Package className="h-6 w-6 text-muted-foreground/40" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="truncate">{productName}</span>
+              {sku && <Badge variant="outline" className="font-mono text-xs">{sku}</Badge>}
+            </div>
           </DialogTitle>
         </DialogHeader>
+
 
         {loading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
