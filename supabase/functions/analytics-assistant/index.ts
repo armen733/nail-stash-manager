@@ -204,9 +204,11 @@ Rules:
 - Money as $1,234.56. Never invent products, salons or numbers that are not in the data.
 - If the snapshot lacks the data needed (e.g. a period outside the window), say so briefly and answer with what is available.
 - When asked for recommendations, give 3-5 prioritized, actionable steps (restock, push, discontinue, upsell a specific salon).
-- Keep answers under ~250 words unless a longer list is explicitly requested.`;
+- Keep answers under ~250 words unless a longer list is explicitly requested.
+- The messages before the current question are the earlier conversation in this same ${days}-day period. Treat them as context: resolve follow-ups like "that salon", "those bits", "and last month?", "why?" against what was already discussed, and do not ask the owner to repeat information already given.
+- Do not repeat a full list you already gave; answer only the new part of the follow-up.`;
 
-    const history = (body.messages || []).slice(-8).map((m) => ({
+    const history = (body.messages || []).slice(-16).map((m) => ({
       role: m.role,
       content: String(m.content || "").slice(0, 4000),
     }));

@@ -14,6 +14,8 @@ import { toast } from "sonner";
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  /** Analysis period this message was asked/answered under */
+  days?: number;
 }
 
 const SUGGESTIONS = [
@@ -251,8 +253,11 @@ export function AiBusinessAssistant() {
   const ask = async (question: string) => {
     const q = question.trim();
     if (!q || loading) return;
-    const history = messages;
-    setMessages((m) => [...m, { role: "user", content: q }]);
+    // Only carry over the conversation from the same analysis period
+    const history = messages
+      .filter((m) => (m.days ?? days) === days)
+      .map(({ role, content }) => ({ role, content }));
+    setMessages((m) => [...m, { role: "user", content: q, days }]);
     setInput("");
     setLoading(true);
     try {
@@ -261,7 +266,7 @@ export function AiBusinessAssistant() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setMessages((m) => [...m, { role: "assistant", content: (data as any).answer }]);
+      setMessages((m) => [...m, { role: "assistant", content: (data as any).answer, days }]);
     } catch (e: any) {
       const msg = String(e?.message || e);
       toast.error(
@@ -271,7 +276,7 @@ export function AiBusinessAssistant() {
           ? "AI credits exhausted. Add credits in Settings → Plans & Credits."
           : "Could not get an answer: " + msg
       );
-      setMessages((m) => [...m, { role: "assistant", content: "Sorry — I couldn't analyze that just now. Please try again." }]);
+      setMessages((m) => [...m, { role: "assistant", content: "Sorry — I couldn't analyze that just now. Please try again.", days }]);
     } finally {
       setLoading(false);
     }
@@ -288,7 +293,13 @@ export function AiBusinessAssistant() {
           <div className="flex items-center gap-2">
             <select
               value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setDays(next);
+                if (messages.length) {
+                  toast.info(`Switched to last ${next} days — earlier answers stay above, new questions use the new period.`);
+                }
+              }}
               className="h-8 rounded-md border bg-background px-2 text-xs"
               aria-label="Analysis period"
             >
@@ -360,6 +371,11 @@ export function AiBusinessAssistant() {
                   {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5 text-primary" />}
                 </div>
                 <div className="min-w-0 flex-1 space-y-1 leading-relaxed text-foreground/90">
+                  {m.days != null && m.days !== days && (
+                    <span className="inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      last {m.days} days
+                    </span>
+                  )}
                   {renderBlocks(m.content)}
                 </div>
               </div>
