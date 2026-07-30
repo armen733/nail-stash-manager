@@ -39,7 +39,12 @@ interface WebOrder {
   order_items?: {
     quantity: number;
     line_total: number;
-    products: { name: string; sku: string; image_url: string | null } | null;
+    products: {
+      name: string;
+      sku: string;
+      image_url: string | null;
+      product_images?: { image_url: string; display_order: number }[] | null;
+    } | null;
   }[];
 }
 
