@@ -20,25 +20,66 @@ const SUGGESTIONS = [
   "What do you recommend I focus on this month?",
 ];
 
-// Minimal markdown -> HTML-free renderer (bold, bullets, headings)
-function renderLine(line: string, i: number) {
-  const bulleted = /^\s*[-*]\s+/.test(line);
-  const text = line.replace(/^\s*[-*]\s+/, "").replace(/^#+\s*/, "");
-  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-  const content = parts.map((p, k) =>
+function inline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
+  return parts.map((p, k) =>
     p.startsWith("**") && p.endsWith("**") ? (
       <strong key={k} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>
+    ) : p.startsWith("`") && p.endsWith("`") ? (
+      <code key={k} className="font-mono text-xs px-1 rounded bg-muted">{p.slice(1, -1)}</code>
     ) : (
       <span key={k}>{p}</span>
     )
   );
-  if (!text.trim()) return <div key={i} className="h-2" />;
-  return (
-    <p key={i} className={bulleted ? "pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-primary" : ""}>
-      {content}
-    </p>
-  );
 }
+
+const cells = (row: string) =>
+  row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map((c) => c.trim());
+
+// Render a light subset of markdown: bold, code, bullets and pipe tables
+function renderBlocks(content: string) {
+  const lines = content.split("\n");
+  const out: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      const block: string[] = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) block.push(lines[i++]);
+      const rows = block.filter((r) => !/^\s*\|[\s:|-]+\|\s*$/.test(r)).map(cells);
+      if (rows.length) {
+        const [head, ...body] = rows;
+        out.push(
+          <div key={`t${i}`} className="overflow-x-auto rounded-md border my-1">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50">
+                <tr>{head.map((h, k) => <th key={k} className="px-2 py-1.5 text-left font-medium whitespace-nowrap">{inline(h)}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y">
+                {body.map((r, k) => (
+                  <tr key={k}>{r.map((c, n) => <td key={n} className="px-2 py-1.5 whitespace-nowrap">{inline(c)}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+    const bulleted = /^\s*[-*]\s+/.test(line);
+    const text = line.replace(/^\s*[-*]\s+/, "").replace(/^#+\s*/, "");
+    if (!text.trim()) out.push(<div key={i} className="h-2" />);
+    else
+      out.push(
+        <p key={i} className={bulleted ? "pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-primary" : ""}>
+          {inline(text)}
+        </p>
+      );
+    i++;
+  }
+  return out;
+}
+
 
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
