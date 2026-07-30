@@ -157,7 +157,8 @@ const WebsiteOrders = () => {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
 
-  const goProfile = (id: string | null) => id && navigate(`/users?userId=${id}`);
+  const goProfile = (id: string | null) =>
+    id && navigate(`/users?userId=${id}&from=${encodeURIComponent("/salons/website-orders")}`);
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
