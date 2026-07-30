@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, Area, AreaChart, BarChart, Bar, Tooltip, Sector } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toLocalDateStr, todayLocalStr, getLocalDay, formatLocalDate } from "@/lib/timezone";
 import { downloadCSV } from "@/lib/csv-export";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -149,6 +150,8 @@ const Index = () => {
   const [topSupplyStoresOpen, setTopSupplyStoresOpen] = useState(false);
   const [stockValueOpen, setStockValueOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<string>("month");
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
@@ -205,8 +208,9 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (timePeriod === "custom" && (!customStart || !customEnd)) return;
     fetchDashboardData();
-  }, [timePeriod]);
+  }, [timePeriod, customStart, customEnd]);
 
   const fetchDashboardData = async () => {
     try {
@@ -224,12 +228,18 @@ const Index = () => {
         periodStart = monday.toISOString();
       } else if (timePeriod === "month") {
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else if (timePeriod === "custom") {
+        const [sy, sm, sd] = customStart.split("-").map(Number);
+        const [ey, em, ed] = customEnd.split("-").map(Number);
+        periodStart = new Date(sy, sm - 1, sd).toISOString();
+        periodEnd = new Date(ey, em - 1, ed + 1).toISOString();
       } else {
         // Specific month: "2026-01", "2026-02", etc.
         const [year, month] = timePeriod.split("-").map(Number);
         periodStart = new Date(year, month - 1, 1).toISOString();
         periodEnd = new Date(year, month, 1).toISOString();
       }
+
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes] = await Promise.all([
@@ -493,11 +503,21 @@ const Index = () => {
       setLowStockProducts(lowStock);
 
       // Calculate revenue trend data
-      const isSpecificMonth = timePeriod.includes("-");
+      const isCustom = timePeriod === "custom";
+      const isSpecificMonth = timePeriod.includes("-") && !isCustom;
       let days: number;
       let trendStartDate: Date;
       
-      if (isSpecificMonth) {
+      if (isCustom) {
+        const [sy, sm, sd] = customStart.split("-").map(Number);
+        const [ey, em, ed] = customEnd.split("-").map(Number);
+        trendStartDate = new Date(sy, sm - 1, sd);
+        const endD = new Date(ey, em - 1, ed);
+        days = Math.min(
+          370,
+          Math.max(1, Math.round((endD.getTime() - trendStartDate.getTime()) / 86400000) + 1)
+        );
+      } else if (isSpecificMonth) {
         const [year, month] = timePeriod.split("-").map(Number);
         trendStartDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0); // last day of month
@@ -531,7 +551,7 @@ const Index = () => {
         const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
         
         trendData.push({
-          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
         });
       }
@@ -643,7 +663,7 @@ const Index = () => {
         const margin = dayRevenue > 0 ? (dayProfit / dayRevenue) * 100 : 0;
         
         profitTrend.push({
-          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
           cost: dayCost,
           profit: dayProfit,
@@ -727,7 +747,7 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : (() => {
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : timePeriod === "custom" ? (customStart && customEnd ? `${customStart} → ${customEnd}` : "Custom range") : (() => {
     const [y, m] = timePeriod.split("-").map(Number);
     return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   })();
@@ -843,6 +863,7 @@ const Index = () => {
               <SelectItem value="day">Today</SelectItem>
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="custom">Custom range…</SelectItem>
               {(() => {
                 const now = new Date();
                 const months = [];
@@ -856,6 +877,25 @@ const Index = () => {
               })()}
             </SelectContent>
           </Select>
+          {timePeriod === "custom" && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="min-h-[44px] w-full sm:w-[150px]"
+              />
+              <span className="text-muted-foreground text-sm">→</span>
+              <Input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="min-h-[44px] w-full sm:w-[150px]"
+              />
+            </div>
+          )}
           <Button onClick={exportDashboardData} variant="outline" size="default" className="min-h-[44px] flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
             Export
