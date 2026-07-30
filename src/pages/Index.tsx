@@ -550,7 +550,7 @@ const Index = () => {
         const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
         
         trendData.push({
-          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
         });
       }
@@ -662,7 +662,7 @@ const Index = () => {
         const margin = dayRevenue > 0 ? (dayProfit / dayRevenue) * 100 : 0;
         
         profitTrend.push({
-          date: isSpecificMonth || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
           cost: dayCost,
           profit: dayProfit,
