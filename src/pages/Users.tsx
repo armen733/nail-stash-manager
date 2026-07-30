@@ -527,11 +527,22 @@ export default function Users() {
       </Card>
 
       {/* Customer Details Sheet */}
-      <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+      <Sheet open={!!selectedUser} onOpenChange={(open) => { if (!open) { setSelectedUser(null); setBackTo(null); } }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
+            {backTo && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start -ml-2 mb-1 h-8 text-muted-foreground"
+                onClick={() => { setSelectedUser(null); navigate(backTo); }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" /> Back
+              </Button>
+            )}
             <SheetTitle>Customer Profile</SheetTitle>
           </SheetHeader>
+
           
           {selectedUser && (
             <div className="mt-6 space-y-6">
