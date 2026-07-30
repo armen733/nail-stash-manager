@@ -493,7 +493,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
           <p className="text-[11px] text-muted-foreground">
             <FileText className="h-3 w-3 inline mr-1" />
             "Calc. Tax" uses the tax actually charged on the order when present; otherwise it applies the
-            current {taxName} rate ({activeRate}%) to the subtotal. This lets you report the full tax
+            current {taxName} rate ({activeRate}%) to the taxable base (subtotal minus discounts, shipping excluded). This lets you report the full tax
             liability even for orders that weren't charged tax at checkout.
           </p>
         </CardContent>
