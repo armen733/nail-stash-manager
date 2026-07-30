@@ -201,6 +201,17 @@ const App = () => (
               }
             />
             <Route
+              path="/salons/website-orders"
+              element={
+                <ManagerRoute>
+                  <AppLayout>
+                    <WebsiteOrders />
+                  </AppLayout>
+                </ManagerRoute>
+              }
+            />
+            <Route
+
               path="/users"
               element={
                 <ManagerRoute>
