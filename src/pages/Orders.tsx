@@ -2536,10 +2536,10 @@ Thank you!`;
               <div className="hidden sm:block h-6 w-px bg-border mx-1" />
               
               {/* Status & Source Filters */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-nowrap items-center gap-2">
                 <span className="text-sm text-muted-foreground shrink-0">Status:</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-[110px] text-xs">
+                  <SelectTrigger className="h-8 w-[105px] text-xs shrink-0">
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2554,7 +2554,7 @@ Thank you!`;
 
                 <span className="text-sm text-muted-foreground shrink-0">Source:</span>
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="h-8 w-[120px] text-xs">
+                  <SelectTrigger className="h-8 w-[115px] text-xs shrink-0">
                     <SelectValue placeholder="All sources" />
                   </SelectTrigger>
                   <SelectContent>
