@@ -934,14 +934,16 @@ const Orders = () => {
       || orderIdShort.includes(normalizedSearch.replace(/^#/, ''))
       || invoice.includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesSource = sourceFilter === "all"
+      || (sourceFilter === "website" ? !order.created_by : !!order.created_by);
     
     // Date range filter - compare date strings to avoid timezone issues
     const orderDateStr = order.order_date; // "YYYY-MM-DD" format
     const matchesDateFrom = !dateFrom || orderDateStr >= format(dateFrom, 'yyyy-MM-dd');
     const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
     
-    return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
-  }, [searchTerm, statusFilter, dateFrom, dateTo]);
+    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
+  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo]);
 
   // Memoize filtered orders
   const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
