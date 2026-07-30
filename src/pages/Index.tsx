@@ -380,7 +380,7 @@ const Index = () => {
       // Calculate top salons
       const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string }>, order) => {
         const salonId = order.salon_id;
-        const salonName = order.salons?.name || "Unknown";
+        const salonName = order.salons?.name || (order.salon_id ? "Unknown" : "Website orders");
         if (!acc[salonId]) {
           acc[salonId] = { count: 0, revenue: 0, name: salonName };
         }
