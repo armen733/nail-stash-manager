@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map, ShoppingBag } from "lucide-react";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { WebsiteOrdersCard } from "@/components/salons/WebsiteOrdersCard";
+
 import { downloadCSV } from "@/lib/csv-export";
 import { logAudit } from "@/lib/audit-log";
 import { LazyAnalyticsMap } from "@/components/lazy/LazyAnalyticsMap";
