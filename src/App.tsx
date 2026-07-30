@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,30 +12,32 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ManagerRoute } from "@/components/ManagerRoute";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import logoLight from "@/assets/nera-logo-transparent.png";
 import logoDark from "@/assets/nera-logo-dark.png";
 import { BottomNav } from "@/components/BottomNav";
 
-// Lazy load pages for better performance
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Products = lazy(() => import("./pages/Products"));
-const Salons = lazy(() => import("./pages/Salons"));
-const Orders = lazy(() => import("./pages/Orders"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Analytics = lazy(() => import("./pages/Analytics"));
+// Lazy load pages for better performance (retry + reload on stale chunks)
+const Index = lazyWithRetry(() => import("./pages/Index"));
+const Auth = lazyWithRetry(() => import("./pages/Auth"));
+const Products = lazyWithRetry(() => import("./pages/Products"));
+const Salons = lazyWithRetry(() => import("./pages/Salons"));
+const Orders = lazyWithRetry(() => import("./pages/Orders"));
+const Profile = lazyWithRetry(() => import("./pages/Profile"));
+const Analytics = lazyWithRetry(() => import("./pages/Analytics"));
 
-const Warehouse = lazy(() => import("./pages/Warehouse"));
-const WarehouseLocationDetail = lazy(() => import("./pages/WarehouseLocationDetail"));
-const Users = lazy(() => import("./pages/Users"));
-const Promotions = lazy(() => import("./pages/Promotions"));
-const VisitTracker = lazy(() => import("./pages/VisitTracker"));
-const SalonProfile = lazy(() => import("./pages/SalonProfile"));
-const Referrals = lazy(() => import("./pages/Referrals"));
-const ReferrerProfile = lazy(() => import("./pages/ReferrerProfile"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const AuditLog = lazy(() => import("./pages/AuditLog"));
-const SupplyStores = lazy(() => import("./pages/SupplyStores"));
+const Warehouse = lazyWithRetry(() => import("./pages/Warehouse"));
+const WarehouseLocationDetail = lazyWithRetry(() => import("./pages/WarehouseLocationDetail"));
+const Users = lazyWithRetry(() => import("./pages/Users"));
+const Promotions = lazyWithRetry(() => import("./pages/Promotions"));
+const VisitTracker = lazyWithRetry(() => import("./pages/VisitTracker"));
+const SalonProfile = lazyWithRetry(() => import("./pages/SalonProfile"));
+const Referrals = lazyWithRetry(() => import("./pages/Referrals"));
+const ReferrerProfile = lazyWithRetry(() => import("./pages/ReferrerProfile"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const AuditLog = lazyWithRetry(() => import("./pages/AuditLog"));
+const SupplyStores = lazyWithRetry(() => import("./pages/SupplyStores"));
+
 
 // Configure React Query with better caching defaults
 const queryClient = new QueryClient({
