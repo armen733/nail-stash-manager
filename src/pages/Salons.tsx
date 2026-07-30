@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Building2, Search, Plus, Pencil, Trash2, Download, Filter, Phone, MapPin, Mail, Map, ShoppingBag } from "lucide-react";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
+import { WebsiteOrdersCard } from "@/components/salons/WebsiteOrdersCard";
+
 import { downloadCSV } from "@/lib/csv-export";
 import { logAudit } from "@/lib/audit-log";
 import { LazyAnalyticsMap } from "@/components/lazy/LazyAnalyticsMap";
@@ -415,7 +417,10 @@ const Salons = () => {
         </div>
       </div>
 
+      <WebsiteOrdersCard />
+
       <Card className="shadow-[var(--shadow-card)]">
+
         <CardHeader className="p-3 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
