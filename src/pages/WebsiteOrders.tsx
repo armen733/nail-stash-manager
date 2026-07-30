@@ -339,11 +339,22 @@ const WebsiteOrders = () => {
         {/* LOCATIONS */}
         <TabsContent value="locations" className="mt-3">
           <Card className="shadow-[var(--shadow-card)]">
-            <CardHeader className="p-3 sm:p-6">
+            <CardHeader className="p-3 sm:p-6 flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" /> Top shipping locations
               </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 shrink-0"
+                disabled={mapPins.length === 0}
+                onClick={() => setMapOpen(true)}
+              >
+                <MapIcon className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">View map</span>
+              </Button>
             </CardHeader>
+
             <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-2">
               {topCities.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
