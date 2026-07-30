@@ -507,7 +507,16 @@ const Index = () => {
       let days: number;
       let trendStartDate: Date;
       
-      if (isSpecificMonth) {
+      if (isCustom) {
+        const [sy, sm, sd] = customStart.split("-").map(Number);
+        const [ey, em, ed] = customEnd.split("-").map(Number);
+        trendStartDate = new Date(sy, sm - 1, sd);
+        const endD = new Date(ey, em - 1, ed);
+        days = Math.min(
+          370,
+          Math.max(1, Math.round((endD.getTime() - trendStartDate.getTime()) / 86400000) + 1)
+        );
+      } else if (isSpecificMonth) {
         const [year, month] = timePeriod.split("-").map(Number);
         trendStartDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0); // last day of month
