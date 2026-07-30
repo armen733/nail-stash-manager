@@ -2552,6 +2552,21 @@ Thank you!`;
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Source Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Source:</span>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                    <SelectValue placeholder="All sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="website">Website Orders</SelectItem>
+                    <SelectItem value="manual">In-Person / Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
