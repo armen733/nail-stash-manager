@@ -37,6 +37,8 @@ const ReferrerProfile = lazyWithRetry(() => import("./pages/ReferrerProfile"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 const AuditLog = lazyWithRetry(() => import("./pages/AuditLog"));
 const SupplyStores = lazyWithRetry(() => import("./pages/SupplyStores"));
+const WebsiteOrders = lazyWithRetry(() => import("./pages/WebsiteOrders"));
+
 
 
 // Configure React Query with better caching defaults
