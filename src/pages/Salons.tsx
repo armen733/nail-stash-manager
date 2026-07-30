@@ -415,7 +415,10 @@ const Salons = () => {
         </div>
       </div>
 
+      <WebsiteOrdersCard />
+
       <Card className="shadow-[var(--shadow-card)]">
+
         <CardHeader className="p-3 sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1 w-full">
