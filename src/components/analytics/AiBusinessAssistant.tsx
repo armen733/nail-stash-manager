@@ -380,7 +380,7 @@ export function AiBusinessAssistant() {
       </CardHeader>
 
       {open && (
-        <CardContent className="space-y-3">
+        <CardContent className={fullscreen ? "flex flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
               <Badge
@@ -396,7 +396,11 @@ export function AiBusinessAssistant() {
 
           <div
             ref={scrollRef}
-            className="max-h-[420px] min-h-[120px] overflow-y-auto rounded-lg border bg-muted/20 p-3 space-y-4 text-sm"
+            className={
+              fullscreen
+                ? "flex-1 overflow-y-auto rounded-lg border bg-muted/20 p-4 space-y-4 text-sm"
+                : "max-h-[420px] min-h-[120px] overflow-y-auto rounded-lg border bg-muted/20 p-3 space-y-4 text-sm"
+            }
           >
             {messages.length === 0 && !loading && (
               <p className="text-muted-foreground text-sm">
