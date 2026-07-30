@@ -149,6 +149,8 @@ const Index = () => {
   const [topSupplyStoresOpen, setTopSupplyStoresOpen] = useState(false);
   const [stockValueOpen, setStockValueOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<string>("month");
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
