@@ -252,6 +252,16 @@ export function AiBusinessAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  // Exit fullscreen with Escape, and keep textarea focused when entering fullscreen
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && fullscreen) setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    if (fullscreen) inputRef.current?.focus();
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
   const ask = async (question: string) => {
     const q = question.trim();
     if (!q || loading) return;
