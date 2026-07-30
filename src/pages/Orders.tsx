@@ -158,6 +158,7 @@ const Orders = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -934,14 +935,16 @@ const Orders = () => {
       || orderIdShort.includes(normalizedSearch.replace(/^#/, ''))
       || invoice.includes(normalizedSearch);
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesSource = sourceFilter === "all"
+      || (sourceFilter === "website" ? !order.created_by : !!order.created_by);
     
     // Date range filter - compare date strings to avoid timezone issues
     const orderDateStr = order.order_date; // "YYYY-MM-DD" format
     const matchesDateFrom = !dateFrom || orderDateStr >= format(dateFrom, 'yyyy-MM-dd');
     const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
     
-    return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
-  }, [searchTerm, statusFilter, dateFrom, dateTo]);
+    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
+  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo]);
 
   // Memoize filtered orders
   const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
@@ -2546,6 +2549,21 @@ Thank you!`;
                     <SelectItem value="Shipped">Shipped</SelectItem>
                     <SelectItem value="Delivered">Delivered</SelectItem>
                     <SelectItem value="Paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Source Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Source:</span>
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="h-8 w-[140px] text-xs">
+                    <SelectValue placeholder="All sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="website">Website Orders</SelectItem>
+                    <SelectItem value="manual">In-Person / Manual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
