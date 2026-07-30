@@ -207,8 +207,9 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (timePeriod === "custom" && (!customStart || !customEnd)) return;
     fetchDashboardData();
-  }, [timePeriod]);
+  }, [timePeriod, customStart, customEnd]);
 
   const fetchDashboardData = async () => {
     try {
@@ -226,12 +227,18 @@ const Index = () => {
         periodStart = monday.toISOString();
       } else if (timePeriod === "month") {
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else if (timePeriod === "custom") {
+        const [sy, sm, sd] = customStart.split("-").map(Number);
+        const [ey, em, ed] = customEnd.split("-").map(Number);
+        periodStart = new Date(sy, sm - 1, sd).toISOString();
+        periodEnd = new Date(ey, em - 1, ed + 1).toISOString();
       } else {
         // Specific month: "2026-01", "2026-02", etc.
         const [year, month] = timePeriod.split("-").map(Number);
         periodStart = new Date(year, month - 1, 1).toISOString();
         periodEnd = new Date(year, month, 1).toISOString();
       }
+
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes] = await Promise.all([
