@@ -147,28 +147,30 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     doc.setFont("helvetica", "normal");
     doc.text(`Orders: ${orders.length}`, 14, 48);
     doc.text(`Total revenue (gross): $${totals.total.toFixed(2)}`, 14, 54);
-    doc.text(`Taxable subtotal: $${totals.subtotal.toFixed(2)}`, 14, 60);
+    doc.text(`Taxable base (after discounts, excl. shipping): $${totals.subtotal.toFixed(2)}`, 14, 60);
+    doc.text(`Discounts: $${totals.discounts.toFixed(2)}   Shipping: $${totals.shipping.toFixed(2)}`, 14, 66);
     doc.text(`Tax collected: $${totals.collected.toFixed(2)}`, pageWidth - 14, 48, { align: "right" });
     doc.text(`Tax uncollected (calc.): $${totals.uncollected.toFixed(2)}`, pageWidth - 14, 54, { align: "right" });
     doc.setFont("helvetica", "bold");
     doc.text(`Total tax owed: $${totals.calculated.toFixed(2)}`, pageWidth - 14, 60, { align: "right" });
 
     autoTable(doc, {
-      startY: 70,
-      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Subtotal", "Tax Collected", "Calculated Tax", "Total"]],
+      startY: 76,
+      head: [["Date", docNumberMode === "invoice" ? "Invoice #" : "Order #", "Taxable Base", "Tax Collected", "Calculated Tax", "Total"]],
       body: orders.map((o) => {
-        const sub = Number(o.subtotal || 0);
+        const base = taxableBase(o);
         const tax = Number(o.tax || 0);
-        const calcTax = computeCalc(sub, tax);
+        const calcTax = computeCalc(o);
         return [
           format(new Date(o.order_date), "MMM dd, yyyy"),
           getDocNumber(o),
-          `$${sub.toFixed(2)}`,
+          `$${base.toFixed(2)}`,
           `$${tax.toFixed(2)}`,
           `$${calcTax.toFixed(2)}`,
           `$${Number(o.total || 0).toFixed(2)}`,
         ];
       }),
+
       foot: [[
         "",
         "Totals",
