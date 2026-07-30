@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
+import { AiBusinessAssistant } from "@/components/analytics/AiBusinessAssistant";
+
 import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
 import { ExpensesSection } from "@/components/analytics/ExpensesSection";
 import { SalesTaxReport } from "@/components/analytics/SalesTaxReport";
@@ -1498,7 +1500,11 @@ const Analytics = () => {
         )}
       </Card>
 
+      {/* AI business report & assistant */}
+      <AiBusinessAssistant />
+
       {/* Tabs for different analytics sections */}
+
       <Tabs defaultValue="sales" className="w-full">
         <div className="w-full overflow-x-auto -mx-1 px-1 scrollbar-thin">
           <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-7 h-auto gap-1">
