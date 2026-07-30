@@ -21,10 +21,12 @@ const SUGGESTIONS = [
 ];
 
 function inline(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g).filter(Boolean);
   return parts.map((p, k) =>
     p.startsWith("**") && p.endsWith("**") ? (
       <strong key={k} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>
+    ) : p.startsWith("*") && p.endsWith("*") && p.length > 2 ? (
+      <em key={k} className="italic text-muted-foreground">{p.slice(1, -1)}</em>
     ) : p.startsWith("`") && p.endsWith("`") ? (
       <code key={k} className="font-mono text-xs px-1 rounded bg-muted">{p.slice(1, -1)}</code>
     ) : (
