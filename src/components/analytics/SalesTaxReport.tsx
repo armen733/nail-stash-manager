@@ -378,6 +378,9 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
               />
             )}
             <div className="flex-1" />
+            <Button size="sm" variant="outline" onClick={exportExcel} disabled={loading || orders.length === 0}>
+              <Sheet className="h-4 w-4 mr-1" /> Export Excel
+            </Button>
             <Button size="sm" onClick={printPDF} disabled={loading || orders.length === 0}>
               <Download className="h-4 w-4 mr-1" /> Print PDF
             </Button>
