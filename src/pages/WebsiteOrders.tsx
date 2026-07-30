@@ -48,6 +48,7 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 const WebsiteOrders = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [mapOpen, setMapOpen] = useState(false);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["website-orders-page"],
