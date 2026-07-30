@@ -248,7 +248,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
     const headerRow = ws.addRow([
       "Date",
       docNumberMode === "invoice" ? "Invoice #" : "Order #",
-      "Subtotal",
+      "Taxable Base",
       "Tax Collected",
       "Calculated Tax",
       "Total",
@@ -438,7 +438,7 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
                 <tr>
                   <th className="text-left p-2">Date</th>
                   <th className="text-left p-2">{docNumberMode === "invoice" ? "Invoice #" : "Order #"}</th>
-                  <th className="text-right p-2">Subtotal</th>
+                  <th className="text-right p-2">Taxable Base</th>
                   <th className="text-right p-2">Tax Collected</th>
                   <th className="text-right p-2">Calc. Tax</th>
                   <th className="text-right p-2">Total</th>
