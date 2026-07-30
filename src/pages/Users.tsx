@@ -154,17 +154,23 @@ export default function Users() {
   });
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [backTo, setBackTo] = useState<string | null>(null);
   useEffect(() => {
     const uid = searchParams.get("userId");
     if (uid && users && !selectedUser) {
       const u = users.find((x) => x.id === uid);
       if (u) {
         setSelectedUser(u);
+        const from = searchParams.get("from");
+        if (from) setBackTo(from);
         searchParams.delete("userId");
+        searchParams.delete("from");
         setSearchParams(searchParams, { replace: true });
       }
     }
   }, [searchParams, users, selectedUser, setSearchParams]);
+
 
 
   const { data: userOrders, isLoading: ordersLoading } = useQuery({
