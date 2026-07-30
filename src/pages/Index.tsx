@@ -502,7 +502,8 @@ const Index = () => {
       setLowStockProducts(lowStock);
 
       // Calculate revenue trend data
-      const isSpecificMonth = timePeriod.includes("-");
+      const isCustom = timePeriod === "custom";
+      const isSpecificMonth = timePeriod.includes("-") && !isCustom;
       let days: number;
       let trendStartDate: Date;
       
