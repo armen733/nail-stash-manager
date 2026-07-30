@@ -295,8 +295,14 @@ export function AiBusinessAssistant() {
   };
 
   return (
-    <Card className="shadow-[var(--shadow-card)] border-primary/30">
-      <CardHeader className="pb-3">
+    <Card
+      className={
+        fullscreen
+          ? "fixed inset-0 z-50 flex flex-col rounded-none border-primary/30 shadow-2xl"
+          : "shadow-[var(--shadow-card)] border-primary/30"
+      }
+    >
+      <CardHeader className={fullscreen ? "pb-3 shrink-0" : "pb-3"}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -346,8 +352,28 @@ export function AiBusinessAssistant() {
             >
               <FileDown className="h-3.5 w-3.5" /> PDF
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen((o) => !o)}>
-              {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title={fullscreen ? "Exit fullscreen" : "Open fullscreen"}
+              onClick={() => setFullscreen((f) => !f)}
+            >
+              {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                if (fullscreen) {
+                  setFullscreen(false);
+                } else {
+                  setOpen((o) => !o);
+                }
+              }}
+            >
+              {fullscreen ? <X className="h-4 w-4" /> : open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </div>
