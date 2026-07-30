@@ -3,7 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User } from "lucide-react";
+import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { format } from "date-fns";
+import { NERA_PACKING_LOGO } from "@/lib/packingLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -83,6 +87,94 @@ function renderBlocks(content: string) {
 }
 
 
+const stripMd = (t: string) =>
+  t.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/`(.+?)`/g, "$1").replace(/^#+\s*/, "");
+
+// Export the whole conversation as a branded PDF
+function exportConversationPdf(messages: Msg[], days: number) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 14;
+
+  try {
+    const props = doc.getImageProperties(NERA_PACKING_LOGO);
+    const targetH = 16;
+    doc.addImage(NERA_PACKING_LOGO, "PNG", margin, 10, (props.width / props.height) * targetH, targetH);
+  } catch {}
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("AI Business Report", 46, 18);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Analysis period: last ${days} days`, 46, 25);
+  doc.setFontSize(9);
+  doc.text(`Generated: ${format(new Date(), "MMM dd, yyyy p")}`, pageWidth - margin, 18, { align: "right" });
+
+  let y = 40;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const ensure = (h: number) => {
+    if (y + h > pageHeight - 16) {
+      doc.addPage();
+      y = 20;
+    }
+  };
+
+  messages.forEach((m) => {
+    ensure(12);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(m.role === "user" ? 20 : 90);
+    doc.text(m.role === "user" ? "Question" : "AI answer", margin, y);
+    y += 5;
+    doc.setTextColor(20);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const lines = m.content.split("\n");
+    let i = 0;
+    while (i < lines.length) {
+      if (/^\s*\|.*\|\s*$/.test(lines[i])) {
+        const block: string[] = [];
+        while (i < lines.length && /^\s*\|/.test(lines[i])) block.push(lines[i++]);
+        const rows = block
+          .filter((r) => !/^\s*\|[\s:|-]+\|\s*$/.test(r))
+          .map((r) => cells(r).map(stripMd));
+        if (rows.length) {
+          const [head, ...body] = rows;
+          autoTable(doc, {
+            startY: y,
+            head: [head],
+            body,
+            styles: { fontSize: 8, cellPadding: 1.5 },
+            headStyles: { fillColor: [40, 40, 40] },
+            margin: { left: margin, right: margin },
+          });
+          y = (doc as any).lastAutoTable.finalY + 4;
+        }
+        continue;
+      }
+      const bulleted = /^\s*[-*]\s+/.test(lines[i]);
+      const text = stripMd(lines[i].replace(/^\s*[-*]\s+/, ""));
+      if (!text.trim()) {
+        y += 3;
+      } else {
+        const indent = bulleted ? margin + 4 : margin;
+        const wrapped = doc.splitTextToSize((bulleted ? "• " : "") + text, pageWidth - indent - margin);
+        wrapped.forEach((w: string) => {
+          ensure(6);
+          doc.text(w, indent, y);
+          y += 5;
+        });
+      }
+      i++;
+    }
+    y += 5;
+  });
+
+  doc.save(`ai-business-report-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
+}
+
+
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -144,6 +236,22 @@ export function AiBusinessAssistant() {
               <option value={180}>Last 180 days</option>
               <option value={365}>Last year</option>
             </select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              disabled={messages.length === 0}
+              onClick={() => {
+                try {
+                  exportConversationPdf(messages, days);
+                  toast.success("Report exported as PDF");
+                } catch (e: any) {
+                  toast.error("Could not export PDF: " + String(e?.message || e));
+                }
+              }}
+            >
+              <FileDown className="h-3.5 w-3.5" /> PDF
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen((o) => !o)}>
               {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
