@@ -876,6 +876,25 @@ const Index = () => {
               })()}
             </SelectContent>
           </Select>
+          {timePeriod === "custom" && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Input
+                type="date"
+                value={customStart}
+                max={customEnd || undefined}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="min-h-[44px] w-full sm:w-[150px]"
+              />
+              <span className="text-muted-foreground text-sm">→</span>
+              <Input
+                type="date"
+                value={customEnd}
+                min={customStart || undefined}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="min-h-[44px] w-full sm:w-[150px]"
+              />
+            </div>
+          )}
           <Button onClick={exportDashboardData} variant="outline" size="default" className="min-h-[44px] flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
             Export
