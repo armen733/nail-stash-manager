@@ -179,6 +179,7 @@ function exportConversationPdf(messages: Msg[], days: number) {
 
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -186,6 +187,7 @@ export function AiBusinessAssistant() {
   const [restored, setRestored] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Restore the saved conversation for the signed-in user
   useEffect(() => {
