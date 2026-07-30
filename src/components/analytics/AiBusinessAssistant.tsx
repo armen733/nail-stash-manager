@@ -179,7 +179,7 @@ export function AiBusinessAssistant() {
                   {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5 text-primary" />}
                 </div>
                 <div className="min-w-0 flex-1 space-y-1 leading-relaxed text-foreground/90">
-                  {m.content.split("\n").map(renderLine)}
+                  {renderBlocks(m.content)}
                 </div>
               </div>
             ))}
