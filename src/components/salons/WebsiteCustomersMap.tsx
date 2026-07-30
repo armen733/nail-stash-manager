@@ -73,10 +73,13 @@ const WebsiteCustomersMap = ({ open, onOpenChange, pins }: Props) => {
         }
 
         const el = document.createElement("div");
-        const size = Math.min(46, 26 + Math.round(pin.orders * 4));
+        const firstName = (pin.name || "?").trim().split(/\s+/)[0] || "?";
+        const label = firstName.length > 8 ? firstName.charAt(0).toUpperCase() : firstName;
+        const size = Math.min(70, 34 + label.length * 6 + Math.round(pin.orders * 3));
+        const safeLabel = label.replace(/[<>&]/g, "");
         el.innerHTML = `
-          <div style="width:${size}px;height:${size}px" class="rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-lg text-[11px] font-bold text-primary-foreground cursor-pointer hover:scale-110 transition-transform">
-            ${pin.orders}
+          <div style="min-width:${size}px;height:26px;padding:0 8px" class="rounded-full bg-primary flex items-center justify-center border-2 border-white shadow-lg text-[11px] font-bold text-primary-foreground cursor-pointer hover:scale-110 transition-transform whitespace-nowrap">
+            ${safeLabel}
           </div>`;
 
         const popup = new mapboxgl.Popup({ offset: 22 }).setHTML(`
