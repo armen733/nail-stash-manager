@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { WarehouseAnalytics } from "@/components/analytics/WarehouseAnalytics";
 import { SkuPerformanceAnalytics } from "@/components/analytics/SkuPerformanceAnalytics";
+import { AiBusinessAssistant } from "@/components/analytics/AiBusinessAssistant";
+
 import { ProductHistoryDialog } from "@/components/analytics/ProductHistoryDialog";
 import { ExpensesSection } from "@/components/analytics/ExpensesSection";
 import { SalesTaxReport } from "@/components/analytics/SalesTaxReport";
