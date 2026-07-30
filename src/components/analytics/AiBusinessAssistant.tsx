@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2, Maximize2, Minimize2, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
@@ -179,6 +179,7 @@ function exportConversationPdf(messages: Msg[], days: number) {
 
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -186,6 +187,7 @@ export function AiBusinessAssistant() {
   const [restored, setRestored] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Restore the saved conversation for the signed-in user
   useEffect(() => {
@@ -250,6 +252,16 @@ export function AiBusinessAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  // Exit fullscreen with Escape, and keep textarea focused when entering fullscreen
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && fullscreen) setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    if (fullscreen) inputRef.current?.focus();
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
   const ask = async (question: string) => {
     const q = question.trim();
     if (!q || loading) return;
@@ -283,8 +295,14 @@ export function AiBusinessAssistant() {
   };
 
   return (
-    <Card className="shadow-[var(--shadow-card)] border-primary/30">
-      <CardHeader className="pb-3">
+    <Card
+      className={
+        fullscreen
+          ? "fixed inset-0 z-50 flex flex-col rounded-none border-primary/30 shadow-2xl"
+          : "shadow-[var(--shadow-card)] border-primary/30"
+      }
+    >
+      <CardHeader className={fullscreen ? "pb-3 shrink-0" : "pb-3"}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -334,15 +352,35 @@ export function AiBusinessAssistant() {
             >
               <FileDown className="h-3.5 w-3.5" /> PDF
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setOpen((o) => !o)}>
-              {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title={fullscreen ? "Exit fullscreen" : "Open fullscreen"}
+              onClick={() => setFullscreen((f) => !f)}
+            >
+              {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                if (fullscreen) {
+                  setFullscreen(false);
+                } else {
+                  setOpen((o) => !o);
+                }
+              }}
+            >
+              {fullscreen ? <X className="h-4 w-4" /> : open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </div>
       </CardHeader>
 
       {open && (
-        <CardContent className="space-y-3">
+        <CardContent className={fullscreen ? "flex flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
               <Badge
@@ -358,7 +396,11 @@ export function AiBusinessAssistant() {
 
           <div
             ref={scrollRef}
-            className="max-h-[420px] min-h-[120px] overflow-y-auto rounded-lg border bg-muted/20 p-3 space-y-4 text-sm"
+            className={
+              fullscreen
+                ? "flex-1 overflow-y-auto rounded-lg border bg-muted/20 p-4 space-y-4 text-sm"
+                : "max-h-[420px] min-h-[120px] overflow-y-auto rounded-lg border bg-muted/20 p-3 space-y-4 text-sm"
+            }
           >
             {messages.length === 0 && !loading && (
               <p className="text-muted-foreground text-sm">
@@ -395,6 +437,7 @@ export function AiBusinessAssistant() {
 
           <div className="flex gap-2">
             <Textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -404,7 +447,7 @@ export function AiBusinessAssistant() {
                 }
               }}
               placeholder="Ask about last month's sales, best salons, restocking…"
-              className="min-h-[44px] max-h-32 resize-none text-sm"
+              className={fullscreen ? "min-h-[60px] max-h-40 resize-none text-sm" : "min-h-[44px] max-h-32 resize-none text-sm"}
             />
             <Button onClick={() => ask(input)} disabled={loading || !input.trim()} size="icon" className="h-11 w-11 shrink-0">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
