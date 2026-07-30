@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, CalendarIcon, FileText, Download, Receipt } from "lucide-react";
+import { ChevronDown, CalendarIcon, FileText, Download, Receipt, Sheet } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -181,6 +181,121 @@ export function SalesTaxReport({ companyName = "NÉRA Beauty" }: Props) {
 
     const filename = `sales-tax-${format(range.from, "yyyyMMdd")}-${format(range.to, "yyyyMMdd")}.pdf`;
     doc.save(filename);
+  };
+
+  const exportExcel = async () => {
+    if (!range?.from || !range?.to) return;
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = companyName;
+    wb.created = new Date();
+    const ws = wb.addWorksheet("Sales Tax Report");
+
+    ws.columns = [
+      { key: "date", width: 16 },
+      { key: "doc", width: 18 },
+      { key: "sub", width: 14 },
+      { key: "collected", width: 16 },
+      { key: "calc", width: 16 },
+      { key: "total", width: 14 },
+    ];
+
+    const title = ws.addRow([companyName]);
+    title.font = { name: "Arial", size: 16, bold: true };
+    const sub = ws.addRow(["Sales Tax Report"]);
+    sub.font = { name: "Arial", size: 12, bold: true };
+    ws.addRow([`Period: ${format(range.from, "MMM dd, yyyy")} – ${format(range.to, "MMM dd, yyyy")}`]);
+    ws.addRow([`Generated: ${format(new Date(), "MMM dd, yyyy")}`]);
+    ws.addRow([`${taxName} rate: ${activeRate}%`]);
+    ws.addRow([]);
+
+    ws.addRow(["Summary"]).font = { name: "Arial", bold: true };
+    const summary: [string, number][] = [
+      ["Orders", orders.length],
+      ["Total revenue (gross)", totals.total],
+      ["Taxable subtotal", totals.subtotal],
+      ["Tax collected", totals.collected],
+      ["Tax uncollected (calc.)", totals.uncollected],
+      ["Total tax owed", totals.calculated],
+    ];
+    summary.forEach(([label, value], i) => {
+      const r = ws.addRow([label, value]);
+      r.getCell(1).font = { name: "Arial" };
+      r.getCell(2).font = { name: "Arial", bold: i === summary.length - 1 };
+      if (i > 0) r.getCell(2).numFmt = '$#,##0.00;($#,##0.00);"-"';
+    });
+    ws.addRow([]);
+
+    const headerRow = ws.addRow([
+      "Date",
+      docNumberMode === "invoice" ? "Invoice #" : "Order #",
+      "Subtotal",
+      "Tax Collected",
+      "Calculated Tax",
+      "Total",
+    ]);
+    headerRow.eachCell((c) => {
+      c.font = { name: "Arial", bold: true, color: { argb: "FFFFFFFF" } };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF282828" } };
+      c.alignment = { horizontal: "center" };
+    });
+    const firstDataRow = headerRow.number + 1;
+
+    orders.forEach((o) => {
+      const s = Number(o.subtotal || 0);
+      const t = Number(o.tax || 0);
+      const r = ws.addRow([
+        format(new Date(o.order_date), "MMM dd, yyyy"),
+        getDocNumber(o),
+        s,
+        t,
+        computeCalc(s, t),
+        Number(o.total || 0),
+      ]);
+      r.eachCell((c, col) => {
+        c.font = { name: "Arial" };
+        if (col >= 3) c.numFmt = '$#,##0.00;($#,##0.00);"-"';
+      });
+    });
+
+    const lastDataRow = firstDataRow + orders.length - 1;
+    const totalsRow = ws.addRow(
+      orders.length > 0
+        ? [
+            "",
+            "Totals",
+            { formula: `SUM(C${firstDataRow}:C${lastDataRow})` },
+            { formula: `SUM(D${firstDataRow}:D${lastDataRow})` },
+            { formula: `SUM(E${firstDataRow}:E${lastDataRow})` },
+            { formula: `SUM(F${firstDataRow}:F${lastDataRow})` },
+          ]
+        : ["", "Totals", 0, 0, 0, 0]
+    );
+    totalsRow.eachCell((c, col) => {
+      c.font = { name: "Arial", bold: true };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF0F0F0" } };
+      if (col >= 3) c.numFmt = '$#,##0.00;($#,##0.00);"-"';
+    });
+
+    ws.addRow([]);
+    const note = ws.addRow([
+      "Calculated Tax = Tax Collected when charged, otherwise Subtotal × current tax rate. Cancelled orders excluded.",
+    ]);
+    note.font = { name: "Arial", size: 9, italic: true, color: { argb: "FF787878" } };
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sales-tax-${format(range.from, "yyyyMMdd")}-${format(range.to, "yyyyMMdd")}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Excel exported", description: "Sales tax report saved as .xlsx" });
   };
 
   return (
