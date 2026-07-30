@@ -378,21 +378,23 @@ const Index = () => {
       setStats(newStats);
 
       // Calculate top salons
-      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string }>, order) => {
-        const salonId = order.salon_id;
-        const salonName = order.salons?.name || (order.salon_id ? "Unknown" : order.created_by ? "In-person" : "Website orders");
-        if (!acc[salonId]) {
-          acc[salonId] = { count: 0, revenue: 0, name: salonName };
+      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null }>, order) => {
+        const isWebsite = !order.salon_id && !order.created_by;
+        const isInPerson = !order.salon_id && !!order.created_by;
+        const groupKey = order.salon_id || (isWebsite ? 'website' : 'in-person');
+        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? "Website orders" : "Unknown");
+        if (!acc[groupKey]) {
+          acc[groupKey] = { count: 0, revenue: 0, name: salonName, salon_id: order.salon_id || null };
         }
-        acc[salonId].count += 1;
-        acc[salonId].revenue += order.total || 0;
+        acc[groupKey].count += 1;
+        acc[groupKey].revenue += order.total || 0;
         return acc;
       }, {});
 
       const allSalonsData = Object.entries(salonStats)
         .sort((a, b) => b[1].revenue - a[1].revenue)
-        .map(([id, s]) => ({
-          salon_id: id === 'null' ? null : id,
+        .map(([, s]) => ({
+          salon_id: s.salon_id,
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
