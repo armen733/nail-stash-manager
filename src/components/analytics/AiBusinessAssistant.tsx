@@ -381,19 +381,31 @@ export function AiBusinessAssistant() {
       </CardHeader>
 
       {open && (
-        <CardContent className={fullscreen ? "flex flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
-          <div className="flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
-              <Badge
-                key={s}
-                variant="outline"
-                onClick={() => ask(s)}
-                className="cursor-pointer hover:bg-primary/10 text-[11px] font-normal py-1"
-              >
-                {s}
-              </Badge>
-            ))}
+        <CardContent className={fullscreen ? "flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSuggestions((s) => !s)}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              {showSuggestions ? "Hide suggested questions" : "Show suggested questions"}
+            </button>
           </div>
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTIONS.map((s) => (
+                <Badge
+                  key={s}
+                  variant="outline"
+                  onClick={() => ask(s)}
+                  className="cursor-pointer hover:bg-primary/10 text-[11px] font-normal py-1"
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          )}
+
 
           <div
             ref={scrollRef}
