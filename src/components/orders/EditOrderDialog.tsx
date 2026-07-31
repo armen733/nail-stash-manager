@@ -121,8 +121,25 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     setNotes(order.notes || "");
     setTechnicianName(order.technician_name || "");
     setDiscountCode(order.discount_code || "");
-    setDiscountInput(order.discount_amount ? String(order.discount_amount) : "");
-    setDiscountType("amount");
+    // If the original discount looks like a clean % of the original subtotal,
+    // restore it as a percentage so edits (added/removed items) keep the same rate.
+    const origDiscount = Number(order.discount_amount || 0);
+    const origSubtotal = Number(order.subtotal || 0);
+    let restoredAsPercent = false;
+    if (origDiscount > 0 && origSubtotal > 0) {
+      const pct = (origDiscount / origSubtotal) * 100;
+      const rounded = Math.round(pct * 2) / 2; // allow .5 steps
+      if (rounded > 0 && rounded < 100 && Math.abs(pct - rounded) < 0.05) {
+        setDiscountType("percent");
+        setDiscountInput(String(rounded));
+        restoredAsPercent = true;
+      }
+    }
+    if (!restoredAsPercent) {
+      setDiscountInput(origDiscount ? String(origDiscount) : "");
+      setDiscountType("amount");
+    }
+
     setPointsRedeemed(Number((order as any).points_redeemed || 0));
     setWarningAccepted(false);
   }, [order, open]);
