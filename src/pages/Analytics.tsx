@@ -115,6 +115,9 @@ const Analytics = () => {
   const [activeSalonsCount, setActiveSalonsCount] = useState(0);
   const [activeSupplyStoresCount, setActiveSupplyStoresCount] = useState(0);
   const [supplyStoreStats, setSupplyStoreStats] = useState({ revenue: 0, profit: 0, units: 0 });
+  // Order-level clean profit computed the same way as the main Dashboard:
+  // (order.total − tax) − COGS(cost_usd). Keeps both pages in sync.
+  const [orderCleanProfit, setOrderCleanProfit] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -472,6 +475,21 @@ const Analytics = () => {
         });
       });
 
+      // Clean profit at order level (identical formula to the main Dashboard):
+      // net revenue (total − tax, already net of discounts) − COGS from cost_usd.
+      let orderProfitTotal = 0;
+      orders?.forEach((order: any) => {
+        const netRevenue = Number(order.total ?? 0) - Number(order.tax ?? 0);
+        const cogs = (order.order_items || []).reduce(
+          (s: number, it: any) => s + Number(it.products?.cost_usd ?? 0) * Number(it.quantity ?? 0),
+          0,
+        );
+        orderProfitTotal += netRevenue - cogs;
+      });
+      setOrderCleanProfit(orderProfitTotal);
+
+
+
       const sortedProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
       setAllSoldProducts(sortedProducts);
       setCategorySales(Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue));
@@ -796,17 +814,20 @@ const Analytics = () => {
   };
 
   // Memoize expensive KPI calculations
+  // Revenue and Clean Profit mirror the main Dashboard: order revenue + supply-store
+  // wholesale revenue, and order clean profit + supply-store profit.
   const { totalRevenue, totalOrders, avgOrderValue, totalProfit, uniqueCustomers } = useMemo(() => {
-    const revenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+    const orderRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
     const orders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
     return {
-      totalRevenue: revenue,
+      totalRevenue: orderRevenue + supplyStoreStats.revenue,
       totalOrders: orders,
-      avgOrderValue: orders > 0 ? revenue / orders : 0,
-      totalProfit: topProducts.reduce((sum, prod) => sum + prod.profit, 0),
+      avgOrderValue: orders > 0 ? orderRevenue / orders : 0,
+      totalProfit: orderCleanProfit + supplyStoreStats.profit,
       uniqueCustomers: topCustomers.length,
     };
-  }, [dailyRevenue, topProducts, topCustomers]);
+  }, [dailyRevenue, topCustomers, supplyStoreStats, orderCleanProfit]);
+
 
   // Memoize percentage change calculations
   const { revenueChange, ordersChange } = useMemo(() => ({
