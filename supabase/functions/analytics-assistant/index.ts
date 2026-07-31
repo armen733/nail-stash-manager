@@ -174,6 +174,71 @@ Deno.serve(async (req: Request) => {
       .sort()
       .map(([month, total]) => ({ month, revenue: +total.toFixed(2) }));
 
+    // ---- Day-level and week-level breakdowns (so specific-day questions work) ----
+    const isoWeek = (dateStr: string) => {
+      const d = new Date(dateStr + "T00:00:00Z");
+      const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+      const monday = new Date(d);
+      monday.setUTCDate(d.getUTCDate() - day);
+      return monday.toISOString().slice(0, 10); // week starting Monday
+    };
+
+    const byDay = new Map<string, { date: string; orders: number; revenue: number; units: number; profit: number; skus: Map<string, { sku: string; name: string; units: number; revenue: number }> }>();
+    const byWeek = new Map<string, { weekStart: string; orders: number; revenue: number; units: number }>();
+
+    for (const o of orders as any[]) {
+      const date = String(o.order_date).slice(0, 10);
+      if (!byDay.has(date)) byDay.set(date, { date, orders: 0, revenue: 0, units: 0, profit: 0, skus: new Map() });
+      const d = byDay.get(date)!;
+      d.orders += 1;
+      d.revenue += Number(o.total || 0);
+
+      const wk = isoWeek(date);
+      if (!byWeek.has(wk)) byWeek.set(wk, { weekStart: wk, orders: 0, revenue: 0, units: 0 });
+      const w = byWeek.get(wk)!;
+      w.orders += 1;
+      w.revenue += Number(o.total || 0);
+
+      for (const it of o.order_items || []) {
+        const p: any = productById.get(it.product_id);
+        const q = Number(it.quantity || 0);
+        const rev = Number(it.line_total || 0);
+        d.units += q;
+        w.units += q;
+        d.profit += (Number(it.unit_price || 0) - Number(p?.cost_usd || 0)) * q;
+        const sku = p?.sku || "—";
+        if (!d.skus.has(sku)) d.skus.set(sku, { sku, name: p?.name || "Unknown", units: 0, revenue: 0 });
+        const s = d.skus.get(sku)!;
+        s.units += q;
+        s.revenue += rev;
+      }
+    }
+
+    const dailySorted = [...byDay.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
+    // Compact daily revenue for the whole period
+    const dailyRevenue = dailySorted.map((d) => ({
+      date: d.date,
+      orders: d.orders,
+      units: d.units,
+      revenue: +d.revenue.toFixed(2),
+      profit: +d.profit.toFixed(2),
+    }));
+    // Full SKU detail for the most recent 21 days with activity (covers "last day", "yesterday", "this week")
+    const dailySkuDetail = dailySorted.slice(0, 21).map((d) => ({
+      date: d.date,
+      orders: d.orders,
+      revenue: +d.revenue.toFixed(2),
+      profit: +d.profit.toFixed(2),
+      skus: [...d.skus.values()]
+        .sort((a, b) => b.units - a.units)
+        .slice(0, 25)
+        .map((s) => ({ sku: s.sku, name: s.name, units: s.units, revenue: +s.revenue.toFixed(2) })),
+    }));
+    const weeklyRevenue = [...byWeek.values()]
+      .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1))
+      .slice(0, 30)
+      .map((w) => ({ weekStart: w.weekStart, orders: w.orders, units: w.units, revenue: +w.revenue.toFixed(2) }));
+
     const snapshot = {
       period: { days, since, today: new Date().toISOString().slice(0, 10) },
       totals: {
@@ -187,6 +252,10 @@ Deno.serve(async (req: Request) => {
         skuCount: products.length,
       },
       monthlyRevenue: monthly,
+      weeklyRevenue,
+      dailyRevenue,
+      dailySkuDetail,
+      lastActiveDay: dailySkuDetail[0]?.date || null,
       topProducts,
       worstProducts,
       neverSoldButInStock: neverSold,
@@ -194,6 +263,7 @@ Deno.serve(async (req: Request) => {
       lowStock,
       expenseByCategory,
     };
+
 
     const systemPrompt = `You are the business analyst assistant for NÉRA Beauty, a nail-supply wholesale business.
 You answer the owner's questions using ONLY the JSON business snapshot provided. Today's date is ${snapshot.period.today}; the snapshot covers the last ${days} days.
