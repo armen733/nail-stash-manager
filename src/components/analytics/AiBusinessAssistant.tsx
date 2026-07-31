@@ -180,6 +180,8 @@ function exportConversationPdf(messages: Msg[], days: number) {
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
