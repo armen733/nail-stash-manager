@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -180,6 +182,8 @@ function exportConversationPdf(messages: Msg[], days: number) {
 export function AiBusinessAssistant() {
   const [open, setOpen] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -294,14 +298,15 @@ export function AiBusinessAssistant() {
     }
   };
 
-  return (
+  const card = (
     <Card
       className={
         fullscreen
-          ? "fixed inset-0 z-50 flex flex-col rounded-none border-primary/30 shadow-2xl"
+          ? "fixed inset-0 z-[100] flex h-screen w-screen max-h-screen flex-col rounded-none border-0 bg-background shadow-none"
           : "shadow-[var(--shadow-card)] border-primary/30"
       }
     >
+
       <CardHeader className={fullscreen ? "pb-3 shrink-0" : "pb-3"}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -380,19 +385,31 @@ export function AiBusinessAssistant() {
       </CardHeader>
 
       {open && (
-        <CardContent className={fullscreen ? "flex flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
-          <div className="flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
-              <Badge
-                key={s}
-                variant="outline"
-                onClick={() => ask(s)}
-                className="cursor-pointer hover:bg-primary/10 text-[11px] font-normal py-1"
-              >
-                {s}
-              </Badge>
-            ))}
+        <CardContent className={fullscreen ? "flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden" : "space-y-3"}>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSuggestions((s) => !s)}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              {showSuggestions ? "Hide suggested questions" : "Show suggested questions"}
+            </button>
           </div>
+          {showSuggestions && (
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTIONS.map((s) => (
+                <Badge
+                  key={s}
+                  variant="outline"
+                  onClick={() => ask(s)}
+                  className="cursor-pointer hover:bg-primary/10 text-[11px] font-normal py-1"
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          )}
+
 
           <div
             ref={scrollRef}
@@ -457,4 +474,7 @@ export function AiBusinessAssistant() {
       )}
     </Card>
   );
+
+  return fullscreen ? createPortal(card, document.body) : card;
 }
+
