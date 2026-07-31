@@ -346,10 +346,13 @@ export function AiBusinessAssistant() {
               size="sm"
               className="h-8 gap-1.5 text-xs"
               disabled={messages.length === 0}
+              title="Print the latest answer"
               onClick={() => {
                 try {
-                  exportConversationPdf(messages, days);
-                  toast.success("Report exported as PDF");
+                  const lastAi = [...messages].reverse().findIndex((m) => m.role === "assistant");
+                  const idx = lastAi === -1 ? messages.length - 1 : messages.length - 1 - lastAi;
+                  exportConversationPdf(exchangeAt(messages, idx), messages[idx]?.days ?? days);
+                  toast.success("Latest answer exported as PDF");
                 } catch (e: any) {
                   toast.error("Could not export PDF: " + String(e?.message || e));
                 }
@@ -357,6 +360,7 @@ export function AiBusinessAssistant() {
             >
               <FileDown className="h-3.5 w-3.5" /> PDF
             </Button>
+
             <Button
               variant="ghost"
               size="icon"
