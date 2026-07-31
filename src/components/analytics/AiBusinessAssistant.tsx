@@ -94,8 +94,19 @@ function renderBlocks(content: string) {
 const stripMd = (t: string) =>
   t.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/`(.+?)`/g, "$1").replace(/^#+\s*/, "");
 
-// Export the whole conversation as a branded PDF
+// For an assistant message, include the question that produced it
+function exchangeAt(messages: Msg[], idx: number): Msg[] {
+  const m = messages[idx];
+  if (!m) return [];
+  if (m.role === "assistant" && idx > 0 && messages[idx - 1]?.role === "user") {
+    return [messages[idx - 1], m];
+  }
+  return [m];
+}
+
+// Export a conversation (or a single exchange) as a branded PDF
 function exportConversationPdf(messages: Msg[], days: number) {
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
