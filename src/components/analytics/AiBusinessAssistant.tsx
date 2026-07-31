@@ -294,14 +294,15 @@ export function AiBusinessAssistant() {
     }
   };
 
-  return (
+  const card = (
     <Card
       className={
         fullscreen
-          ? "fixed inset-0 z-50 flex flex-col rounded-none border-primary/30 shadow-2xl"
+          ? "fixed inset-0 z-[100] flex h-screen w-screen max-h-screen flex-col rounded-none border-0 bg-background shadow-none"
           : "shadow-[var(--shadow-card)] border-primary/30"
       }
     >
+
       <CardHeader className={fullscreen ? "pb-3 shrink-0" : "pb-3"}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
