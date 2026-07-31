@@ -472,4 +472,7 @@ export function AiBusinessAssistant() {
       )}
     </Card>
   );
+
+  return fullscreen ? createPortal(card, document.body) : card;
 }
+
