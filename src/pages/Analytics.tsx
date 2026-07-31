@@ -814,17 +814,20 @@ const Analytics = () => {
   };
 
   // Memoize expensive KPI calculations
+  // Revenue and Clean Profit mirror the main Dashboard: order revenue + supply-store
+  // wholesale revenue, and order clean profit + supply-store profit.
   const { totalRevenue, totalOrders, avgOrderValue, totalProfit, uniqueCustomers } = useMemo(() => {
-    const revenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+    const orderRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
     const orders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
     return {
-      totalRevenue: revenue,
+      totalRevenue: orderRevenue + supplyStoreStats.revenue,
       totalOrders: orders,
-      avgOrderValue: orders > 0 ? revenue / orders : 0,
-      totalProfit: topProducts.reduce((sum, prod) => sum + prod.profit, 0),
+      avgOrderValue: orders > 0 ? orderRevenue / orders : 0,
+      totalProfit: orderCleanProfit + supplyStoreStats.profit,
       uniqueCustomers: topCustomers.length,
     };
-  }, [dailyRevenue, topProducts, topCustomers]);
+  }, [dailyRevenue, topCustomers, supplyStoreStats, orderCleanProfit]);
+
 
   // Memoize percentage change calculations
   const { revenueChange, ordersChange } = useMemo(() => ({
