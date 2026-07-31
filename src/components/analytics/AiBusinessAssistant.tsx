@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2, Maximize2, Minimize2, X } from "lucide-react";
+import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2, Maximize2, Minimize2, X, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
@@ -94,8 +94,19 @@ function renderBlocks(content: string) {
 const stripMd = (t: string) =>
   t.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/`(.+?)`/g, "$1").replace(/^#+\s*/, "");
 
-// Export the whole conversation as a branded PDF
+// For an assistant message, include the question that produced it
+function exchangeAt(messages: Msg[], idx: number): Msg[] {
+  const m = messages[idx];
+  if (!m) return [];
+  if (m.role === "assistant" && idx > 0 && messages[idx - 1]?.role === "user") {
+    return [messages[idx - 1], m];
+  }
+  return [m];
+}
+
+// Export a conversation (or a single exchange) as a branded PDF
 function exportConversationPdf(messages: Msg[], days: number) {
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
@@ -346,10 +357,13 @@ export function AiBusinessAssistant() {
               size="sm"
               className="h-8 gap-1.5 text-xs"
               disabled={messages.length === 0}
+              title="Print the latest answer"
               onClick={() => {
                 try {
-                  exportConversationPdf(messages, days);
-                  toast.success("Report exported as PDF");
+                  const lastAi = [...messages].reverse().findIndex((m) => m.role === "assistant");
+                  const idx = lastAi === -1 ? messages.length - 1 : messages.length - 1 - lastAi;
+                  exportConversationPdf(exchangeAt(messages, idx), messages[idx]?.days ?? days);
+                  toast.success("Latest answer exported as PDF");
                 } catch (e: any) {
                   toast.error("Could not export PDF: " + String(e?.message || e));
                 }
@@ -357,6 +371,7 @@ export function AiBusinessAssistant() {
             >
               <FileDown className="h-3.5 w-3.5" /> PDF
             </Button>
+
             <Button
               variant="ghost"
               size="icon"
@@ -425,7 +440,7 @@ export function AiBusinessAssistant() {
               </p>
             )}
             {messages.map((m, i) => (
-              <div key={i} className="flex gap-2">
+              <div key={i} className="group flex gap-2">
                 <div className={`mt-0.5 h-6 w-6 shrink-0 rounded-full flex items-center justify-center ${m.role === "user" ? "bg-muted" : "bg-primary/15"}`}>
                   {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5 text-primary" />}
                 </div>
@@ -437,7 +452,24 @@ export function AiBusinessAssistant() {
                   )}
                   {renderBlocks(m.content)}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 self-start text-muted-foreground opacity-60 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                  title="Print this message as PDF"
+                  onClick={() => {
+                    try {
+                      exportConversationPdf(exchangeAt(messages, i), m.days ?? days);
+                      toast.success("Message exported as PDF");
+                    } catch (e: any) {
+                      toast.error("Could not export PDF: " + String(e?.message || e));
+                    }
+                  }}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                </Button>
               </div>
+
             ))}
             {loading && (
               <div className="flex items-center gap-2 text-muted-foreground">
