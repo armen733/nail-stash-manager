@@ -115,6 +115,9 @@ const Analytics = () => {
   const [activeSalonsCount, setActiveSalonsCount] = useState(0);
   const [activeSupplyStoresCount, setActiveSupplyStoresCount] = useState(0);
   const [supplyStoreStats, setSupplyStoreStats] = useState({ revenue: 0, profit: 0, units: 0 });
+  // Order-level clean profit computed the same way as the main Dashboard:
+  // (order.total − tax) − COGS(cost_usd). Keeps both pages in sync.
+  const [orderCleanProfit, setOrderCleanProfit] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
