@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2, Maximize2, Minimize2, X } from "lucide-react";
+import { Loader2, Sparkles, Send, ChevronDown, ChevronUp, Bot, User, FileDown, Trash2, Maximize2, Minimize2, X, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
