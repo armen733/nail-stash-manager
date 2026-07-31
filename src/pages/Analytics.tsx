@@ -475,6 +475,21 @@ const Analytics = () => {
         });
       });
 
+      // Clean profit at order level (identical formula to the main Dashboard):
+      // net revenue (total − tax, already net of discounts) − COGS from cost_usd.
+      let orderProfitTotal = 0;
+      orders?.forEach((order: any) => {
+        const netRevenue = Number(order.total ?? 0) - Number(order.tax ?? 0);
+        const cogs = (order.order_items || []).reduce(
+          (s: number, it: any) => s + Number(it.products?.cost_usd ?? 0) * Number(it.quantity ?? 0),
+          0,
+        );
+        orderProfitTotal += netRevenue - cogs;
+      });
+      setOrderCleanProfit(orderProfitTotal);
+
+
+
       const sortedProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue);
       setAllSoldProducts(sortedProducts);
       setCategorySales(Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue));
