@@ -2410,6 +2410,19 @@ const Products = () => {
                       />
                     </div>
                     
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant={sortBy === "stock" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "stock" ? "name" : "stock")}
+                      >
+                        <Boxes className="h-4 w-4 mr-2" />
+                        {sortBy === "stock" ? "Sorted by Most Stock" : "Sort by Most Stock"}
+                      </Button>
+                    </div>
+                    
                     <Button 
                       size="sm" 
                       onClick={() => setShowAdvancedFilters(false)} 
