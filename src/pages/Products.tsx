@@ -1210,6 +1210,7 @@ const Products = () => {
     setPriceRange([0, maxPrice]);
     setAdvancedCategoryFilter("all");
     setVariantTypeFilter("all");
+    setSortBy("name");
   };
 
   const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock";
