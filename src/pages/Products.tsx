@@ -1212,7 +1212,7 @@ const Products = () => {
     setVariantTypeFilter("all");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
