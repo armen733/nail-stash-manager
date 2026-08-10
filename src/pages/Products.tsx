@@ -1210,9 +1210,10 @@ const Products = () => {
     setPriceRange([0, maxPrice]);
     setAdvancedCategoryFilter("all");
     setVariantTypeFilter("all");
+    setSortBy("name");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -2288,16 +2289,6 @@ const Products = () => {
                 </SelectContent>
               </Select>
 
-              {/* Quick stock sort button - one-click access */}
-              <Button
-                variant={sortBy === "stock" ? "default" : "outline"}
-                size="sm"
-                className="h-10 px-3"
-                onClick={() => setSortBy(sortBy === "stock" ? "name" : "stock")}
-              >
-                <Boxes className="h-4 w-4 mr-1.5" />
-                Most Stock
-              </Button>
 
 
               {/* Filter Button */}
@@ -2318,6 +2309,7 @@ const Products = () => {
                           supplierFilter !== "all" ? 1 : 0,
                           stockStatusFilter !== "all" ? 1 : 0,
                           (priceRange[0] > 0 || priceRange[1] < maxPrice) ? 1 : 0,
+                          sortBy === "stock" ? 1 : 0,
                         ].reduce((a, b) => a + b, 0)}
                       </Badge>
                     )}
@@ -2416,6 +2408,19 @@ const Products = () => {
                         step={1}
                         className="mt-2"
                       />
+                    </div>
+                    
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant={sortBy === "stock" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "stock" ? "name" : "stock")}
+                      >
+                        <Boxes className="h-4 w-4 mr-2" />
+                        {sortBy === "stock" ? "Sorted by Most Stock" : "Sort by Most Stock"}
+                      </Button>
                     </div>
                     
                     <Button 
