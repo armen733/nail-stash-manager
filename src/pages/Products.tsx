@@ -2278,15 +2278,27 @@ const Products = () => {
             <div className="flex items-center gap-2 flex-wrap">
               {/* Sort Selector - First for quick access */}
               <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
-                <SelectTrigger className="w-[110px] h-10">
+                <SelectTrigger className="w-[120px] h-10">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border">
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="price">Price</SelectItem>
-                  <SelectItem value="stock">Stock</SelectItem>
+                  <SelectItem value="stock">Most Stock</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Quick stock sort button - one-click access */}
+              <Button
+                variant={sortBy === "stock" ? "default" : "outline"}
+                size="sm"
+                className="h-10 px-3"
+                onClick={() => setSortBy(sortBy === "stock" ? "name" : "stock")}
+              >
+                <Boxes className="h-4 w-4 mr-1.5" />
+                Most Stock
+              </Button>
+
 
               {/* Filter Button */}
               <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
