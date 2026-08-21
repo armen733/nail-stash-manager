@@ -165,6 +165,16 @@ Deno.serve(async (req: Request) => {
         sold: perProduct.get(p.id)?.units ?? 0,
       }));
 
+    // Compact stock-on-hand table for EVERY sku, so any "how many left" question is answerable
+    const stockBySku = products.map((p: any) => ({
+      sku: p.sku,
+      name: p.name,
+      stock: Number(p.stock_on_hand || 0),
+      reorder: Number(p.reorder_level || 0),
+      sold: perProduct.get(p.id)?.units ?? 0,
+    }));
+
+
     const revenue = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
     const discounts = orders.reduce((s: number, o: any) => s + Number(o.discount_amount || 0), 0);
     const grossProfit = [...perProduct.values()].reduce((s, p) => s + p.profit, 0);
