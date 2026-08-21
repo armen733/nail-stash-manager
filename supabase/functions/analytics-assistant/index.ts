@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
     const salonById = new Map(salons.map((s: any) => [s.id, s]));
 
     // Product performance
-    const perProduct = new Map<string, { name: string; sku: string; cat: string; variant: string | null; units: number; revenue: number; profit: number }>();
+    const perProduct = new Map<string, { name: string; sku: string; cat: string; variant: string | null; units: number; revenue: number; profit: number; stock: number; reserved: number; reorder: number; cost: number; price: number }>();
     // Buyer performance
     const perBuyer = new Map<string, { name: string; orders: number; revenue: number; items: Map<string, number> }>();
 
@@ -105,6 +105,11 @@ Deno.serve(async (req: Request) => {
             units: 0,
             revenue: 0,
             profit: 0,
+            stock: Number(p?.stock_on_hand || 0),
+            reserved: 0,
+            reorder: Number(p?.reorder_level || 0),
+            cost: cost,
+            price: Number(p?.price_usd || 0),
           });
         const agg = perProduct.get(key)!;
         agg.units += Number(it.quantity || 0);
@@ -119,12 +124,19 @@ Deno.serve(async (req: Request) => {
     const topProducts = [...perProduct.values()]
       .sort((a, b) => b.units - a.units)
       .slice(0, 40)
-      .map((p) => ({ ...p, revenue: +p.revenue.toFixed(2), profit: +p.profit.toFixed(2) }));
+      .map((p) => ({
+        ...p,
+        revenue: +p.revenue.toFixed(2),
+        profit: +p.profit.toFixed(2),
+        marginPercent: p.revenue > 0 ? +((p.profit / p.revenue) * 100).toFixed(1) : 0,
+        stockLeft: p.stock,
+        needsReorder: p.stock <= p.reorder,
+      }));
 
     const worstProducts = [...perProduct.values()]
       .sort((a, b) => a.units - b.units)
       .slice(0, 15)
-      .map((p) => ({ name: p.name, sku: p.sku, units: p.units, revenue: +p.revenue.toFixed(2) }));
+      .map((p) => ({ name: p.name, sku: p.sku, units: p.units, revenue: +p.revenue.toFixed(2), stockLeft: p.stock }));
 
     const topBuyers = [...perBuyer.values()]
       .sort((a, b) => b.revenue - a.revenue)
@@ -152,6 +164,16 @@ Deno.serve(async (req: Request) => {
         reorder: p.reorder_level,
         sold: perProduct.get(p.id)?.units ?? 0,
       }));
+
+    // Compact stock-on-hand table for EVERY sku, so any "how many left" question is answerable
+    const stockBySku = products.map((p: any) => ({
+      sku: p.sku,
+      name: p.name,
+      stock: Number(p.stock_on_hand || 0),
+      reorder: Number(p.reorder_level || 0),
+      sold: perProduct.get(p.id)?.units ?? 0,
+    }));
+
 
     const revenue = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
     const discounts = orders.reduce((s: number, o: any) => s + Number(o.discount_amount || 0), 0);
@@ -261,6 +283,7 @@ Deno.serve(async (req: Request) => {
       neverSoldButInStock: neverSold,
       topBuyers,
       lowStock,
+      stockBySku,
       expenseByCategory,
     };
 
@@ -272,6 +295,7 @@ Rules:
 - Be concise and concrete. Use real names, SKUs, units and dollar amounts from the data.
 - Use short markdown: a one-line answer, then bullet points or a small table when listing items.
 - Money as $1,234.56. Never invent products, salons or numbers that are not in the data.
+- Stock questions ARE answerable: "stockBySku" lists EVERY sku with current stock, reorder level and units sold in the period; "topProducts" also carries "stockLeft", "needsReorder", "cost", "price" and "marginPercent" per best seller. When asked how much stock is left for best sellers, list each SKU with its exact stockLeft number, and flag any where needsReorder is true. A stock of 0 means sold out — say so, never say the data is unavailable.
 - Day/week questions ARE answerable: "dailyRevenue" has per-day orders/units/revenue/profit for the whole period, "dailySkuDetail" has per-SKU units and revenue for the most recent 21 active days, "weeklyRevenue" has Monday-start weekly totals, and "lastActiveDay" is the most recent day with sales. Use these for "last day", "yesterday", "today", "this week", "last week", or any specific date.
 - If a requested date has no entry in dailyRevenue, that means there were no sales that day — say that plainly instead of saying data is unavailable.
 - Only say data is missing when the requested range is truly outside the ${days}-day window.
