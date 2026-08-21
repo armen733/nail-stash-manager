@@ -157,6 +157,7 @@ const Products = () => {
   
   // Use React Query for products
   const { data: productsData, isLoading: loading } = useProducts();
+  const { data: salesData } = useProductSales();
   const products = productsData?.products || [];
   const allProducts = productsData?.allProducts || [];
   const queryMaxPrice = productsData?.maxPrice || 1000;
