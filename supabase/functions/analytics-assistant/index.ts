@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
     const salonById = new Map(salons.map((s: any) => [s.id, s]));
 
     // Product performance
-    const perProduct = new Map<string, { name: string; sku: string; cat: string; variant: string | null; units: number; revenue: number; profit: number }>();
+    const perProduct = new Map<string, { name: string; sku: string; cat: string; variant: string | null; units: number; revenue: number; profit: number; stock: number; reserved: number; reorder: number; cost: number; price: number }>();
     // Buyer performance
     const perBuyer = new Map<string, { name: string; orders: number; revenue: number; items: Map<string, number> }>();
 
