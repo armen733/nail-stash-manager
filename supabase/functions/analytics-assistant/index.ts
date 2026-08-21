@@ -105,6 +105,11 @@ Deno.serve(async (req: Request) => {
             units: 0,
             revenue: 0,
             profit: 0,
+            stock: Number(p?.stock_on_hand || 0),
+            reserved: 0,
+            reorder: Number(p?.reorder_level || 0),
+            cost: cost,
+            price: Number(p?.price_usd || 0),
           });
         const agg = perProduct.get(key)!;
         agg.units += Number(it.quantity || 0);
