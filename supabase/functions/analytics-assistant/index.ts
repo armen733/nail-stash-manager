@@ -124,12 +124,19 @@ Deno.serve(async (req: Request) => {
     const topProducts = [...perProduct.values()]
       .sort((a, b) => b.units - a.units)
       .slice(0, 40)
-      .map((p) => ({ ...p, revenue: +p.revenue.toFixed(2), profit: +p.profit.toFixed(2) }));
+      .map((p) => ({
+        ...p,
+        revenue: +p.revenue.toFixed(2),
+        profit: +p.profit.toFixed(2),
+        marginPercent: p.revenue > 0 ? +((p.profit / p.revenue) * 100).toFixed(1) : 0,
+        stockLeft: p.stock,
+        needsReorder: p.stock <= p.reorder,
+      }));
 
     const worstProducts = [...perProduct.values()]
       .sort((a, b) => a.units - b.units)
       .slice(0, 15)
-      .map((p) => ({ name: p.name, sku: p.sku, units: p.units, revenue: +p.revenue.toFixed(2) }));
+      .map((p) => ({ name: p.name, sku: p.sku, units: p.units, revenue: +p.revenue.toFixed(2), stockLeft: p.stock }));
 
     const topBuyers = [...perBuyer.values()]
       .sort((a, b) => b.revenue - a.revenue)
