@@ -283,6 +283,7 @@ Deno.serve(async (req: Request) => {
       neverSoldButInStock: neverSold,
       topBuyers,
       lowStock,
+      stockBySku,
       expenseByCategory,
     };
 
