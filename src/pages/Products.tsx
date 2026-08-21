@@ -3,13 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, Crop as CropIcon } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, Crop as CropIcon } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useProductSales } from "@/hooks/useProductSales";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -167,7 +168,7 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "stock">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales">("name");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -962,14 +963,30 @@ const Products = () => {
     });
   }, [products, debouncedSearchTerm, categoryFilter, advancedCategoryFilter, variantTypeFilter, supplierFilter, priceRange, stockStatusFilter]);
 
+  const soldById = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of products) {
+      let total = salesData?.[p.id] || 0;
+      for (const v of p.variants || []) total += salesData?.[v.id] || 0;
+      map[p.id] = total;
+    }
+    return map;
+  }, [products, salesData]);
+
+  const soldOf = useCallback((p: Product) => soldById[p.id] || 0, [soldById]);
+
   const sortedProducts = useMemo(() => {
     return [...filteredProducts].sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "price") return a.price_usd - b.price_usd;
       if (sortBy === "stock") return (b.stock_on_hand || 0) - (a.stock_on_hand || 0);
+      if (sortBy === "sales") {
+        const diff = (soldById[b.id] || 0) - (soldById[a.id] || 0);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+      }
       return 0;
     });
-  }, [filteredProducts, sortBy]);
+  }, [filteredProducts, sortBy, soldById]);
 
   const categories = ["all", ...Array.from(new Set(products.map(p => p.category)))];
   const suppliers = ["all", ...getUniqueSuppliers()];
@@ -1213,7 +1230,7 @@ const Products = () => {
     setSortBy("name");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -2278,7 +2295,7 @@ const Products = () => {
             {/* Filter row - clean layout */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Sort Selector - First for quick access */}
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock") => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales") => setSortBy(value)}>
                 <SelectTrigger className="w-[120px] h-10">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
@@ -2286,6 +2303,7 @@ const Products = () => {
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="price">Price</SelectItem>
                   <SelectItem value="stock">Most Stock</SelectItem>
+                  <SelectItem value="sales">Best Sellers</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -2309,7 +2327,7 @@ const Products = () => {
                           supplierFilter !== "all" ? 1 : 0,
                           stockStatusFilter !== "all" ? 1 : 0,
                           (priceRange[0] > 0 || priceRange[1] < maxPrice) ? 1 : 0,
-                          sortBy === "stock" ? 1 : 0,
+                          (sortBy === "stock" || sortBy === "sales") ? 1 : 0,
                         ].reduce((a, b) => a + b, 0)}
                       </Badge>
                     )}
@@ -2421,6 +2439,24 @@ const Products = () => {
                         <Boxes className="h-4 w-4 mr-2" />
                         {sortBy === "stock" ? "Sorted by Most Stock" : "Sort by Most Stock"}
                       </Button>
+                    </div>
+
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant={sortBy === "sales" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "sales" ? "name" : "sales")}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        {sortBy === "sales" ? "Sorted by Best Sellers" : "Sort by Best Sellers"}
+                      </Button>
+                      {sortBy === "sales" && (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Best sellers first, worst sellers last — units sold shown on each product.
+                        </p>
+                      )}
                     </div>
                     
                     <Button 
@@ -2696,6 +2732,9 @@ const Products = () => {
                               )}
                             </div>
                           )}
+                          <p className="text-xs text-muted-foreground">
+                            Sold: <span className="font-medium text-foreground">{soldOf(product)}</span> units
+                          </p>
                         </div>
 
                         {getCartQuantity(product.id) > 0 ? (
@@ -2841,6 +2880,7 @@ const Products = () => {
                               {(product.stock_on_hand || 0) > 0 && (product.stock_on_hand || 0) <= (product.reorder_level || 10) && (
                                 <Badge variant="secondary" className="text-[10px]">Low</Badge>
                               )}
+                              <Badge variant="outline" className="text-[10px]">{soldOf(product)} sold</Badge>
                             </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground">
