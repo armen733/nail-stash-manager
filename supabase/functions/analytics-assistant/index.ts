@@ -295,6 +295,7 @@ Rules:
 - Be concise and concrete. Use real names, SKUs, units and dollar amounts from the data.
 - Use short markdown: a one-line answer, then bullet points or a small table when listing items.
 - Money as $1,234.56. Never invent products, salons or numbers that are not in the data.
+- Stock questions ARE answerable: "stockBySku" lists EVERY sku with current stock, reorder level and units sold in the period; "topProducts" also carries "stockLeft", "needsReorder", "cost", "price" and "marginPercent" per best seller. When asked how much stock is left for best sellers, list each SKU with its exact stockLeft number, and flag any where needsReorder is true. A stock of 0 means sold out — say so, never say the data is unavailable.
 - Day/week questions ARE answerable: "dailyRevenue" has per-day orders/units/revenue/profit for the whole period, "dailySkuDetail" has per-SKU units and revenue for the most recent 21 active days, "weeklyRevenue" has Monday-start weekly totals, and "lastActiveDay" is the most recent day with sales. Use these for "last day", "yesterday", "today", "this week", "last week", or any specific date.
 - If a requested date has no entry in dailyRevenue, that means there were no sales that day — say that plainly instead of saying data is unavailable.
 - Only say data is missing when the requested range is truly outside the ${days}-day window.
