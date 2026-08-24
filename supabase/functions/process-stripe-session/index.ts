@@ -134,6 +134,8 @@ serve(async (req: Request) => {
       tax: taxAmount,
       shipping: shippingAmount,
       shipping_zone: md.shippingZone || null,
+      discount_amount: discountAmount || 0,
+      discount_code: discountCode,
       total: total,
       status: 'Confirmed',
     };
