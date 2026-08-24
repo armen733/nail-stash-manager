@@ -328,6 +328,51 @@ export type Database = {
           },
         ]
       }
+      discount_code_redemptions: {
+        Row: {
+          code: string
+          code_id: string
+          created_at: string
+          id: string
+          order_id: string | null
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          code_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          code_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_code_redemptions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_codes: {
         Row: {
           code: string
@@ -338,6 +383,7 @@ export type Database = {
           is_active: boolean | null
           max_uses: number | null
           min_order_amount: number | null
+          one_per_user: boolean
           valid_from: string | null
           valid_until: string | null
         }
@@ -350,6 +396,7 @@ export type Database = {
           is_active?: boolean | null
           max_uses?: number | null
           min_order_amount?: number | null
+          one_per_user?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -362,6 +409,7 @@ export type Database = {
           is_active?: boolean | null
           max_uses?: number | null
           min_order_amount?: number | null
+          one_per_user?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -1833,6 +1881,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      redeem_discount_code: {
+        Args: {
+          p_code: string
+          p_order_amount?: number
+          p_order_id?: string
+          p_user_id: string
+        }
+        Returns: {
+          discount_percent: number
+          reason: string
+          success: boolean
+        }[]
+      }
+      validate_discount_code: {
+        Args: { p_code: string; p_order_amount?: number; p_user_id?: string }
+        Returns: {
+          already_used: boolean
+          code: string
+          code_id: string
+          discount_percent: number
+          is_valid: boolean
+          one_per_user: boolean
+          reason: string
+        }[]
+      }
       validate_referral_code: {
         Args: { code: string }
         Returns: {
