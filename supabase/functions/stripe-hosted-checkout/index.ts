@@ -151,11 +151,34 @@ serve(async (req: Request) => {
     const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
     console.log(`[${requestId}] Origin: ${origin}`);
 
+    // Step 7b: Turn the applied discount into a one-off Stripe coupon so the
+    // amount charged matches the discounted total shown at checkout.
+    let discounts: any[] | undefined;
+    const discountValue = Number(discountAmount ?? 0);
+    if (discountValue > 0) {
+      try {
+        const coupon = await stripe.coupons.create({
+          amount_off: Math.round(discountValue * 100),
+          currency: "usd",
+          duration: "once",
+          name: discountCode
+            ? `${discountCode}${discountPercent ? ` (${discountPercent}% off)` : ""}`
+            : "Discount",
+        });
+        discounts = [{ coupon: coupon.id }];
+        console.log(`[${requestId}] Applied coupon ${coupon.id} for -$${discountValue}`);
+      } catch (couponErr) {
+        console.error(`[${requestId}] Coupon creation failed: ${couponErr instanceof Error ? couponErr.message : couponErr}`);
+        throw couponErr;
+      }
+    }
+
     console.log(`[${requestId}] Step 8: Creating Stripe checkout session`);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : customerEmail,
       line_items: lineItems,
+      ...(discounts ? { discounts } : {}),
       mode: "payment",
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
@@ -170,6 +193,8 @@ serve(async (req: Request) => {
         taxAmount: String(taxAmount ?? 0),
         shippingAmount: String(shippingAmount ?? 0),
         shippingZone: shippingZone || "",
+        discountAmount: String(discountValue),
+        discountCode: discountCode || "",
       },
     });
 
