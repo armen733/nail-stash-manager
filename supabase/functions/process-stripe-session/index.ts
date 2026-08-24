@@ -99,9 +99,12 @@ serve(async (req: Request) => {
 
     const taxAmount = Number(md.taxAmount || 0);
     const shippingAmount = Number(md.shippingAmount || 0);
+    const discountAmount = ((session as any).total_details?.amount_discount ?? 0) / 100 || Number(md.discountAmount || 0);
+    const discountCode = md.discountCode || null;
 
     const lineItems = session.line_items?.data || [];
     const subtotal = (session.amount_subtotal || 0) / 100;
+
     
     // Parse orderItems from metadata if available (includes image_url from customer app)
     let metadataItems: any[] = [];
