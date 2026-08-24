@@ -15,6 +15,7 @@ export interface DiscountCode {
   current_uses: number | null;
   min_order_amount: number | null;
   is_active: boolean | null;
+  one_per_user?: boolean | null;
   created_at: string | null;
 }
 
