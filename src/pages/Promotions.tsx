@@ -83,6 +83,7 @@ const Promotions = () => {
     max_uses: "",
     min_order_amount: "",
     is_active: true,
+    one_per_user: true,
   });
 
   useEffect(() => {
@@ -134,6 +135,7 @@ const Promotions = () => {
       max_uses: "",
       min_order_amount: "",
       is_active: true,
+      one_per_user: true,
     });
     setEditingCode(null);
   };
@@ -199,6 +201,7 @@ const Promotions = () => {
         max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
         min_order_amount: formData.min_order_amount ? parseFloat(formData.min_order_amount) : 0,
         is_active: formData.is_active,
+        one_per_user: formData.one_per_user,
       };
 
       if (editingCode) {
@@ -234,6 +237,7 @@ const Promotions = () => {
       max_uses: code.max_uses?.toString() || "",
       min_order_amount: code.min_order_amount?.toString() || "",
       is_active: code.is_active ?? true,
+      one_per_user: (code as any).one_per_user ?? true,
     });
     setIsAddDialogOpen(true);
   };
@@ -504,6 +508,19 @@ const Promotions = () => {
                     />
                     <Label htmlFor="is_active">Active</Label>
                   </div>
+                  <div className="flex items-start justify-between gap-3 rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="one_per_user">One use per customer</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Each customer account can redeem this code only once.
+                      </p>
+                    </div>
+                    <Switch
+                      id="one_per_user"
+                      checked={formData.one_per_user}
+                      onCheckedChange={(checked) => setFormData({ ...formData, one_per_user: checked })}
+                    />
+                  </div>
                   <Button onClick={handleSaveDiscountCode} className="w-full h-11 min-h-[44px]">
                     {editingCode ? "Update" : "Create"} Code
                   </Button>
@@ -538,7 +555,14 @@ const Promotions = () => {
                       {discountCodes.map((code) => (
                         <TableRow key={code.id}>
                           <TableCell className="font-mono font-bold">{code.code}</TableCell>
-                          <TableCell>{code.discount_percent}%</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span>{code.discount_percent}%</span>
+                              {((code as any).one_per_user ?? true) && (
+                                <Badge variant="outline" className="text-[10px]">1 / customer</Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {code.valid_until ? format(new Date(code.valid_until), "MMM d, yyyy") : "No expiry"}
                           </TableCell>
