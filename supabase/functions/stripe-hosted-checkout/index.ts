@@ -39,8 +39,8 @@ serve(async (req: Request) => {
     );
 
     console.log(`[${requestId}] Step 4: Parsing request body`);
-    const { items, customerEmail, customerName, customerPhone, metadata, taxAmount, shippingAmount, shippingZone } = await req.json();
-    console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}, Phone: ${customerPhone || 'none'}`);
+    const { items, customerEmail, customerName, customerPhone, metadata, taxAmount, shippingAmount, shippingZone, discountAmount, discountCode, discountPercent } = await req.json();
+    console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}, Discount: ${discountAmount ?? 0} (${discountCode || 'none'}), Phone: ${customerPhone || 'none'}`);
 
     if (!items?.length) {
       console.error(`[${requestId}] No items in request`);
