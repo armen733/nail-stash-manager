@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, Crop as CropIcon } from "lucide-react";
+import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, AlertTriangle, Crop as CropIcon } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -169,7 +169,7 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales" | "lowstock">("name");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
