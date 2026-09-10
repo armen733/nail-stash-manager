@@ -2318,8 +2318,8 @@ const Products = () => {
             {/* Filter row - clean layout */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Sort Selector - First for quick access */}
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales" | "lowstock") => setSortBy(value)}>
-                <SelectTrigger className="w-[120px] h-10">
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales" | "lowstock" | "lowstock-sales") => setSortBy(value)}>
+                <SelectTrigger className="w-[140px] h-10">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border">
@@ -2327,6 +2327,8 @@ const Products = () => {
                   <SelectItem value="price">Price</SelectItem>
                   <SelectItem value="stock">Most Stock</SelectItem>
                   <SelectItem value="sales">Best Sellers</SelectItem>
+                  <SelectItem value="lowstock">Low Stock</SelectItem>
+                  <SelectItem value="lowstock-sales">Low Stock Best Sellers</SelectItem>
                 </SelectContent>
               </Select>
 
