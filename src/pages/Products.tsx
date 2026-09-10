@@ -169,7 +169,7 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales" | "lowstock">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales" | "lowstock" | "lowstock-sales">("name");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
