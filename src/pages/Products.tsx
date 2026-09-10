@@ -2487,6 +2487,25 @@ const Products = () => {
                     <div className="pt-1">
                       <Button
                         type="button"
+                        variant={sortBy === "lowstock-sales" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "lowstock-sales" ? "name" : "lowstock-sales")}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        {sortBy === "lowstock-sales" ? "Low Stock Best Sellers" : "Mix: Low Stock + Best Sellers"}
+                      </Button>
+                      {sortBy === "lowstock-sales" && (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Low-stock products first, then ranked by units sold so you see which low-stock items are your best sellers.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-1">
+                      <Button
+                        type="button"
                         variant={sortBy === "sales" ? "default" : "outline"}
                         size="sm"
                         className="w-full h-9"
