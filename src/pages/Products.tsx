@@ -2340,7 +2340,7 @@ const Products = () => {
                           supplierFilter !== "all" ? 1 : 0,
                           stockStatusFilter !== "all" ? 1 : 0,
                           (priceRange[0] > 0 || priceRange[1] < maxPrice) ? 1 : 0,
-                          (sortBy === "stock" || sortBy === "sales") ? 1 : 0,
+                          (sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock") ? 1 : 0,
                         ].reduce((a, b) => a + b, 0)}
                       </Badge>
                     )}
