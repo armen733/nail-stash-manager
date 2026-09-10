@@ -1253,7 +1253,7 @@ const Products = () => {
     setSortBy("name");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock" || sortBy === "lowstock-sales";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
