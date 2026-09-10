@@ -169,7 +169,7 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search for performance
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales" | "lowstock">("name");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "sales" | "lowstock" | "lowstock-sales">("name");
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -977,6 +977,11 @@ const Products = () => {
   const soldOf = useCallback((p: Product) => soldById[p.id] || 0, [soldById]);
 
   const sortedProducts = useMemo(() => {
+    const isLow = (p: Product) => {
+      const stock = p.stock_on_hand || 0;
+      const reorder = p.reorder_level ?? 10;
+      return stock <= reorder;
+    };
     return [...filteredProducts].sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "price") return a.price_usd - b.price_usd;
@@ -986,15 +991,20 @@ const Products = () => {
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }
       if (sortBy === "lowstock") {
-        const isLow = (p: Product) => {
-          const stock = p.stock_on_hand || 0;
-          const reorder = p.reorder_level ?? 10;
-          return stock <= reorder;
-        };
         const aLow = isLow(a) ? 0 : 1;
         const bLow = isLow(b) ? 0 : 1;
         if (aLow !== bLow) return aLow - bLow;
         if (aLow === 0) return (a.stock_on_hand || 0) - (b.stock_on_hand || 0);
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === "lowstock-sales") {
+        const aLow = isLow(a) ? 0 : 1;
+        const bLow = isLow(b) ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        if (aLow === 0) {
+          const diff = (soldById[b.id] || 0) - (soldById[a.id] || 0);
+          return diff !== 0 ? diff : (a.stock_on_hand || 0) - (b.stock_on_hand || 0);
+        }
         return a.name.localeCompare(b.name);
       }
       return 0;
@@ -1243,7 +1253,7 @@ const Products = () => {
     setSortBy("name");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock" || sortBy === "lowstock-sales";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -2308,8 +2318,8 @@ const Products = () => {
             {/* Filter row - clean layout */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Sort Selector - First for quick access */}
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales" | "lowstock") => setSortBy(value)}>
-                <SelectTrigger className="w-[120px] h-10">
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales" | "lowstock" | "lowstock-sales") => setSortBy(value)}>
+                <SelectTrigger className="w-[140px] h-10">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border">
@@ -2317,6 +2327,8 @@ const Products = () => {
                   <SelectItem value="price">Price</SelectItem>
                   <SelectItem value="stock">Most Stock</SelectItem>
                   <SelectItem value="sales">Best Sellers</SelectItem>
+                  <SelectItem value="lowstock">Low Stock</SelectItem>
+                  <SelectItem value="lowstock-sales">Low Stock Best Sellers</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -2340,7 +2352,7 @@ const Products = () => {
                           supplierFilter !== "all" ? 1 : 0,
                           stockStatusFilter !== "all" ? 1 : 0,
                           (priceRange[0] > 0 || priceRange[1] < maxPrice) ? 1 : 0,
-                          (sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock") ? 1 : 0,
+                          (sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock" || sortBy === "lowstock-sales") ? 1 : 0,
                         ].reduce((a, b) => a + b, 0)}
                       </Badge>
                     )}
@@ -2468,6 +2480,25 @@ const Products = () => {
                       {sortBy === "lowstock" && (
                         <p className="text-[11px] text-muted-foreground mt-1">
                           Products at or below their reorder level appear first, lowest stock on top.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant={sortBy === "lowstock-sales" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "lowstock-sales" ? "name" : "lowstock-sales")}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        {sortBy === "lowstock-sales" ? "Low Stock Best Sellers" : "Mix: Low Stock + Best Sellers"}
+                      </Button>
+                      {sortBy === "lowstock-sales" && (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Low-stock products first, then ranked by units sold so you see which low-stock items are your best sellers.
                         </p>
                       )}
                     </div>
