@@ -1,0 +1,18 @@
+CREATE OR REPLACE FUNCTION public.validate_referral_code(code text)
+ RETURNS TABLE(is_valid boolean, referrer_id uuid, referrer_name text, referral_code text, commission_rate numeric, customer_discount_rate numeric, status text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT
+    (r.id IS NOT NULL AND r.status = 'active') AS is_valid,
+    r.id,
+    r.name,
+    r.referral_code,
+    r.commission_rate,
+    10::numeric AS customer_discount_rate,
+    r.status
+  FROM public.referrers r
+  WHERE lower(r.referral_code) = lower(code)
+  LIMIT 1;
+$function$;
