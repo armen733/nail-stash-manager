@@ -977,6 +977,11 @@ const Products = () => {
   const soldOf = useCallback((p: Product) => soldById[p.id] || 0, [soldById]);
 
   const sortedProducts = useMemo(() => {
+    const isLow = (p: Product) => {
+      const stock = p.stock_on_hand || 0;
+      const reorder = p.reorder_level ?? 10;
+      return stock <= reorder;
+    };
     return [...filteredProducts].sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "price") return a.price_usd - b.price_usd;
@@ -986,15 +991,20 @@ const Products = () => {
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }
       if (sortBy === "lowstock") {
-        const isLow = (p: Product) => {
-          const stock = p.stock_on_hand || 0;
-          const reorder = p.reorder_level ?? 10;
-          return stock <= reorder;
-        };
         const aLow = isLow(a) ? 0 : 1;
         const bLow = isLow(b) ? 0 : 1;
         if (aLow !== bLow) return aLow - bLow;
         if (aLow === 0) return (a.stock_on_hand || 0) - (b.stock_on_hand || 0);
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === "lowstock-sales") {
+        const aLow = isLow(a) ? 0 : 1;
+        const bLow = isLow(b) ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        if (aLow === 0) {
+          const diff = (soldById[b.id] || 0) - (soldById[a.id] || 0);
+          return diff !== 0 ? diff : (a.stock_on_hand || 0) - (b.stock_on_hand || 0);
+        }
         return a.name.localeCompare(b.name);
       }
       return 0;
