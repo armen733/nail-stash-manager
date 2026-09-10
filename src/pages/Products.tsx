@@ -985,6 +985,18 @@ const Products = () => {
         const diff = (soldById[b.id] || 0) - (soldById[a.id] || 0);
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }
+      if (sortBy === "lowstock") {
+        const isLow = (p: Product) => {
+          const stock = p.stock_on_hand || 0;
+          const reorder = p.reorder_level ?? 10;
+          return stock <= reorder;
+        };
+        const aLow = isLow(a) ? 0 : 1;
+        const bLow = isLow(b) ? 0 : 1;
+        if (aLow !== bLow) return aLow - bLow;
+        if (aLow === 0) return (a.stock_on_hand || 0) - (b.stock_on_hand || 0);
+        return a.name.localeCompare(b.name);
+      }
       return 0;
     });
   }, [filteredProducts, sortBy, soldById]);
@@ -2440,6 +2452,24 @@ const Products = () => {
                         <Boxes className="h-4 w-4 mr-2" />
                         {sortBy === "stock" ? "Sorted by Most Stock" : "Sort by Most Stock"}
                       </Button>
+                    </div>
+
+                    <div className="pt-1">
+                      <Button
+                        type="button"
+                        variant={sortBy === "lowstock" ? "default" : "outline"}
+                        size="sm"
+                        className="w-full h-9"
+                        onClick={() => setSortBy(sortBy === "lowstock" ? "name" : "lowstock")}
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                        {sortBy === "lowstock" ? "Low Stock First" : "Sort by Low Stock"}
+                      </Button>
+                      {sortBy === "lowstock" && (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Products at or below their reorder level appear first, lowest stock on top.
+                        </p>
+                      )}
                     </div>
 
                     <div className="pt-1">
