@@ -1243,7 +1243,7 @@ const Products = () => {
     setSortBy("name");
   };
 
-  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales";
+  const hasActiveFilters = supplierFilter !== "all" || stockStatusFilter !== "all" || priceRange[0] > 0 || priceRange[1] < maxPrice || advancedCategoryFilter !== "all" || variantTypeFilter !== "all" || sortBy === "stock" || sortBy === "sales" || sortBy === "lowstock";
 
   const handleDuplicateProduct = async (product: Product) => {
     const duplicatedData = {
@@ -2308,7 +2308,7 @@ const Products = () => {
             {/* Filter row - clean layout */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Sort Selector - First for quick access */}
-              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales") => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value: "name" | "price" | "stock" | "sales" | "lowstock") => setSortBy(value)}>
                 <SelectTrigger className="w-[120px] h-10">
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
