@@ -792,6 +792,96 @@ export default function Users() {
         </SheetContent>
       </Sheet>
 
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Order #{selectedOrder?.invoice_number || selectedOrder?.id.slice(0, 8).toUpperCase()}</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4 mt-2">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>{format(new Date(selectedOrder.order_date), "MMM d, yyyy")}</span>
+                <span>•</span>
+                <Badge
+                  variant="secondary"
+                  className={
+                    selectedOrder.status === 'Delivered' || selectedOrder.status === 'Paid'
+                      ? 'bg-green-500/20 text-green-600'
+                      : selectedOrder.status === 'Shipped'
+                        ? 'bg-purple-500/20 text-purple-600'
+                        : 'bg-blue-500/20 text-blue-600'
+                  }
+                >
+                  {selectedOrder.status}
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {selectedOrder.order_items?.map((item) => (
+                  <div key={item.id} className="flex gap-3 p-3 rounded-lg border bg-card">
+                    <div className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden">
+                      {item.products?.image_url ? (
+                        <img
+                          src={item.products.image_url}
+                          alt={item.products.name || "Product"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <ShoppingBag className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.products?.name || "Unknown product"}</p>
+                      {item.products?.sku && (
+                        <p className="text-xs text-muted-foreground">SKU: {item.products.sku}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <p className="text-xs text-muted-foreground">
+                          ${item.unit_price.toFixed(2)} × {item.quantity}
+                        </p>
+                        <p className="text-sm font-semibold">${item.line_total.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>${(selectedOrder.subtotal ?? selectedOrder.total).toFixed(2)}</span>
+                </div>
+                {(selectedOrder.discount_amount ?? 0) > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>-${selectedOrder.discount_amount!.toFixed(2)}</span>
+                  </div>
+                )}
+                {(selectedOrder.shipping ?? 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span>${selectedOrder.shipping!.toFixed(2)}</span>
+                  </div>
+                )}
+                {(selectedOrder.tax ?? 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>${selectedOrder.tax!.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-2 border-t font-semibold text-base">
+                  <span>Total</span>
+                  <span>${selectedOrder.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ContactCustomerDialog
         open={!!contactTarget}
         onOpenChange={(o) => !o && setContactTarget(null)}
