@@ -746,7 +746,7 @@ export default function Users() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-primary">${order.total.toFixed(2)}</p>
+                            <p className="font-semibold text-primary">${Number(order.total ?? 0).toFixed(2)}</p>
                             <Badge 
                               variant="secondary" 
                               className={
@@ -840,9 +840,9 @@ export default function Users() {
                       )}
                       <div className="flex items-center justify-between mt-1.5">
                         <p className="text-xs text-muted-foreground">
-                          ${item.unit_price.toFixed(2)} × {item.quantity}
+                          ${Number(item.unit_price ?? 0).toFixed(2)} × {item.quantity}
                         </p>
-                        <p className="text-sm font-semibold">${item.line_total.toFixed(2)}</p>
+                        <p className="text-sm font-semibold">${Number(item.line_total ?? (Number(item.unit_price ?? 0) * Number(item.quantity ?? 0))).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -852,7 +852,7 @@ export default function Users() {
               <div className="rounded-lg border p-3 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${(selectedOrder.subtotal ?? selectedOrder.total).toFixed(2)}</span>
+                  <span>${Number(selectedOrder.subtotal ?? selectedOrder.total ?? 0).toFixed(2)}</span>
                 </div>
                 {(selectedOrder.discount_amount ?? 0) > 0 && (
                   <div className="flex justify-between text-green-600">
@@ -874,7 +874,7 @@ export default function Users() {
                 )}
                 <div className="flex justify-between pt-2 border-t font-semibold text-base">
                   <span>Total</span>
-                  <span>${selectedOrder.total.toFixed(2)}</span>
+                  <span>${Number(selectedOrder.total ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
