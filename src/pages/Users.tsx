@@ -873,12 +873,20 @@ export default function Users() {
                     <span>-${selectedOrder.discount_amount!.toFixed(2)}</span>
                   </div>
                 )}
-                {(selectedOrder.shipping ?? 0) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>${selectedOrder.shipping!.toFixed(2)}</span>
-                  </div>
-                )}
+                {(() => {
+                  const rawZone = ((selectedOrder as any).shipping_zone ?? '').trim();
+                  const zone = /enter address/i.test(rawZone) ? '' : rawZone;
+                  const amt = selectedOrder.shipping ?? 0;
+                  if (amt <= 0 && !zone) return null;
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Shipping{zone ? ` (${zone})` : ''}
+                      </span>
+                      <span>{amt > 0 ? `$${amt.toFixed(2)}` : 'FREE'}</span>
+                    </div>
+                  );
+                })()}
                 {(selectedOrder.tax ?? 0) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
