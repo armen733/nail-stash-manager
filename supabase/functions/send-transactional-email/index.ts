@@ -41,7 +41,7 @@ interface OrderItem {
 }
 
 interface EmailRequest {
-  type: "order_confirmation" | "abandoned_cart" | "newsletter_welcome";
+  type: "order_confirmation" | "abandoned_cart" | "newsletter_welcome" | "order_shipped";
   email: string;
   name?: string;
   customerName?: string; // Alternative field name from customer app
@@ -188,6 +188,115 @@ const emailFooterDark = `
     </td>
   </tr>
 `;
+
+const getOrderShippedEmail = (data: EmailRequest) => {
+  const itemsHtml = (data.items || []).map(item => `
+    <tr>
+      <td style="padding: 14px 0; border-bottom: 1px solid #e6e6e6;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+          <tr>
+            <td style="width: 64px; vertical-align: top;">
+              ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid #e6e6e6;">` : `<div style="width: 56px; height: 56px; background: #f5f5f5; border-radius: 8px; border: 1px solid #e6e6e6;"></div>`}
+            </td>
+            <td style="vertical-align: top; padding-left: 14px;">
+              <p style="margin: 0 0 4px; font-size: 14px; color: #141414; font-weight: 500;">${item.name}</p>
+              <p style="margin: 0; font-size: 12px; color: #737373;">Qty: ${item.quantity}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Order Has Shipped - NERA Beauty</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e6e6e6; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+          ${emailHeaderLight}
+          <tr>
+            <td align="center" style="padding: 32px 40px 40px; background-color: #ffffff;">
+              <h1 style="margin: 0 0 8px; font-size: 30px; font-weight: 600; color: ${BRAND_GOLD}; text-align: center; font-family: 'Playfair Display', Georgia, serif;">Your Order Is on Its Way!</h1>
+              <p style="margin: 0 0 24px; font-size: 17px; color: #141414; text-align: center;">Great news, ${data.name || 'beautiful'} — your order has shipped</p>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 28px; background-color: #fafafa; border-radius: 12px; border: 1px solid #e6e6e6;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="text-align: center; padding: 0 16px;">
+                          <p style="margin: 0 0 4px; font-size: 11px; color: #737373; text-transform: uppercase; letter-spacing: 1px;">Order ID</p>
+                          <p style="margin: 0; font-size: 16px; color: ${BRAND_GOLD}; font-weight: 600;">#${data.orderId ? data.orderId.slice(0, 8).toUpperCase() : 'N/A'}</p>
+                        </td>
+                        <td style="width: 1px; background-color: #e6e6e6;"></td>
+                        <td style="text-align: center; padding: 0 16px;">
+                          <p style="margin: 0 0 4px; font-size: 11px; color: #737373; text-transform: uppercase; letter-spacing: 1px;">Shipped On</p>
+                          <p style="margin: 0; font-size: 16px; color: #141414; font-weight: 500;">${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              ${data.shippingAddress ? `
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="padding: 16px 20px; background-color: #fafafa; border-radius: 12px; border: 1px solid #e6e6e6;">
+                    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">Delivering To</p>
+                    <p style="margin: 0; font-size: 14px; color: #141414; line-height: 1.6;">${data.shippingAddress.replace(/\n/g, '<br>')}</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+
+              ${itemsHtml ? `
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td style="padding-bottom: 12px; border-bottom: 1px solid #e6e6e6;">
+                    <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">In This Shipment</h3>
+                  </td>
+                </tr>
+                ${itemsHtml}
+              </table>
+              ` : ''}
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 8px 0 0; text-align: center;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                      <tr>
+                        <td align="center" style="background-color: ${BRAND_GOLD}; border-radius: 8px;">
+                          <a href="https://nerabeautyus.com/account" style="display: inline-block; padding: 16px 48px; background-color: ${BRAND_GOLD}; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; border-radius: 8px;">View Your Order</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 24px 0 0; font-size: 14px; color: #737373; text-align: center; line-height: 1.6;">
+                Questions about your delivery? Reply to this email or contact us at <a href="mailto:info@nerabeautyus.com" style="color: ${BRAND_GOLD}; text-decoration: none;">info@nerabeautyus.com</a>
+              </p>
+            </td>
+          </tr>
+          ${emailFooterLight}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+};
 
 const getOrderConfirmationEmail = (data: EmailRequest) => {
   const itemsHtml = (data.items || []).map(item => {
@@ -675,6 +784,14 @@ const handler = async (req: Request): Promise<Response> => {
       case "newsletter_welcome":
         subject = "Welcome to NERA Beauty! Here's 20% Off";
         html = getNewsletterWelcomeEmail(data);
+        break;
+
+      case "order_shipped":
+        if (!data.name && data.customerName) {
+          data.name = data.customerName;
+        }
+        subject = `Your Order Has Shipped - #${data.orderId ? data.orderId.slice(0, 8).toUpperCase() : 'N/A'}`;
+        html = getOrderShippedEmail(data);
         break;
 
       default:
