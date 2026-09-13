@@ -68,7 +68,12 @@ interface Order {
     quantity: number;
     unit_price: number;
     line_total: number;
-    products: { name: string; sku: string | null; image_url: string | null } | null;
+    products: {
+      name: string;
+      sku: string | null;
+      image_url: string | null;
+      product_images?: { image_url: string | null; display_order: number | null }[];
+    } | null;
   }[];
 }
 
@@ -189,7 +194,7 @@ export default function Users() {
         .from("orders")
         .select(`
           id, order_date, status, total, subtotal, tax, shipping, discount_amount, invoice_number, customer_name,
-          order_items(id, quantity, unit_price, line_total, products(name, sku, image_url))
+          order_items(id, quantity, unit_price, line_total, products(name, sku, image_url, product_images(image_url, display_order)))
         `)
         .or(`profile_id.eq.${selectedUser.id},customer_email.eq.${selectedUser.email}`)
         .order("order_date", { ascending: false });
@@ -818,13 +823,20 @@ export default function Users() {
               </div>
 
               <div className="space-y-3">
-                {selectedOrder.order_items?.map((item) => (
+                {selectedOrder.order_items?.map((item) => {
+                  const thumb =
+                    item.products?.image_url ||
+                    [...(item.products?.product_images || [])]
+                      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                      .find((img) => img.image_url)?.image_url ||
+                    null;
+                  return (
                   <div key={item.id} className="flex gap-3 p-3 rounded-lg border bg-card">
                     <div className="w-16 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden">
-                      {item.products?.image_url ? (
+                      {thumb ? (
                         <img
-                          src={item.products.image_url}
-                          alt={item.products.name || "Product"}
+                          src={thumb}
+                          alt={item.products?.name || "Product"}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -846,7 +858,8 @@ export default function Users() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="rounded-lg border p-3 space-y-2 text-sm">
