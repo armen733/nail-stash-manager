@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { sendOrderShippedEmail } from "@/lib/order-notifications";
 import { useToast } from "@/hooks/use-toast";
 
 interface OrderItemForMap {
@@ -114,12 +115,17 @@ export function OrdersMap({ orders, open, onOpenChange, onStatusChange }: Orders
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setIsUpdatingStatus(true);
     try {
+      const previousStatus = geocodedOrders.find(o => o.id === orderId)?.status ?? null;
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus as "Draft" | "Confirmed" | "Shipped" | "Delivered" | "Paid" })
         .eq('id', orderId);
 
       if (error) throw error;
+
+      if (newStatus === 'Shipped') {
+        void sendOrderShippedEmail(orderId, previousStatus);
+      }
 
       // Update local state
       setGeocodedOrders(prev => 

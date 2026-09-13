@@ -11,6 +11,7 @@ import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
 import { generateOrderReceiptPDF } from "@/lib/order-receipt-pdf";
+import { sendOrderShippedEmail, sendOrderShippedEmails } from "@/lib/order-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Calendar } from "@/components/ui/calendar";
@@ -1017,6 +1018,10 @@ const Orders = () => {
         metadata: { status_before: ord?.status, status_after: newStatus },
       });
 
+      if (newStatus === "Shipped") {
+        void sendOrderShippedEmail(orderId, ord?.status);
+      }
+
       toast({ title: "Success", description: `Order status updated to ${newStatus}` });
       fetchData();
     } catch (error: any) {
@@ -1043,9 +1048,13 @@ const Orders = () => {
         metadata: { status_after: bulkStatus, count: selectedOrders.size, ids: Array.from(selectedOrders) },
       });
 
-      toast({ 
-        title: "Success", 
-        description: `${selectedOrders.size} orders updated to ${bulkStatus}` 
+      if (bulkStatus === "Shipped") {
+        void sendOrderShippedEmails(Array.from(selectedOrders), orders);
+      }
+
+      toast({
+        title: "Success",
+        description: `${selectedOrders.size} orders updated to ${bulkStatus}`
       });
       setSelectedOrders(new Set());
       setBulkStatusDialogOpen(false);
@@ -1198,6 +1207,9 @@ Thank you!`;
                         summary: `Bulk status update → ${status} (${ids.length} orders)`,
                         metadata: { status_after: status, count: ids.length, ids },
                       });
+                      if (status === "Shipped") {
+                        void sendOrderShippedEmails(ids, orders);
+                      }
                       toast({ title: "Success", description: `${ids.length} orders updated to ${status}` });
                       setSelectedOrders(new Set());
                       fetchData();
