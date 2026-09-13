@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.award_loyalty_points_after_order() FROM anon, authenticated, public;
