@@ -36,11 +36,12 @@ serve(async (req: Request) => {
       const list = await stripe.checkout.sessions.list({
         payment_intent: paymentIntentId,
         limit: 1,
-        expand: SESSION_EXPAND.map((e) => `data.${e}`),
       });
-      session = list.data[0];
-      if (!session) throw new Error('No checkout session found for that payment');
+      const found = list.data[0];
+      if (!found) throw new Error('No checkout session found for that payment');
+      session = await stripe.checkout.sessions.retrieve(found.id, { expand: SESSION_EXPAND });
     }
+
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
