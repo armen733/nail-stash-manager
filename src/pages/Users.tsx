@@ -746,7 +746,7 @@ export default function Users() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-primary">${order.total.toFixed(2)}</p>
+                            <p className="font-semibold text-primary">${Number(order.total ?? 0).toFixed(2)}</p>
                             <Badge 
                               variant="secondary" 
                               className={
