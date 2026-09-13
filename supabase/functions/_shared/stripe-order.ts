@@ -267,6 +267,7 @@ ${itemsList}
 
 💰 Order Summary:
 • Subtotal: $${subtotal.toFixed(2)}
+${discountAmount > 0 ? `• Discount${discountCode ? ` (${discountCode})` : ''}: -$${discountAmount.toFixed(2)}${subtotal > 0 ? ` (${Math.round((discountAmount / subtotal) * 100)}% off)` : ''}\n` : ''}${shippingAmount > 0 ? `• Shipping: $${shippingAmount.toFixed(2)}\n` : ''}• Tax: $${taxAmount.toFixed(2)}
 • Total: $${total.toFixed(2)}
 
 📅 ${formattedDate}, ${formattedTime}
