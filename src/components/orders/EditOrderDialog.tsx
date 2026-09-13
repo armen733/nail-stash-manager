@@ -15,6 +15,7 @@ import { getDefaultLocationId } from "@/lib/default-location";
 import { useToast } from "@/hooks/use-toast";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { logAudit } from "@/lib/audit-log";
+import { sendOrderShippedEmail } from "@/lib/order-notifications";
 
 interface ProductLite {
   id: string;
@@ -487,6 +488,10 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
         });
       } catch (notifyErr) {
         console.error('Telegram edit notification failed:', notifyErr);
+      }
+
+      if (status === "Shipped" && order.status !== "Shipped") {
+        void sendOrderShippedEmail(order.id, order.status);
       }
 
       toast({ title: "Order updated", description: "Items, stock, and totals were updated." });
