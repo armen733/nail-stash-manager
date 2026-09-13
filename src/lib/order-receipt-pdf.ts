@@ -188,12 +188,10 @@ export function generateOrderReceiptPDF(order: ReceiptOrder) {
     const isPlaceholder = /enter address/i.test(rawZone);
     const zone = isPlaceholder ? "" : rawZone;
     const amt = order.shipping ?? 0;
-    if (amt > 0 || zone) {
-      totals.push({
-        label: `Shipping${zone ? ` (${zone})` : ""}`,
-        value: amt > 0 ? `$${amt.toFixed(2)}` : "FREE",
-      });
-    }
+    totals.push({
+      label: `Shipping${zone ? ` (${zone})` : ""}`,
+      value: amt > 0 ? `$${amt.toFixed(2)}` : "FREE",
+    });
   }
   totals.push({ label: "Total", value: `$${order.total.toFixed(2)}`, bold: true });
 
