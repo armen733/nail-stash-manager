@@ -858,7 +858,8 @@ export default function Users() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="rounded-lg border p-3 space-y-2 text-sm">
