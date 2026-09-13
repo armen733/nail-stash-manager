@@ -55,96 +55,43 @@ serve(async (req) => {
 
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const orderId = session.metadata?.order_id;
-        const customerEmail = session.customer_email || session.customer_details?.email;
-        const customerName = session.customer_details?.name;
+        const rawSession = event.data.object as Stripe.Checkout.Session;
+        const orderId = rawSession.metadata?.order_id;
+        const customerEmail = rawSession.customer_email || rawSession.customer_details?.email;
+        const customerName = rawSession.customer_details?.name;
 
-        console.log('Checkout session completed:', { orderId, customerEmail, customerName });
+        console.log('Checkout session completed:', { id: rawSession.id, orderId, customerEmail });
 
         if (orderId) {
-          // Update order status
+          // Order row already exists (created before checkout) — just confirm it.
           const { error } = await supabase
             .from('orders')
-            .update({ 
+            .update({
               status: 'Confirmed',
               customer_email: customerEmail,
-              customer_name: customerName
+              customer_name: customerName,
+              stripe_session_id: rawSession.id,
             })
             .eq('id', orderId);
 
-          if (error) {
-            console.error('Failed to update order:', error);
-          } else {
-            console.log('Order updated to Confirmed:', orderId);
+          if (error) console.error('Failed to update order:', error);
+          break;
+        }
 
-            // Fetch order with items for notifications
-            const { data: order } = await supabase
-              .from('orders')
-              .select('*')
-              .eq('id', orderId)
-              .single();
-
-            const { data: orderItems } = await supabase
-              .from('order_items')
-              .select(`
-                quantity,
-                unit_price,
-                line_total,
-                products (
-                  name,
-                  image_url
-                )
-              `)
-              .eq('order_id', orderId);
-
-            // Telegram notification is handled by process-stripe-session with "Paid via Stripe" format
-
-            // Send confirmation email with product thumbnails
-            if (customerEmail && order) {
-              try {
-                const emailItems = (orderItems || []).map((item: any) => ({
-                  name: item.products?.name || 'Product',
-                  quantity: item.quantity,
-                  unit_price: item.unit_price,
-                  line_total: item.line_total,
-                  image_url: item.products?.image_url || null
-                }));
-
-                await fetch(`${SUPABASE_URL}/functions/v1/send-transactional-email`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-                  },
-                  body: JSON.stringify({
-                    type: 'order_confirmation',
-                    email: customerEmail,
-                    name: customerName || order.customer_name || 'Customer',
-                    orderId: order.id,
-                    orderDate: new Date(order.order_date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }),
-                    items: emailItems,
-                    subtotal: order.subtotal,
-                    discount: order.discount_amount || 0,
-                    discountCode: order.discount_code || null,
-                    tax: order.tax,
-                    total: order.total,
-                    pointsEarned: order.points_earned || 0
-                  })
-                });
-                console.log('Confirmation email sent to:', customerEmail);
-              } catch (emailError) {
-                console.error('Failed to send confirmation email:', emailError);
-              }
-            }
-          }
+        // Safety net: the browser normally creates the order after redirect.
+        // If it never did (tab closed, network error), create it here.
+        try {
+          const session = await stripe.checkout.sessions.retrieve(rawSession.id, {
+            expand: ['line_items', 'line_items.data.price.product', 'customer_details'],
+          });
+          const result = await createOrderFromSession(session, supabase);
+          console.log('Webhook order result:', result);
+        } catch (createErr) {
+          console.error('Webhook failed to create order:', createErr);
         }
         break;
       }
+
 
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
