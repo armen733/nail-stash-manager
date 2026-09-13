@@ -645,6 +645,7 @@ export type Database = {
           shipping: number
           shipping_zone: string | null
           status: Database["public"]["Enums"]["order_status"]
+          stripe_session_id: string | null
           subtotal: number
           tax: number
           technician_name: string | null
@@ -676,6 +677,7 @@ export type Database = {
           shipping?: number
           shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_session_id?: string | null
           subtotal?: number
           tax?: number
           technician_name?: string | null
@@ -707,6 +709,7 @@ export type Database = {
           shipping?: number
           shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_session_id?: string | null
           subtotal?: number
           tax?: number
           technician_name?: string | null
