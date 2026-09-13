@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.create-stripe-payment-intent]
 verify_jwt = false
+
+[functions.notify-order-shipped]
+verify_jwt = false
