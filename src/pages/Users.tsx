@@ -840,9 +840,9 @@ export default function Users() {
                       )}
                       <div className="flex items-center justify-between mt-1.5">
                         <p className="text-xs text-muted-foreground">
-                          ${item.unit_price.toFixed(2)} × {item.quantity}
+                          ${Number(item.unit_price ?? 0).toFixed(2)} × {item.quantity}
                         </p>
-                        <p className="text-sm font-semibold">${item.line_total.toFixed(2)}</p>
+                        <p className="text-sm font-semibold">${Number(item.line_total ?? (Number(item.unit_price ?? 0) * Number(item.quantity ?? 0))).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
