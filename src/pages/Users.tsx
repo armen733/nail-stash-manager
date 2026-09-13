@@ -61,6 +61,7 @@ interface Order {
   subtotal?: number;
   tax?: number;
   shipping?: number;
+  shipping_zone?: string | null;
   discount_amount?: number;
   invoice_number?: string | null;
   order_items?: {
@@ -193,7 +194,7 @@ export default function Users() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_date, status, total, subtotal, tax, shipping, discount_amount, invoice_number, customer_name,
+          id, order_date, status, total, subtotal, tax, shipping, shipping_zone, discount_amount, invoice_number, customer_name,
           order_items(id, quantity, unit_price, line_total, products(name, sku, image_url, product_images(image_url, display_order)))
         `)
         .or(`profile_id.eq.${selectedUser.id},customer_email.eq.${selectedUser.email}`)
@@ -873,12 +874,20 @@ export default function Users() {
                     <span>-${selectedOrder.discount_amount!.toFixed(2)}</span>
                   </div>
                 )}
-                {(selectedOrder.shipping ?? 0) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span>${selectedOrder.shipping!.toFixed(2)}</span>
-                  </div>
-                )}
+                {(() => {
+                  const rawZone = ((selectedOrder as any).shipping_zone ?? '').trim();
+                  const zone = /enter address/i.test(rawZone) ? '' : rawZone;
+                  const amt = selectedOrder.shipping ?? 0;
+                  if (amt <= 0 && !zone) return null;
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Shipping{zone ? ` (${zone})` : ''}
+                      </span>
+                      <span>{amt > 0 ? `$${amt.toFixed(2)}` : 'FREE'}</span>
+                    </div>
+                  );
+                })()}
                 {(selectedOrder.tax ?? 0) > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
