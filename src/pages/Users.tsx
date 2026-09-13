@@ -187,12 +187,15 @@ export default function Users() {
       
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_date, status, total, customer_name, order_items(id, quantity, unit_price, products(name))")
+        .select(`
+          id, order_date, status, total, subtotal, tax, shipping, discount_amount, invoice_number, customer_name,
+          order_items(id, quantity, unit_price, line_total, products(name, sku, image_url))
+        `)
         .or(`profile_id.eq.${selectedUser.id},customer_email.eq.${selectedUser.email}`)
         .order("order_date", { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Order[];
     },
     enabled: !!selectedUser,
   });
