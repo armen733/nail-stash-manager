@@ -58,11 +58,17 @@ interface Order {
   status: string;
   total: number;
   customer_name: string | null;
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  discount_amount?: number;
+  invoice_number?: string | null;
   order_items?: {
     id: string;
     quantity: number;
     unit_price: number;
-    products: { name: string } | null;
+    line_total: number;
+    products: { name: string; sku: string | null; image_url: string | null } | null;
   }[];
 }
 
