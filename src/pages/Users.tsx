@@ -733,12 +733,13 @@ export default function Users() {
                     {userOrders.map((order) => (
                       <div 
                         key={order.id} 
-                        className="p-3 rounded-lg border bg-card"
+                        className="p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedOrder(order)}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-medium text-sm">
-                              #{order.id.slice(0, 8).toUpperCase()}
+                              #{order.invoice_number || order.id.slice(0, 8).toUpperCase()}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(order.order_date), "MMM d, yyyy")}
