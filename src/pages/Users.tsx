@@ -874,7 +874,7 @@ export default function Users() {
                 )}
                 <div className="flex justify-between pt-2 border-t font-semibold text-base">
                   <span>Total</span>
-                  <span>${selectedOrder.total.toFixed(2)}</span>
+                  <span>${Number(selectedOrder.total ?? 0).toFixed(2)}</span>
                 </div>
               </div>
             </div>
