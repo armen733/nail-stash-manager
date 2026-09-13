@@ -852,7 +852,7 @@ export default function Users() {
               <div className="rounded-lg border p-3 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${(selectedOrder.subtotal ?? selectedOrder.total).toFixed(2)}</span>
+                  <span>${Number(selectedOrder.subtotal ?? selectedOrder.total ?? 0).toFixed(2)}</span>
                 </div>
                 {(selectedOrder.discount_amount ?? 0) > 0 && (
                   <div className="flex justify-between text-green-600">
