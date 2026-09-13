@@ -76,6 +76,7 @@ export default function Users() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithTier | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newsletterOnly, setNewsletterOnly] = useState(false);
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
