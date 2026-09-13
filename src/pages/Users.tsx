@@ -61,6 +61,7 @@ interface Order {
   subtotal?: number;
   tax?: number;
   shipping?: number;
+  shipping_zone?: string | null;
   discount_amount?: number;
   invoice_number?: string | null;
   order_items?: {
@@ -193,7 +194,7 @@ export default function Users() {
       const { data, error } = await supabase
         .from("orders")
         .select(`
-          id, order_date, status, total, subtotal, tax, shipping, discount_amount, invoice_number, customer_name,
+          id, order_date, status, total, subtotal, tax, shipping, shipping_zone, discount_amount, invoice_number, customer_name,
           order_items(id, quantity, unit_price, line_total, products(name, sku, image_url, product_images(image_url, display_order)))
         `)
         .or(`profile_id.eq.${selectedUser.id},customer_email.eq.${selectedUser.email}`)
