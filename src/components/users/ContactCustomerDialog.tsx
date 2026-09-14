@@ -62,6 +62,15 @@ const TEMPLATES: TemplateDef[] = [
       `Hi ${n || "there"}, your ${STORE_NAME} order is ready for pickup. See you soon!`,
   },
   {
+    id: "welcome",
+    label: "Welcome new user",
+    subject: `Welcome to ${STORE_NAME} 💚`,
+    body: (n) =>
+      `Hi ${n || "there"},\n\nWelcome to the ${STORE_NAME} family — we're so happy to have you!\n\nAs a thank you for joining, enjoy 40% off your first order with code WELCOMETONERA. Don't wait, this welcome treat won't last forever.\n\nShop now and treat yourself to something beautiful.\n\nWith love,\nThe ${STORE_NAME} Team`,
+    smsBody: (n) =>
+      `Hi ${n || "there"}, welcome to ${STORE_NAME} 💚 Use code WELCOMETONERA for 40% off your first order. Shop now!`,
+  },
+  {
     id: "thanks",
     label: "Thank you",
     subject: `Thank you from ${STORE_NAME} 💚`,
