@@ -85,6 +85,7 @@ export default function Users() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newsletterOnly, setNewsletterOnly] = useState(false);
+  const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -457,9 +458,20 @@ export default function Users() {
               {newsletterOnly && (
                 <span className="ml-1 text-xs bg-primary-foreground text-primary rounded-full px-1.5 py-0.5">
                   On
-                </span>
+              </span>
               )}
             </Button>
+            <Select value={sortMode} onValueChange={(v) => setSortMode(v as typeof sortMode)}>
+              <SelectTrigger className="h-9 w-[150px] shrink-0">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="most_orders">Most Orders</SelectItem>
+                <SelectItem value="top_spenders">Top Spenders</SelectItem>
+                <SelectItem value="no_orders">No Orders</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
@@ -475,8 +487,14 @@ export default function Users() {
                 const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   user.email.toLowerCase().includes(searchTerm.toLowerCase());
                 const matchesNewsletter = !newsletterOnly || (newsletterSubscribers?.has(user.email.toLowerCase()) ?? false);
-                return matchesSearch && matchesNewsletter;
+                const matchesOrders = sortMode !== "no_orders" || (user.order_count ?? 0) === 0;
+                return matchesSearch && matchesNewsletter && matchesOrders;
               });
+              if (sortMode === "most_orders") {
+                filteredUsers.sort((a, b) => (b.order_count ?? 0) - (a.order_count ?? 0));
+              } else if (sortMode === "top_spenders") {
+                filteredUsers.sort((a, b) => (b.total_spent ?? 0) - (a.total_spent ?? 0));
+              }
               return filteredUsers.length > 0 ? (
                 <div className="space-y-2 p-4 sm:p-0">
                   {filteredUsers.map((user) => {
