@@ -85,6 +85,7 @@ export default function Users() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newsletterOnly, setNewsletterOnly] = useState(false);
+  const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [formData, setFormData] = useState({
     full_name: "",
