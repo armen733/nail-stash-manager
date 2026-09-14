@@ -487,8 +487,14 @@ export default function Users() {
                 const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   user.email.toLowerCase().includes(searchTerm.toLowerCase());
                 const matchesNewsletter = !newsletterOnly || (newsletterSubscribers?.has(user.email.toLowerCase()) ?? false);
-                return matchesSearch && matchesNewsletter;
+                const matchesOrders = sortMode !== "no_orders" || (user.order_count ?? 0) === 0;
+                return matchesSearch && matchesNewsletter && matchesOrders;
               });
+              if (sortMode === "most_orders") {
+                filteredUsers.sort((a, b) => (b.order_count ?? 0) - (a.order_count ?? 0));
+              } else if (sortMode === "top_spenders") {
+                filteredUsers.sort((a, b) => (b.total_spent ?? 0) - (a.total_spent ?? 0));
+              }
               return filteredUsers.length > 0 ? (
                 <div className="space-y-2 p-4 sm:p-0">
                   {filteredUsers.map((user) => {
