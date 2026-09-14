@@ -245,8 +245,19 @@ export async function createOrderFromSession(
         timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit', hour12: true,
       });
 
+      // Look up SKUs for ordered products
+      let skuById: Record<string, string> = {};
+      const productIds = [...new Set(orderItemsInfo.map((it: any) => it.product_id).filter(Boolean))];
+      if (productIds.length > 0) {
+        const { data: prods } = await supabase.from('products').select('id, sku').in('id', productIds);
+        for (const p of prods || []) skuById[p.id] = p.sku;
+      }
+
       const itemsList = orderItemsInfo.length > 0
-        ? orderItemsInfo.map((item: any) => `  • ${item.product_name} x${item.quantity} - $${item.line_total.toFixed(2)}`).join('\n')
+        ? orderItemsInfo.map((item: any) => {
+            const sku = item.sku || skuById[item.product_id] || '';
+            return `  • ${item.product_name}${sku ? ` (${sku})` : ''} x${item.quantity} - $${item.line_total.toFixed(2)}`;
+          }).join('\n')
         : '  No items';
 
       const telegramMessage = `━━━━━━━━━━━━━━━━━━━━
