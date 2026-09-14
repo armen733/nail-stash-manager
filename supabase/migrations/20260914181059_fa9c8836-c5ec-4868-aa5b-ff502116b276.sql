@@ -1,0 +1,1 @@
+ALTER TABLE public.referrers ADD COLUMN IF NOT EXISTS instagram text;
