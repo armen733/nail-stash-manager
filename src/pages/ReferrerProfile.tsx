@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowLeft, Users, DollarSign, TrendingUp, CheckCircle, Clock,
-  UserPlus, Copy, Download, Phone, Mail, Calendar, Share2,
+  UserPlus, Copy, Download, Phone, Mail, Calendar, Share2, Instagram,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
@@ -24,6 +24,7 @@ interface Referrer {
   phone: string | null;
   email: string | null;
   referral_code: string;
+  instagram: string | null;
   commission_rate: number;
   status: string;
   total_referred: number;
@@ -232,6 +233,17 @@ const ReferrerProfile = () => {
             )}
             {referrer.email && (
               <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {referrer.email}</span>
+            )}
+            {referrer.instagram && (
+              <a
+                href={referrer.instagram.startsWith("http") ? referrer.instagram : `https://instagram.com/${referrer.instagram.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-primary hover:underline"
+              >
+                <Instagram className="h-3 w-3" />
+                @{referrer.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+              </a>
             )}
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" /> Since {format(new Date(referrer.created_at), "MMM d, yyyy")}
