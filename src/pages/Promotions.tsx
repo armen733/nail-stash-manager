@@ -246,6 +246,21 @@ const Promotions = () => {
     setIsAddDialogOpen(true);
   };
 
+  const handleReleaseCode = async (code: DiscountCode) => {
+    try {
+      const { error } = await supabase
+        .from("discount_codes")
+        .update({ locked_user_id: null } as any)
+        .eq("id", code.id);
+      if (error) throw error;
+      setEditingCode({ ...(code as any), locked_user_id: null });
+      toast.success("Code released — it can be claimed again");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Error releasing code: " + error.message);
+    }
+  };
+
   const handleDeleteCode = async (id: string) => {
     if (!confirm("Are you sure you want to delete this discount code?")) return;
 
