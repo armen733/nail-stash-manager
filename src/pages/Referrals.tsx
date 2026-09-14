@@ -39,6 +39,7 @@ interface Referrer {
   name: string;
   phone: string | null;
   email: string | null;
+  instagram: string | null;
   referral_code: string;
   commission_rate: number;
   status: string;
@@ -99,6 +100,7 @@ const Referrals = () => {
     name: "",
     phone: "",
     email: "",
+    instagram: "",
     referral_code: generateCode(),
     commission_rate: "10",
     status: "active",
@@ -142,6 +144,7 @@ const Referrals = () => {
         name: formData.name,
         phone: formData.phone || null,
         email: formData.email || null,
+        instagram: formData.instagram || null,
         referral_code: formData.referral_code.toUpperCase(),
         commission_rate: parseFloat(formData.commission_rate) || 10,
         status: formData.status,
@@ -238,7 +241,7 @@ const Referrals = () => {
 
   const resetForm = () => {
     setFormData({
-      name: "", phone: "", email: "",
+      name: "", phone: "", email: "", instagram: "",
       referral_code: generateCode(),
       commission_rate: "10", status: "active",
     });
@@ -250,6 +253,7 @@ const Referrals = () => {
       name: ref.name,
       phone: ref.phone || "",
       email: ref.email || "",
+      instagram: ref.instagram || "",
       referral_code: ref.referral_code,
       commission_rate: String(ref.commission_rate),
       status: ref.status,
@@ -484,6 +488,16 @@ const Referrals = () => {
                         <button onClick={() => navigate(`/referrals/${ref.id}`)} className="text-primary hover:underline text-left">
                           {ref.name}
                         </button>
+                        {ref.instagram && (
+                          <a
+                            href={ref.instagram.startsWith("http") ? ref.instagram : `https://instagram.com/${ref.instagram.replace(/^@/, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs text-muted-foreground hover:text-primary"
+                          >
+                            @{ref.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+                          </a>
+                        )}
                       </TableCell>
                       <TableCell>
                         <button onClick={() => copyCode(ref.referral_code)} className="flex items-center gap-1 text-xs font-mono bg-muted px-2 py-1 rounded hover:bg-muted/80">
@@ -670,6 +684,10 @@ const Referrals = () => {
             <div>
               <Label>Email</Label>
               <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" />
+            </div>
+            <div>
+              <Label>Instagram</Label>
+              <Input value={formData.instagram} onChange={(e) => setFormData({ ...formData, instagram: e.target.value })} placeholder="@handle or https://instagram.com/..." />
             </div>
             <div>
               <Label>Referral Code *</Label>
