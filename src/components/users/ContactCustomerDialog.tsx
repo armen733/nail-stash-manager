@@ -37,11 +37,11 @@ const TEMPLATES: TemplateDef[] = [
   {
     id: "miss_you",
     label: "We miss you",
-    subject: `${STORE_NAME} misses you 💚`,
+    subject: `${STORE_NAME} misses you 🖤`,
     body: (n) =>
       `Hi ${n || "there"},\n\nIt's been a while! We miss having you at ${STORE_NAME}. Stop by — we have new arrivals waiting for you, and a little something special for returning customers.\n\nSee you soon,\nThe ${STORE_NAME} Team`,
     smsBody: (n) =>
-      `Hi ${n || "there"}, it's ${STORE_NAME} 💚 We miss you! New arrivals are in — come check them out.`,
+      `Hi ${n || "there"}, it's ${STORE_NAME} 🖤 We miss you! New arrivals are in — come check them out.`,
   },
   {
     id: "new_arrivals",
@@ -64,20 +64,20 @@ const TEMPLATES: TemplateDef[] = [
   {
     id: "welcome",
     label: "Welcome new user",
-    subject: `Welcome to ${STORE_NAME} 💚`,
+    subject: `Welcome to ${STORE_NAME} 🖤`,
     body: (n) =>
       `Hi ${n || "there"},\n\nWelcome to the ${STORE_NAME} family — we're so happy to have you!\n\nAs a thank you for joining, enjoy 40% off your first order with code WELCOMETONERA. Don't wait, this welcome treat won't last forever.\n\nShop now and treat yourself to something beautiful.\n\nWith love,\nThe ${STORE_NAME} Team`,
     smsBody: (n) =>
-      `Hi ${n || "there"}, welcome to ${STORE_NAME} 💚 Use code WELCOMETONERA for 40% off your first order. Shop now!`,
+      `Hi ${n || "there"}, welcome to ${STORE_NAME} 🖤 Use code WELCOMETONERA for 40% off your first order. Shop now!`,
   },
   {
     id: "thanks",
     label: "Thank you",
-    subject: `Thank you from ${STORE_NAME} 💚`,
+    subject: `Thank you from ${STORE_NAME} 🖤`,
     body: (n) =>
       `Hi ${n || "there"},\n\nJust a quick note to say thank you for shopping with ${STORE_NAME}. Your support means everything to us.\n\nWith gratitude,\nThe ${STORE_NAME} Team`,
     smsBody: (n) =>
-      `Hi ${n || "there"}, thank you for choosing ${STORE_NAME} 💚 We appreciate you!`,
+      `Hi ${n || "there"}, thank you for choosing ${STORE_NAME} 🖤 We appreciate you!`,
   },
   {
     id: "custom",
