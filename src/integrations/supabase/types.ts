@@ -1233,6 +1233,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          instagram: string | null
           linked_profile_id: string | null
           name: string
           phone: string | null
@@ -1248,6 +1249,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          instagram?: string | null
           linked_profile_id?: string | null
           name: string
           phone?: string | null
@@ -1263,6 +1265,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          instagram?: string | null
           linked_profile_id?: string | null
           name?: string
           phone?: string | null
