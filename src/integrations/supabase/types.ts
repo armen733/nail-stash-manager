@@ -381,9 +381,11 @@ export type Database = {
           discount_percent: number
           id: string
           is_active: boolean | null
+          locked_user_id: string | null
           max_uses: number | null
           min_order_amount: number | null
           one_per_user: boolean
+          single_account_only: boolean
           valid_from: string | null
           valid_until: string | null
         }
@@ -394,9 +396,11 @@ export type Database = {
           discount_percent: number
           id?: string
           is_active?: boolean | null
+          locked_user_id?: string | null
           max_uses?: number | null
           min_order_amount?: number | null
           one_per_user?: boolean
+          single_account_only?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
@@ -407,9 +411,11 @@ export type Database = {
           discount_percent?: number
           id?: string
           is_active?: boolean | null
+          locked_user_id?: string | null
           max_uses?: number | null
           min_order_amount?: number | null
           one_per_user?: boolean
+          single_account_only?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }

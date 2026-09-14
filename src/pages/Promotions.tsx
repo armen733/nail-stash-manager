@@ -84,6 +84,7 @@ const Promotions = () => {
     min_order_amount: "",
     is_active: true,
     one_per_user: true,
+    single_account_only: false,
   });
 
   useEffect(() => {
@@ -136,6 +137,7 @@ const Promotions = () => {
       min_order_amount: "",
       is_active: true,
       one_per_user: true,
+      single_account_only: false,
     });
     setEditingCode(null);
   };
@@ -202,6 +204,7 @@ const Promotions = () => {
         min_order_amount: formData.min_order_amount ? parseFloat(formData.min_order_amount) : 0,
         is_active: formData.is_active,
         one_per_user: formData.one_per_user,
+        single_account_only: formData.single_account_only,
       };
 
       if (editingCode) {
@@ -238,8 +241,24 @@ const Promotions = () => {
       min_order_amount: code.min_order_amount?.toString() || "",
       is_active: code.is_active ?? true,
       one_per_user: (code as any).one_per_user ?? true,
+      single_account_only: (code as any).single_account_only ?? false,
     });
     setIsAddDialogOpen(true);
+  };
+
+  const handleReleaseCode = async (code: DiscountCode) => {
+    try {
+      const { error } = await supabase
+        .from("discount_codes")
+        .update({ locked_user_id: null } as any)
+        .eq("id", code.id);
+      if (error) throw error;
+      setEditingCode({ ...(code as any), locked_user_id: null });
+      toast.success("Code released — it can be claimed again");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Error releasing code: " + error.message);
+    }
   };
 
   const handleDeleteCode = async (id: string) => {
@@ -521,6 +540,39 @@ const Promotions = () => {
                       onCheckedChange={(checked) => setFormData({ ...formData, one_per_user: checked })}
                     />
                   </div>
+                  <div className="flex items-start justify-between gap-3 rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="single_account_only">Only 1 account can use it</Label>
+                      <p className="text-xs text-muted-foreground">
+                        The first signed-in customer who uses this code claims it — nobody else can use it after that. Great for a partner's personal code.
+                      </p>
+                      {editingCode && (editingCode as any).locked_user_id && (
+                        <div className="pt-2 space-y-1">
+                          <p className="text-xs">
+                            Claimed by:{" "}
+                            <span className="font-medium">
+                              {profiles.find((p) => p.id === (editingCode as any).locked_user_id)?.full_name ||
+                                profiles.find((p) => p.id === (editingCode as any).locked_user_id)?.email ||
+                                "Unknown customer"}
+                            </span>
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReleaseCode(editingCode)}
+                          >
+                            Release code
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <Switch
+                      id="single_account_only"
+                      checked={formData.single_account_only}
+                      onCheckedChange={(checked) => setFormData({ ...formData, single_account_only: checked })}
+                    />
+                  </div>
                   <Button onClick={handleSaveDiscountCode} className="w-full h-11 min-h-[44px]">
                     {editingCode ? "Update" : "Create"} Code
                   </Button>
@@ -560,6 +612,17 @@ const Promotions = () => {
                               <span>{code.discount_percent}%</span>
                               {((code as any).one_per_user ?? true) && (
                                 <Badge variant="outline" className="text-[10px]">1 / customer</Badge>
+                              )}
+                              {(code as any).single_account_only && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {(code as any).locked_user_id
+                                    ? `Claimed: ${
+                                        profiles.find((p) => p.id === (code as any).locked_user_id)?.full_name ||
+                                        profiles.find((p) => p.id === (code as any).locked_user_id)?.email ||
+                                        "customer"
+                                      }`
+                                    : "1 account only"}
+                                </Badge>
                               )}
                             </div>
                           </TableCell>
