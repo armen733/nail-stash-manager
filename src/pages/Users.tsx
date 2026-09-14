@@ -458,9 +458,20 @@ export default function Users() {
               {newsletterOnly && (
                 <span className="ml-1 text-xs bg-primary-foreground text-primary rounded-full px-1.5 py-0.5">
                   On
-                </span>
+              </span>
               )}
             </Button>
+            <Select value={sortMode} onValueChange={(v) => setSortMode(v as typeof sortMode)}>
+              <SelectTrigger className="h-9 w-[150px] shrink-0">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="most_orders">Most Orders</SelectItem>
+                <SelectItem value="top_spenders">Top Spenders</SelectItem>
+                <SelectItem value="no_orders">No Orders</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
