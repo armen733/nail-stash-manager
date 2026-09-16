@@ -335,6 +335,15 @@ export default function Users() {
     }
   };
 
+  const customerPins: CustomerPin[] = (users || [])
+    .filter((u) => !!u.last_address)
+    .map((u) => ({
+      name: u.full_name,
+      address: u.last_address as string,
+      orders: u.order_count || 0,
+      revenue: u.total_spent || 0,
+    }));
+
   const getTierColor = (tier: string | null | undefined) => {
     switch (tier?.toLowerCase()) {
       case 'gold': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
@@ -451,6 +460,7 @@ export default function Users() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
