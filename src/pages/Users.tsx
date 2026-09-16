@@ -116,6 +116,19 @@ export default function Users() {
     },
   });
 
+  const { data: unlinkedReferrers } = useQuery({
+    queryKey: ["unlinked-referrers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrers")
+        .select("id, name, referral_code")
+        .is("linked_profile_id", null)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: newsletterSubscribers } = useQuery({
     queryKey: ["newsletter-subscribers"],
     queryFn: async () => {
