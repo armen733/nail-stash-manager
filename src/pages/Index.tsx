@@ -49,6 +49,8 @@ interface WebsiteOrderRow {
   created_at: string;
   status: string;
   customer_key: string;
+  customer_name: string;
+  profile_id: string | null;
 }
 
 interface TopSupplyStore {
@@ -150,7 +152,17 @@ const Index = () => {
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [websiteOrders, setWebsiteOrders] = useState<WebsiteOrderRow[]>([]);
-  const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string } | null>(null);
+  const [websiteCustomersOpen, setWebsiteCustomersOpen] = useState(false);
+  const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string; profile_id: string | null } | null>(null);
+  const websiteCustomers = Object.values(
+    websiteOrders.reduce((acc, o) => {
+      if (!acc[o.customer_key]) acc[o.customer_key] = { key: o.customer_key, name: o.customer_name, profile_id: o.profile_id, count: 0, revenue: 0 };
+      acc[o.customer_key].count += 1;
+      acc[o.customer_key].revenue += o.total;
+      if (!acc[o.customer_key].profile_id && o.profile_id) acc[o.customer_key].profile_id = o.profile_id;
+      return acc;
+    }, {} as Record<string, { key: string; name: string; profile_id: string | null; count: number; revenue: number }>)
+  ).sort((a, b) => b.revenue - a.revenue);
   const [showAllSalons, setShowAllSalons] = useState(false);
   const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
   const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
@@ -188,12 +200,9 @@ const Index = () => {
     if (salon.salon_id) {
       setSelectedSalonId(salon.salon_id);
       setSelectedSalonName(salon.salon_name);
-    } else if (salon.is_website && salon.customer_key) {
-      if (salon.profile_id) {
-        navigate(`/users?userId=${salon.profile_id}`);
-      } else {
-        setSelectedWebsiteCustomer({ key: salon.customer_key, name: salon.salon_name });
-      }
+    } else if (salon.is_website) {
+      setSelectedWebsiteCustomer(null);
+      setWebsiteCustomersOpen(true);
     }
   };
 
@@ -415,35 +424,28 @@ const Index = () => {
       };
       setStats(newStats);
 
-      // Calculate top salons — website orders are grouped per customer
+      // Calculate top salons — website orders stay as one "Website orders" group
       const websiteOrdersList: WebsiteOrderRow[] = [];
-      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null; isWebsite?: boolean; profile_id?: string | null; customer_key?: string }>, order) => {
+      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null; isWebsite?: boolean }>, order) => {
         const isWebsite = !order.salon_id && !order.created_by;
         const isInPerson = !order.salon_id && !!order.created_by;
-        const customerKey = order.profile_id || (order as any).customer_email || (order as any).customer_name || 'unknown';
-        const groupKey = order.salon_id || (isWebsite ? `website-${customerKey}` : 'in-person');
-        const customerName = (order as any).customer_name || displayName(null, (order as any).customer_email);
-        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? customerName : "Unknown");
+        const groupKey = order.salon_id || (isWebsite ? 'website' : 'in-person');
+        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? "Website orders" : "Unknown");
         if (!acc[groupKey]) {
-          acc[groupKey] = {
-            count: 0,
-            revenue: 0,
-            name: salonName,
-            salon_id: order.salon_id || null,
-            isWebsite,
-            profile_id: (order as any).profile_id || null,
-            customer_key: isWebsite ? customerKey : undefined,
-          };
+          acc[groupKey] = { count: 0, revenue: 0, name: salonName, salon_id: order.salon_id || null, isWebsite };
         }
         acc[groupKey].count += 1;
         acc[groupKey].revenue += order.total || 0;
         if (isWebsite) {
+          const customerKey = order.profile_id || (order as any).customer_email || (order as any).customer_name || 'unknown';
           websiteOrdersList.push({
             id: order.id,
             total: order.total || 0,
             created_at: order.created_at,
             status: order.status,
             customer_key: customerKey,
+            customer_name: (order as any).customer_name || displayName(null, (order as any).customer_email),
+            profile_id: (order as any).profile_id || null,
           });
         }
         return acc;
@@ -458,8 +460,6 @@ const Index = () => {
           order_count: s.count,
           total_revenue: s.revenue,
           is_website: s.isWebsite,
-          profile_id: s.profile_id,
-          customer_key: s.customer_key,
         }));
       setAllSalons(allSalonsData);
       setTopSalons(allSalonsData.slice(0, 5));
@@ -1463,7 +1463,7 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {topSalons.map((salon, index) => {
-                  const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                  const clickable = !!salon.salon_id || !!salon.is_website;
                   return (
                     <div
                       key={index}
@@ -2079,32 +2079,61 @@ const Index = () => {
         onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
       />
 
-      <Dialog open={!!selectedWebsiteCustomer} onOpenChange={(open) => { if (!open) setSelectedWebsiteCustomer(null); }}>
+      <Dialog open={websiteCustomersOpen} onOpenChange={(open) => { setWebsiteCustomersOpen(open); if (!open) setSelectedWebsiteCustomer(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{selectedWebsiteCustomer?.name} — Website Orders</DialogTitle>
+            <DialogTitle>
+              {selectedWebsiteCustomer ? `${selectedWebsiteCustomer.name} — Orders` : "Website Orders"}
+            </DialogTitle>
           </DialogHeader>
+          {selectedWebsiteCustomer && (
+            <Button variant="ghost" size="sm" className="self-start -mt-2 text-purple-500" onClick={() => setSelectedWebsiteCustomer(null)}>
+              ← Back to customers
+            </Button>
+          )}
           <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 pr-2">
-              {websiteOrders
-                .filter((o) => o.customer_key === selectedWebsiteCustomer?.key)
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .map((o) => (
+            {!selectedWebsiteCustomer ? (
+              <div className="space-y-2 pr-2">
+                {websiteCustomers.map((c) => (
                   <div
-                    key={o.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    key={c.key}
+                    className="flex items-center justify-between rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 cursor-pointer hover:bg-purple-500/10 transition-colors"
+                    onClick={() => {
+                      if (c.profile_id) {
+                        setWebsiteCustomersOpen(false);
+                        navigate(`/users?userId=${c.profile_id}`);
+                      } else {
+                        setSelectedWebsiteCustomer({ key: c.key, name: c.name, profile_id: c.profile_id });
+                      }
+                    }}
                   >
                     <div>
-                      <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-xs text-muted-foreground">{formatLocalDate(new Date(o.created_at), { month: "short", day: "numeric", year: "numeric" })} · {o.status}</p>
+                      <p className="font-medium text-sm text-purple-500">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.count} {c.count === 1 ? "order" : "orders"}</p>
                     </div>
-                    <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
+                    <p className="font-semibold text-purple-500">${c.revenue.toFixed(2)}</p>
                   </div>
                 ))}
-              {websiteOrders.filter((o) => o.customer_key === selectedWebsiteCustomer?.key).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No orders found for this customer.</p>
-              )}
-            </div>
+                {websiteCustomers.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">No website orders yet.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2 pr-2">
+                {websiteOrders
+                  .filter((o) => o.customer_key === selectedWebsiteCustomer.key)
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((o) => (
+                    <div key={o.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
+                        <p className="text-xs text-muted-foreground">{formatLocalDate(new Date(o.created_at), { month: "short", day: "numeric", year: "numeric" })} · {o.status}</p>
+                      </div>
+                      <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
@@ -2117,7 +2146,7 @@ const Index = () => {
           <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
             <div className="space-y-2 pr-4">
               {allSalons.map((salon, index) => {
-                const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                const clickable = !!salon.salon_id || !!salon.is_website;
                 return (
                   <div
                     key={index}
