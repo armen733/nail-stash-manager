@@ -37,8 +37,6 @@ import {
 } from "@/components/ui/sheet";
 import WebsiteCustomersMap, { CustomerPin } from "@/components/salons/WebsiteCustomersMap";
 import { MapPin, Map as MapIcon } from "lucide-react";
-const __sheetEnd = {
-} from "@/components/ui/sheet";
 
 interface UserWithTier {
   id: string;
