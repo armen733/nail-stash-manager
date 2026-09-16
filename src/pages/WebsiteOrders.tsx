@@ -172,7 +172,7 @@ const WebsiteOrders = () => {
 
   const mapPins: CustomerPin[] = customers
     .filter((c) => !!c.address)
-    .map((c) => ({ name: c.name, address: c.address as string, orders: c.orders, revenue: c.revenue }));
+    .map((c) => ({ id: c.profileId || c.key, name: c.name, address: c.address as string, orders: c.orders, revenue: c.revenue }));
 
 
   const goProfile = (id: string | null) =>
@@ -457,7 +457,7 @@ const WebsiteOrders = () => {
         </TabsContent>
       </Tabs>
 
-      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={mapPins} />
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={mapPins} onViewCustomer={(id) => goProfile(id)} />
     </div>
 
   );
