@@ -115,7 +115,7 @@ const WebsiteOrders = () => {
     } else {
       customerMap.set(key, {
         key,
-        name: displayName(o.customer_name, o.customer_email) !== "Guest" ? displayName(o.customer_name, o.customer_email) : (o.customer_name || o.customer_email || "Guest"),
+        name: (o.customer_name || o.customer_email) ? displayName(o.customer_name, o.customer_email) : "Guest",
         email: o.customer_email,
         phone: o.customer_phone,
         address: o.customer_address,
