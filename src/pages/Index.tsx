@@ -49,6 +49,8 @@ interface WebsiteOrderRow {
   created_at: string;
   status: string;
   customer_key: string;
+  customer_name: string;
+  profile_id: string | null;
 }
 
 interface TopSupplyStore {
@@ -415,35 +417,28 @@ const Index = () => {
       };
       setStats(newStats);
 
-      // Calculate top salons — website orders are grouped per customer
+      // Calculate top salons — website orders stay as one "Website orders" group
       const websiteOrdersList: WebsiteOrderRow[] = [];
-      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null; isWebsite?: boolean; profile_id?: string | null; customer_key?: string }>, order) => {
+      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null; isWebsite?: boolean }>, order) => {
         const isWebsite = !order.salon_id && !order.created_by;
         const isInPerson = !order.salon_id && !!order.created_by;
-        const customerKey = order.profile_id || (order as any).customer_email || (order as any).customer_name || 'unknown';
-        const groupKey = order.salon_id || (isWebsite ? `website-${customerKey}` : 'in-person');
-        const customerName = (order as any).customer_name || displayName(null, (order as any).customer_email);
-        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? customerName : "Unknown");
+        const groupKey = order.salon_id || (isWebsite ? 'website' : 'in-person');
+        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? "Website orders" : "Unknown");
         if (!acc[groupKey]) {
-          acc[groupKey] = {
-            count: 0,
-            revenue: 0,
-            name: salonName,
-            salon_id: order.salon_id || null,
-            isWebsite,
-            profile_id: (order as any).profile_id || null,
-            customer_key: isWebsite ? customerKey : undefined,
-          };
+          acc[groupKey] = { count: 0, revenue: 0, name: salonName, salon_id: order.salon_id || null, isWebsite };
         }
         acc[groupKey].count += 1;
         acc[groupKey].revenue += order.total || 0;
         if (isWebsite) {
+          const customerKey = order.profile_id || (order as any).customer_email || (order as any).customer_name || 'unknown';
           websiteOrdersList.push({
             id: order.id,
             total: order.total || 0,
             created_at: order.created_at,
             status: order.status,
             customer_key: customerKey,
+            customer_name: (order as any).customer_name || displayName(null, (order as any).customer_email),
+            profile_id: (order as any).profile_id || null,
           });
         }
         return acc;
