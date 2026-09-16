@@ -2079,6 +2079,40 @@ const Index = () => {
         onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
       />
 
+      <Dialog open={!!selectedWebsiteCustomer} onOpenChange={(open) => { if (!open) setSelectedWebsiteCustomer(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedWebsiteCustomer?.name} — Website Orders</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-2 pr-2">
+              {websiteOrders
+                .filter((o) => o.customer_key === selectedWebsiteCustomer?.key)
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((o) => (
+                  <div
+                    key={o.id}
+                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      setSelectedWebsiteCustomer(null);
+                      navigate(`/orders?orderId=${o.id}`);
+                    }}
+                  >
+                    <div>
+                      <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="text-xs text-muted-foreground">{formatLocalDate(o.created_at)} · {o.status}</p>
+                    </div>
+                    <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
+                  </div>
+                ))}
+              {websiteOrders.filter((o) => o.customer_key === selectedWebsiteCustomer?.key).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">No orders found for this customer.</p>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       <Sheet open={showAllSalons} onOpenChange={setShowAllSalons}>
         <SheetContent className="w-full sm:max-w-lg">
           <SheetHeader>
