@@ -2096,7 +2096,7 @@ const Index = () => {
                   >
                     <div>
                       <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-xs text-muted-foreground">{formatLocalDate(o.created_at)} · {o.status}</p>
+                      <p className="text-xs text-muted-foreground">{formatLocalDate(new Date(o.created_at), { month: "short", day: "numeric", year: "numeric" })} · {o.status}</p>
                     </div>
                     <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
                   </div>
