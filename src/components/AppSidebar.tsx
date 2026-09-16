@@ -96,15 +96,15 @@ export function AppSidebar() {
                         cn(
                           "min-h-[44px] px-3 py-2 flex items-center gap-3 touch-manipulation",
                           isMobile &&
-                            "min-h-[56px] px-4 py-3 gap-4 rounded-lg",
+                            "min-h-[64px] px-4 py-3.5 gap-4 rounded-xl w-full",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                             : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70"
                         )
                       }
                     >
-                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-6 w-6")} />
-                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-base")}>{item.title}</span>}
+                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-7 w-7")} />
+                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-lg font-semibold")}>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -113,21 +113,21 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className={cn("p-3 space-y-2 pb-[env(safe-area-inset-bottom,16px)]", isMobile && "px-4 pb-[env(safe-area-inset-bottom,20px)]")}>
-        <div className={cn("flex items-center gap-3 min-h-[44px] px-3 py-2", isMobile && "min-h-[56px] gap-4 px-4 py-3")}>
+      <SidebarFooter className={cn("p-3 space-y-2 pb-[env(safe-area-inset-bottom,16px)]", isMobile && "px-3 pb-[env(safe-area-inset-bottom,20px)] space-y-3")}>
+        <div className={cn("flex items-center gap-3 min-h-[44px] px-3 py-2", isMobile && "min-h-[64px] gap-4 px-4 py-3.5 rounded-xl")}>
           <ThemeToggle />
-          {!collapsed && <span className={cn("text-sm text-muted-foreground", isMobile && "text-base")}>Theme</span>}
+          {!collapsed && <span className={cn("text-sm text-muted-foreground", isMobile && "text-lg font-semibold")}>Theme</span>}
         </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
           className={cn(
             "w-full justify-start min-h-[44px] px-3 touch-manipulation active:bg-sidebar-accent/70",
-            isMobile && "min-h-[56px] px-4 rounded-lg"
+            isMobile && "min-h-[64px] px-4 rounded-xl"
           )}
         >
-          <LogOut className={cn("h-5 w-5", isMobile && "h-6 w-6")} />
-          {!collapsed && <span className={cn("ml-3 text-sm font-medium", isMobile && "text-base ml-4")}>Logout</span>}
+          <LogOut className={cn("h-5 w-5", isMobile && "h-7 w-7")} />
+          {!collapsed && <span className={cn("ml-3 text-sm font-medium", isMobile && "ml-4 text-lg font-semibold")}>Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
