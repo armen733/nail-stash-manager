@@ -691,7 +691,6 @@ const Orders = () => {
         });
         setIsDialogOpen(false);
         setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
-        setDetectedReferrer(null);
         setOrderItems([]);
         setShowOrderDetails(false);
         return;
@@ -830,7 +829,7 @@ const Orders = () => {
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
-      setDetectedReferrer(null);
+      
       setOrderItems([]);
       setShowOrderDetails(false);
       fetchData();
