@@ -2086,28 +2086,32 @@ const Index = () => {
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
             <div className="space-y-2 pr-4">
-              {allSalons.map((salon, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-                  onClick={() => {
-                    if (salon.salon_id) {
+              {allSalons.map((salon, index) => {
+                const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between border-b pb-2 last:border-0 rounded-lg px-3 py-2 transition-colors ${clickable ? 'cursor-pointer hover:bg-muted/50' : ''} ${salon.is_website ? 'bg-purple-500/10' : ''}`}
+                    onClick={() => {
+                      if (!clickable) return;
                       setShowAllSalons(false);
-                      setSelectedSalonId(salon.salon_id);
-                      setSelectedSalonName(salon.salon_name);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
-                    <div>
-                      <p className="font-medium">{salon.salon_name}</p>
-                      <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                      handleSalonEntryClick(salon);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-muted-foreground w-6 text-right">#{index + 1}</span>
+                      <div>
+                        <p className={`font-medium ${salon.is_website ? 'text-purple-500' : ''}`}>
+                          {salon.salon_name}
+                          {salon.is_website && <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-purple-500/80">Website</span>}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                      </div>
                     </div>
+                    <p className={`font-semibold ${salon.is_website ? 'text-purple-500' : 'text-primary'}`}>${salon.total_revenue.toFixed(2)}</p>
                   </div>
-                  <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
         </SheetContent>
