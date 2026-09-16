@@ -91,6 +91,15 @@ export default function Users() {
   const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [cameFromMap, setCameFromMap] = useState(false);
+
+  const handleViewCustomerFromMap = (id: string) => {
+    const u = (users || []).find((x) => x.id === id);
+    if (!u) return;
+    setMapOpen(false);
+    setSelectedUser(u);
+    setCameFromMap(true);
+  };
   const [linkReferrerId, setLinkReferrerId] = useState("");
   const [linking, setLinking] = useState(false);
   const [formData, setFormData] = useState({
@@ -399,7 +408,8 @@ export default function Users() {
   const customerPins: CustomerPin[] = (users || [])
     .filter((u) => !!u.last_address)
     .map((u) => ({
-      name: u.full_name,
+      id: u.id,
+      name: u.full_name || u.email?.split("@")[0] || "Customer",
       address: u.last_address as string,
       orders: u.order_count || 0,
       revenue: u.total_spent || 0,
