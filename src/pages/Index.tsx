@@ -17,6 +17,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { SalonOrderHistory } from "@/components/salons/SalonOrderHistory";
 import { SupplyStoreStockHistory } from "@/components/supply-stores/SupplyStoreStockHistory";
+import { displayName } from "@/lib/displayName";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
@@ -147,6 +149,8 @@ const Index = () => {
   const [showSupplyStoresCount, setShowSupplyStoresCount] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
+  const [websiteOrders, setWebsiteOrders] = useState<WebsiteOrderRow[]>([]);
+  const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string } | null>(null);
   const [showAllSalons, setShowAllSalons] = useState(false);
   const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
   const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
