@@ -146,6 +146,7 @@ const Analytics = () => {
   };
   const isChartVisible = (key: string) => chartVisibility[key] ?? false;
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Custom active shape for pie chart hover effect
   const renderActiveShape = (props: any) => {
@@ -1126,6 +1127,13 @@ const Analytics = () => {
           sparkData={dailyRevenue.filter(d => d.orders > 0)}
           sparkKey="avgOrderValue"
           sparkColor="#8B5CF6"
+        />
+        <StatCard
+          title="Website Users"
+          value={newWebsiteUsers > 0 ? `${websiteUsers} +(${newWebsiteUsers})` : `${websiteUsers}`}
+          icon={Users}
+          description={`${newWebsiteUsers} new in this period · tap to view`}
+          onClick={() => navigate("/users")}
         />
         <StatCard 
           title="Tax Collected" 
