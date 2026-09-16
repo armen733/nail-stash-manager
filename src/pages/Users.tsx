@@ -226,6 +226,19 @@ export default function Users() {
     }
   }, [searchParams, users, selectedUser, setSearchParams]);
 
+  const [highlightNew, setHighlightNew] = useState(false);
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setHighlightNew(true);
+      searchParams.delete("new");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const NEW_USER_MS = 31 * 24 * 60 * 60 * 1000;
+  const isRecentUser = (u: UserWithTier) =>
+    !!u.created_at && Date.now() - new Date(u.created_at).getTime() < NEW_USER_MS;
+
 
 
   const { data: userOrders, isLoading: ordersLoading } = useQuery({
@@ -543,6 +556,21 @@ export default function Users() {
         </div>
       </div>
 
+      {highlightNew && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setHighlightNew(false); navigate("/analytics"); }}
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Analytics
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Highlighting customers who joined in the last month
+          </span>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -604,19 +632,30 @@ export default function Users() {
               } else if (sortMode === "top_spenders") {
                 filteredUsers.sort((a, b) => (b.total_spent ?? 0) - (a.total_spent ?? 0));
               }
+              if (highlightNew) {
+                filteredUsers.sort((a, b) => Number(isRecentUser(b)) - Number(isRecentUser(a)));
+              }
               return filteredUsers.length > 0 ? (
                 <div className="space-y-2 p-4 sm:p-0">
                   {filteredUsers.map((user) => {
                     const tier = user.user_tiers?.[0];
+                    const isNew = highlightNew && isRecentUser(user);
                     return (
                       <div
                         key={user.id}
-                        className="p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors"
+                        className={`p-3 sm:p-4 rounded-lg border bg-card cursor-pointer hover:bg-muted/50 transition-colors ${isNew ? "ring-2 ring-amber-400 bg-amber-50 dark:bg-amber-950/30" : ""}`}
                         onClick={() => setSelectedUser(user)}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{displayName(user.full_name, user.email)}</p>
+                            <p className="font-medium truncate flex items-center gap-2">
+                              {displayName(user.full_name, user.email)}
+                              {isNew && (
+                                <Badge className="text-[10px] px-1.5 py-0 bg-amber-400 text-amber-950 hover:bg-amber-400">
+                                  New
+                                </Badge>
+                              )}
+                            </p>
                             <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                           </div>
                           <div className="flex items-center gap-2 sm:gap-4 shrink-0">

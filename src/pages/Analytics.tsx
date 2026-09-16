@@ -1133,7 +1133,7 @@ const Analytics = () => {
           value={newWebsiteUsers > 0 ? `${websiteUsers} +(${newWebsiteUsers})` : `${websiteUsers}`}
           icon={Users}
           description={`${newWebsiteUsers} new in this period · tap to view`}
-          onClick={() => navigate("/users")}
+          onClick={() => navigate("/users?new=1")}
         />
         <StatCard 
           title="Tax Collected" 
