@@ -661,9 +661,19 @@ export default function Users() {
       </Card>
 
       {/* Customer Details Sheet */}
-      <Sheet open={!!selectedUser} onOpenChange={(open) => { if (!open) { setSelectedUser(null); setBackTo(null); } }}>
+      <Sheet open={!!selectedUser} onOpenChange={(open) => { if (!open) { setSelectedUser(null); setBackTo(null); setCameFromMap(false); } }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
+            {cameFromMap && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start -ml-2 mb-1 h-8 text-muted-foreground"
+                onClick={() => { setSelectedUser(null); setCameFromMap(false); setMapOpen(true); }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" /> Back to map
+              </Button>
+            )}
             {backTo && (
               <Button
                 variant="ghost"
@@ -1097,7 +1107,7 @@ export default function Users() {
         customer={contactTarget}
       />
 
-      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={customerPins} />
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={customerPins} onViewCustomer={handleViewCustomerFromMap} />
     </div>
   );
 }
