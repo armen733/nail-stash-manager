@@ -184,6 +184,19 @@ const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const handleSalonEntryClick = (salon: TopSalon) => {
+    if (salon.salon_id) {
+      setSelectedSalonId(salon.salon_id);
+      setSelectedSalonName(salon.salon_name);
+    } else if (salon.is_website && salon.customer_key) {
+      if (salon.profile_id) {
+        navigate(`/users?userId=${salon.profile_id}`);
+      } else {
+        setSelectedWebsiteCustomer({ key: salon.customer_key, name: salon.salon_name });
+      }
+    }
+  };
+
   // Custom active shape for pie chart hover effect
   const renderActiveShape = (props: any) => {
     const {
