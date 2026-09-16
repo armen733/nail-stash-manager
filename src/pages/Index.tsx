@@ -31,6 +31,8 @@ interface Stats {
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
   supplyStoreUnits: number;
+  websiteUsers: number;
+  newWebsiteUsers: number;
 }
 
 interface TopSalon {
@@ -145,6 +147,8 @@ const Index = () => {
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
     supplyStoreUnits: 0,
+    websiteUsers: 0,
+    newWebsiteUsers: 0,
   });
   const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
