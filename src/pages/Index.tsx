@@ -414,6 +414,15 @@ const Index = () => {
         orderProfitPeriod += netRevenue - cogs;
       });
 
+      // Website users = customer accounts registered on the website
+      const customerProfiles = (profilesRes.data || []).filter((p: any) => (p.role ?? "Customer") === "Customer");
+      const websiteUsers = customerProfiles.length;
+      const newWebsiteUsers = customerProfiles.filter((p: any) => {
+        if (!p.created_at) return false;
+        const d = new Date(p.created_at);
+        return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
+      }).length;
+
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
@@ -426,6 +435,8 @@ const Index = () => {
         supplyStoreRevenue,
         supplyStoreProfit,
         supplyStoreUnits,
+        websiteUsers,
+        newWebsiteUsers,
       };
       setStats(newStats);
 
