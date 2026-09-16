@@ -24,6 +24,8 @@ const WebsiteCustomersMap = ({ open, onOpenChange, pins, onViewCustomer }: Props
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const onViewCustomerRef = useRef(onViewCustomer);
+  onViewCustomerRef.current = onViewCustomer;
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [placed, setPlaced] = useState(0);
@@ -92,7 +94,7 @@ const WebsiteCustomersMap = ({ open, onOpenChange, pins, onViewCustomer }: Props
           <a href="https://maps.google.com/?q=${encodeURIComponent(pin.address)}" target="_blank" rel="noopener" style="font-size:12px;color:#2563eb;text-decoration:none;line-height:1.4">📍 ${pin.address}</a>
           <p style="font-size:12px;color:#4b5563;margin:8px 0 0">${pin.orders} order${pin.orders > 1 ? "s" : ""} · $${pin.revenue.toFixed(2)}</p>`;
         popupEl.querySelector(".js-view-customer")?.addEventListener("click", () => {
-          onViewCustomer?.(pin.id);
+          onViewCustomerRef.current?.(pin.id);
         });
         const popup = new mapboxgl.Popup({ offset: 22 }).setDOMContent(popupEl);
 
