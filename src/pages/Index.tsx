@@ -31,6 +31,8 @@ interface Stats {
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
   supplyStoreUnits: number;
+  websiteUsers: number;
+  newWebsiteUsers: number;
 }
 
 interface TopSalon {
@@ -145,6 +147,8 @@ const Index = () => {
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
     supplyStoreUnits: 0,
+    websiteUsers: 0,
+    newWebsiteUsers: 0,
   });
   const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
@@ -279,7 +283,7 @@ const Index = () => {
 
 
       // Fetch all stats in parallel
-      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes] = await Promise.all([
+      const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes, profilesRes] = await Promise.all([
         supabase.from("orders").select("id, total, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
@@ -291,6 +295,7 @@ const Index = () => {
         supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
         supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+        supabase.from("profiles").select("id, created_at, role"),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -409,6 +414,15 @@ const Index = () => {
         orderProfitPeriod += netRevenue - cogs;
       });
 
+      // Website users = customer accounts registered on the website
+      const customerProfiles = (profilesRes.data || []).filter((p: any) => (p.role ?? "Customer") === "Customer");
+      const websiteUsers = customerProfiles.length;
+      const newWebsiteUsers = customerProfiles.filter((p: any) => {
+        if (!p.created_at) return false;
+        const d = new Date(p.created_at);
+        return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
+      }).length;
+
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
@@ -421,6 +435,8 @@ const Index = () => {
         supplyStoreRevenue,
         supplyStoreProfit,
         supplyStoreUnits,
+        websiteUsers,
+        newWebsiteUsers,
       };
       setStats(newStats);
 
@@ -810,6 +826,8 @@ const Index = () => {
       { metric: 'Period Orders', value: stats.monthlyOrders },
       { metric: 'Active Salons', value: stats.totalSalons },
       { metric: 'Products', value: stats.totalProducts },
+      { metric: 'Website Users', value: stats.websiteUsers },
+      { metric: 'New Website Users (period)', value: stats.newWebsiteUsers },
       { metric: 'Period Revenue', value: `$${stats.monthlyRevenue.toFixed(2)}` },
       { metric: 'Total Revenue', value: `$${stats.totalRevenue.toFixed(2)}` },
       { metric: 'Total Stock Value', value: `$${totalStockValue.toFixed(2)}` },
@@ -869,6 +887,15 @@ const Index = () => {
           : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
       onClick: () => setShowRevenueAsProfit((v) => !v),
       highlight: showRevenueAsProfit,
+    },
+    {
+      title: "Website Users",
+      value: loading
+        ? "..."
+        : `${stats.websiteUsers}${stats.newWebsiteUsers > 0 ? ` +(${stats.newWebsiteUsers})` : ""}`,
+      icon: Users,
+      description: `${stats.newWebsiteUsers} new this period · tap to view`,
+      onClick: () => navigate("/users"),
     },
   ];
 
