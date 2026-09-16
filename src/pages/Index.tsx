@@ -398,19 +398,40 @@ const Index = () => {
       };
       setStats(newStats);
 
-      // Calculate top salons
-      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null }>, order) => {
+      // Calculate top salons — website orders are grouped per customer
+      const websiteOrdersList: WebsiteOrderRow[] = [];
+      const salonStats = orders.reduce((acc: Record<string, { count: number; revenue: number; name: string; salon_id: string | null; isWebsite?: boolean; profile_id?: string | null; customer_key?: string }>, order) => {
         const isWebsite = !order.salon_id && !order.created_by;
         const isInPerson = !order.salon_id && !!order.created_by;
-        const groupKey = order.salon_id || (isWebsite ? 'website' : 'in-person');
-        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? "Website orders" : "Unknown");
+        const customerKey = order.profile_id || (order as any).customer_email || (order as any).customer_name || 'unknown';
+        const groupKey = order.salon_id || (isWebsite ? `website-${customerKey}` : 'in-person');
+        const customerName = (order as any).customer_name || displayName(null, (order as any).customer_email);
+        const salonName = order.salons?.name || (isInPerson ? "In-person" : isWebsite ? customerName : "Unknown");
         if (!acc[groupKey]) {
-          acc[groupKey] = { count: 0, revenue: 0, name: salonName, salon_id: order.salon_id || null };
+          acc[groupKey] = {
+            count: 0,
+            revenue: 0,
+            name: salonName,
+            salon_id: order.salon_id || null,
+            isWebsite,
+            profile_id: (order as any).profile_id || null,
+            customer_key: isWebsite ? customerKey : undefined,
+          };
         }
         acc[groupKey].count += 1;
         acc[groupKey].revenue += order.total || 0;
+        if (isWebsite) {
+          websiteOrdersList.push({
+            id: order.id,
+            total: order.total || 0,
+            created_at: order.created_at,
+            status: order.status,
+            customer_key: customerKey,
+          });
+        }
         return acc;
       }, {});
+      setWebsiteOrders(websiteOrdersList);
 
       const allSalonsData = Object.entries(salonStats)
         .sort((a, b) => b[1].revenue - a[1].revenue)
@@ -419,6 +440,9 @@ const Index = () => {
           salon_name: s.name,
           order_count: s.count,
           total_revenue: s.revenue,
+          is_website: s.isWebsite,
+          profile_id: s.profile_id,
+          customer_key: s.customer_key,
         }));
       setAllSalons(allSalonsData);
       setTopSalons(allSalonsData.slice(0, 5));
