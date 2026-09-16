@@ -35,6 +35,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import WebsiteCustomersMap, { CustomerPin } from "@/components/salons/WebsiteCustomersMap";
+import { MapPin, Map as MapIcon } from "lucide-react";
+const __sheetEnd = {
+} from "@/components/ui/sheet";
 
 interface UserWithTier {
   id: string;
@@ -45,6 +49,7 @@ interface UserWithTier {
   created_at: string;
   total_spent?: number;
   order_count?: number;
+  last_address?: string | null;
   user_tiers?: {
     current_tier: string | null;
     tier_discount_percent: number | null;
@@ -87,6 +92,7 @@ export default function Users() {
   const [newsletterOnly, setNewsletterOnly] = useState(false);
   const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -142,7 +148,7 @@ export default function Users() {
       // Fetch all orders for total spent calculation (include all statuses except cancelled)
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
-        .select("profile_id, customer_email, total, status");
+        .select("profile_id, customer_email, total, status, customer_address, order_date");
       
       if (ordersError) throw ordersError;
       
@@ -154,12 +160,16 @@ export default function Users() {
         ) || [];
         const totalSpent = userOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
         const orderCount = userOrders.length;
+        const lastAddress = [...userOrders]
+          .filter(o => o.customer_address && String(o.customer_address).trim().length > 4)
+          .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())[0]?.customer_address ?? null;
         
         return {
           ...profile,
           user_tiers: tiers?.filter(t => t.user_id === profile.id) || [],
           total_spent: totalSpent,
-          order_count: orderCount
+          order_count: orderCount,
+          last_address: lastAddress,
         };
       });
       
