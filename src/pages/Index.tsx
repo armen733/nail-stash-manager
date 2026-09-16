@@ -1462,24 +1462,25 @@ const Index = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {topSalons.map((salon, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-center justify-between border-b pb-2 last:border-0 ${salon.salon_id ? 'cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors' : ''}`}
-                    onClick={() => {
-                      if (salon.salon_id) {
-                        setSelectedSalonId(salon.salon_id);
-                        setSelectedSalonName(salon.salon_name);
-                      }
-                    }}
-                  >
-                    <div>
-                      <p className="font-medium">{salon.salon_name}</p>
-                      <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                {topSalons.map((salon, index) => {
+                  const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between border-b pb-2 last:border-0 ${clickable ? 'cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors' : ''} ${salon.is_website ? 'bg-purple-500/10 rounded-lg px-2 py-1 -mx-2' : ''}`}
+                      onClick={() => handleSalonEntryClick(salon)}
+                    >
+                      <div>
+                        <p className={`font-medium ${salon.is_website ? 'text-purple-500' : ''}`}>
+                          {salon.salon_name}
+                          {salon.is_website && <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-purple-500/80">Website</span>}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{salon.order_count} orders</p>
+                      </div>
+                      <p className={`font-semibold ${salon.is_website ? 'text-purple-500' : 'text-primary'}`}>${salon.total_revenue.toFixed(2)}</p>
                     </div>
-                    <p className="font-semibold text-primary">${salon.total_revenue.toFixed(2)}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
