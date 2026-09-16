@@ -35,6 +35,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import WebsiteCustomersMap, { CustomerPin } from "@/components/salons/WebsiteCustomersMap";
+import { MapPin, Map as MapIcon } from "lucide-react";
 
 interface UserWithTier {
   id: string;
@@ -45,6 +47,7 @@ interface UserWithTier {
   created_at: string;
   total_spent?: number;
   order_count?: number;
+  last_address?: string | null;
   user_tiers?: {
     current_tier: string | null;
     tier_discount_percent: number | null;
@@ -87,6 +90,7 @@ export default function Users() {
   const [newsletterOnly, setNewsletterOnly] = useState(false);
   const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -142,7 +146,7 @@ export default function Users() {
       // Fetch all orders for total spent calculation (include all statuses except cancelled)
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
-        .select("profile_id, customer_email, total, status");
+        .select("profile_id, customer_email, total, status, customer_address, order_date");
       
       if (ordersError) throw ordersError;
       
@@ -154,12 +158,16 @@ export default function Users() {
         ) || [];
         const totalSpent = userOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
         const orderCount = userOrders.length;
+        const lastAddress = [...userOrders]
+          .filter(o => o.customer_address && String(o.customer_address).trim().length > 4)
+          .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())[0]?.customer_address ?? null;
         
         return {
           ...profile,
           user_tiers: tiers?.filter(t => t.user_id === profile.id) || [],
           total_spent: totalSpent,
-          order_count: orderCount
+          order_count: orderCount,
+          last_address: lastAddress,
         };
       });
       
@@ -327,6 +335,15 @@ export default function Users() {
     }
   };
 
+  const customerPins: CustomerPin[] = (users || [])
+    .filter((u) => !!u.last_address)
+    .map((u) => ({
+      name: u.full_name,
+      address: u.last_address as string,
+      orders: u.order_count || 0,
+      revenue: u.total_spent || 0,
+    }));
+
   const getTierColor = (tier: string | null | undefined) => {
     switch (tier?.toLowerCase()) {
       case 'gold': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400';
@@ -351,7 +368,18 @@ export default function Users() {
             <p className="text-sm text-muted-foreground">Manage customer profiles and view order history</p>
           </div>
         </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <Button
+          variant="outline"
+          className="min-h-[44px] w-full sm:w-auto"
+          onClick={() => setMapOpen(true)}
+          disabled={customerPins.length === 0}
+        >
+          <MapIcon className="mr-2 h-4 w-4" />
+          Map ({customerPins.length})
+        </Button>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+
           <DialogTrigger asChild>
             <Button className="min-h-[44px] w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
@@ -432,6 +460,7 @@ export default function Users() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -589,6 +618,22 @@ export default function Users() {
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                       <Phone className="h-3 w-3" />
                       {selectedUser.phone}
+                    </div>
+                  )}
+                  {selectedUser.last_address ? (
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(selectedUser.last_address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-1 text-sm text-primary hover:underline mt-1"
+                    >
+                      <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                      <span>{selectedUser.last_address}</span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                      <MapPin className="h-3 w-3" />
+                      No location on file
                     </div>
                   )}
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -927,6 +972,8 @@ export default function Users() {
         onOpenChange={(o) => !o && setContactTarget(null)}
         customer={contactTarget}
       />
+
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={customerPins} />
     </div>
   );
 }
