@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { displayName } from "@/lib/displayName";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -409,7 +410,7 @@ export default function Users() {
     .filter((u) => !!u.last_address)
     .map((u) => ({
       id: u.id,
-      name: u.full_name || u.email?.split("@")[0] || "Customer",
+      name: displayName(u.full_name, u.email),
       address: u.last_address as string,
       orders: u.order_count || 0,
       revenue: u.total_spent || 0,
@@ -607,7 +608,7 @@ export default function Users() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{user.full_name}</p>
+                            <p className="font-medium truncate">{displayName(user.full_name, user.email)}</p>
                             <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                           </div>
                           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -693,7 +694,7 @@ export default function Users() {
               {/* Customer Info */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-semibold">{selectedUser.full_name}</h3>
+                  <h3 className="text-xl font-semibold">{displayName(selectedUser.full_name, selectedUser.email)}</h3>
                   <p className="text-muted-foreground">{selectedUser.email}</p>
                   {selectedUser.phone && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
