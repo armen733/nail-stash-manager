@@ -1454,7 +1454,7 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {topSalons.map((salon, index) => {
-                  const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                  const clickable = !!salon.salon_id || !!salon.is_website;
                   return (
                     <div
                       key={index}
@@ -2108,7 +2108,7 @@ const Index = () => {
           <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
             <div className="space-y-2 pr-4">
               {allSalons.map((salon, index) => {
-                const clickable = !!salon.salon_id || !!(salon.is_website && salon.customer_key);
+                const clickable = !!salon.salon_id || !!salon.is_website;
                 return (
                   <div
                     key={index}
