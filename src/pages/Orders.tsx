@@ -222,8 +222,6 @@ const Orders = () => {
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   
 
-  // Referral tracking
-  const [detectedReferrer, setDetectedReferrer] = useState<{ id: string; name: string; commission_rate: number } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -359,32 +357,6 @@ const Orders = () => {
   }, [viewOrder, editedOrderIds, products]);
 
 
-  // Auto-detect referrer when customer is selected
-  useEffect(() => {
-    const detectReferrer = async () => {
-      if (!formData.profile_id) {
-        setDetectedReferrer(null);
-        return;
-      }
-      try {
-        const { data } = await supabase
-          .from("customer_referrals")
-          .select("referrer_id, referrers(id, name, commission_rate, status)")
-          .eq("customer_id", formData.profile_id)
-          .maybeSingle();
-        
-        if (data?.referrers && (data.referrers as any).status === "active") {
-          const ref = data.referrers as any;
-          setDetectedReferrer({ id: ref.id, name: ref.name, commission_rate: ref.commission_rate });
-        } else {
-          setDetectedReferrer(null);
-        }
-      } catch {
-        setDetectedReferrer(null);
-      }
-    };
-    detectReferrer();
-  }, [formData.profile_id]);
 
   const fetchData = async () => {
     try {
@@ -719,7 +691,6 @@ const Orders = () => {
         });
         setIsDialogOpen(false);
         setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
-        setDetectedReferrer(null);
         setOrderItems([]);
         setShowOrderDetails(false);
         return;
@@ -834,31 +805,10 @@ const Orders = () => {
         console.error('Telegram notification exception:', notifyErr);
       }
 
-      // Create referral commission if customer has a referrer
-      if (detectedReferrer && formData.profile_id) {
-        const commissionAmount = subtotal * (detectedReferrer.commission_rate / 100);
-        try {
-          await supabase.from("referral_commissions").insert([{
-            order_id: order.id,
-            referrer_id: detectedReferrer.id,
-            customer_id: formData.profile_id,
-            order_subtotal: subtotal,
-            commission_rate: detectedReferrer.commission_rate,
-            commission_amount: commissionAmount,
-            status: "pending",
-          }]);
-          // Update referrer cached stats
-          const { data: refData } = await supabase.from("referrers").select("total_revenue, total_commission").eq("id", detectedReferrer.id).single();
-          if (refData) {
-            await supabase.from("referrers").update({
-              total_revenue: Number(refData.total_revenue) + subtotal,
-              total_commission: Number(refData.total_commission) + commissionAmount,
-            }).eq("id", detectedReferrer.id);
-          }
-        } catch (commErr) {
-          console.error("Failed to create referral commission:", commErr);
-        }
-      }
+      // Note: referral commissions are NOT created here. A referrer only earns
+      // when their referral code is actually used at checkout (handled by the
+      // process_referral_on_order trigger / Stripe order flow), and never on
+      // an order placed from the referrer's own linked account.
 
       // Audit log
       const customerLabel = selectedProfile?.full_name || selectedSalon?.name || "Walk-in";
@@ -879,7 +829,7 @@ const Orders = () => {
       toast({ title: "Success", description: "Order created and stock updated" });
       setIsDialogOpen(false);
       setFormData({ salon_id: "", profile_id: "", notes: "", technician_name: "", discount: "", discountType: "amount" });
-      setDetectedReferrer(null);
+      
       setOrderItems([]);
       setShowOrderDetails(false);
       fetchData();
@@ -1569,17 +1519,6 @@ Thank you!`;
                       </Popover>
                     </div>
 
-                    {/* Referrer auto-detection indicator */}
-                    {detectedReferrer && (
-                      <div className="sm:col-span-2 bg-muted/50 border rounded-md p-3 flex items-center gap-2">
-                        <Share2 className="h-4 w-4 text-primary flex-shrink-0" />
-                        <div className="text-sm">
-                          <span className="font-medium">Referrer detected:</span>{" "}
-                          <span>{detectedReferrer.name}</span>{" "}
-                          <span className="text-muted-foreground">({detectedReferrer.commission_rate}% commission = ${(calculateTotal() * detectedReferrer.commission_rate / 100).toFixed(2)})</span>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="space-y-1">
                       <Label htmlFor="technician_name" className="text-xs text-muted-foreground">Technician</Label>
