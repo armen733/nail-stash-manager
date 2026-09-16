@@ -868,12 +868,17 @@ export default function Users() {
                 </h4>
                 {customerAsReferrer?.referrer ? (
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm">
-                      Linked to <span className="font-medium">{customerAsReferrer.referrer.name}</span>
+                    <button
+                      type="button"
+                      className="text-sm text-left hover:underline underline-offset-2 cursor-pointer"
+                      onClick={() => navigate(`/referrals/${customerAsReferrer.referrer.id}`)}
+                      title="Open affiliate profile"
+                    >
+                      Linked to <span className="font-medium text-primary">{customerAsReferrer.referrer.name}</span>
                       <Badge variant="outline" className="ml-2 text-[10px]">
                         {customerAsReferrer.referrer.referral_code}
                       </Badge>
-                    </p>
+                    </button>
                     <Button
                       variant="ghost"
                       size="sm"
