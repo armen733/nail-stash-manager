@@ -195,22 +195,23 @@ export async function createOrderFromSession(
     log('Stock movement error', { error: String(stockErr) });
   }
 
-  // Referral commission
-  if (userId) {
+  // Referral commission — ONLY when the buyer actually used a referrer's code,
+  // and never for an order placed on the referrer's own account.
+  if (userId && discountCode) {
     try {
-      const { data: referral } = await supabase
-        .from('customer_referrals')
-        .select('referrer_id, referrers(commission_rate, total_revenue, total_commission)')
-        .eq('customer_id', userId)
+      const { data: referrer } = await supabase
+        .from('referrers')
+        .select('id, commission_rate, total_revenue, total_commission, total_referred, linked_profile_id, status')
+        .ilike('referral_code', discountCode)
+        .eq('status', 'active')
         .maybeSingle();
 
-      if (referral?.referrer_id) {
-        const referrer = referral.referrers as any;
-        const commissionRate = referrer?.commission_rate || 10;
-        const commissionAmount = (subtotal * commissionRate) / 100;
+      if (referrer?.id && referrer.linked_profile_id !== userId) {
+        const commissionRate = referrer.commission_rate || 10;
+        const commissionAmount = Number(((subtotal * commissionRate) / 100).toFixed(2));
 
         const { error: commError } = await supabase.from('referral_commissions').insert({
-          referrer_id: referral.referrer_id,
+          referrer_id: referrer.id,
           customer_id: userId,
           order_id: order.id,
           order_subtotal: subtotal,
@@ -220,19 +221,25 @@ export async function createOrderFromSession(
         });
 
         if (!commError) {
+          await supabase.from('customer_referrals').upsert(
+            { customer_id: userId, referrer_id: referrer.id, referral_code_used: discountCode },
+            { onConflict: 'customer_id', ignoreDuplicates: true },
+          );
           await supabase
             .from('referrers')
             .update({
-              total_revenue: (referrer?.total_revenue || 0) + subtotal,
-              total_commission: (referrer?.total_commission || 0) + commissionAmount,
+              total_revenue: (referrer.total_revenue || 0) + subtotal,
+              total_commission: (referrer.total_commission || 0) + commissionAmount,
+              total_referred: (referrer.total_referred || 0) + 1,
             })
-            .eq('id', referral.referrer_id);
+            .eq('id', referrer.id);
         }
       }
     } catch (refErr) {
       log('Referral check error', { error: String(refErr) });
     }
   }
+
 
   // Telegram notification
   try {
