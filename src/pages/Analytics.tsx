@@ -355,7 +355,7 @@ const Analytics = () => {
       setTotalTaxCollected(taxCollected);
 
       // ===== Active counts + supply store stats for the selected period =====
-      const [salonsRes, supplyStoresRes, supplyLocsRes, supplyMovementsRes, pricingRes, overridesRes] = await Promise.all([
+      const [salonsRes, supplyStoresRes, supplyLocsRes, supplyMovementsRes, pricingRes, overridesRes, profilesRes] = await Promise.all([
         supabase.from("salons").select("id, is_active"),
         supabase.from("supply_stores").select("id, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
@@ -365,10 +365,22 @@ const Analytics = () => {
           .lte("created_at", periodEnd.toISOString()),
         supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+        supabase.from("profiles").select("id, created_at"),
       ]);
 
       setActiveSalonsCount((salonsRes.data || []).filter((s: any) => s.is_active !== false).length);
       setActiveSupplyStoresCount((supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length);
+
+      // Website users = every customer account (same list as the Customers page)
+      const allProfiles = profilesRes.data || [];
+      setWebsiteUsers(allProfiles.length);
+      setNewWebsiteUsers(
+        allProfiles.filter((p: any) => {
+          if (!p.created_at) return false;
+          const d = new Date(p.created_at);
+          return d >= periodStart && d <= periodEnd;
+        }).length
+      );
 
       const locMap = new Map<string, string>();
       (supplyLocsRes.data || []).forEach((l: any) => l.supply_store_id && locMap.set(l.id, l.supply_store_id));
