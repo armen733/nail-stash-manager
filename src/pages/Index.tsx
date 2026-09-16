@@ -2070,32 +2070,61 @@ const Index = () => {
         onOpenChange={(open) => { if (!open) setSelectedSalonId(null); }}
       />
 
-      <Dialog open={!!selectedWebsiteCustomer} onOpenChange={(open) => { if (!open) setSelectedWebsiteCustomer(null); }}>
+      <Dialog open={websiteCustomersOpen} onOpenChange={(open) => { setWebsiteCustomersOpen(open); if (!open) setSelectedWebsiteCustomer(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{selectedWebsiteCustomer?.name} — Website Orders</DialogTitle>
+            <DialogTitle>
+              {selectedWebsiteCustomer ? `${selectedWebsiteCustomer.name} — Orders` : "Website Orders"}
+            </DialogTitle>
           </DialogHeader>
+          {selectedWebsiteCustomer && (
+            <Button variant="ghost" size="sm" className="self-start -mt-2 text-purple-500" onClick={() => setSelectedWebsiteCustomer(null)}>
+              ← Back to customers
+            </Button>
+          )}
           <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-2 pr-2">
-              {websiteOrders
-                .filter((o) => o.customer_key === selectedWebsiteCustomer?.key)
-                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .map((o) => (
+            {!selectedWebsiteCustomer ? (
+              <div className="space-y-2 pr-2">
+                {websiteCustomers.map((c) => (
                   <div
-                    key={o.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    key={c.key}
+                    className="flex items-center justify-between rounded-lg border border-purple-500/30 bg-purple-500/5 p-3 cursor-pointer hover:bg-purple-500/10 transition-colors"
+                    onClick={() => {
+                      if (c.profile_id) {
+                        setWebsiteCustomersOpen(false);
+                        navigate(`/users?userId=${c.profile_id}`);
+                      } else {
+                        setSelectedWebsiteCustomer({ key: c.key, name: c.name, profile_id: c.profile_id });
+                      }
+                    }}
                   >
                     <div>
-                      <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-xs text-muted-foreground">{formatLocalDate(new Date(o.created_at), { month: "short", day: "numeric", year: "numeric" })} · {o.status}</p>
+                      <p className="font-medium text-sm text-purple-500">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.count} {c.count === 1 ? "order" : "orders"}</p>
                     </div>
-                    <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
+                    <p className="font-semibold text-purple-500">${c.revenue.toFixed(2)}</p>
                   </div>
                 ))}
-              {websiteOrders.filter((o) => o.customer_key === selectedWebsiteCustomer?.key).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No orders found for this customer.</p>
-              )}
-            </div>
+                {websiteCustomers.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">No website orders yet.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2 pr-2">
+                {websiteOrders
+                  .filter((o) => o.customer_key === selectedWebsiteCustomer.key)
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((o) => (
+                    <div key={o.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
+                        <p className="text-xs text-muted-foreground">{formatLocalDate(new Date(o.created_at), { month: "short", day: "numeric", year: "numeric" })} · {o.status}</p>
+                      </div>
+                      <p className="font-semibold text-purple-500">${o.total.toFixed(2)}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
           </ScrollArea>
         </DialogContent>
       </Dialog>
