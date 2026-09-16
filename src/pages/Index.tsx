@@ -826,6 +826,8 @@ const Index = () => {
       { metric: 'Period Orders', value: stats.monthlyOrders },
       { metric: 'Active Salons', value: stats.totalSalons },
       { metric: 'Products', value: stats.totalProducts },
+      { metric: 'Website Users', value: stats.websiteUsers },
+      { metric: 'New Website Users (period)', value: stats.newWebsiteUsers },
       { metric: 'Period Revenue', value: `$${stats.monthlyRevenue.toFixed(2)}` },
       { metric: 'Total Revenue', value: `$${stats.totalRevenue.toFixed(2)}` },
       { metric: 'Total Stock Value', value: `$${totalStockValue.toFixed(2)}` },
@@ -885,6 +887,15 @@ const Index = () => {
           : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
       onClick: () => setShowRevenueAsProfit((v) => !v),
       highlight: showRevenueAsProfit,
+    },
+    {
+      title: "Website Users",
+      value: loading
+        ? "..."
+        : `${stats.websiteUsers}${stats.newWebsiteUsers > 0 ? ` +(${stats.newWebsiteUsers})` : ""}`,
+      icon: Users,
+      description: `${stats.newWebsiteUsers} new this period · tap to view`,
+      onClick: () => navigate("/users"),
     },
   ];
 
