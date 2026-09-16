@@ -14,6 +14,7 @@ import {
 import {
   ArrowLeft, Users, DollarSign, TrendingUp, CheckCircle, Clock,
   UserPlus, Copy, Download, Phone, Mail, Calendar, Share2, Instagram,
+  ExternalLink, Link2,
 } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
@@ -27,6 +28,8 @@ interface Referrer {
   instagram: string | null;
   commission_rate: number;
   status: string;
+  linked_profile_id: string | null;
+  profiles: { full_name: string; email: string } | null;
   total_referred: number;
   total_revenue: number;
   total_commission: number;
@@ -73,7 +76,7 @@ const ReferrerProfile = () => {
     setLoading(true);
     try {
       const [refRes, commRes, custRes] = await Promise.all([
-        supabase.from("referrers").select("*").eq("id", id!).single(),
+        supabase.from("referrers").select("*, profiles!linked_profile_id(full_name, email)").eq("id", id!).single(),
         supabase.from("referral_commissions")
           .select("*, profiles(full_name, email)")
           .eq("referrer_id", id!)
