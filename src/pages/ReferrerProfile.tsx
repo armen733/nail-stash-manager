@@ -226,6 +226,18 @@ const ReferrerProfile = () => {
             <Badge variant={referrer.status === "active" ? "default" : "secondary"}>
               {referrer.status}
             </Badge>
+            {referrer.linked_profile_id && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => navigate(`/users?userId=${referrer.linked_profile_id}`)}
+              >
+                <Link2 className="h-3.5 w-3.5 mr-1" />
+                {referrer.profiles?.full_name ? `View account: ${referrer.profiles.full_name}` : "View customer account"}
+                <ExternalLink className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
             <button onClick={() => copyCode(referrer.referral_code)} className="flex items-center gap-1 font-mono bg-muted px-2 py-0.5 rounded hover:bg-muted/80">
