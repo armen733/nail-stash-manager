@@ -76,7 +76,10 @@ export async function createOrderFromSession(
   const discountCode = md.discountCode || null;
 
   const lineItems = session.line_items?.data || [];
-  const subtotal = (session.amount_subtotal || 0) / 100;
+  // amount_subtotal includes the tax & shipping line items we push into the session,
+  // so strip them out to store the true product subtotal.
+  const rawSubtotal = (session.amount_subtotal || 0) / 100;
+  const subtotal = Math.max(0, Number((rawSubtotal - taxAmount - shippingAmount).toFixed(2)));
 
   let metadataItems: any[] = [];
   if (md.orderItems) {
