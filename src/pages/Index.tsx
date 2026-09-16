@@ -154,6 +154,15 @@ const Index = () => {
   const [websiteOrders, setWebsiteOrders] = useState<WebsiteOrderRow[]>([]);
   const [websiteCustomersOpen, setWebsiteCustomersOpen] = useState(false);
   const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string; profile_id: string | null } | null>(null);
+  const websiteCustomers = Object.values(
+    websiteOrders.reduce((acc, o) => {
+      if (!acc[o.customer_key]) acc[o.customer_key] = { key: o.customer_key, name: o.customer_name, profile_id: o.profile_id, count: 0, revenue: 0 };
+      acc[o.customer_key].count += 1;
+      acc[o.customer_key].revenue += o.total;
+      if (!acc[o.customer_key].profile_id && o.profile_id) acc[o.customer_key].profile_id = o.profile_id;
+      return acc;
+    }, {} as Record<string, { key: string; name: string; profile_id: string | null; count: number; revenue: number }>)
+  ).sort((a, b) => b.revenue - a.revenue);
   const [showAllSalons, setShowAllSalons] = useState(false);
   const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
   const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
