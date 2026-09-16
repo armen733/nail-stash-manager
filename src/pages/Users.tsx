@@ -171,7 +171,7 @@ export default function Users() {
       // Fetch all orders for total spent calculation (include all statuses except cancelled)
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
-        .select("profile_id, customer_email, total, status, customer_address, order_date");
+        .select("profile_id, customer_email, customer_name, total, status, customer_address, order_date");
       
       if (ordersError) throw ordersError;
       
@@ -183,12 +183,20 @@ export default function Users() {
         ) || [];
         const totalSpent = userOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
         const orderCount = userOrders.length;
-        const lastAddress = [...userOrders]
-          .filter(o => o.customer_address && String(o.customer_address).trim().length > 4)
-          .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime())[0]?.customer_address ?? null;
-        
+        const sortedOrders = [...userOrders].sort(
+          (a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime()
+        );
+        const lastAddress = sortedOrders
+          .filter(o => o.customer_address && String(o.customer_address).trim().length > 4)[0]?.customer_address ?? null;
+        // Real name the customer typed at checkout — used when the account name is a placeholder
+        const checkoutName = sortedOrders
+          .map(o => (o.customer_name || "").trim())
+          .filter(n => n.length > 1 && !/^user$/i.test(n))[0] ?? null;
+
+        const storedName = (profile.full_name || "").trim();
         return {
           ...profile,
+          full_name: (!storedName || /^user$/i.test(storedName)) && checkoutName ? checkoutName : profile.full_name,
           user_tiers: tiers?.filter(t => t.user_id === profile.id) || [],
           total_spent: totalSpent,
           order_count: orderCount,
