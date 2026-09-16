@@ -2092,11 +2092,7 @@ const Index = () => {
                 .map((o) => (
                   <div
                     key={o.id}
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setSelectedWebsiteCustomer(null);
-                      navigate(`/orders?orderId=${o.id}`);
-                    }}
+                    className="flex items-center justify-between rounded-lg border p-3"
                   >
                     <div>
                       <p className="font-medium text-sm">#{o.id.slice(0, 8).toUpperCase()}</p>
