@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { 
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -96,6 +97,8 @@ const Analytics = () => {
   const [salonRevenueView, setSalonRevenueView] = useState<"revenue" | "profit">("revenue");
   const [slowMoving, setSlowMoving] = useState<ProductPerformance[]>([]);
   const [totalTaxCollected, setTotalTaxCollected] = useState(0);
+  const [websiteUsers, setWebsiteUsers] = useState(0);
+  const [newWebsiteUsers, setNewWebsiteUsers] = useState(0);
   const [historyProduct, setHistoryProduct] = useState<ProductPerformance | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [marginSearch, setMarginSearch] = useState("");
