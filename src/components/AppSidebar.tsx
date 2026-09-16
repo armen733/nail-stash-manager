@@ -75,14 +75,14 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
-        <SidebarGroup>
+        <SidebarGroup className={cn(isMobile && "flex-1 min-h-0")}>
           <SidebarGroupLabel className="px-3 py-3">
             {!collapsed ? (
               <img src={neraLogoDark} alt="NÉRA Beauty" className="h-8 w-auto" />
             ) : null}
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className={cn(isMobile && "flex-1 flex flex-col min-h-0")}>
+            <SidebarMenu className={cn(isMobile && "flex-1 justify-between")}>
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -96,15 +96,15 @@ export function AppSidebar() {
                         cn(
                           "min-h-[44px] px-3 py-2 flex items-center gap-3 touch-manipulation",
                           isMobile &&
-                            "min-h-[72px] px-5 py-4 gap-5 rounded-xl w-full",
+                            "min-h-[80px] px-5 py-4 gap-5 rounded-xl w-full",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                             : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70"
                         )
                       }
                     >
-                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-8 w-8")} />
-                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-xl font-semibold")}>{item.title}</span>}
+                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-9 w-9")} />
+                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-[1.375rem] font-semibold")}>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
