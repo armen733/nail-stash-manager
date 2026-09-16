@@ -36,6 +36,17 @@ interface TopSalon {
   salon_name: string;
   order_count: number;
   total_revenue: number;
+  is_website?: boolean;
+  profile_id?: string | null;
+  customer_key?: string;
+}
+
+interface WebsiteOrderRow {
+  id: string;
+  total: number;
+  created_at: string;
+  status: string;
+  customer_key: string;
 }
 
 interface TopSupplyStore {
@@ -243,7 +254,7 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes] = await Promise.all([
-        supabase.from("orders").select("id, total, created_at, salon_id, status, created_by, salons(name)"),
+        supabase.from("orders").select("id, total, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
