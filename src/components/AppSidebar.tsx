@@ -44,7 +44,7 @@ const topMenuItems: MenuItem[] = [
 ];
 
 export function AppSidebar() {
-  const { state, setOpenMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { isManager, loading: roleLoading } = useUserRole();
