@@ -75,14 +75,14 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="pt-[env(safe-area-inset-top,0px)]">
-        <SidebarGroup>
+        <SidebarGroup className={cn(isMobile && "flex-1 min-h-0")}>
           <SidebarGroupLabel className="px-3 py-3">
             {!collapsed ? (
               <img src={neraLogoDark} alt="NÉRA Beauty" className="h-8 w-auto" />
             ) : null}
           </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className={cn(isMobile && "flex-1 flex flex-col min-h-0")}>
+            <SidebarMenu className={cn(isMobile && "flex-1 justify-between")}>
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -96,15 +96,15 @@ export function AppSidebar() {
                         cn(
                           "min-h-[44px] px-3 py-2 flex items-center gap-3 touch-manipulation",
                           isMobile &&
-                            "min-h-[72px] px-5 py-4 gap-5 rounded-xl w-full",
+                            "min-h-[80px] px-5 py-4 gap-5 rounded-xl w-full",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                             : "hover:bg-sidebar-accent/50 active:bg-sidebar-accent/70"
                         )
                       }
                     >
-                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-8 w-8")} />
-                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-xl font-semibold")}>{item.title}</span>}
+                      <item.icon className={cn("h-5 w-5 flex-shrink-0", isMobile && "h-9 w-9")} />
+                      {!collapsed && <span className={cn("text-sm font-medium", isMobile && "text-[1.375rem] font-semibold")}>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -114,20 +114,20 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className={cn("p-3 space-y-2 pb-[env(safe-area-inset-bottom,16px)]", isMobile && "px-4 pb-[env(safe-area-inset-bottom,20px)] space-y-3")}>
-        <div className={cn("flex items-center gap-3 min-h-[44px] px-3 py-2", isMobile && "min-h-[72px] gap-5 px-5 py-4 rounded-xl")}>
+        <div className={cn("flex items-center gap-3 min-h-[44px] px-3 py-2", isMobile && "min-h-[80px] gap-5 px-5 py-4 rounded-xl")}>
           <ThemeToggle />
-          {!collapsed && <span className={cn("text-sm text-muted-foreground", isMobile && "text-xl font-semibold")}>Theme</span>}
+          {!collapsed && <span className={cn("text-sm text-muted-foreground", isMobile && "text-[1.375rem] font-semibold")}>Theme</span>}
         </div>
         <Button
           variant="ghost"
           onClick={handleLogout}
           className={cn(
             "w-full justify-start min-h-[44px] px-3 touch-manipulation active:bg-sidebar-accent/70",
-            isMobile && "min-h-[72px] px-5 rounded-xl"
+            isMobile && "min-h-[80px] px-5 rounded-xl"
           )}
         >
-          <LogOut className={cn("h-5 w-5", isMobile && "h-8 w-8")} />
-          {!collapsed && <span className={cn("ml-3 text-sm font-medium", isMobile && "ml-5 text-xl font-semibold")}>Logout</span>}
+          <LogOut className={cn("h-5 w-5", isMobile && "h-9 w-9")} />
+          {!collapsed && <span className={cn("ml-3 text-sm font-medium", isMobile && "ml-5 text-[1.375rem] font-semibold")}>Logout</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
