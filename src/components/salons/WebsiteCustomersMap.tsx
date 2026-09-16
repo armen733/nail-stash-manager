@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Globe, MapPin } from "lucide-react";
 
 export interface CustomerPin {
+  id: string;
   name: string;
   address: string;
   orders: number;
@@ -16,12 +17,15 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pins: CustomerPin[];
+  onViewCustomer?: (id: string) => void;
 }
 
-const WebsiteCustomersMap = ({ open, onOpenChange, pins }: Props) => {
+const WebsiteCustomersMap = ({ open, onOpenChange, pins, onViewCustomer }: Props) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const onViewCustomerRef = useRef(onViewCustomer);
+  onViewCustomerRef.current = onViewCustomer;
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [placed, setPlaced] = useState(0);
@@ -82,12 +86,17 @@ const WebsiteCustomersMap = ({ open, onOpenChange, pins }: Props) => {
             ${safeLabel}
           </div>`;
 
-        const popup = new mapboxgl.Popup({ offset: 22 }).setHTML(`
-          <div style="padding:10px;min-width:190px">
-            <h3 style="font-weight:700;font-size:14px;color:#1a1a1a;margin:0 0 6px">${pin.name}</h3>
-            <a href="https://maps.google.com/?q=${encodeURIComponent(pin.address)}" target="_blank" rel="noopener" style="font-size:12px;color:#2563eb;text-decoration:none;line-height:1.4">📍 ${pin.address}</a>
-            <p style="font-size:12px;color:#4b5563;margin:8px 0 0">${pin.orders} order${pin.orders > 1 ? "s" : ""} · $${pin.revenue.toFixed(2)}</p>
-          </div>`);
+        const popupEl = document.createElement("div");
+        popupEl.style.cssText = "padding:10px;min-width:190px";
+        const safeName = (pin.name || "Customer").replace(/[<>&]/g, "");
+        popupEl.innerHTML = `
+          <button class="js-view-customer" style="display:block;width:100%;text-align:left;font-weight:700;font-size:14px;color:#1a1a1a;margin:0 0 6px;background:none;border:none;padding:0;cursor:pointer">${safeName} <span style="font-weight:500;font-size:12px;color:#2563eb">→ View profile</span></button>
+          <a href="https://maps.google.com/?q=${encodeURIComponent(pin.address)}" target="_blank" rel="noopener" style="font-size:12px;color:#2563eb;text-decoration:none;line-height:1.4">📍 ${pin.address}</a>
+          <p style="font-size:12px;color:#4b5563;margin:8px 0 0">${pin.orders} order${pin.orders > 1 ? "s" : ""} · $${pin.revenue.toFixed(2)}</p>`;
+        popupEl.querySelector(".js-view-customer")?.addEventListener("click", () => {
+          onViewCustomerRef.current?.(pin.id);
+        });
+        const popup = new mapboxgl.Popup({ offset: 22 }).setDOMContent(popupEl);
 
         const marker = new mapboxgl.Marker(el).setLngLat(coords).setPopup(popup).addTo(map.current!);
         markersRef.current.push(marker);

@@ -91,6 +91,15 @@ export default function Users() {
   const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [cameFromMap, setCameFromMap] = useState(false);
+
+  const handleViewCustomerFromMap = (id: string) => {
+    const u = (users || []).find((x) => x.id === id);
+    if (!u) return;
+    setMapOpen(false);
+    setSelectedUser(u);
+    setCameFromMap(true);
+  };
   const [linkReferrerId, setLinkReferrerId] = useState("");
   const [linking, setLinking] = useState(false);
   const [formData, setFormData] = useState({
@@ -399,7 +408,8 @@ export default function Users() {
   const customerPins: CustomerPin[] = (users || [])
     .filter((u) => !!u.last_address)
     .map((u) => ({
-      name: u.full_name,
+      id: u.id,
+      name: u.full_name || u.email?.split("@")[0] || "Customer",
       address: u.last_address as string,
       orders: u.order_count || 0,
       revenue: u.total_spent || 0,
@@ -651,9 +661,19 @@ export default function Users() {
       </Card>
 
       {/* Customer Details Sheet */}
-      <Sheet open={!!selectedUser} onOpenChange={(open) => { if (!open) { setSelectedUser(null); setBackTo(null); } }}>
+      <Sheet open={!!selectedUser} onOpenChange={(open) => { if (!open) { setSelectedUser(null); setBackTo(null); setCameFromMap(false); } }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
+            {cameFromMap && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start -ml-2 mb-1 h-8 text-muted-foreground"
+                onClick={() => { setSelectedUser(null); setCameFromMap(false); setMapOpen(true); }}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" /> Back to map
+              </Button>
+            )}
             {backTo && (
               <Button
                 variant="ghost"
@@ -1087,7 +1107,7 @@ export default function Users() {
         customer={contactTarget}
       />
 
-      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={customerPins} />
+      <WebsiteCustomersMap open={mapOpen} onOpenChange={setMapOpen} pins={customerPins} onViewCustomer={handleViewCustomerFromMap} />
     </div>
   );
 }
