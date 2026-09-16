@@ -91,6 +91,8 @@ export default function Users() {
   const [sortMode, setSortMode] = useState<"newest" | "most_orders" | "top_spenders" | "no_orders">("newest");
   const [contactTarget, setContactTarget] = useState<UserWithTier | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+  const [linkReferrerId, setLinkReferrerId] = useState("");
+  const [linking, setLinking] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -332,6 +334,52 @@ export default function Users() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLinkReferrer = async () => {
+    if (!selectedUser || !linkReferrerId) return;
+    setLinking(true);
+    try {
+      const ref = unlinkedReferrers?.find((r) => r.id === linkReferrerId);
+      const { error } = await supabase
+        .from("referrers")
+        .update({ linked_profile_id: selectedUser.id })
+        .eq("id", linkReferrerId);
+      if (error) throw error;
+
+      await logAudit({
+        action: "update",
+        entityType: "referrer",
+        entityId: linkReferrerId,
+        entityLabel: ref?.name ?? "Referrer",
+        summary: `Linked affiliate ${ref?.name ?? ""} to customer account ${selectedUser.full_name}`,
+      });
+
+      toast({ title: "Linked", description: `${ref?.name ?? "Affiliate"} is now tied to this account` });
+      setLinkReferrerId("");
+      queryClient.invalidateQueries({ queryKey: ["customer-as-referrer", selectedUser.id] });
+      queryClient.invalidateQueries({ queryKey: ["unlinked-referrers"] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const handleUnlinkReferrer = async (referrerId: string) => {
+    if (!selectedUser) return;
+    try {
+      const { error } = await supabase
+        .from("referrers")
+        .update({ linked_profile_id: null })
+        .eq("id", referrerId);
+      if (error) throw error;
+      toast({ title: "Unlinked", description: "Affiliate is no longer tied to this account" });
+      queryClient.invalidateQueries({ queryKey: ["customer-as-referrer", selectedUser.id] });
+      queryClient.invalidateQueries({ queryKey: ["unlinked-referrers"] });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -727,6 +775,59 @@ export default function Users() {
                       <span className="text-muted-foreground">This Month's Spend: </span>
                       <span className="font-semibold">${(selectedUser.user_tiers[0].monthly_spend || 0).toFixed(2)}</span>
                     </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Link this customer account to an affiliate/referrer record */}
+              <div className="p-3 rounded-lg border bg-card space-y-2">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-primary" />
+                  Affiliate account
+                </h4>
+                {customerAsReferrer?.referrer ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm">
+                      Linked to <span className="font-medium">{customerAsReferrer.referrer.name}</span>
+                      <Badge variant="outline" className="ml-2 text-[10px]">
+                        {customerAsReferrer.referrer.referral_code}
+                      </Badge>
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleUnlinkReferrer(customerAsReferrer.referrer.id)}
+                    >
+                      Unlink
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      If this customer is one of your affiliates, link their account so their referrals and commissions show here.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Select value={linkReferrerId} onValueChange={setLinkReferrerId}>
+                        <SelectTrigger className="min-h-[40px] flex-1">
+                          <SelectValue placeholder={unlinkedReferrers?.length ? "Select affiliate" : "No unlinked affiliates"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(unlinkedReferrers || []).map((r) => (
+                            <SelectItem key={r.id} value={r.id}>
+                              {r.name} ({r.referral_code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        className="min-h-[40px]"
+                        disabled={!linkReferrerId || linking}
+                        onClick={handleLinkReferrer}
+                      >
+                        {linking ? "Linking..." : "Link"}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
