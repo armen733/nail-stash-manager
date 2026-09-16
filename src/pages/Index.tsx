@@ -152,7 +152,8 @@ const Index = () => {
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [websiteOrders, setWebsiteOrders] = useState<WebsiteOrderRow[]>([]);
-  const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string } | null>(null);
+  const [websiteCustomersOpen, setWebsiteCustomersOpen] = useState(false);
+  const [selectedWebsiteCustomer, setSelectedWebsiteCustomer] = useState<{ key: string; name: string; profile_id: string | null } | null>(null);
   const [showAllSalons, setShowAllSalons] = useState(false);
   const [topSupplyStores, setTopSupplyStores] = useState<TopSupplyStore[]>([]);
   const [allSupplyStores, setAllSupplyStores] = useState<TopSupplyStore[]>([]);
@@ -190,12 +191,9 @@ const Index = () => {
     if (salon.salon_id) {
       setSelectedSalonId(salon.salon_id);
       setSelectedSalonName(salon.salon_name);
-    } else if (salon.is_website && salon.customer_key) {
-      if (salon.profile_id) {
-        navigate(`/users?userId=${salon.profile_id}`);
-      } else {
-        setSelectedWebsiteCustomer({ key: salon.customer_key, name: salon.salon_name });
-      }
+    } else if (salon.is_website) {
+      setSelectedWebsiteCustomer(null);
+      setWebsiteCustomersOpen(true);
     }
   };
 
@@ -453,8 +451,6 @@ const Index = () => {
           order_count: s.count,
           total_revenue: s.revenue,
           is_website: s.isWebsite,
-          profile_id: s.profile_id,
-          customer_key: s.customer_key,
         }));
       setAllSalons(allSalonsData);
       setTopSalons(allSalonsData.slice(0, 5));
