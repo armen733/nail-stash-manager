@@ -56,6 +56,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   const [step, setStep] = useState<"form" | "rates">("form");
   const [loading, setLoading] = useState(false);
   const [buyingRateId, setBuyingRateId] = useState<string | null>(null);
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     if (!order) return;
@@ -120,6 +121,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       if (error) throw new Error((data as any)?.error || error.message);
       if ((data as any)?.error) throw new Error((data as any).error);
       const list = ((data as any)?.rates || []) as Rate[];
+      setTestMode(Boolean((data as any)?.test_mode));
       if (list.length === 0) throw new Error("No USPS rates available for this address. Check the customer address.");
       setRates(list);
       setStep("rates");
@@ -132,7 +134,6 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
 
   const buyLabel = async (rate: Rate) => {
     if (!order) return;
-    const printWindow = window.open("", "_blank");
     setBuyingRateId(rate.object_id);
     try {
       const { data, error } = await supabase.functions.invoke("shippo-label", {
@@ -142,12 +143,15 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       if ((data as any)?.error) throw new Error((data as any).error);
       const labelUrl = (data as any).label_url;
       const tracking = (data as any).tracking_number;
-      toast({ title: "Label purchased", description: `Tracking: ${tracking}` });
-      onLabelCreated(order.id, tracking, labelUrl);
-      await openLabelPdf(order.id, printWindow);
+      const isTest = Boolean((data as any)?.test_mode);
+      toast({
+        title: isTest ? "Test label created" : "Label purchased",
+        description: isTest ? "This is not valid USPS postage or tracking." : `Tracking: ${tracking}`,
+      });
+      if (!isTest) onLabelCreated(order.id, tracking, labelUrl);
+      await downloadLabelPdf(order.id);
       onClose();
     } catch (err: any) {
-      printWindow?.close();
       toast({ title: "Label purchase failed", description: err.message, variant: "destructive" });
     } finally {
       setBuyingRateId(null);
@@ -207,7 +211,13 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
         )}
         {order && step === "rates" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Pick a rate — the label is charged to your Shippo account.</p>
+            {testMode ? (
+              <div className="rounded-md border border-yellow-500 bg-yellow-100 p-3 text-sm text-yellow-950 dark:bg-yellow-400/15 dark:text-yellow-200">
+                Test mode — these labels are free tests, not valid USPS postage. The tracking number will not be saved.
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Pick a rate — the label is charged to your Shippo account.</p>
+            )}
             {rates.map((r) => (
               <button
                 key={r.object_id}
@@ -235,39 +245,33 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   );
 };
 
-const openLabelPdf = async (orderId: string, existingWindow?: Window | null) => {
-  const printWindow = existingWindow ?? window.open("", "_blank");
-  try {
-    const { data, error } = await supabase.functions.invoke("shippo-label", {
-      body: { action: "download", order_id: orderId },
-    });
-    if (error) throw error;
-    const pdf = data instanceof Blob ? data : new Blob([data], { type: "application/pdf" });
-    const localUrl = URL.createObjectURL(pdf);
-    if (printWindow) printWindow.location.replace(localUrl);
-    else {
-      const link = document.createElement("a");
-      link.href = localUrl;
-      link.download = `shipping-label-${orderId.slice(0, 8)}.pdf`;
-      link.click();
-    }
-    window.setTimeout(() => URL.revokeObjectURL(localUrl), 60_000);
-  } catch (error) {
-    printWindow?.close();
-    throw error;
-  }
+const downloadLabelPdf = async (orderId: string) => {
+  const { data, error } = await supabase.functions.invoke("shippo-label", {
+    body: { action: "download", order_id: orderId },
+  });
+  if (error) throw error;
+  const encoded = (data as { pdf_base64?: string } | null)?.pdf_base64;
+  if (!encoded) throw new Error("The label file could not be downloaded.");
+  const binary = window.atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  const localUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.href = localUrl;
+  link.download = `shipping-label-${orderId.slice(0, 8)}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(localUrl), 60_000);
 };
 
 export const PrintLabelButton = ({ orderId }: { orderId: string }) => (
   <Button
     variant="outline"
     onClick={async () => {
-      const printWindow = window.open("", "_blank");
       try {
-        await openLabelPdf(orderId, printWindow);
-      } catch {
-        printWindow?.close();
-      }
+        await downloadLabelPdf(orderId);
+      } catch { /* The order dialog remains open so the action can be retried. */ }
     }}
   >
     <Printer className="h-4 w-4 mr-2" />
