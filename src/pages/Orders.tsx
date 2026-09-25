@@ -2643,7 +2643,7 @@ Thank you!`;
               <div className="hidden sm:block h-6 w-px bg-border mx-1" />
               
               {/* Status & Source Filters */}
-              <div className="flex flex-nowrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <span className="text-sm text-muted-foreground shrink-0">Status:</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="h-8 w-[105px] text-xs shrink-0">
@@ -2674,11 +2674,13 @@ Thank you!`;
                 <Button
                   size="sm"
                   variant={flagFilter ? "default" : "outline"}
-                  className="h-8 text-xs shrink-0"
+                  className="h-8 text-xs shrink-0 px-2 sm:px-3"
                   onClick={() => setFlagFilter(!flagFilter)}
+                  title="Flagged orders"
+                  aria-label={flagFilter ? "Hide flagged orders" : "Show flagged orders only"}
                 >
-                  <Flag className="h-3.5 w-3.5 mr-1" />
-                  Flagged
+                  <Flag className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Flagged</span>
                 </Button>
               </div>
             </div>
@@ -2755,10 +2757,10 @@ Thank you!`;
                                 <Square className="h-5 w-5 text-muted-foreground" />
                               )}
                             </button>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                                  <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  <span className="font-medium text-base truncate min-w-0">{order.salons?.name || order.customer_name || "—"}</span>
                                   {isCustomerApp && (
                                     <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
                                       Customer App
@@ -2824,10 +2826,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex flex-wrap gap-2 justify-end">
+                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
@@ -2977,7 +2979,7 @@ Thank you!`;
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                              <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                              <span className="font-medium text-base truncate min-w-0">{order.salons?.name || order.customer_name || "—"}</span>
                               {isCustomerApp && (
                                 <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
                                   Customer App
@@ -3029,10 +3031,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex flex-wrap gap-2 justify-end">
+                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
