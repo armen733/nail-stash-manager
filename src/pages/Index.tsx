@@ -897,7 +897,11 @@ const Index = () => {
             ? `${periodLabel} Salon Revenue`
             : salonCardView === 2
               ? `${periodLabel} Salon Clean Profit`
-              : "Active Supply Stores",
+              : salonCardView === 3
+                ? "Active Supply Stores"
+                : salonCardView === 4
+                  ? `${periodLabel} Supply Revenue`
+                  : `${periodLabel} Supply Clean Profit`,
       value: loading
         ? "..."
         : salonCardView === 0
@@ -906,7 +910,11 @@ const Index = () => {
             ? `$${stats.salonRevenue.toFixed(2)}`
             : salonCardView === 2
               ? `$${stats.salonProfit.toFixed(2)}`
-              : stats.activeSupplyStores.toString(),
+              : salonCardView === 3
+                ? stats.activeSupplyStores.toString()
+                : salonCardView === 4
+                  ? `$${stats.supplyStoreRevenue.toFixed(2)}`
+                  : `$${stats.supplyStoreProfit.toFixed(2)}`,
       icon: Users,
       description:
         salonCardView === 0
@@ -919,8 +927,14 @@ const Index = () => {
               ? stats.salonRevenue > 0
                 ? `${((stats.salonProfit / stats.salonRevenue) * 100).toFixed(1)}% margin · tap for supply stores`
                 : "Tap for supply stores"
-              : "Tap to see salons",
-      onClick: () => setSalonCardView((v) => (v + 1) % 4),
+              : salonCardView === 3
+                ? "Tap for supply revenue"
+                : salonCardView === 4
+                  ? "From supply stores · tap for clean profit"
+                  : stats.supplyStoreRevenue > 0
+                    ? `${((stats.supplyStoreProfit / stats.supplyStoreRevenue) * 100).toFixed(1)}% margin · tap to see salons`
+                    : "Tap to see salons",
+      onClick: () => setSalonCardView((v) => (v + 1) % 6),
       highlight: salonCardView !== 0 && salonCardView !== 3,
       tone: "emerald" as const,
     },
