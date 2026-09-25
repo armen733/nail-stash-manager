@@ -62,6 +62,15 @@ const TEMPLATES: TemplateDef[] = [
       `Hi ${n || "there"}, your ${STORE_NAME} order is ready for pickup. See you soon!`,
   },
   {
+    id: "order_delivered",
+    label: "Your order was delivered",
+    subject: `Your ${STORE_NAME} order has been delivered 🖤`,
+    body: (n) =>
+      `Hi ${n || "there"},\n\nYour order has been delivered! We hope you love everything, and we can't wait to see what you create with Néra.\n\nThank you for choosing us.\n\nWith love,\nThe ${STORE_NAME} Team`,
+    smsBody: (n) =>
+      `Hi ${n || "there"}, your order has been delivered! We hope you love everything, and we can't wait to see what you create with Néra 🖤`,
+  },
+  {
     id: "welcome",
     label: "Welcome new user",
     subject: `Welcome to ${STORE_NAME} 🖤`,
