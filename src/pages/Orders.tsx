@@ -2117,6 +2117,19 @@ Thank you!`;
                       </div>
                     );
                   })()}
+                  {viewOrder.tracking_number && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tracking</span>
+                      <a
+                        href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${viewOrder.tracking_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-primary hover:underline"
+                      >
+                        {viewOrder.tracking_number}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-lg border-t pt-2">
                     <span>Total</span>
                     <span className="text-primary">${viewOrder.total.toFixed(2)}</span>
@@ -2222,6 +2235,14 @@ Thank you!`;
       </Dialog>
 
       {/* Flag Order Dialog */}
+      <ShipLabelDialog
+        order={shipLabelOrder}
+        onClose={() => setShipLabelOrder(null)}
+        onLabelCreated={(orderId, trackingNumber, labelUrl) => {
+          setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, tracking_number: trackingNumber, shipping_label_url: labelUrl } : o));
+          if (viewOrder?.id === orderId) setViewOrder({ ...viewOrder, tracking_number: trackingNumber, shipping_label_url: labelUrl });
+        }}
+      />
       <Dialog open={!!flagOrder} onOpenChange={(o) => { if (!o) { setFlagOrder(null); setFlagReason(""); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
