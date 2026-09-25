@@ -27,6 +27,8 @@ interface Stats {
   totalProducts: number;
   monthlyRevenue: number;
   monthlyProfit: number;
+  websiteRevenue: number;
+  websiteProfit: number;
   totalRevenue: number;
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
@@ -143,6 +145,8 @@ const Index = () => {
     totalProducts: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
+    websiteRevenue: 0,
+    websiteProfit: 0,
     totalRevenue: 0,
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
@@ -150,7 +154,8 @@ const Index = () => {
     websiteUsers: 0,
     newWebsiteUsers: 0,
   });
-  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  // 0 = Revenue, 1 = Clean Profit, 2 = Website Revenue, 3 = Website Clean Profit
+  const [revenueView, setRevenueView] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [showSupplyStoresCount, setShowSupplyStoresCount] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
@@ -284,7 +289,7 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("id, total, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
+        supabase.from("orders").select("id, total, tax, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
@@ -413,6 +418,19 @@ const Index = () => {
         const cogs = orderCogsMap.get(o.id) ?? 0;
         orderProfitPeriod += netRevenue - cogs;
       });
+
+      // Website-only figures (orders placed through the customer app)
+      const websitePeriodOrders = periodOrders.filter((o: any) => !o.salon_id && !o.created_by);
+      const websiteRevenuePeriod = websitePeriodOrders.reduce(
+        (s: number, o: any) => s + Number(o.total || 0), 0
+      );
+      let websiteProfitPeriod = 0;
+      websitePeriodOrders.forEach((o: any) => {
+        const netRevenue = Number(o.total ?? 0) - Number(o.tax ?? 0);
+        const cogs = orderCogsMap.get(o.id) ?? 0;
+        websiteProfitPeriod += netRevenue - cogs;
+      });
+
 
       // Website users = customer accounts registered on the website
       const customerProfiles = (profilesRes.data || []).filter((p: any) => (p.role ?? "Customer") === "Customer");
