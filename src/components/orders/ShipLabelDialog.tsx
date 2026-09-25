@@ -146,10 +146,11 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       const isTest = Boolean((data as any)?.test_mode);
       toast({
         title: isTest ? "Test label created" : "Label purchased",
-        description: isTest ? "This is not valid USPS postage or tracking." : `Tracking: ${tracking}`,
+        description: isTest
+          ? "This is not valid USPS postage or tracking."
+          : `Tracking: ${tracking} — use Print Label to print or save it.`,
       });
       if (!isTest) onLabelCreated(order.id, tracking, labelUrl);
-      await downloadLabelPdf(order.id);
       onClose();
     } catch (err: any) {
       toast({ title: "Label purchase failed", description: err.message, variant: "destructive" });
@@ -245,7 +246,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   );
 };
 
-const downloadLabelPdf = async (orderId: string) => {
+const getLabelBlob = async (orderId: string): Promise<Blob> => {
   const { data, error } = await supabase.functions.invoke("shippo-label", {
     body: { action: "download", order_id: orderId },
   });
@@ -255,26 +256,53 @@ const downloadLabelPdf = async (orderId: string) => {
   const binary = window.atob(encoded);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-  const localUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  return new Blob([bytes], { type: "application/pdf" });
+};
+
+// On iPhone/iPad the share sheet offers Print and Save to Files; on desktop
+// the PDF opens in a new tab ready to print.
+const presentLabelPdf = async (orderId: string) => {
+  const blob = await getLabelBlob(orderId);
+  const fileName = `shipping-label-${orderId.slice(0, 8)}.pdf`;
+  const nav = navigator as any;
+  if (typeof nav.share === "function" && nav.canShare) {
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    if (nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: "USPS shipping label" });
+        return;
+      } catch (err: any) {
+        if (err?.name === "AbortError") return; // user closed the share sheet
+        // fall through to download
+      }
+    }
+  }
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = localUrl;
-  link.download = `shipping-label-${orderId.slice(0, 8)}.pdf`;
+  link.href = url;
+  link.download = fileName;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(localUrl), 60_000);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
 
-export const PrintLabelButton = ({ orderId }: { orderId: string }) => (
-  <Button
-    variant="outline"
-    onClick={async () => {
-      try {
-        await downloadLabelPdf(orderId);
-      } catch { /* The order dialog remains open so the action can be retried. */ }
-    }}
-  >
-    <Printer className="h-4 w-4 mr-2" />
-    Print Label
-  </Button>
-);
+export const PrintLabelButton = ({ orderId }: { orderId: string }) => {
+  const [opening, setOpening] = useState(false);
+  return (
+    <Button
+      variant="outline"
+      disabled={opening}
+      onClick={async () => {
+        setOpening(true);
+        try {
+          await presentLabelPdf(orderId);
+        } catch { /* The dialog stays open so the action can be retried. */ }
+        finally { setOpening(false); }
+      }}
+    >
+      {opening ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
+      Print Label
+    </Button>
+  );
+};
