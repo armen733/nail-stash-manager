@@ -29,6 +29,8 @@ interface Stats {
   monthlyProfit: number;
   websiteRevenue: number;
   websiteProfit: number;
+  salonRevenue: number;
+  salonProfit: number;
   totalRevenue: number;
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
@@ -147,6 +149,8 @@ const Index = () => {
     monthlyProfit: 0,
     websiteRevenue: 0,
     websiteProfit: 0,
+    salonRevenue: 0,
+    salonProfit: 0,
     totalRevenue: 0,
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
@@ -156,8 +160,9 @@ const Index = () => {
   });
   // 0 = Revenue, 1 = Clean Profit, 2 = Website Revenue, 3 = Website Clean Profit
   const [revenueView, setRevenueView] = useState(0);
+  // 0 = Salon count, 1 = Salon Revenue, 2 = Salon Clean Profit, 3 = Supply Stores
+  const [salonCardView, setSalonCardView] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
-  const [showSupplyStoresCount, setShowSupplyStoresCount] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
   const [websiteOrders, setWebsiteOrders] = useState<WebsiteOrderRow[]>([]);
@@ -431,6 +436,18 @@ const Index = () => {
         websiteProfitPeriod += netRevenue - cogs;
       });
 
+      // Salon-only figures (orders tied to a salon client)
+      const salonPeriodOrders = periodOrders.filter((o: any) => o.salon_id);
+      const salonRevenuePeriod = salonPeriodOrders.reduce(
+        (s: number, o: any) => s + Number(o.total || 0), 0
+      );
+      let salonProfitPeriod = 0;
+      salonPeriodOrders.forEach((o: any) => {
+        const netRevenue = Number(o.total ?? 0) - Number(o.tax ?? 0);
+        const cogs = orderCogsMap.get(o.id) ?? 0;
+        salonProfitPeriod += netRevenue - cogs;
+      });
+
 
       // Website users = customer accounts registered on the website
       const customerProfiles = (profilesRes.data || []).filter((p: any) => (p.role ?? "Customer") === "Customer");
@@ -451,6 +468,8 @@ const Index = () => {
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
         websiteRevenue: websiteRevenuePeriod,
         websiteProfit: websiteProfitPeriod,
+        salonRevenue: salonRevenuePeriod,
+        salonProfit: salonProfitPeriod,
         totalRevenue: orderRevenueAll + supplyRevenueAll,
         supplyStoreRevenue,
         supplyStoreProfit,
@@ -870,18 +889,40 @@ const Index = () => {
       description: `${stats.totalOrders} total orders`,
     },
     {
-      title: showSupplyStoresCount ? "Active Supply Stores" : "Active Salons",
+      // 0 = Salon count, 1 = Salon Revenue, 2 = Salon Clean Profit, 3 = Supply Stores
+      title:
+        salonCardView === 0
+          ? "Active Salons"
+          : salonCardView === 1
+            ? `${periodLabel} Salon Revenue`
+            : salonCardView === 2
+              ? `${periodLabel} Salon Clean Profit`
+              : "Active Supply Stores",
       value: loading
         ? "..."
-        : showSupplyStoresCount
-          ? stats.activeSupplyStores.toString()
-          : stats.totalSalons.toString(),
+        : salonCardView === 0
+          ? stats.totalSalons.toString()
+          : salonCardView === 1
+            ? `$${stats.salonRevenue.toFixed(2)}`
+            : salonCardView === 2
+              ? `$${stats.salonProfit.toFixed(2)}`
+              : stats.activeSupplyStores.toString(),
       icon: Users,
-      description: showSupplyStoresCount
-        ? "Tap to see salons"
-        : "Total clients · tap for stores",
-      onClick: () => setShowSupplyStoresCount((v) => !v),
-      highlight: showSupplyStoresCount,
+      description:
+        salonCardView === 0
+          ? "Total clients · tap for salon revenue"
+          : salonCardView === 1
+            ? stats.salonRevenue > 0
+              ? "From salon orders · tap for clean profit"
+              : "No salon orders · tap for clean profit"
+            : salonCardView === 2
+              ? stats.salonRevenue > 0
+                ? `${((stats.salonProfit / stats.salonRevenue) * 100).toFixed(1)}% margin · tap for supply stores`
+                : "Tap for supply stores"
+              : "Tap to see salons",
+      onClick: () => setSalonCardView((v) => (v + 1) % 4),
+      highlight: salonCardView !== 0 && salonCardView !== 3,
+      tone: "emerald" as const,
     },
     {
       title: "Products",
