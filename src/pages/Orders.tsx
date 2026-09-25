@@ -71,6 +71,7 @@ import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { ReturnDialog } from "@/components/orders/ReturnDialog";
+import { ShipLabelDialog, PrintLabelButton } from "@/components/orders/ShipLabelDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { logAudit } from "@/lib/audit-log";
@@ -103,6 +104,9 @@ interface Order {
   shipping?: number | null;
   shipping_zone?: string | null;
   flag_reason?: string | null;
+  stripe_session_id?: string | null;
+  tracking_number?: string | null;
+  shipping_label_url?: string | null;
   salons: {
     name: string;
   } | null;
@@ -165,6 +169,7 @@ const Orders = () => {
   const [flagFilter, setFlagFilter] = useState(false);
   const [flagOrder, setFlagOrder] = useState<Order | null>(null);
   const [flagReason, setFlagReason] = useState("");
+  const [shipLabelOrder, setShipLabelOrder] = useState<Order | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -2112,6 +2117,19 @@ Thank you!`;
                       </div>
                     );
                   })()}
+                  {viewOrder.tracking_number && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tracking</span>
+                      <a
+                        href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${viewOrder.tracking_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-primary hover:underline"
+                      >
+                        {viewOrder.tracking_number}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-lg border-t pt-2">
                     <span>Total</span>
                     <span className="text-primary">${viewOrder.total.toFixed(2)}</span>
@@ -2138,6 +2156,16 @@ Thank you!`;
                   <Flag className="h-4 w-4 mr-2" />
                   {viewOrder.flag_reason ? "Edit Flag" : "Flag"}
                 </Button>
+                {viewOrder.stripe_session_id && (
+                  viewOrder.shipping_label_url ? (
+                    <PrintLabelButton labelUrl={viewOrder.shipping_label_url} />
+                  ) : (
+                    <Button variant="outline" onClick={() => setShipLabelOrder(viewOrder)}>
+                      <TruckIcon className="h-4 w-4 mr-2" />
+                      Buy Label
+                    </Button>
+                  )
+                )}
                 <Button
                   variant="default"
                   onClick={() => {
@@ -2207,6 +2235,14 @@ Thank you!`;
       </Dialog>
 
       {/* Flag Order Dialog */}
+      <ShipLabelDialog
+        order={shipLabelOrder}
+        onClose={() => setShipLabelOrder(null)}
+        onLabelCreated={(orderId, trackingNumber, labelUrl) => {
+          setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, tracking_number: trackingNumber, shipping_label_url: labelUrl } : o));
+          if (viewOrder?.id === orderId) setViewOrder({ ...viewOrder, tracking_number: trackingNumber, shipping_label_url: labelUrl });
+        }}
+      />
       <Dialog open={!!flagOrder} onOpenChange={(o) => { if (!o) { setFlagOrder(null); setFlagReason(""); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
