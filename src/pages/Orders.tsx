@@ -5,7 +5,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2 } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2, Flag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
@@ -897,9 +897,10 @@ const Orders = () => {
     const orderDateStr = order.order_date; // "YYYY-MM-DD" format
     const matchesDateFrom = !dateFrom || orderDateStr >= format(dateFrom, 'yyyy-MM-dd');
     const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
-    
-    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
-  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo]);
+    const matchesFlag = !flagFilter || !!order.flag_reason;
+
+    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo && matchesFlag;
+  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo, flagFilter]);
 
   // Memoize filtered orders
   const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
@@ -2519,6 +2520,16 @@ Thank you!`;
                     <SelectItem value="manual">In-Person / Manual</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button
+                  size="sm"
+                  variant={flagFilter ? "default" : "outline"}
+                  className="h-8 text-xs shrink-0"
+                  onClick={() => setFlagFilter(!flagFilter)}
+                >
+                  <Flag className="h-3.5 w-3.5 mr-1" />
+                  Flagged
+                </Button>
               </div>
             </div>
           </div>
