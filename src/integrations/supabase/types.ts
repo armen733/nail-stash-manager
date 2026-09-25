@@ -1511,6 +1511,57 @@ export type Database = {
         }
         Relationships: []
       }
+      shipping_settings: {
+        Row: {
+          created_at: string
+          default_height_in: number
+          default_length_in: number
+          default_weight_oz: number
+          default_width_in: number
+          from_city: string
+          from_email: string
+          from_name: string
+          from_phone: string
+          from_state: string
+          from_street1: string
+          from_zip: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_height_in?: number
+          default_length_in?: number
+          default_weight_oz?: number
+          default_width_in?: number
+          from_city?: string
+          from_email?: string
+          from_name?: string
+          from_phone?: string
+          from_state?: string
+          from_street1?: string
+          from_zip?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_height_in?: number
+          default_length_in?: number
+          default_weight_oz?: number
+          default_width_in?: number
+          from_city?: string
+          from_email?: string
+          from_name?: string
+          from_phone?: string
+          from_state?: string
+          from_street1?: string
+          from_zip?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_locations: {
         Row: {
           assigned_user_id: string | null
