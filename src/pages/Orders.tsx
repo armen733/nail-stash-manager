@@ -5,12 +5,13 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2, Flag } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2, Flag, ImageDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultLocationId } from "@/lib/default-location";
 import { generateOrderReceiptPDF } from "@/lib/order-receipt-pdf";
+import { generateOrderReceiptImage } from "@/lib/order-receipt-image";
 import { sendOrderShippedEmail, sendOrderShippedEmails } from "@/lib/order-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -1066,6 +1067,36 @@ const Orders = () => {
       ...order,
       customer_address: salonDetails?.address || order.customer_address || '',
     });
+  };
+
+  const saveReceiptToPhotos = async (order: Order) => {
+    try {
+      const salonDetails = salons.find(s => s.id === order.salon_id);
+      const blob = await generateOrderReceiptImage({
+        ...order,
+        customer_address: salonDetails?.address || order.customer_address || '',
+      });
+      const orderNo = order.id.slice(0, 8).toUpperCase();
+      const file = new File([blob], `receipt-${orderNo.toLowerCase()}.png`, { type: 'image/png' });
+      const nav = navigator as any;
+      if (nav.canShare && nav.canShare({ files: [file] })) {
+        try {
+          await nav.share({ files: [file], title: `Receipt #${orderNo}` });
+          return;
+        } catch { /* user cancelled */ }
+        return;
+      }
+      // Fallback: download the image
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Receipt saved", description: "The receipt image was downloaded." });
+    } catch {
+      toast({ title: "Error", description: "Could not create the receipt image.", variant: "destructive" });
+    }
   };
 
   const buildReceiptText = (order: Order) => {
@@ -2158,8 +2189,12 @@ Thank you!`;
                       <MessageCircle className="h-4 w-4 mr-2" />
                       WhatsApp
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={() => saveReceiptToPhotos(viewOrder)}>
+                       <ImageDown className="h-4 w-4 mr-2" />
+                       Save to Photos
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
                       <Copy className="h-4 w-4 mr-2" />
                       Copy to clipboard
                     </DropdownMenuItem>
@@ -2800,13 +2835,18 @@ Thank you!`;
                                     <MessageCircle className="h-4 w-4 mr-2" />
                                     WhatsApp
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copy to clipboard
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                   <DropdownMenuSeparator />
+                                   <DropdownMenuItem onClick={() => saveReceiptToPhotos(order)}>
+                                     <ImageDown className="h-4 w-4 mr-2" />
+                                     Save to Photos
+                                   </DropdownMenuItem>
+                                   <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
+                                     <Copy className="h-4 w-4 mr-2" />
+                                     Copy to clipboard
+                                   </DropdownMenuItem>
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -2969,14 +3009,18 @@ Thank you!`;
                                     <MessageCircle className="h-4 w-4 mr-2" />
                                     WhatsApp
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copy to clipboard
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <Button
+                                   <DropdownMenuSeparator />
+                                   <DropdownMenuItem onClick={() => saveReceiptToPhotos(order)}>
+                                     <ImageDown className="h-4 w-4 mr-2" />
+                                     Save to Photos
+                                   </DropdownMenuItem>
+                                   <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
+                                     <Copy className="h-4 w-4 mr-2" />
+                                     Copy to clipboard
+                                   </DropdownMenuItem>
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+                               <Button
                                 size="sm"
                                 variant="destructive"
                                 className="h-9"
