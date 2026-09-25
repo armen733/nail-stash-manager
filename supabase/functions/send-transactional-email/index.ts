@@ -313,6 +313,7 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
             </td>
             <td style="vertical-align: top; padding-left: 16px;">
               <p style="margin: 0 0 6px; font-size: 15px; color: #141414; font-weight: 500;">${item.name}</p>
+              ${(item as any).sku ? `<p style="margin: 0 0 4px; font-size: 12px; color: #737373;">SKU: ${(item as any).sku}</p>` : ''}
               <p style="margin: 0; font-size: 13px; color: #737373;">Qty: ${item.quantity} × $${item.unit_price.toFixed(2)}</p>
             </td>
             <td style="vertical-align: top; text-align: right;">
@@ -394,6 +395,12 @@ const getOrderConfirmationEmail = (data: EmailRequest) => {
                       <tr>
                         <td style="padding: 8px 0; color: #22c55e; font-size: 14px;">Discount ${data.discountCode ? '(' + data.discountCode + ')' : ''}</td>
                         <td style="padding: 8px 0; color: #22c55e; font-size: 14px; text-align: right;">-$${data.discount.toFixed(2)}</td>
+                      </tr>
+                      ` : ''}
+                      ${(data as any).shipping > 0 ? `
+                      <tr>
+                        <td style="padding: 8px 0; color: #737373; font-size: 14px;">Shipping</td>
+                        <td style="padding: 8px 0; color: #141414; font-size: 14px; text-align: right;">$${Number((data as any).shipping).toFixed(2)}</td>
                       </tr>
                       ` : ''}
                       <tr>
@@ -772,6 +779,38 @@ const handler = async (req: Request): Promise<Response> => {
           console.log('No items received in order confirmation!');
         }
         
+        // Use the saved order as the source of truth for totals and SKUs
+        try {
+          let ord: any = null;
+          if (data.orderId) {
+            const isUuid = /^[0-9a-f-]{36}$/i.test(data.orderId);
+            const q = supabase.from('orders').select('id, subtotal, tax, shipping, total, discount_amount, discount_code, order_items(quantity, unit_price, line_total, products(name, sku))');
+            const { data: o } = isUuid ? await q.eq('id', data.orderId).maybeSingle() : await q.eq('stripe_session_id', data.orderId).maybeSingle();
+            ord = o;
+          }
+          if (ord) {
+            data.subtotal = Number(ord.subtotal) || data.subtotal;
+            data.tax = Number(ord.tax) || 0;
+            (data as any).shipping = Number(ord.shipping) || 0;
+            data.total = Number(ord.total) || data.total;
+            if (Number(ord.discount_amount) > 0) { data.discount = Number(ord.discount_amount); data.discountCode = ord.discount_code || data.discountCode; }
+          } else if (data.total != null && data.subtotal != null) {
+            // Fallback: derive tax if missing
+            const derived = Number((data.total - data.subtotal + (data.discount || 0)).toFixed(2));
+            if (!data.tax && derived > 0) data.tax = derived;
+          }
+          if (data.items?.length) {
+            const skuMap = new Map<string, string>();
+            (ord?.order_items || []).forEach((oi: any) => oi.products?.sku && skuMap.set(oi.products.name, oi.products.sku));
+            const missing = data.items.filter((i: any) => !i.sku && !skuMap.has(i.name)).map(i => i.name);
+            if (missing.length) {
+              const { data: ps } = await supabase.from('products').select('name, sku').in('name', missing);
+              (ps || []).forEach((p: any) => p.sku && skuMap.set(p.name, p.sku));
+            }
+            data.items = data.items.map((i: any) => ({ ...i, sku: i.sku || skuMap.get(i.name) }));
+          }
+        } catch (e) { console.error('Order lookup failed:', e); }
+
         subject = `Order Confirmed - #${data.orderId || 'N/A'}`;
         html = getOrderConfirmationEmail(data);
         break;
