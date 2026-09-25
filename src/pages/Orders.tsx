@@ -2643,7 +2643,7 @@ Thank you!`;
               <div className="hidden sm:block h-6 w-px bg-border mx-1" />
               
               {/* Status & Source Filters */}
-              <div className="flex flex-nowrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <span className="text-sm text-muted-foreground shrink-0">Status:</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="h-8 w-[105px] text-xs shrink-0">
@@ -2674,11 +2674,13 @@ Thank you!`;
                 <Button
                   size="sm"
                   variant={flagFilter ? "default" : "outline"}
-                  className="h-8 text-xs shrink-0"
+                  className="h-8 text-xs shrink-0 px-2 sm:px-3"
                   onClick={() => setFlagFilter(!flagFilter)}
+                  title="Flagged orders"
+                  aria-label={flagFilter ? "Hide flagged orders" : "Show flagged orders only"}
                 >
-                  <Flag className="h-3.5 w-3.5 mr-1" />
-                  Flagged
+                  <Flag className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Flagged</span>
                 </Button>
               </div>
             </div>
