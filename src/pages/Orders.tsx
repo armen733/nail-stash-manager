@@ -2737,27 +2737,39 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                             <div className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-9"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  printPackingSlip(order);
-                                }}
-                              >
-                                <Printer className="h-4 w-4 mr-1" />
-                                Print
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
+                              <div className="flex gap-2 justify-end">
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 className={`h-9 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFlagOrder(order);
+                                   setFlagReason(order.flag_reason || "");
+                                 }}
+                               >
+                                 <Flag className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 className="h-9"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   printPackingSlip(order);
+                                 }}
+                               >
+                                 <Printer className="h-4 w-4 mr-1" />
+                                 Print
+                               </Button>
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     className="h-9"
+                                     onClick={(e) => e.stopPropagation()}
+                                   >
                                     <Share2 className="h-4 w-4 mr-1" />
                                     Share
                                   </Button>
@@ -2890,29 +2902,41 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                             <div className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-9"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  printPackingSlip(order);
-                                }}
-                              >
-                                <Printer className="h-4 w-4 mr-1" />
-                                Print
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-9"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Share2 className="h-4 w-4 mr-1" />
-                                    Share
+                              <div className="flex gap-2 justify-end">
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 className={`h-9 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFlagOrder(order);
+                                   setFlagReason(order.flag_reason || "");
+                                 }}
+                               >
+                                 <Flag className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 className="h-9"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   printPackingSlip(order);
+                                 }}
+                               >
+                                 <Printer className="h-4 w-4 mr-1" />
+                                 Print
+                               </Button>
+                               <DropdownMenu>
+                                 <DropdownMenuTrigger asChild>
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     className="h-9"
+                                     onClick={(e) => e.stopPropagation()}
+                                   >
+                                     <Share2 className="h-4 w-4 mr-1" />
+                                     Share
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-52 bg-popover z-50" onClick={(e) => e.stopPropagation()}>
