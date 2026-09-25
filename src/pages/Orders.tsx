@@ -902,6 +902,22 @@ const Orders = () => {
     return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo && matchesFlag;
   }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo, flagFilter]);
 
+  const FLAG_REASONS = ["Not paid yet", "Address issue", "Waiting on stock", "Customer request", "Other"];
+
+  const saveFlag = async (orderId: string, reason: string | null) => {
+    try {
+      const { error } = await supabase.from("orders").update({ flag_reason: reason }).eq("id", orderId);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, flag_reason: reason } : o));
+      if (viewOrder?.id === orderId) setViewOrder({ ...viewOrder, flag_reason: reason });
+      toast({ title: reason ? "Order flagged" : "Flag removed", description: reason || undefined });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setFlagOrder(null);
+    setFlagReason("");
+  };
+
   // Memoize filtered orders
   const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
     const filteredActive = activeOrders.filter(filterOrders);
@@ -2620,6 +2636,15 @@ Thank you!`;
                                   {order.discount_code && (
                                     <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
                                       Ref: {order.discount_code}
+                                    </Badge>
+                                  )}
+                                  {order.flag_reason && (
+                                    <Badge
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer bg-red-500 text-white hover:bg-red-600 border-transparent"
+                                      onClick={(e) => { e.stopPropagation(); setFlagOrder(order); setFlagReason(order.flag_reason || ""); }}
+                                    >
+                                      <Flag className="h-3 w-3 mr-0.5" />
+                                      {order.flag_reason}
                                     </Badge>
                                   )}
                                 </div>
