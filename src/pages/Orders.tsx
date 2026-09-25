@@ -169,6 +169,7 @@ const Orders = () => {
   const [flagFilter, setFlagFilter] = useState(false);
   const [flagOrder, setFlagOrder] = useState<Order | null>(null);
   const [flagReason, setFlagReason] = useState("");
+  const [shipLabelOrder, setShipLabelOrder] = useState<Order | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -2142,6 +2143,16 @@ Thank you!`;
                   <Flag className="h-4 w-4 mr-2" />
                   {viewOrder.flag_reason ? "Edit Flag" : "Flag"}
                 </Button>
+                {viewOrder.stripe_session_id && (
+                  viewOrder.shipping_label_url ? (
+                    <PrintLabelButton labelUrl={viewOrder.shipping_label_url} />
+                  ) : (
+                    <Button variant="outline" onClick={() => setShipLabelOrder(viewOrder)}>
+                      <TruckIcon className="h-4 w-4 mr-2" />
+                      Buy Label
+                    </Button>
+                  )
+                )}
                 <Button
                   variant="default"
                   onClick={() => {
