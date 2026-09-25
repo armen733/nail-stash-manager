@@ -2757,10 +2757,10 @@ Thank you!`;
                                 <Square className="h-5 w-5 text-muted-foreground" />
                               )}
                             </button>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                                  <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                                  <span className="font-medium text-base truncate min-w-0">{order.salons?.name || order.customer_name || "—"}</span>
                                   {isCustomerApp && (
                                     <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
                                       Customer App
@@ -2979,7 +2979,7 @@ Thank you!`;
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                              <span className="font-medium text-base truncate">{order.salons?.name || order.customer_name || "—"}</span>
+                              <span className="font-medium text-base truncate min-w-0">{order.salons?.name || order.customer_name || "—"}</span>
                               {isCustomerApp && (
                                 <Badge className="text-[10px] h-5 px-1.5 bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">
                                   Customer App
