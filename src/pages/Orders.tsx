@@ -2189,8 +2189,12 @@ Thank you!`;
                       <MessageCircle className="h-4 w-4 mr-2" />
                       WhatsApp
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem onClick={() => saveReceiptToPhotos(viewOrder)}>
+                       <ImageDown className="h-4 w-4 mr-2" />
+                       Save to Photos
+                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => shareOrder(viewOrder, 'copy')}>
                       <Copy className="h-4 w-4 mr-2" />
                       Copy to clipboard
                     </DropdownMenuItem>
@@ -2831,13 +2835,18 @@ Thank you!`;
                                     <MessageCircle className="h-4 w-4 mr-2" />
                                     WhatsApp
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copy to clipboard
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                   <DropdownMenuSeparator />
+                                   <DropdownMenuItem onClick={() => saveReceiptToPhotos(order)}>
+                                     <ImageDown className="h-4 w-4 mr-2" />
+                                     Save to Photos
+                                   </DropdownMenuItem>
+                                   <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
+                                     <Copy className="h-4 w-4 mr-2" />
+                                     Copy to clipboard
+                                   </DropdownMenuItem>
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -3000,14 +3009,18 @@ Thank you!`;
                                     <MessageCircle className="h-4 w-4 mr-2" />
                                     WhatsApp
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Copy to clipboard
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <Button
+                                   <DropdownMenuSeparator />
+                                   <DropdownMenuItem onClick={() => saveReceiptToPhotos(order)}>
+                                     <ImageDown className="h-4 w-4 mr-2" />
+                                     Save to Photos
+                                   </DropdownMenuItem>
+                                   <DropdownMenuItem onClick={() => shareOrder(order, 'copy')}>
+                                     <Copy className="h-4 w-4 mr-2" />
+                                     Copy to clipboard
+                                   </DropdownMenuItem>
+                                 </DropdownMenuContent>
+                               </DropdownMenu>
+                               <Button
                                 size="sm"
                                 variant="destructive"
                                 className="h-9"
