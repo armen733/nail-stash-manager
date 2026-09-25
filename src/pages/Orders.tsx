@@ -2814,7 +2814,7 @@ Thank you!`;
                                ${order.total.toFixed(2)}
                              </div>
                               <div className="flex flex-wrap gap-2 justify-end">
-                               {order.stripe_session_id && (
+                               {!order.created_by && (
                                  order.shipping_label_url ? (
                                    <div onClick={(e) => e.stopPropagation()}>
                                      <PrintLabelButton orderId={order.id} />
