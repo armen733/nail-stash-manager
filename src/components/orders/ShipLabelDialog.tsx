@@ -44,10 +44,10 @@ interface ShippingSettings {
 export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDialogProps) => {
   const { toast } = useToast();
   const [settings, setSettings] = useState<ShippingSettings | null>(null);
-  const [weight, setWeight] = useState("8");
+  const [weight, setWeight] = useState("4");
   const [length, setLength] = useState("9");
   const [width, setWidth] = useState("6");
-  const [height, setHeight] = useState("2");
+  const [height, setHeight] = useState("1");
   const [fromStreet, setFromStreet] = useState("");
   const [fromCity, setFromCity] = useState("");
   const [fromState, setFromState] = useState("");
@@ -90,10 +90,10 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
         from_city: fromCity,
         from_state: fromState,
         from_zip: fromZip,
-        default_weight_oz: Number(weight) || 8,
+        default_weight_oz: Number(weight) || 4,
         default_length_in: Number(length) || 9,
         default_width_in: Number(width) || 6,
-        default_height_in: Number(height) || 2,
+        default_height_in: Number(height) || 1,
       })
       .eq("id", settings.id);
   };
@@ -111,10 +111,10 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
         body: {
           action: "rates",
           order_id: order.id,
-          weight_oz: Number(weight) || 8,
+          weight_oz: Number(weight) || 4,
           length: Number(length) || 9,
           width: Number(width) || 6,
-          height: Number(height) || 2,
+          height: Number(height) || 1,
         },
       });
       if (error) throw new Error((data as any)?.error || error.message);
@@ -132,6 +132,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
 
   const buyLabel = async (rate: Rate) => {
     if (!order) return;
+    const printWindow = window.open("", "_blank");
     setBuyingRateId(rate.object_id);
     try {
       const { data, error } = await supabase.functions.invoke("shippo-label", {
@@ -143,9 +144,10 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       const tracking = (data as any).tracking_number;
       toast({ title: "Label purchased", description: `Tracking: ${tracking}` });
       onLabelCreated(order.id, tracking, labelUrl);
-      window.open(labelUrl, "_blank");
+      await openLabelPdf(order.id, printWindow);
       onClose();
     } catch (err: any) {
+      printWindow?.close();
       toast({ title: "Label purchase failed", description: err.message, variant: "destructive" });
     } finally {
       setBuyingRateId(null);
@@ -233,8 +235,41 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   );
 };
 
-export const PrintLabelButton = ({ labelUrl }: { labelUrl: string }) => (
-  <Button variant="outline" onClick={() => window.open(labelUrl, "_blank")}>
+const openLabelPdf = async (orderId: string, existingWindow?: Window | null) => {
+  const printWindow = existingWindow ?? window.open("", "_blank");
+  try {
+    const { data, error } = await supabase.functions.invoke("shippo-label", {
+      body: { action: "download", order_id: orderId },
+    });
+    if (error) throw error;
+    const pdf = data instanceof Blob ? data : new Blob([data], { type: "application/pdf" });
+    const localUrl = URL.createObjectURL(pdf);
+    if (printWindow) printWindow.location.replace(localUrl);
+    else {
+      const link = document.createElement("a");
+      link.href = localUrl;
+      link.download = `shipping-label-${orderId.slice(0, 8)}.pdf`;
+      link.click();
+    }
+    window.setTimeout(() => URL.revokeObjectURL(localUrl), 60_000);
+  } catch (error) {
+    printWindow?.close();
+    throw error;
+  }
+};
+
+export const PrintLabelButton = ({ orderId }: { orderId: string }) => (
+  <Button
+    variant="outline"
+    onClick={async () => {
+      const printWindow = window.open("", "_blank");
+      try {
+        await openLabelPdf(orderId, printWindow);
+      } catch {
+        printWindow?.close();
+      }
+    }}
+  >
     <Printer className="h-4 w-4 mr-2" />
     Print Label
   </Button>
