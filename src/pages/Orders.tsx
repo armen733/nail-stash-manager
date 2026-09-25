@@ -2847,6 +2847,10 @@ Thank you!`;
                         isCustomerApp
                           ? 'border-l-4 border-l-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/15'
                           : 'hover:bg-muted/50'
+                      } ${
+                        order.flag_reason
+                          ? 'border-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-950/60'
+                          : ''
                       }`}
                       onClick={() => setViewOrder(order)}
                     >
