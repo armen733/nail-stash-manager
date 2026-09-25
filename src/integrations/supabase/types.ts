@@ -650,6 +650,7 @@ export type Database = {
           profile_id: string | null
           salon_id: string | null
           shipping: number
+          shipping_label_url: string | null
           shipping_zone: string | null
           status: Database["public"]["Enums"]["order_status"]
           stripe_session_id: string | null
@@ -659,6 +660,7 @@ export type Database = {
           tier_discount_applied: string | null
           tier_discount_percent: number | null
           total: number
+          tracking_number: string | null
           updated_at: string
         }
         Insert: {
@@ -683,6 +685,7 @@ export type Database = {
           profile_id?: string | null
           salon_id?: string | null
           shipping?: number
+          shipping_label_url?: string | null
           shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_session_id?: string | null
@@ -692,6 +695,7 @@ export type Database = {
           tier_discount_applied?: string | null
           tier_discount_percent?: number | null
           total?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -716,6 +720,7 @@ export type Database = {
           profile_id?: string | null
           salon_id?: string | null
           shipping?: number
+          shipping_label_url?: string | null
           shipping_zone?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           stripe_session_id?: string | null
@@ -725,6 +730,7 @@ export type Database = {
           tier_discount_applied?: string | null
           tier_discount_percent?: number | null
           total?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Relationships: [
