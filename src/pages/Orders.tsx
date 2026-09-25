@@ -2100,6 +2100,14 @@ Thank you!`;
                   </Button>
                 )}
                 <Button
+                  variant="outline"
+                  className={viewOrder.flag_reason ? "border-red-500 text-red-600" : ""}
+                  onClick={() => { setFlagOrder(viewOrder); setFlagReason(viewOrder.flag_reason || ""); }}
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  {viewOrder.flag_reason ? "Edit Flag" : "Flag"}
+                </Button>
+                <Button
                   variant="default"
                   onClick={() => {
                     setEditOrder(viewOrder);
