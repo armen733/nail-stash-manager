@@ -200,10 +200,18 @@ Deno.serve(async (req) => {
       }
       const testMode = token.startsWith('shippo_test_')
       if (!testMode) {
+        const { data: cur } = await admin.from('orders').select('status').eq('id', orderId).maybeSingle()
+        const markShipped = cur && cur.status !== 'Shipped' && cur.status !== 'Delivered'
         await admin.from('orders').update({
           tracking_number: tx.tracking_number,
           shipping_label_url: tx.label_url,
+          ...(markShipped ? { status: 'Shipped' } : {}),
         }).eq('id', orderId)
+        if (markShipped) {
+          try {
+            await admin.functions.invoke('notify-order-shipped', { body: { orderId } })
+          } catch (err) { console.error('shipped email failed', err) }
+        }
       }
 
       return new Response(JSON.stringify({
