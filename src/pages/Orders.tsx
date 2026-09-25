@@ -2813,7 +2813,27 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex gap-2 justify-end">
+                              <div className="flex flex-wrap gap-2 justify-end">
+                               {order.stripe_session_id && (
+                                 order.shipping_label_url ? (
+                                   <div onClick={(e) => e.stopPropagation()}>
+                                     <PrintLabelButton orderId={order.id} />
+                                   </div>
+                                 ) : (
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     className="h-9"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       setShipLabelOrder(order);
+                                     }}
+                                   >
+                                     <TruckIcon className="h-4 w-4 mr-1" />
+                                     Buy Label
+                                   </Button>
+                                 )
+                               )}
                                <Button
                                  size="sm"
                                  variant="outline"
