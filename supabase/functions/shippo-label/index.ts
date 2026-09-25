@@ -101,12 +101,13 @@ Deno.serve(async (req) => {
       }
       const labelResponse = await fetch(order.shipping_label_url)
       if (!labelResponse.ok) throw new Error('The shipping label could not be downloaded. Please create a new label.')
-      return new Response(await labelResponse.arrayBuffer(), {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="shipping-label-${order.id.slice(0, 8)}.pdf"`,
-        },
+      const bytes = new Uint8Array(await labelResponse.arrayBuffer())
+      let binary = ''
+      for (let i = 0; i < bytes.length; i += 8192) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 8192))
+      }
+      return new Response(JSON.stringify({ pdf_base64: btoa(binary) }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -169,7 +170,12 @@ Deno.serve(async (req) => {
           days: r.estimated_days,
         }))
         .sort((a: any, b: any) => Number(a.amount) - Number(b.amount))
-      return new Response(JSON.stringify({ shipment_id: shipment.object_id, rates, messages: shipment.messages || [] }), {
+      return new Response(JSON.stringify({
+        shipment_id: shipment.object_id,
+        rates,
+        messages: shipment.messages || [],
+        test_mode: token.startsWith('shippo_test_'),
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -192,15 +198,19 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      await admin.from('orders').update({
-        tracking_number: tx.tracking_number,
-        shipping_label_url: tx.label_url,
-      }).eq('id', orderId)
+      const testMode = token.startsWith('shippo_test_')
+      if (!testMode) {
+        await admin.from('orders').update({
+          tracking_number: tx.tracking_number,
+          shipping_label_url: tx.label_url,
+        }).eq('id', orderId)
+      }
 
       return new Response(JSON.stringify({
         tracking_number: tx.tracking_number,
         label_url: tx.label_url,
         tracking_url: tx.tracking_url_provider,
+        test_mode: testMode,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
