@@ -449,6 +449,8 @@ const Index = () => {
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
+        websiteRevenue: websiteRevenuePeriod,
+        websiteProfit: websiteProfitPeriod,
         totalRevenue: orderRevenueAll + supplyRevenueAll,
         supplyStoreRevenue,
         supplyStoreProfit,
@@ -859,6 +861,7 @@ const Index = () => {
     description: string;
     onClick?: () => void;
     highlight?: boolean;
+    tone?: "emerald" | "purple";
   }> = [
     {
       title: `${periodLabel} Orders`,
@@ -887,22 +890,41 @@ const Index = () => {
       description: "In catalog",
     },
     {
-      title: showRevenueAsProfit ? `${periodLabel} Clean Profit` : `${periodLabel} Revenue`,
+      title:
+        revenueView === 0
+          ? `${periodLabel} Revenue`
+          : revenueView === 1
+            ? `${periodLabel} Clean Profit`
+            : revenueView === 2
+              ? `${periodLabel} Website Revenue`
+              : `${periodLabel} Website Clean Profit`,
       value: loading
         ? "..."
-        : showRevenueAsProfit
-          ? `$${stats.monthlyProfit.toFixed(2)}`
-          : `$${stats.monthlyRevenue.toFixed(2)}`,
+        : revenueView === 0
+          ? `$${stats.monthlyRevenue.toFixed(2)}`
+          : revenueView === 1
+            ? `$${stats.monthlyProfit.toFixed(2)}`
+            : revenueView === 2
+              ? `$${stats.websiteRevenue.toFixed(2)}`
+              : `$${stats.websiteProfit.toFixed(2)}`,
       icon: DollarSign,
-      description: showRevenueAsProfit
-        ? stats.monthlyRevenue > 0
-          ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
-          : "Tap to see revenue"
-        : stats.supplyStoreRevenue > 0
-          ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
-          : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
-      onClick: () => setShowRevenueAsProfit((v) => !v),
-      highlight: showRevenueAsProfit,
+      description:
+        revenueView === 0
+          ? stats.supplyStoreRevenue > 0
+            ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
+            : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`
+          : revenueView === 1
+            ? stats.monthlyRevenue > 0
+              ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap for website revenue`
+              : "Tap for website revenue"
+            : revenueView === 2
+              ? "From the customer app · tap for website profit"
+              : stats.websiteRevenue > 0
+                ? `${((stats.websiteProfit / stats.websiteRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
+                : "Tap to see revenue",
+      onClick: () => setRevenueView((v) => (v + 1) % 4),
+      highlight: revenueView !== 0,
+      tone: revenueView >= 2 ? "purple" : "emerald",
     },
   ];
 
