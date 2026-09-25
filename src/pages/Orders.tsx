@@ -2651,7 +2651,8 @@ Thank you!`;
                           : 'hover:bg-muted/50'
                       } ${
                         order.flag_reason
-                          ? 'border-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-950/60'
+                          ? 'border-yellow-400 bg-yellow-100 hover:bg-yellow-200 dark:border-yellow-500/60 dark:bg-yellow-400/15 dark:hover:bg-yellow-400/25'
+
                           : ''
                       }`}
                       onClick={() => setViewOrder(order)}
@@ -2849,7 +2850,7 @@ Thank you!`;
                           : 'hover:bg-muted/50'
                       } ${
                         order.flag_reason
-                          ? 'border-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-950/60'
+                          ? 'border-yellow-400 bg-yellow-100 hover:bg-yellow-200 dark:border-yellow-500/60 dark:bg-yellow-400/15 dark:hover:bg-yellow-400/25'
                           : ''
                       }`}
                       onClick={() => setViewOrder(order)}
