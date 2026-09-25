@@ -1019,19 +1019,37 @@ const Index = () => {
             onClick={stat.onClick}
             className={`shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-all ${
               stat.onClick ? "cursor-pointer" : ""
-            } ${stat.highlight ? "border-emerald-500/60 bg-emerald-500/5" : ""}`}
+            } ${
+              stat.highlight
+                ? stat.tone === "purple"
+                  ? "border-purple-500/60 bg-purple-500/5"
+                  : "border-emerald-500/60 bg-emerald-500/5"
+                : ""
+            }`}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
               <stat.icon
-                className={`h-4 w-4 flex-shrink-0 ${stat.highlight ? "text-emerald-500" : "text-primary"}`}
+                className={`h-4 w-4 flex-shrink-0 ${
+                  stat.highlight
+                    ? stat.tone === "purple"
+                      ? "text-purple-500"
+                      : "text-emerald-500"
+                    : "text-primary"
+                }`}
               />
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
               <div
-                className={`text-lg sm:text-2xl font-bold truncate ${stat.highlight ? "text-emerald-500" : ""}`}
+                className={`text-lg sm:text-2xl font-bold truncate ${
+                  stat.highlight
+                    ? stat.tone === "purple"
+                      ? "text-purple-500"
+                      : "text-emerald-500"
+                    : ""
+                }`}
               >
                 {stat.value}
               </div>
