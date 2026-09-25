@@ -5,7 +5,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2 } from "lucide-react";
+import { Search, Plus, History, Trash2, AlertTriangle, Download, RefreshCw, CheckCircle, MoreVertical, Package, Clock, TruckIcon, CreditCard, Printer, ChevronRight, CheckSquare, Square, CalendarIcon, X, Map, ShoppingCart, Minus, ChevronLeft, Settings, Share2, Mail, MessageCircle, Phone, Copy, Undo2, Flag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { downloadCSV } from "@/lib/csv-export";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,6 +101,7 @@ interface Order {
   profile_id?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
+  flag_reason?: string | null;
   salons: {
     name: string;
   } | null;
@@ -160,6 +161,9 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [flagFilter, setFlagFilter] = useState(false);
+  const [flagOrder, setFlagOrder] = useState<Order | null>(null);
+  const [flagReason, setFlagReason] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -893,9 +897,26 @@ const Orders = () => {
     const orderDateStr = order.order_date; // "YYYY-MM-DD" format
     const matchesDateFrom = !dateFrom || orderDateStr >= format(dateFrom, 'yyyy-MM-dd');
     const matchesDateTo = !dateTo || orderDateStr <= format(dateTo, 'yyyy-MM-dd');
-    
-    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
-  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo]);
+    const matchesFlag = !flagFilter || !!order.flag_reason;
+
+    return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo && matchesFlag;
+  }, [searchTerm, statusFilter, sourceFilter, dateFrom, dateTo, flagFilter]);
+
+  const FLAG_REASONS = ["Not paid yet", "Address issue", "Waiting on stock", "Customer request", "Other"];
+
+  const saveFlag = async (orderId: string, reason: string | null) => {
+    try {
+      const { error } = await supabase.from("orders").update({ flag_reason: reason }).eq("id", orderId);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, flag_reason: reason } : o));
+      if (viewOrder?.id === orderId) setViewOrder({ ...viewOrder, flag_reason: reason });
+      toast({ title: reason ? "Order flagged" : "Flag removed", description: reason || undefined });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setFlagOrder(null);
+    setFlagReason("");
+  };
 
   // Memoize filtered orders
   const { filteredActiveOrders, filteredCompletedOrders, allFilteredOrders } = useMemo(() => {
@@ -2079,6 +2100,14 @@ Thank you!`;
                   </Button>
                 )}
                 <Button
+                  variant="outline"
+                  className={viewOrder.flag_reason ? "border-red-500 text-red-600" : ""}
+                  onClick={() => { setFlagOrder(viewOrder); setFlagReason(viewOrder.flag_reason || ""); }}
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  {viewOrder.flag_reason ? "Edit Flag" : "Flag"}
+                </Button>
+                <Button
                   variant="default"
                   onClick={() => {
                     setEditOrder(viewOrder);
@@ -2139,6 +2168,50 @@ Thank you!`;
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Flag Order Dialog */}
+      <Dialog open={!!flagOrder} onOpenChange={(o) => { if (!o) { setFlagOrder(null); setFlagReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5 text-red-500" />
+              Flag Order
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {FLAG_REASONS.map((r) => (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={flagReason === r ? "default" : "outline"}
+                  onClick={() => setFlagReason(r)}
+                >
+                  {r}
+                </Button>
+              ))}
+            </div>
+            <Input
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+              placeholder="Or type a custom reason..."
+            />
+            <div className="flex justify-between gap-2">
+              {flagOrder?.flag_reason ? (
+                <Button variant="ghost" className="text-muted-foreground" onClick={() => saveFlag(flagOrder.id, null)}>
+                  Remove flag
+                </Button>
+              ) : <span />}
+              <Button
+                disabled={!flagReason.trim()}
+                onClick={() => flagOrder && saveFlag(flagOrder.id, flagReason.trim())}
+              >
+                Save Flag
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -2515,6 +2588,16 @@ Thank you!`;
                     <SelectItem value="manual">In-Person / Manual</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button
+                  size="sm"
+                  variant={flagFilter ? "default" : "outline"}
+                  className="h-8 text-xs shrink-0"
+                  onClick={() => setFlagFilter(!flagFilter)}
+                >
+                  <Flag className="h-3.5 w-3.5 mr-1" />
+                  Flagged
+                </Button>
               </div>
             </div>
           </div>
@@ -2605,6 +2688,15 @@ Thank you!`;
                                   {order.discount_code && (
                                     <Badge className="text-[10px] h-5 px-1.5 bg-purple-500 text-white hover:bg-purple-600 border-transparent">
                                       Ref: {order.discount_code}
+                                    </Badge>
+                                  )}
+                                  {order.flag_reason && (
+                                    <Badge
+                                      className="text-[10px] h-5 px-1.5 cursor-pointer bg-red-500 text-white hover:bg-red-600 border-transparent"
+                                      onClick={(e) => { e.stopPropagation(); setFlagOrder(order); setFlagReason(order.flag_reason || ""); }}
+                                    >
+                                      <Flag className="h-3 w-3 mr-0.5" />
+                                      {order.flag_reason}
                                     </Badge>
                                   )}
                                 </div>

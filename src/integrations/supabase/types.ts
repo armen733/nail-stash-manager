@@ -640,6 +640,7 @@ export type Database = {
           customer_phone: string | null
           discount_amount: number | null
           discount_code: string | null
+          flag_reason: string | null
           id: string
           invoice_number: string | null
           notes: string | null
@@ -672,6 +673,7 @@ export type Database = {
           customer_phone?: string | null
           discount_amount?: number | null
           discount_code?: string | null
+          flag_reason?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
@@ -704,6 +706,7 @@ export type Database = {
           customer_phone?: string | null
           discount_amount?: number | null
           discount_code?: string | null
+          flag_reason?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
