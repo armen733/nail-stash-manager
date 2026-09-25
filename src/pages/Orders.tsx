@@ -2815,11 +2815,22 @@ Thank you!`;
                              </div>
                               <div className="flex flex-wrap gap-2 justify-end">
                                {!order.created_by && (
-                                 order.shipping_label_url ? (
-                                   <div onClick={(e) => e.stopPropagation()}>
-                                     <PrintLabelButton orderId={order.id} />
-                                   </div>
-                                 ) : (
+                                  order.shipping_label_url ? (
+                                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+                                      {order.tracking_number && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-9"
+                                          onClick={() => window.open(`https://tools.usps.com/go/TrackConfirmAction?tLabels=${order.tracking_number}`, "_blank", "noopener,noreferrer")}
+                                        >
+                                          <TruckIcon className="h-4 w-4 mr-1" />
+                                          See Tracking
+                                        </Button>
+                                      )}
+                                      <PrintLabelButton orderId={order.id} />
+                                    </div>
+                                  ) : (
                                    <Button
                                      size="sm"
                                      variant="outline"
