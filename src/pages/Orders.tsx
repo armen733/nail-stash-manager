@@ -101,6 +101,7 @@ interface Order {
   profile_id?: string | null;
   shipping?: number | null;
   shipping_zone?: string | null;
+  flag_reason?: string | null;
   salons: {
     name: string;
   } | null;
@@ -160,6 +161,9 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [flagFilter, setFlagFilter] = useState(false);
+  const [flagOrder, setFlagOrder] = useState<Order | null>(null);
+  const [flagReason, setFlagReason] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [salons, setSalons] = useState<Salon[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
