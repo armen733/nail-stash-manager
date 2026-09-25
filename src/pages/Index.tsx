@@ -27,6 +27,8 @@ interface Stats {
   totalProducts: number;
   monthlyRevenue: number;
   monthlyProfit: number;
+  websiteRevenue: number;
+  websiteProfit: number;
   totalRevenue: number;
   supplyStoreRevenue: number;
   supplyStoreProfit: number;
@@ -143,6 +145,8 @@ const Index = () => {
     totalProducts: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
+    websiteRevenue: 0,
+    websiteProfit: 0,
     totalRevenue: 0,
     supplyStoreRevenue: 0,
     supplyStoreProfit: 0,
@@ -150,7 +154,8 @@ const Index = () => {
     websiteUsers: 0,
     newWebsiteUsers: 0,
   });
-  const [showRevenueAsProfit, setShowRevenueAsProfit] = useState(false);
+  // 0 = Revenue, 1 = Clean Profit, 2 = Website Revenue, 3 = Website Clean Profit
+  const [revenueView, setRevenueView] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [showSupplyStoresCount, setShowSupplyStoresCount] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
@@ -284,7 +289,7 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("id, total, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
+        supabase.from("orders").select("id, total, tax, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
         supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
@@ -414,6 +419,19 @@ const Index = () => {
         orderProfitPeriod += netRevenue - cogs;
       });
 
+      // Website-only figures (orders placed through the customer app)
+      const websitePeriodOrders = periodOrders.filter((o: any) => !o.salon_id && !o.created_by);
+      const websiteRevenuePeriod = websitePeriodOrders.reduce(
+        (s: number, o: any) => s + Number(o.total || 0), 0
+      );
+      let websiteProfitPeriod = 0;
+      websitePeriodOrders.forEach((o: any) => {
+        const netRevenue = Number(o.total ?? 0) - Number(o.tax ?? 0);
+        const cogs = orderCogsMap.get(o.id) ?? 0;
+        websiteProfitPeriod += netRevenue - cogs;
+      });
+
+
       // Website users = customer accounts registered on the website
       const customerProfiles = (profilesRes.data || []).filter((p: any) => (p.role ?? "Customer") === "Customer");
       const websiteUsers = customerProfiles.length;
@@ -431,6 +449,8 @@ const Index = () => {
         totalProducts: productsRes.data?.length || 0,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
+        websiteRevenue: websiteRevenuePeriod,
+        websiteProfit: websiteProfitPeriod,
         totalRevenue: orderRevenueAll + supplyRevenueAll,
         supplyStoreRevenue,
         supplyStoreProfit,
@@ -841,6 +861,7 @@ const Index = () => {
     description: string;
     onClick?: () => void;
     highlight?: boolean;
+    tone?: "emerald" | "purple";
   }> = [
     {
       title: `${periodLabel} Orders`,
@@ -869,22 +890,41 @@ const Index = () => {
       description: "In catalog",
     },
     {
-      title: showRevenueAsProfit ? `${periodLabel} Clean Profit` : `${periodLabel} Revenue`,
+      title:
+        revenueView === 0
+          ? `${periodLabel} Revenue`
+          : revenueView === 1
+            ? `${periodLabel} Clean Profit`
+            : revenueView === 2
+              ? `${periodLabel} Website Revenue`
+              : `${periodLabel} Website Clean Profit`,
       value: loading
         ? "..."
-        : showRevenueAsProfit
-          ? `$${stats.monthlyProfit.toFixed(2)}`
-          : `$${stats.monthlyRevenue.toFixed(2)}`,
+        : revenueView === 0
+          ? `$${stats.monthlyRevenue.toFixed(2)}`
+          : revenueView === 1
+            ? `$${stats.monthlyProfit.toFixed(2)}`
+            : revenueView === 2
+              ? `$${stats.websiteRevenue.toFixed(2)}`
+              : `$${stats.websiteProfit.toFixed(2)}`,
       icon: DollarSign,
-      description: showRevenueAsProfit
-        ? stats.monthlyRevenue > 0
-          ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
-          : "Tap to see revenue"
-        : stats.supplyStoreRevenue > 0
-          ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
-          : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`,
-      onClick: () => setShowRevenueAsProfit((v) => !v),
-      highlight: showRevenueAsProfit,
+      description:
+        revenueView === 0
+          ? stats.supplyStoreRevenue > 0
+            ? `Incl. $${stats.supplyStoreRevenue.toFixed(2)} from supply stores · tap for profit`
+            : `$${stats.totalRevenue.toFixed(2)} total · tap for profit`
+          : revenueView === 1
+            ? stats.monthlyRevenue > 0
+              ? `${((stats.monthlyProfit / stats.monthlyRevenue) * 100).toFixed(1)}% margin · tap for website revenue`
+              : "Tap for website revenue"
+            : revenueView === 2
+              ? "From the customer app · tap for website profit"
+              : stats.websiteRevenue > 0
+                ? `${((stats.websiteProfit / stats.websiteRevenue) * 100).toFixed(1)}% margin · tap to see revenue`
+                : "Tap to see revenue",
+      onClick: () => setRevenueView((v) => (v + 1) % 4),
+      highlight: revenueView !== 0,
+      tone: revenueView >= 2 ? "purple" : "emerald",
     },
   ];
 
@@ -979,19 +1019,37 @@ const Index = () => {
             onClick={stat.onClick}
             className={`shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-soft)] transition-all ${
               stat.onClick ? "cursor-pointer" : ""
-            } ${stat.highlight ? "border-emerald-500/60 bg-emerald-500/5" : ""}`}
+            } ${
+              stat.highlight
+                ? stat.tone === "purple"
+                  ? "border-purple-500/60 bg-purple-500/5"
+                  : "border-emerald-500/60 bg-emerald-500/5"
+                : ""
+            }`}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
               <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
               <stat.icon
-                className={`h-4 w-4 flex-shrink-0 ${stat.highlight ? "text-emerald-500" : "text-primary"}`}
+                className={`h-4 w-4 flex-shrink-0 ${
+                  stat.highlight
+                    ? stat.tone === "purple"
+                      ? "text-purple-500"
+                      : "text-emerald-500"
+                    : "text-primary"
+                }`}
               />
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
               <div
-                className={`text-lg sm:text-2xl font-bold truncate ${stat.highlight ? "text-emerald-500" : ""}`}
+                className={`text-lg sm:text-2xl font-bold truncate ${
+                  stat.highlight
+                    ? stat.tone === "purple"
+                      ? "text-purple-500"
+                      : "text-emerald-500"
+                    : ""
+                }`}
               >
                 {stat.value}
               </div>
