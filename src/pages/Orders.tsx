@@ -168,6 +168,7 @@ const Orders = () => {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [flagFilter, setFlagFilter] = useState(false);
   const [flagOrder, setFlagOrder] = useState<Order | null>(null);
+  const [receiptImage, setReceiptImage] = useState<{ file: File; url: string; orderNo: string } | null>(null);
   const [flagReason, setFlagReason] = useState("");
   const [shipLabelOrder, setShipLabelOrder] = useState<Order | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1083,25 +1084,36 @@ const Orders = () => {
       });
       const orderNo = order.id.slice(0, 8).toUpperCase();
       const file = new File([blob], `receipt-${orderNo.toLowerCase()}.png`, { type: 'image/png' });
-      const nav = navigator as any;
-      if (nav.canShare && nav.canShare({ files: [file] })) {
-        try {
-          await nav.share({ files: [file], title: `Receipt #${orderNo}` });
-          return;
-        } catch { /* user cancelled */ }
-        return;
-      }
-      // Fallback: download the image
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast({ title: "Receipt saved", description: "The receipt image was downloaded." });
+      // iPhone blocks the share sheet after async work, so show a preview
+      // with a button that shares on a fresh tap (or long-press the image).
+      setReceiptImage({ file, url: URL.createObjectURL(blob), orderNo });
     } catch {
       toast({ title: "Error", description: "Could not create the receipt image.", variant: "destructive" });
     }
+  };
+
+  const shareReceiptImage = async () => {
+    if (!receiptImage) return;
+    const { file, url } = receiptImage;
+    const nav = navigator as any;
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      try {
+        await nav.share({ files: [file] });
+        return;
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
+      }
+    }
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    toast({ title: "Receipt saved", description: "The receipt image was downloaded." });
+  };
+
+  const closeReceiptImage = () => {
+    if (receiptImage) URL.revokeObjectURL(receiptImage.url);
+    setReceiptImage(null);
   };
 
   const buildReceiptText = (order: Order) => {
@@ -2246,6 +2258,19 @@ Thank you!`;
       </Dialog>
 
       {/* Flag Order Dialog */}
+      <Dialog open={!!receiptImage} onOpenChange={(o) => { if (!o) closeReceiptImage(); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Receipt #{receiptImage?.orderNo}</DialogTitle>
+          </DialogHeader>
+          {receiptImage && (
+            <img src={receiptImage.url} alt={`Receipt ${receiptImage.orderNo}`} className="w-full rounded border" />
+          )}
+          <p className="text-sm text-muted-foreground">Tap the button, then choose <strong>Save Image</strong>. You can also press and hold the picture.</p>
+          <Button className="w-full" onClick={shareReceiptImage}>Save to Photos</Button>
+        </DialogContent>
+      </Dialog>
+
       <ShipLabelDialog
         order={shipLabelOrder}
         onClose={() => setShipLabelOrder(null)}
