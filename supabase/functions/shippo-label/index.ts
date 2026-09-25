@@ -62,6 +62,19 @@ Deno.serve(async (req) => {
       })
     }
 
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const { data: staffRole } = await admin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userData.user.id)
+      .in('role', ['Owner', 'Sales Rep'])
+      .maybeSingle()
+    if (!staffRole) {
+      return new Response(JSON.stringify({ error: 'Not authorized' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const body = await req.json().catch(() => ({}))
     const action: string = body.action || 'rates'
     const orderId: string = body.order_id
@@ -72,8 +85,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-
     const { data: order, error: orderErr } = await admin
       .from('orders')
       .select('id, invoice_number, customer_name, customer_email, customer_phone, customer_address, tracking_number, shipping_label_url')
@@ -81,6 +92,23 @@ Deno.serve(async (req) => {
       .maybeSingle()
     if (orderErr) throw orderErr
     if (!order) throw new Error('Order not found')
+
+    if (action === 'download') {
+      if (!order.shipping_label_url) {
+        return new Response(JSON.stringify({ error: 'This order does not have a shipping label.' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const labelResponse = await fetch(order.shipping_label_url)
+      if (!labelResponse.ok) throw new Error('The shipping label could not be downloaded. Please create a new label.')
+      return new Response(await labelResponse.arrayBuffer(), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="shipping-label-${order.id.slice(0, 8)}.pdf"`,
+        },
+      })
+    }
 
     const { data: settings } = await admin.from('shipping_settings').select('*').limit(1).maybeSingle()
     if (!settings || !settings.from_street1 || !settings.from_zip) {

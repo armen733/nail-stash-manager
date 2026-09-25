@@ -2158,7 +2158,7 @@ Thank you!`;
                 </Button>
                 {viewOrder.stripe_session_id && (
                   viewOrder.shipping_label_url ? (
-                    <PrintLabelButton labelUrl={viewOrder.shipping_label_url} />
+                    <PrintLabelButton orderId={viewOrder.id} />
                   ) : (
                     <Button variant="outline" onClick={() => setShipLabelOrder(viewOrder)}>
                       <TruckIcon className="h-4 w-4 mr-2" />
