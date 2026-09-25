@@ -53,15 +53,6 @@ const TEMPLATES: TemplateDef[] = [
       `Hey ${n || "there"}! New arrivals just landed at ${STORE_NAME} ✨ Come check them out before they sell out.`,
   },
   {
-    id: "order_ready",
-    label: "Your order is ready",
-    subject: `Your ${STORE_NAME} order is ready for pickup`,
-    body: (n) =>
-      `Hi ${n || "there"},\n\nGreat news — your order is ready for pickup at ${STORE_NAME}. We can't wait to see you!\n\nThanks,\n${STORE_NAME}`,
-    smsBody: (n) =>
-      `Hi ${n || "there"}, your ${STORE_NAME} order is ready for pickup. See you soon!`,
-  },
-  {
     id: "order_delivered",
     label: "Your order was delivered",
     subject: `Your ${STORE_NAME} order has been delivered 🖤`,
