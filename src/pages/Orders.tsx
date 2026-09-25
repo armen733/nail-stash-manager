@@ -2171,6 +2171,50 @@ Thank you!`;
         </DialogContent>
       </Dialog>
 
+      {/* Flag Order Dialog */}
+      <Dialog open={!!flagOrder} onOpenChange={(o) => { if (!o) { setFlagOrder(null); setFlagReason(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5 text-red-500" />
+              Flag Order
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {FLAG_REASONS.map((r) => (
+                <Button
+                  key={r}
+                  size="sm"
+                  variant={flagReason === r ? "default" : "outline"}
+                  onClick={() => setFlagReason(r)}
+                >
+                  {r}
+                </Button>
+              ))}
+            </div>
+            <Input
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+              placeholder="Or type a custom reason..."
+            />
+            <div className="flex justify-between gap-2">
+              {flagOrder?.flag_reason ? (
+                <Button variant="ghost" className="text-muted-foreground" onClick={() => saveFlag(flagOrder.id, null)}>
+                  Remove flag
+                </Button>
+              ) : <span />}
+              <Button
+                disabled={!flagReason.trim()}
+                onClick={() => flagOrder && saveFlag(flagOrder.id, flagReason.trim())}
+              >
+                Save Flag
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <EditOrderDialog
         order={editOrder as any}
         open={!!editOrder}
