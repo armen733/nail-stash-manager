@@ -71,6 +71,7 @@ import { ProductBrowser } from "@/components/orders/ProductBrowser";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { ReturnDialog } from "@/components/orders/ReturnDialog";
+import { ShipLabelDialog, PrintLabelButton } from "@/components/orders/ShipLabelDialog";
 import { Switch } from "@/components/ui/switch";
 import { useTaxSettings } from "@/hooks/useTaxSettings";
 import { logAudit } from "@/lib/audit-log";
@@ -103,6 +104,9 @@ interface Order {
   shipping?: number | null;
   shipping_zone?: string | null;
   flag_reason?: string | null;
+  stripe_session_id?: string | null;
+  tracking_number?: string | null;
+  shipping_label_url?: string | null;
   salons: {
     name: string;
   } | null;
