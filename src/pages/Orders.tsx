@@ -2826,10 +2826,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex flex-wrap gap-2 justify-end">
+                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
@@ -3031,10 +3031,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex flex-wrap gap-2 justify-end">
+                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
+                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
