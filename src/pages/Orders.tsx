@@ -2851,10 +2851,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
+                               <div className="flex min-w-0 flex-nowrap gap-1 sm:gap-2 sm:justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
+                                     <div onClick={(e) => e.stopPropagation()} className="contents">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
@@ -2882,15 +2882,17 @@ Thank you!`;
                                        setShipLabelOrder(order);
                                      }}
                                    >
-                                     <TruckIcon className="h-4 w-4 mr-1" />
-                                     Buy Label
+                                      <TruckIcon className="h-4 w-4 sm:mr-1" />
+                                      <span className="hidden sm:inline">Buy Label</span>
                                    </Button>
                                  )
                                )}
                                <Button
                                  size="sm"
                                  variant="outline"
-                                 className={`h-9 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                  className={`h-9 w-9 shrink-0 p-0 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                  title={order.flag_reason ? "Edit flag" : "Flag order"}
+                                  aria-label={order.flag_reason ? "Edit flag" : "Flag order"}
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    setFlagOrder(order);
@@ -2902,25 +2904,29 @@ Thank you!`;
                                <Button
                                  size="sm"
                                  variant="outline"
-                                 className="h-9"
+                                  className="h-9 w-9 shrink-0 p-0 sm:w-auto sm:px-3"
+                                  title="Print receipt"
+                                  aria-label="Print receipt"
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    printPackingSlip(order);
                                  }}
                                >
-                                 <Printer className="h-4 w-4 mr-1" />
-                                 Print
+                                  <Printer className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Print</span>
                                </Button>
                                <DropdownMenu>
                                  <DropdownMenuTrigger asChild>
                                    <Button
                                      size="sm"
                                      variant="outline"
-                                     className="h-9"
+                                      className="h-9 w-9 shrink-0 p-0 sm:w-auto sm:px-3"
+                                      title="Share receipt"
+                                      aria-label="Share receipt"
                                      onClick={(e) => e.stopPropagation()}
                                    >
-                                    <Share2 className="h-4 w-4 mr-1" />
-                                    Share
+                                     <Share2 className="h-4 w-4 sm:mr-1" />
+                                     <span className="hidden sm:inline">Share</span>
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-52 bg-popover z-50" onClick={(e) => e.stopPropagation()}>
@@ -3062,10 +3068,10 @@ Thank you!`;
                              <div className="text-lg font-semibold text-primary">
                                ${order.total.toFixed(2)}
                              </div>
-                              <div className="flex min-w-0 flex-wrap gap-2 justify-end">
+                               <div className="flex min-w-0 flex-nowrap gap-1 sm:gap-2 sm:justify-end">
                                {!order.created_by && (
                                   order.shipping_label_url ? (
-                                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap gap-2 justify-end">
+                                     <div onClick={(e) => e.stopPropagation()} className="contents">
                                       {order.tracking_number && (
                                         <Button
                                           size="sm"
@@ -3093,15 +3099,17 @@ Thank you!`;
                                        setShipLabelOrder(order);
                                      }}
                                    >
-                                     <TruckIcon className="h-4 w-4 mr-1" />
-                                     Buy Label
+                                      <TruckIcon className="h-4 w-4 sm:mr-1" />
+                                      <span className="hidden sm:inline">Buy Label</span>
                                    </Button>
                                  )
                                )}
                                <Button
                                  size="sm"
                                  variant="outline"
-                                 className={`h-9 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                  className={`h-9 w-9 shrink-0 p-0 ${order.flag_reason ? "border-red-500 text-red-600" : ""}`}
+                                  title={order.flag_reason ? "Edit flag" : "Flag order"}
+                                  aria-label={order.flag_reason ? "Edit flag" : "Flag order"}
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    setFlagOrder(order);
@@ -3113,21 +3121,25 @@ Thank you!`;
                                <Button
                                  size="sm"
                                  variant="outline"
-                                 className="h-9"
+                                  className="h-9 w-9 shrink-0 p-0 sm:w-auto sm:px-3"
+                                  title="Print receipt"
+                                  aria-label="Print receipt"
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    printPackingSlip(order);
                                  }}
                                >
-                                 <Printer className="h-4 w-4 mr-1" />
-                                 Print
+                                  <Printer className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Print</span>
                                </Button>
                                <DropdownMenu>
                                  <DropdownMenuTrigger asChild>
                                    <Button
                                      size="sm"
                                      variant="outline"
-                                     className="h-9"
+                                      className="h-9 w-9 shrink-0 p-0 sm:w-auto sm:px-3"
+                                      title="Share receipt"
+                                      aria-label="Share receipt"
                                      onClick={(e) => e.stopPropagation()}
                                    >
                                      <Share2 className="h-4 w-4 sm:mr-1" />
