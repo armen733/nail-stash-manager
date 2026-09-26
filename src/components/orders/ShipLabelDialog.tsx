@@ -287,11 +287,15 @@ const presentLabelPdf = async (orderId: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
 
-export const PrintLabelButton = ({ orderId }: { orderId: string }) => {
+export const PrintLabelButton = ({ orderId, compactOnMobile = false }: { orderId: string; compactOnMobile?: boolean }) => {
   const [opening, setOpening] = useState(false);
   return (
     <Button
       variant="outline"
+      size={compactOnMobile ? "sm" : "default"}
+      className={compactOnMobile ? "h-9 w-9 shrink-0 p-0 sm:w-auto sm:px-3" : undefined}
+      title="Print label"
+      aria-label="Print label"
       disabled={opening}
       onClick={async () => {
         setOpening(true);
@@ -301,8 +305,8 @@ export const PrintLabelButton = ({ orderId }: { orderId: string }) => {
         finally { setOpening(false); }
       }}
     >
-      {opening ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
-      Print Label
+      {opening ? <Loader2 className={`h-4 w-4 animate-spin ${compactOnMobile ? "sm:mr-2" : "mr-2"}`} /> : <Printer className={`h-4 w-4 ${compactOnMobile ? "sm:mr-2" : "mr-2"}`} />}
+      <span className={compactOnMobile ? "hidden sm:inline" : undefined}>Print Label</span>
     </Button>
   );
 };
