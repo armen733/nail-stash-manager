@@ -1899,128 +1899,21 @@ const Index = () => {
             variant="outline" 
             size="sm" 
             onClick={async () => {
-              // Export as high-quality visual stacked bar chart PNG with ALL products (2x scale)
-              const scale = 2;
-              const itemsToShow = stockValues; // Show ALL products, not just top 10
-              const baseWidth = 850;
-              const itemHeight = 55;
-              const headerHeight = 100;
-              const footerHeight = 20;
-              const baseHeight = headerHeight + itemsToShow.length * itemHeight + footerHeight;
-              const canvas = document.createElement('canvas');
-              canvas.width = baseWidth * scale;
-              canvas.height = baseHeight * scale;
-              const ctx = canvas.getContext('2d')!;
-              ctx.scale(scale, scale);
-              
-              // Background
-              ctx.fillStyle = '#1a1a2e';
-              ctx.fillRect(0, 0, baseWidth, baseHeight);
-              
-              // Title
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText('Stock Inventory Value', 40, 45);
-              ctx.font = '16px system-ui, -apple-system, sans-serif';
-              ctx.fillStyle = 'rgba(255,255,255,0.7)';
-              ctx.fillText(`Total: $${totalStockValue.toFixed(2)} (${itemsToShow.length} products)`, 40, 75);
-              
-              const barColors = ['hsl(210, 70%, 50%)', 'hsl(145, 60%, 45%)', 'hsl(45, 85%, 55%)', 'hsl(280, 60%, 55%)', 'hsl(0, 70%, 55%)', 'hsl(180, 50%, 45%)', 'hsl(320, 60%, 50%)', 'hsl(90, 50%, 45%)', 'hsl(30, 70%, 50%)', 'hsl(250, 50%, 55%)'];
-              const maxValue = Math.max(...itemsToShow.map(i => i.value));
-              const barHeight = 40;
-              const barGap = 15;
-              const chartStartY = headerHeight;
-              const chartWidth = 380;
-              const chartStartX = 280;
-              const thumbSize = 34;
-              
-              // Load image with timeout to ensure it loads
-              const loadImage = (url: string): Promise<HTMLImageElement | null> => {
-                return new Promise((resolve) => {
-                  const img = new Image();
-                  img.crossOrigin = 'anonymous';
-                  const timeout = setTimeout(() => resolve(null), 5000); // 5s timeout
-                  img.onload = () => {
-                    clearTimeout(timeout);
-                    resolve(img);
-                  };
-                  img.onerror = () => {
-                    clearTimeout(timeout);
-                    resolve(null);
-                  };
-                  img.src = url;
-                });
-              };
-              
-              // Load all images sequentially to avoid race conditions
-              const images: (HTMLImageElement | null)[] = [];
-              for (const item of itemsToShow) {
-                if (item.image_url) {
-                  const img = await loadImage(item.image_url);
-                  images.push(img);
-                } else {
-                  images.push(null);
-                }
+              try {
+                const { downloadCSV } = await import("@/lib/csv-export");
+                const rows = stockValues.map((item) => ({
+                  Product: item.product_name,
+                  SKU: item.sku || "",
+                  Stock: item.stock,
+                  "Price ($)": item.price.toFixed(2),
+                  "Value ($)": item.value.toFixed(2),
+                }));
+                rows.push({ Product: "TOTAL", SKU: "", Stock: stockValues.reduce((s, i) => s + i.stock, 0), "Price ($)": "", "Value ($)": totalStockValue.toFixed(2) });
+                downloadCSV(rows, "stock-inventory");
+                toast({ title: "Exported", description: `Stock inventory exported (${stockValues.length} products)` });
+              } catch (e: any) {
+                toast({ title: "Export failed", description: e?.message ?? "Please try again", variant: "destructive" });
               }
-              
-              itemsToShow.forEach((item, idx) => {
-                const y = chartStartY + idx * (barHeight + barGap);
-                const barWidth = (item.value / maxValue) * chartWidth;
-                
-                // Draw thumbnail
-                const thumbX = 40;
-                const thumbY = y + (barHeight - thumbSize) / 2;
-                ctx.fillStyle = '#2a2a4a';
-                ctx.beginPath();
-                ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 5);
-                ctx.fill();
-                
-                if (images[idx]) {
-                  ctx.save();
-                  ctx.beginPath();
-                  ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 5);
-                  ctx.clip();
-                  ctx.drawImage(images[idx]!, thumbX, thumbY, thumbSize, thumbSize);
-                  ctx.restore();
-                } else {
-                  // Placeholder icon
-                  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                  ctx.font = '14px sans-serif';
-                  ctx.textAlign = 'center';
-                  ctx.fillText('📦', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 5);
-                }
-                
-                // Product name (truncated)
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '13px sans-serif';
-                ctx.textAlign = 'right';
-                const displayName = item.product_name.length > 22 ? item.product_name.substring(0, 22) + '...' : item.product_name;
-                ctx.fillText(displayName, chartStartX - 15, y + barHeight / 2 + 4);
-                
-                // Bar
-                ctx.fillStyle = barColors[idx % barColors.length];
-                ctx.beginPath();
-                ctx.roundRect(chartStartX, y, Math.max(barWidth, 5), barHeight, 4);
-                ctx.fill();
-                
-                // Value on right
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 14px sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText(`$${item.value.toFixed(0)}`, chartStartX + barWidth + 12, y + barHeight / 2 - 3);
-                ctx.font = '11px sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                ctx.fillText(`${item.stock} × $${item.price.toFixed(2)}`, chartStartX + barWidth + 12, y + barHeight / 2 + 12);
-              });
-              
-              // Download
-              const link = document.createElement('a');
-              link.download = `stock-inventory-${new Date().toISOString().split('T')[0]}.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-              
-              toast({ title: "Success", description: `Stock inventory chart exported (${itemsToShow.length} products)` });
             }}
             disabled={stockValues.length === 0}
           >
