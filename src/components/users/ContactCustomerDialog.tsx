@@ -71,6 +71,15 @@ const TEMPLATES: TemplateDef[] = [
       `Hi ${n || "there"}, welcome to ${STORE_NAME} 🖤 Use code WELCOMETONERA for 40% off your first order. Shop now!`,
   },
   {
+    id: "havent_tried",
+    label: "Haven't tried yet (40% off)",
+    subject: `Your 40% off is waiting at ${STORE_NAME} 🖤`,
+    body: (n) =>
+      `Hi ${n || "there"},\n\nWe noticed you haven't tried ${STORE_NAME} yet — come take a look at our website!\n\nUse code WELCOMETONERA to get 40% off your first order and discover what you can create with Néra.\n\nWe'd love to have you.\n\nWith love,\nThe ${STORE_NAME} Team`,
+    smsBody: (n) =>
+      `Hi ${n || "there"}, we noticed you haven't tried ${STORE_NAME} yet 🖤 Visit our website and use code WELCOMETONERA for 40% off your first order!`,
+  },
+  {
     id: "thanks",
     label: "Thank you",
     subject: `Thank you from ${STORE_NAME} 🖤`,
