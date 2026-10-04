@@ -213,7 +213,7 @@ const Index = () => {
     } catch { return null; }
   };
   const initialReturn = readDashboardReturn();
-  const dashboardReturn = useRef<{ timePeriod?: string; customStart?: string; customEnd?: string; category?: string | null; topProducts?: boolean } | null>(initialReturn);
+  const dashboardReturn = useRef<{ timePeriod?: string; customStart?: string; customEnd?: string; category?: string | null; topProducts?: boolean; scrollTop?: number } | null>(initialReturn);
   const [timePeriod, setTimePeriod] = useState<string>(initialReturn?.timePeriod || "month");
   const [customStart, setCustomStart] = useState<string>(initialReturn?.customStart || "");
   const [customEnd, setCustomEnd] = useState<string>(initialReturn?.customEnd || "");
@@ -293,6 +293,7 @@ const Index = () => {
         timePeriod, customStart, customEnd,
         category: withCategory ? selectedCategory : null,
         topProducts: !withCategory && topProductsOpen,
+        scrollTop: document.querySelector("main")?.scrollTop ?? window.scrollY ?? 0,
       }));
     } catch {}
     navigate(`/products?search=${encodeURIComponent(product.sku || product.name || "")}&from=dashboard`);
@@ -310,6 +311,20 @@ const Index = () => {
     if (ret.customEnd) setCustomEnd(ret.customEnd);
     if (ret.topProducts) setTopProductsOpen(true);
     if (ret.category) handleCategoryClick(ret.category);
+    if (ret.scrollTop) {
+      // Content (charts, lists) fills in asynchronously, so retry until the
+      // page is tall enough to reach the saved position.
+      const target: number = ret.scrollTop;
+      const scroller = document.querySelector("main") as HTMLElement | null;
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        tries++;
+        if (scroller) scroller.scrollTop = target;
+        window.scrollTo(0, target);
+        const reached = scroller ? Math.abs(scroller.scrollTop - target) < 4 : false;
+        if ((reached && tries > 4) || tries > 40) window.clearInterval(timer);
+      }, 100);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
