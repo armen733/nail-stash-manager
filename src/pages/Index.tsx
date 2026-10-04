@@ -1860,19 +1860,33 @@ const Index = () => {
                 {topProducts.map((product, index) => (
                   <div 
                     key={index} 
-                    className="flex items-center justify-between border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
                     onClick={() => navigate(`/products?search=${encodeURIComponent(product.sku || product.product_name)}`)}
                   >
-                    <div>
-                      <p className="font-medium">{product.product_name}</p>
-                      <div className="flex items-center gap-2">
-                        {product.sku && (
-                          <span className="text-xs text-muted-foreground/60 font-mono">{product.sku}</span>
-                        )}
-                        <span className="text-sm text-muted-foreground">{product.quantity_sold} sold</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.product_name}
+                          className="h-12 w-12 rounded-lg object-cover border bg-muted shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg border bg-muted flex items-center justify-center shrink-0">
+                          <Package className="h-5 w-5 text-muted-foreground/50" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{product.product_name}</p>
+                        <div className="flex items-center gap-2">
+                          {product.sku && (
+                            <span className="text-xs text-muted-foreground/60 font-mono">{product.sku}</span>
+                          )}
+                          <span className="text-sm text-muted-foreground">{product.quantity_sold} sold</span>
+                        </div>
                       </div>
                     </div>
-                    <p className="font-semibold text-primary">${product.revenue.toFixed(2)}</p>
+                    <p className="font-semibold text-primary shrink-0">${product.revenue.toFixed(2)}</p>
                   </div>
                 ))}
               </div>
