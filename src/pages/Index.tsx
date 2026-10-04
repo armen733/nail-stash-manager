@@ -203,16 +203,20 @@ const Index = () => {
   const [topProductsOpen, setTopProductsOpen] = useState(false);
   const [topSupplyStoresOpen, setTopSupplyStoresOpen] = useState(false);
   const [stockValueOpen, setStockValueOpen] = useState(false);
-  const dashboardReturn = useRef<{ timePeriod?: string; customStart?: string; customEnd?: string; category?: string | null } | null>((() => {
+  // Read-only parse — never consume storage during render (StrictMode discards
+  // the first render, which would wipe the stored value from the ref).
+  const readDashboardReturn = () => {
     try {
       const raw = sessionStorage.getItem("dashboardReturn");
-      if (raw) { sessionStorage.removeItem("dashboardReturn"); return JSON.parse(raw); }
-    } catch {}
-    return null;
-  })());
-  const [timePeriod, setTimePeriod] = useState<string>(dashboardReturn.current?.timePeriod || "month");
-  const [customStart, setCustomStart] = useState<string>(dashboardReturn.current?.customStart || "");
-  const [customEnd, setCustomEnd] = useState<string>(dashboardReturn.current?.customEnd || "");
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  };
+  const initialReturn = readDashboardReturn();
+  const dashboardReturn = useRef<{ timePeriod?: string; customStart?: string; customEnd?: string; category?: string | null; topProducts?: boolean } | null>(initialReturn);
+  const [timePeriod, setTimePeriod] = useState<string>(initialReturn?.timePeriod || "month");
+  const [customStart, setCustomStart] = useState<string>(initialReturn?.customStart || "");
+  const [customEnd, setCustomEnd] = useState<string>(initialReturn?.customEnd || "");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
@@ -285,17 +289,27 @@ const Index = () => {
 
   const openProductFromDashboard = (product: { sku?: string; name?: string }, withCategory: boolean) => {
     try {
-      sessionStorage.setItem("dashboardReturn", JSON.stringify({ timePeriod, customStart, customEnd, category: withCategory ? selectedCategory : null }));
+      sessionStorage.setItem("dashboardReturn", JSON.stringify({
+        timePeriod, customStart, customEnd,
+        category: withCategory ? selectedCategory : null,
+        topProducts: !withCategory && topProductsOpen,
+      }));
     } catch {}
     navigate(`/products?search=${encodeURIComponent(product.sku || product.name || "")}&from=dashboard`);
   };
 
   useEffect(() => {
-    if (!loading && dashboardReturn.current?.category) {
-      const cat = dashboardReturn.current.category;
-      dashboardReturn.current = null;
-      handleCategoryClick(cat);
-    }
+    if (loading) return;
+    const ret = readDashboardReturn();
+    if (!ret) return;
+    // Consume only now that we're sure we can restore.
+    try { sessionStorage.removeItem("dashboardReturn"); } catch {}
+    dashboardReturn.current = null;
+    if (ret.timePeriod && ret.timePeriod !== timePeriod) setTimePeriod(ret.timePeriod);
+    if (ret.customStart) setCustomStart(ret.customStart);
+    if (ret.customEnd) setCustomEnd(ret.customEnd);
+    if (ret.topProducts) setTopProductsOpen(true);
+    if (ret.category) handleCategoryClick(ret.category);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
