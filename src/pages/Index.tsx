@@ -893,6 +893,7 @@ const Index = () => {
       { metric: 'Period Orders', value: stats.monthlyOrders },
       { metric: 'Active Salons', value: stats.totalSalons },
       { metric: 'Products', value: stats.totalProducts },
+      { metric: `${periodLabel} SKUs Sold`, value: stats.periodSkus },
       { metric: 'Period Revenue', value: `$${stats.monthlyRevenue.toFixed(2)}` },
       { metric: 'Total Revenue', value: `$${stats.totalRevenue.toFixed(2)}` },
       { metric: 'Total Stock Value', value: `$${totalStockValue.toFixed(2)}` },
@@ -967,10 +968,20 @@ const Index = () => {
       tone: "emerald" as const,
     },
     {
-      title: "Products",
-      value: loading ? "..." : stats.totalProducts.toString(),
+      title: productCardView === 0 ? "Products" : `${periodLabel} SKUs Sold`,
+      value: loading
+        ? "..."
+        : productCardView === 0
+          ? stats.totalProducts.toString()
+          : stats.periodSkus.toString(),
       icon: Package,
-      description: "In catalog",
+      description:
+        productCardView === 0
+          ? "In catalog · tap for SKUs sold in period"
+          : `${stats.periodSkusFromOrders} from orders · ${stats.periodSkusFromSupply} from supply stores`,
+      onClick: () => setProductCardView((v) => (v + 1) % 2),
+      highlight: productCardView !== 0,
+      tone: "emerald" as const,
     },
     {
       title:
