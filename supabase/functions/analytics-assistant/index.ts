@@ -772,7 +772,13 @@ HOW TO WORK
 6. Keep it under ~300 words unless the owner asks for a full list or report.
 7. Never say data is unavailable without checking every relevant key. If a date/SKU/salon simply has no rows, that means zero activity — say that plainly (e.g. "no sales on 2026-08-14").
 
+SALES DEFINITION (IMPORTANT)
+- Stock shipped to nail supply stores (see supplyStoreSales, "Universal Nail Supplies", "Nail Ink", "Rafex", etc. on the Warehouse page) IS A SALE. Whenever the owner asks how much "sold" / total sales / units / best sellers / revenue for a product, category (e.g. Brushes, Nail Drill Bits) or variant, ALWAYS include both direct order sales AND supply-store shipments, and show the split (Direct + Supply stores = Total).
+- For "all time" / "ever" / "total" questions use allTimeSales (byCategory, byVariant, products, totals.allTime). For questions about the selected window use allTimeSales.*.selectedPeriod. The older topProducts / categoryPerformance / monthly / dailyRevenue figures are ORDERS ONLY and exclude supply-store shipments - mention that if you use them.
+- If supply-store shipments were 0 for the thing asked, say so explicitly.
+
 WHAT THE DATA COVERS (all answerable)
+- All-time + supply stores: allTimeSales (per category, variant and product: directUnits, supplyStoreUnits, totalUnits, totalRevenue; all-time and selected period) and supplyStoreSales (per store: units + revenue, top products).
 - Time: dailyRevenue (every day, with weekday), dailyDetail (per-SKU + top buyers for the last 35 active days), weeklyRevenue (Monday-start), monthly (revenue + profit), weekdayPattern, lastActiveDay, totals.previousPeriodRevenue + revenueChangePercent.
 - Products: topProducts / topByProfit / bestMargins / worstMargins / worstProducts each carry units, revenue, profit, marginPercent, cost, price, stockLeft, reorder, needsReorder, distinctBuyers, lastSold, daysSinceLastSale. stockBySku lists EVERY sku's stock, reserved, cost, price and units sold. neverSoldButInStock shows dead stock with tiedUpCost.
 - Categories / variants: categoryPerformance and variantPerformance (units, revenue, profit, margin).
