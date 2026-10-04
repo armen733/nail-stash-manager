@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown } from "lucide-react";
@@ -202,6 +202,9 @@ const Index = () => {
   const [profitData, setProfitData] = useState<ProfitData[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
+  // Order ids inside the currently selected period, so the category drill-down
+  // shows the same window the Sales by Category chart uses.
+  const periodOrderIdsRef = useRef<Set<string>>(new Set());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
@@ -409,6 +412,7 @@ const Index = () => {
       // Note: line_total is stored gross (pre-discount), so summing it inflates profit
       // whenever a discount is applied. Use order.total as the revenue base instead.
       const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
+      periodOrderIdsRef.current = periodOrderIds;
       const orderCogsMap = new Map<string, number>();
       (orderItemsRes.data || []).forEach((it: any) => {
         if (!periodOrderIds.has(it.order_id)) return;
