@@ -1188,7 +1188,7 @@ const Index = () => {
               // Date subtitle
               ctx.fillStyle = '#8b8ba3';
               ctx.font = '14px system-ui, -apple-system, sans-serif';
-              ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 40, 70);
+              ctx.fillText(`${periodLabel} · Generated ${new Date().toLocaleDateString()}`, 40, 70);
               
               // Draw donut chart
               const centerX = 180;
