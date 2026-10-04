@@ -551,7 +551,7 @@ const Index = () => {
       setTopSupplyStores(allSupplyStoresData.slice(0, 5));
 
       // Calculate top products
-      const productStats = (orderItemsRes.data || []).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
+      const productStats = (orderItemsRes.data || []).filter((it: any) => periodOrderIds.has(it.order_id)).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
         const productSku = item.products?.sku || "";
