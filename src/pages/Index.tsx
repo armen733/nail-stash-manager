@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown } from "lucide-react";
@@ -202,6 +202,9 @@ const Index = () => {
   const [profitData, setProfitData] = useState<ProfitData[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<CategoryProduct[]>([]);
+  // Order ids inside the currently selected period, so the category drill-down
+  // shows the same window the Sales by Category chart uses.
+  const periodOrderIdsRef = useRef<Set<string>>(new Set());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
@@ -409,6 +412,7 @@ const Index = () => {
       // Note: line_total is stored gross (pre-discount), so summing it inflates profit
       // whenever a discount is applied. Use order.total as the revenue base instead.
       const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
+      periodOrderIdsRef.current = periodOrderIds;
       const orderCogsMap = new Map<string, number>();
       (orderItemsRes.data || []).forEach((it: any) => {
         if (!periodOrderIds.has(it.order_id)) return;
@@ -696,7 +700,7 @@ const Index = () => {
         'hsl(180, 50%, 45%)',  // Teal
       ];
 
-      const categoryStats = (orderItemsRes.data || []).reduce((acc: Record<string, number>, item) => {
+      const categoryStats = (orderItemsRes.data || []).filter((it: any) => periodOrderIds.has(it.order_id)).reduce((acc: Record<string, number>, item) => {
         const category = item.products?.category || "Other";
         acc[category] = (acc[category] || 0) + (item.line_total || 0);
         return acc;
@@ -800,7 +804,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+          .select("product_id, order_id, quantity, line_total, products(id, name, category, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -823,6 +827,7 @@ const Index = () => {
       
       (orderItemsRes.data || []).forEach((item: any) => {
         if (!item.products || item.products.category !== category) return;
+        if (!periodOrderIdsRef.current.has(item.order_id)) return;
         
         const productId = item.product_id;
         if (!productMap[productId]) {
@@ -1183,7 +1188,7 @@ const Index = () => {
               // Date subtitle
               ctx.fillStyle = '#8b8ba3';
               ctx.font = '14px system-ui, -apple-system, sans-serif';
-              ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 40, 70);
+              ctx.fillText(`${periodLabel} · Generated ${new Date().toLocaleDateString()}`, 40, 70);
               
               // Draw donut chart
               const centerX = 180;
@@ -1419,6 +1424,7 @@ const Index = () => {
               <Package className="h-5 w-5" />
               {selectedCategory} Products
             </SheetTitle>
+            <p className="text-xs text-muted-foreground">{periodLabel} only</p>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-120px)] mt-4">
             {loadingProducts ? (
