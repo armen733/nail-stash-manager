@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown } from "lucide-react";
+import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 interface Stats {
   totalOrders: number;
   monthlyOrders: number;
+  periodWebsiteOrders: number;
+  totalWebsiteOrders: number;
   totalSalons: number;
   activeSupplyStores: number;
   totalProducts: number;
@@ -145,6 +147,8 @@ const Index = () => {
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
     monthlyOrders: 0,
+    periodWebsiteOrders: 0,
+    totalWebsiteOrders: 0,
     totalSalons: 0,
     activeSupplyStores: 0,
     totalProducts: 0,
@@ -169,6 +173,7 @@ const Index = () => {
   // 0 = Salon count, 1 = Salon Revenue, 2 = Salon Clean Profit, 3 = Supply Stores
   const [salonCardView, setSalonCardView] = useState(0);
   const [productCardView, setProductCardView] = useState(0);
+  const [orderCardView, setOrderCardView] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
@@ -450,6 +455,7 @@ const Index = () => {
 
       // Website-only figures (orders placed through the customer app)
       const websitePeriodOrders = periodOrders.filter((o: any) => !o.salon_id && !o.created_by);
+      const totalWebsiteOrders = orders.filter((o: any) => !o.salon_id && !o.created_by).length;
       const websiteRevenuePeriod = websitePeriodOrders.reduce(
         (s: number, o: any) => s + Number(o.total || 0), 0
       );
@@ -485,6 +491,8 @@ const Index = () => {
       const newStats: Stats = {
         totalOrders: orders.length,
         monthlyOrders: periodOrders.length,
+        periodWebsiteOrders: websitePeriodOrders.length,
+        totalWebsiteOrders,
         totalSalons: salonsRes.data?.length || 0,
         activeSupplyStores: (supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length,
         totalProducts: productsRes.data?.length || 0,
@@ -891,6 +899,8 @@ const Index = () => {
     const exportData = [
       { metric: 'Total Orders', value: stats.totalOrders },
       { metric: 'Period Orders', value: stats.monthlyOrders },
+      { metric: `${periodLabel} Website Orders`, value: stats.periodWebsiteOrders },
+      { metric: 'Total Website Orders', value: stats.totalWebsiteOrders },
       { metric: 'Active Salons', value: stats.totalSalons },
       { metric: 'Products', value: stats.totalProducts },
       { metric: `${periodLabel} SKUs Sold`, value: stats.periodSkus },
@@ -912,10 +922,21 @@ const Index = () => {
     tone?: "emerald" | "purple";
   }> = [
     {
-      title: `${periodLabel} Orders`,
-      value: loading ? "..." : stats.monthlyOrders.toString(),
-      icon: TrendingUp,
-      description: `${stats.totalOrders} total orders`,
+      // 0 = All orders, 1 = Website orders (placed through the customer app)
+      title: orderCardView === 0 ? `${periodLabel} Orders` : `${periodLabel} Website Orders`,
+      value: loading
+        ? "..."
+        : orderCardView === 0
+          ? stats.monthlyOrders.toString()
+          : stats.periodWebsiteOrders.toString(),
+      icon: orderCardView === 0 ? TrendingUp : Globe,
+      description:
+        orderCardView === 0
+          ? `${stats.totalOrders} total orders · tap for website orders`
+          : `${stats.totalWebsiteOrders} total website orders`,
+      onClick: () => setOrderCardView((v) => (v + 1) % 2),
+      highlight: orderCardView !== 0,
+      tone: "purple" as const,
     },
     {
       // 0 = Salon count, 1 = Salon Revenue, 2 = Salon Clean Profit, 3 = Supply Stores
