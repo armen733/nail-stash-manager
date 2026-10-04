@@ -529,6 +529,165 @@ Deno.serve(async (req: Request) => {
         marginPercent: v.revenue > 0 ? +((v.profit / v.revenue) * 100).toFixed(1) : 0,
       }));
 
+    // ---- Supply-store shipments (count as SALES) + all-time totals ----------
+    const fetchAll = async (build: (from: number, to: number) => any) => {
+      const out: any[] = [];
+      for (let page = 0; page < 60; page++) {
+        const { data, error } = await build(page * 1000, page * 1000 + 999);
+        if (error || !data || data.length === 0) break;
+        out.push(...data);
+        if (data.length < 1000) break;
+      }
+      return out;
+    };
+    const [storesRes, storeLocsRes, storeOverridesRes, allItems] = await Promise.all([
+      supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
+      supabase.from("stock_locations").select("id, name, supply_store_id").not("supply_store_id", "is", null),
+      supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
+      fetchAll((f, t) => supabase.from("order_items").select("product_id, quantity, line_total, unit_price").range(f, t)),
+    ]);
+    const supplyStores = (storesRes.data || []) as any[];
+    const storeLocs = (storeLocsRes.data || []) as any[];
+    const storeByLoc = new Map(storeLocs.map((l: any) => [l.id, l.supply_store_id]));
+    const storeNameById = new Map(supplyStores.map((s: any) => [s.id, s.name]));
+    const storeDiscountById = new Map(supplyStores.map((s: any) => [s.id, Number(s.default_discount_percent || 0)]));
+    const overrideMap = new Map<string, number>();
+    for (const o of (storeOverridesRes.data || []) as any[])
+      if (o.discount_percent_override != null) overrideMap.set(`${o.supply_store_id}|${o.product_id}`, Number(o.discount_percent_override));
+
+    const storeLocIds = storeLocs.map((l: any) => l.id);
+    const storeMoves: any[] = storeLocIds.length
+      ? await fetchAll((f, t) =>
+          supabase
+            .from("stock_movements")
+            .select("product_id, movement_type, quantity, from_location_id, to_location_id, created_at")
+            .in("movement_type", ["transfer", "sale", "receive"])
+            .or(`to_location_id.in.(${storeLocIds.join(",")}),from_location_id.in.(${storeLocIds.join(",")})`)
+            .order("created_at", { ascending: true })
+            .range(f, t)
+        )
+      : [];
+
+    type SA = { units: number; revenue: number };
+    // key: storeId|productId -> all-time and period aggregates
+    const storeProd = new Map<string, { storeId: string; productId: string; all: SA; period: SA }>();
+    for (const m of storeMoves) {
+      const toStore = storeByLoc.get(m.to_location_id);
+      const fromStore = storeByLoc.get(m.from_location_id);
+      // Shipment TO a store = +sale; movement FROM a store back out (return) = -sale. Store-to-store counts on both sides.
+      const legs: [string, number][] = [];
+      if (toStore) legs.push([toStore, 1]);
+      if (fromStore) legs.push([fromStore, -1]);
+      for (const [storeId, sign] of legs) {
+        const p: any = productById.get(m.product_id);
+        const disc = overrideMap.has(`${storeId}|${m.product_id}`)
+          ? overrideMap.get(`${storeId}|${m.product_id}`)!
+          : storeDiscountById.get(storeId) || 0;
+        const unitRev = Number(p?.wholesale_price_usd ?? p?.price_usd ?? 0) * (1 - disc / 100);
+        const q = sign * Number(m.quantity || 0);
+        const key = `${storeId}|${m.product_id}`;
+        if (!storeProd.has(key))
+          storeProd.set(key, { storeId, productId: m.product_id, all: { units: 0, revenue: 0 }, period: { units: 0, revenue: 0 } });
+        const agg = storeProd.get(key)!;
+        agg.all.units += q;
+        agg.all.revenue += q * unitRev;
+        if (String(m.created_at).slice(0, 10) >= since) {
+          agg.period.units += q;
+          agg.period.revenue += q * unitRev;
+        }
+      }
+    }
+
+    // All-time direct sales (orders) per product
+    const allTimeDirect = new Map<string, SA>();
+    for (const it of allItems) {
+      const a = allTimeDirect.get(it.product_id) || { units: 0, revenue: 0 };
+      a.units += Number(it.quantity || 0);
+      a.revenue += Number(it.line_total || 0);
+      allTimeDirect.set(it.product_id, a);
+    }
+    const periodDirect = new Map<string, SA>();
+    for (const [id, a] of perProduct.entries()) periodDirect.set(id, { units: a.units, revenue: a.revenue });
+
+    const supplyByProduct = new Map<string, { all: SA; period: SA }>();
+    for (const v of storeProd.values()) {
+      const a = supplyByProduct.get(v.productId) || { all: { units: 0, revenue: 0 }, period: { units: 0, revenue: 0 } };
+      a.all.units += v.all.units; a.all.revenue += v.all.revenue;
+      a.period.units += v.period.units; a.period.revenue += v.period.revenue;
+      supplyByProduct.set(v.productId, a);
+    }
+
+    const combinedRows = products.map((p: any) => {
+      const d = allTimeDirect.get(p.id) || { units: 0, revenue: 0 };
+      const dp = periodDirect.get(p.id) || { units: 0, revenue: 0 };
+      const s = supplyByProduct.get(p.id) || { all: { units: 0, revenue: 0 }, period: { units: 0, revenue: 0 } };
+      return {
+        sku: p.sku,
+        name: p.name,
+        category: p.category,
+        variant: p.variant_name || p.bit_type || null,
+        allTime: {
+          directUnits: d.units,
+          supplyStoreUnits: s.all.units,
+          totalUnits: d.units + s.all.units,
+          totalRevenue: r2(d.revenue + s.all.revenue),
+        },
+        selectedPeriod: {
+          directUnits: dp.units,
+          supplyStoreUnits: s.period.units,
+          totalUnits: dp.units + s.period.units,
+          totalRevenue: r2(dp.revenue + s.period.revenue),
+        },
+      };
+    });
+
+    const sumRows = (rows: any[], k: "allTime" | "selectedPeriod") => ({
+      directUnits: rows.reduce((a, r) => a + r[k].directUnits, 0),
+      supplyStoreUnits: rows.reduce((a, r) => a + r[k].supplyStoreUnits, 0),
+      totalUnits: rows.reduce((a, r) => a + r[k].totalUnits, 0),
+      totalRevenue: r2(rows.reduce((a, r) => a + r[k].totalRevenue, 0)),
+    });
+    const combinedByCategory = [...new Set(combinedRows.map((r: any) => r.category))].map((cat) => {
+      const rows = combinedRows.filter((r: any) => r.category === cat);
+      return { category: cat, allTime: sumRows(rows, "allTime"), selectedPeriod: sumRows(rows, "selectedPeriod") };
+    });
+    const combinedByVariant = [...new Set(combinedRows.map((r: any) => `${r.category} / ${r.variant || "—"}`))]
+      .map((label) => {
+        const rows = combinedRows.filter((r: any) => `${r.category} / ${r.variant || "—"}` === label);
+        return { variant: label, allTime: sumRows(rows, "allTime"), selectedPeriod: sumRows(rows, "selectedPeriod") };
+      })
+      .sort((a, b) => b.allTime.totalUnits - a.allTime.totalUnits)
+      .slice(0, 60);
+
+    const supplyStoreSales = supplyStores.map((st: any) => {
+      const rows = [...storeProd.values()].filter((v) => v.storeId === st.id);
+      return {
+        store: st.name,
+        status: st.status,
+        allTime: { units: rows.reduce((a, v) => a + v.all.units, 0), revenue: r2(rows.reduce((a, v) => a + v.all.revenue, 0)) },
+        selectedPeriod: { units: rows.reduce((a, v) => a + v.period.units, 0), revenue: r2(rows.reduce((a, v) => a + v.period.revenue, 0)) },
+        topProductsAllTime: rows
+          .map((v) => {
+            const p: any = productById.get(v.productId);
+            return { sku: p?.sku, name: p?.name, category: p?.category, units: v.all.units, revenue: r2(v.all.revenue) };
+          })
+          .filter((x) => x.units !== 0)
+          .sort((a, b) => b.units - a.units)
+          .slice(0, 40),
+      };
+    });
+
+    const allTimeSales = {
+      note: "Direct = sold through orders (salons, website, walk-ins). SupplyStore = stock shipped to nail supply stores (also a sale, priced at wholesale minus the store discount). Total = direct + supply store.",
+      byCategory: combinedByCategory,
+      byVariant: combinedByVariant,
+      products: combinedRows
+        .filter((r: any) => r.allTime.totalUnits > 0)
+        .sort((a: any, b: any) => b.allTime.totalUnits - a.allTime.totalUnits)
+        .slice(0, 150),
+      totals: { allTime: sumRows(combinedRows, "allTime"), selectedPeriod: sumRows(combinedRows, "selectedPeriod") },
+    };
+
     const snapshot = {
       period: { days, since, today, previousWindow: { from: prevSince, to: since } },
       totals: {
@@ -570,6 +729,8 @@ Deno.serve(async (req: Request) => {
       orderStatusBreakdown: [...statusCount.values()].map((s) => ({ ...s, revenue: r2(s.revenue) })),
       categoryPerformance,
       variantPerformance,
+      allTimeSales,
+      supplyStoreSales,
       topProducts,
       topByProfit,
       bestMargins,
@@ -611,7 +772,13 @@ HOW TO WORK
 6. Keep it under ~300 words unless the owner asks for a full list or report.
 7. Never say data is unavailable without checking every relevant key. If a date/SKU/salon simply has no rows, that means zero activity — say that plainly (e.g. "no sales on 2026-08-14").
 
+SALES DEFINITION (IMPORTANT)
+- Stock shipped to nail supply stores (see supplyStoreSales, "Universal Nail Supplies", "Nail Ink", "Rafex", etc. on the Warehouse page) IS A SALE. Whenever the owner asks how much "sold" / total sales / units / best sellers / revenue for a product, category (e.g. Brushes, Nail Drill Bits) or variant, ALWAYS include both direct order sales AND supply-store shipments, and show the split (Direct + Supply stores = Total).
+- For "all time" / "ever" / "total" questions use allTimeSales (byCategory, byVariant, products, totals.allTime). For questions about the selected window use allTimeSales.*.selectedPeriod. The older topProducts / categoryPerformance / monthly / dailyRevenue figures are ORDERS ONLY and exclude supply-store shipments - mention that if you use them.
+- If supply-store shipments were 0 for the thing asked, say so explicitly.
+
 WHAT THE DATA COVERS (all answerable)
+- All-time + supply stores: allTimeSales (per category, variant and product: directUnits, supplyStoreUnits, totalUnits, totalRevenue; all-time and selected period) and supplyStoreSales (per store: units + revenue, top products).
 - Time: dailyRevenue (every day, with weekday), dailyDetail (per-SKU + top buyers for the last 35 active days), weeklyRevenue (Monday-start), monthly (revenue + profit), weekdayPattern, lastActiveDay, totals.previousPeriodRevenue + revenueChangePercent.
 - Products: topProducts / topByProfit / bestMargins / worstMargins / worstProducts each carry units, revenue, profit, marginPercent, cost, price, stockLeft, reorder, needsReorder, distinctBuyers, lastSold, daysSinceLastSale. stockBySku lists EVERY sku's stock, reserved, cost, price and units sold. neverSoldButInStock shows dead stock with tiedUpCost.
 - Categories / variants: categoryPerformance and variantPerformance (units, revenue, profit, margin).
