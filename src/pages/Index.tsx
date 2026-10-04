@@ -812,7 +812,7 @@ const Index = () => {
 
       // Calculate Day of Week data
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const dayStats = orders.reduce((acc: Record<number, { revenue: number; orders: number }>, order) => {
+      const dayStats = periodOrders.reduce((acc: Record<number, { revenue: number; orders: number }>, order) => {
         const dayNum = getLocalDay(order.created_at);
         if (!acc[dayNum]) acc[dayNum] = { revenue: 0, orders: 0 };
         acc[dayNum].revenue += order.total || 0;
