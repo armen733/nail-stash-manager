@@ -651,7 +651,7 @@ const Promotions = () => {
                               {(code as any).referrer_id && (
                                 <Badge
                                   className="text-[10px] cursor-pointer bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border-purple-500/30"
-                                  onClick={() => navigate(`/referrers/${(code as any).referrer_id}`)}
+                                  onClick={() => navigate(`/referrals/${(code as any).referrer_id}`)}
                                 >
                                   Referrer: {referrers.find((x) => x.id === (code as any).referrer_id)?.name || "Unknown"}
                                 </Badge>
