@@ -71,10 +71,50 @@ const ReferrerProfile = () => {
   const [codeToLink, setCodeToLink] = useState("");
   const [commissionFilter, setCommissionFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [ownProfile, setOwnProfile] = useState<{ id: string; full_name: string; email: string; phone: string | null; loyalty_points: number | null } | null>(null);
+  const [ownOrders, setOwnOrders] = useState<{ id: string; order_date: string; status: string; total: number; subtotal: number; discount_amount: number | null; discount_code: string | null; invoice_number: string | null; created_at: string }[]>([]);
+  const [profileOptions, setProfileOptions] = useState<{ id: string; full_name: string; email: string }[]>([]);
+  const [profileSearch, setProfileSearch] = useState("");
+  const [profileToLink, setProfileToLink] = useState("");
 
   useEffect(() => {
     if (id) fetchData();
   }, [id]);
+
+  const loadOwnAccount = async (profileId: string | null) => {
+    if (!profileId) {
+      setOwnProfile(null);
+      setOwnOrders([]);
+      return;
+    }
+    const [pRes, oRes] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, phone, loyalty_points").eq("id", profileId).maybeSingle(),
+      supabase.from("orders")
+        .select("id, order_date, status, total, subtotal, discount_amount, discount_code, invoice_number, created_at")
+        .eq("profile_id", profileId)
+        .order("created_at", { ascending: false }),
+    ]);
+    setOwnProfile((pRes.data as any) || null);
+    setOwnOrders((oRes.data as any) || []);
+  };
+
+  const loadProfileOptions = async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name, email").order("full_name").limit(1000);
+    setProfileOptions((data as any) || []);
+  };
+
+  const setLinkedProfile = async (profileId: string | null) => {
+    try {
+      const { error } = await supabase.from("referrers").update({ linked_profile_id: profileId }).eq("id", id!);
+      if (error) throw error;
+      toast({ title: "Success", description: profileId ? "Personal account linked" : "Personal account unlinked" });
+      setProfileToLink("");
+      setProfileSearch("");
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,6 +140,8 @@ const ReferrerProfile = () => {
       setCommissions(commRes.data || []);
       setCustomers(custRes.data || []);
       setAllCodes((codesRes.data as any) || []);
+      await loadOwnAccount(refRes.data.linked_profile_id);
+      if (!refRes.data.linked_profile_id) loadProfileOptions();
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
@@ -344,6 +386,107 @@ const ReferrerProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Personal (own) customer account */}
+      <Card>
+        <CardHeader className="p-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-5 w-5" /> Personal Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-3">
+          {referrer.linked_profile_id && ownProfile ? (
+            <>
+              <div className="flex items-center justify-between gap-2 rounded-lg border p-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{ownProfile.full_name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{ownProfile.email}{ownProfile.phone ? ` · ${ownProfile.phone}` : ""}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/users?userId=${ownProfile.id}`)}>
+                    Open profile <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setLinkedProfile(null)}>Unlink</Button>
+                </div>
+              </div>
+              {(() => {
+                const spent = ownOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                const saved = ownOrders.reduce((sum, o) => sum + Number(o.discount_amount || 0), 0);
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-lg font-bold">{ownOrders.length}</p>
+                      <p className="text-xs text-muted-foreground">Own Orders</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-lg font-bold">${spent.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">Total Spent</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-lg font-bold">${saved.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">Discounts Used</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-lg font-bold">{ownProfile.loyalty_points ?? 0}</p>
+                      <p className="text-xs text-muted-foreground">Loyalty Points</p>
+                    </div>
+                  </div>
+                );
+              })()}
+              {ownOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No purchases from this account yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {ownOrders.slice(0, 10).map((o) => (
+                    <div key={o.id} className="flex items-center justify-between gap-2 rounded-lg border p-2 text-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium">{o.invoice_number || "Order"} · {format(new Date(o.created_at), "MMM d, yyyy")}</p>
+                        {o.discount_code && <p className="text-xs text-muted-foreground font-mono">{o.discount_code}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="secondary">{o.status}</Badge>
+                        <span className="font-semibold">${Number(o.total).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {ownOrders.length > 10 && (
+                    <p className="text-xs text-muted-foreground text-center">Showing latest 10 of {ownOrders.length} — open the profile for all.</p>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Link this referrer's own customer account to see how she shops with us.
+              </p>
+              <input
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Search by name or email..."
+                value={profileSearch}
+                onChange={(e) => setProfileSearch(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Select value={profileToLink} onValueChange={setProfileToLink}>
+                  <SelectTrigger><SelectValue placeholder="Select customer account..." /></SelectTrigger>
+                  <SelectContent>
+                    {profileOptions
+                      .filter((p) => {
+                        const q = profileSearch.trim().toLowerCase();
+                        return !q || p.full_name?.toLowerCase().includes(q) || p.email?.toLowerCase().includes(q);
+                      })
+                      .slice(0, 100)
+                      .map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.full_name} ({p.email})</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button disabled={!profileToLink} onClick={() => setLinkedProfile(profileToLink)}>Link</Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Personal discount codes */}
       <Card>
