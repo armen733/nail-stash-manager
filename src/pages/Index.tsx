@@ -628,6 +628,7 @@ const Index = () => {
         productStats[row.product_id].revenue += row.revenue;
       });
 
+      const stockByProduct = new Map<string, number>((stockRes.data || []).map((p: any) => [p.id, p.stock_on_hand ?? 0]));
       const topProductsData = Object.values(productStats)
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10)
@@ -639,6 +640,7 @@ const Index = () => {
           revenue: p.revenue,
           supplier_sku: p.supplier_sku,
           image_url: p.image_url,
+          stock_left: stockByProduct.get(p.id) ?? 0,
         }));
       setTopProducts(topProductsData);
 
@@ -1994,6 +1996,7 @@ const Index = () => {
                             <span className="text-xs text-muted-foreground/60 font-mono">{product.sku}</span>
                           )}
                           <span className="text-sm text-muted-foreground">{product.quantity_sold} sold</span>
+                          <span className={`text-sm ${(product as any).stock_left <= 0 ? "text-destructive" : "text-muted-foreground"}`}>· {(product as any).stock_left ?? 0} left</span>
                         </div>
                       </div>
                     </div>
