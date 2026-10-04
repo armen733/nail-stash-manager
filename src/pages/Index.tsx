@@ -289,19 +289,27 @@ const Index = () => {
 
   const openProductFromDashboard = (product: { sku?: string; name?: string }, withCategory: boolean) => {
     try {
-      sessionStorage.setItem("dashboardReturn", JSON.stringify({ timePeriod, customStart, customEnd, category: withCategory ? selectedCategory : null }));
+      sessionStorage.setItem("dashboardReturn", JSON.stringify({
+        timePeriod, customStart, customEnd,
+        category: withCategory ? selectedCategory : null,
+        topProducts: !withCategory && topProductsOpen,
+      }));
     } catch {}
     navigate(`/products?search=${encodeURIComponent(product.sku || product.name || "")}&from=dashboard`);
   };
 
   useEffect(() => {
-    console.log("[dashboard-return] effect, loading:", loading, "return:", dashboardReturn.current);
-    if (!loading && dashboardReturn.current?.category) {
-      const cat = dashboardReturn.current.category;
-      dashboardReturn.current = null;
-      console.log("[dashboard-return] restoring category:", cat);
-      handleCategoryClick(cat);
-    }
+    if (loading) return;
+    const ret = readDashboardReturn();
+    if (!ret) return;
+    // Consume only now that we're sure we can restore.
+    try { sessionStorage.removeItem("dashboardReturn"); } catch {}
+    dashboardReturn.current = null;
+    if (ret.timePeriod && ret.timePeriod !== timePeriod) setTimePeriod(ret.timePeriod);
+    if (ret.customStart) setCustomStart(ret.customStart);
+    if (ret.customEnd) setCustomEnd(ret.customEnd);
+    if (ret.topProducts) setTopProductsOpen(true);
+    if (ret.category) handleCategoryClick(ret.category);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
