@@ -57,6 +57,7 @@ interface EmailRequest {
   total?: number;
   pointsEarned?: number;
   shippingAddress?: string;
+  trackingNumber?: string;
   // Abandoned cart fields
   cartItems?: CartItem[];
   cartTotal?: number;
@@ -246,6 +247,18 @@ const getOrderShippedEmail = (data: EmailRequest) => {
                   </td>
                 </tr>
               </table>
+
+              ${data.trackingNumber ? `
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center" style="padding: 18px 20px; background-color: #fafafa; border-radius: 12px; border: 1px solid #e6e6e6; text-align: center;">
+                    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 600; color: ${BRAND_GOLD}; letter-spacing: 2px; text-transform: uppercase;">USPS Tracking Number</p>
+                    <p style="margin: 0 0 10px; font-size: 18px; color: #141414; font-weight: 600; letter-spacing: 0.5px;">${data.trackingNumber}</p>
+                    <a href="https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(data.trackingNumber)}" style="font-size: 13px; color: ${BRAND_GOLD}; text-decoration: underline;">Track your package</a>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
 
               ${data.shippingAddress ? `
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">

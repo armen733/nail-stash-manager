@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     const { data: order, error } = await supabase
       .from("orders")
       .select(`
-        id, status, customer_name, customer_email, customer_address, order_date,
+        id, status, customer_name, customer_email, customer_address, order_date, tracking_number,
         order_items ( quantity, unit_price, line_total,
           products ( name, image_url, product_images ( image_url, display_order ) )
         )
@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
         name: order.customer_name,
         orderId: order.id,
         shippingAddress: order.customer_address,
+        trackingNumber: order.tracking_number || undefined,
         items,
       },
     });
