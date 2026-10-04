@@ -217,6 +217,8 @@ const Index = () => {
   // Order ids inside the currently selected period, so the category drill-down
   // shows the same window the Sales by Category chart uses.
   const periodOrderIdsRef = useRef<Set<string>>(new Set());
+  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number }>>([]);
+  const productInfoRef = useRef<Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>>(new Map());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
@@ -318,7 +320,7 @@ const Index = () => {
         supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
         supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
-        supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
+        supabase.from("products").select("id, name, sku, category, image_url, supplier_sku, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
         supabase.from("profiles").select("id, created_at, role"),
       ]);
@@ -354,6 +356,10 @@ const Index = () => {
       const storeDiscountMap = new Map<string, number>();
       (supplyStoresRes.data || []).forEach((s: any) => {
         storeDiscountMap.set(s.id, Number(s.default_discount_percent) || 0);
+      });
+      const productInfoMap = new Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>();
+      (productPricingRes.data || []).forEach((p: any) => {
+        productInfoMap.set(p.id, { name: p.name || "Unknown", sku: p.sku || "", category: p.category || "Other", image_url: p.image_url || undefined, supplier_sku: p.supplier_sku || "" });
       });
       const productPricingMap = new Map<string, { wholesale: number; retail: number; cost: number }>();
       (productPricingRes.data || []).forEach((p: any) => {
@@ -410,6 +416,18 @@ const Index = () => {
         supplyStoreProfit += v.revenue - v.cost;
         supplyStoreUnits += v.units;
       });
+
+      // Supply-store shipments inside the period, counted as sales (product-level)
+      const periodSupplySales: Array<{ product_id: string; quantity: number; revenue: number }> = [];
+      allSupplyMovements.forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
+        const v = computeSupplyMovementValue(m);
+        if (!v) return;
+        periodSupplySales.push({ product_id: m.product_id, quantity: v.units, revenue: v.revenue });
+      });
+      periodSupplySalesRef.current = periodSupplySales;
+      productInfoRef.current = productInfoMap;
 
       // Distinct SKUs shipped into supply stores inside the selected period
       const periodSkuSupply = new Set<string>();
@@ -600,6 +618,16 @@ const Index = () => {
         return acc;
       }, {});
 
+      periodSupplySales.forEach((row) => {
+        const info = productInfoMap.get(row.product_id);
+        if (!info) return;
+        if (!productStats[row.product_id]) {
+          productStats[row.product_id] = { id: row.product_id, quantity: 0, revenue: 0, name: info.name, sku: info.sku, supplier_sku: info.supplier_sku, image_url: info.image_url || productImagesMap[row.product_id] };
+        }
+        productStats[row.product_id].quantity += row.quantity;
+        productStats[row.product_id].revenue += row.revenue;
+      });
+
       const topProductsData = Object.values(productStats)
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, 10)
@@ -736,6 +764,12 @@ const Index = () => {
         acc[category] = (acc[category] || 0) + (item.line_total || 0);
         return acc;
       }, {});
+
+      periodSupplySales.forEach((row) => {
+        const info = productInfoMap.get(row.product_id);
+        const category = info?.category || "Other";
+        categoryStats[category] = (categoryStats[category] || 0) + row.revenue;
+      });
 
       const totalCategoryRevenue = Object.values(categoryStats).reduce((sum, val) => sum + val, 0);
       
@@ -875,6 +909,22 @@ const Index = () => {
         productMap[productId].revenue += item.line_total || 0;
       });
       
+      periodSupplySalesRef.current.forEach((row) => {
+        const info = productInfoRef.current.get(row.product_id);
+        if (!info || info.category !== category) return;
+        if (!productMap[row.product_id]) {
+          productMap[row.product_id] = {
+            id: row.product_id,
+            name: info.name,
+            quantity: 0,
+            revenue: 0,
+            image_url: info.image_url || productImagesMap[row.product_id],
+          };
+        }
+        productMap[row.product_id].quantity += row.quantity;
+        productMap[row.product_id].revenue += row.revenue;
+      });
+
       const products = Object.values(productMap)
         .sort((a, b) => b.revenue - a.revenue);
       
