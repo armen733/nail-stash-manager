@@ -25,6 +25,9 @@ interface Stats {
   totalSalons: number;
   activeSupplyStores: number;
   totalProducts: number;
+  periodSkus: number;
+  periodSkusFromOrders: number;
+  periodSkusFromSupply: number;
   monthlyRevenue: number;
   monthlyProfit: number;
   websiteRevenue: number;
@@ -145,6 +148,9 @@ const Index = () => {
     totalSalons: 0,
     activeSupplyStores: 0,
     totalProducts: 0,
+    periodSkus: 0,
+    periodSkusFromOrders: 0,
+    periodSkusFromSupply: 0,
     monthlyRevenue: 0,
     monthlyProfit: 0,
     websiteRevenue: 0,
@@ -162,6 +168,7 @@ const Index = () => {
   const [revenueView, setRevenueView] = useState(0);
   // 0 = Salon count, 1 = Salon Revenue, 2 = Salon Clean Profit, 3 = Supply Stores
   const [salonCardView, setSalonCardView] = useState(0);
+  const [productCardView, setProductCardView] = useState(0);
   const [showSupplyAsProfit, setShowSupplyAsProfit] = useState(false);
   const [topSalons, setTopSalons] = useState<TopSalon[]>([]);
   const [allSalons, setAllSalons] = useState<TopSalon[]>([]);
@@ -399,6 +406,14 @@ const Index = () => {
         supplyStoreUnits += v.units;
       });
 
+      // Distinct SKUs shipped into supply stores inside the selected period
+      const periodSkuSupply = new Set<string>();
+      allSupplyMovements.forEach((m: any) => {
+        const d = new Date(m.created_at);
+        if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
+        periodSkuSupply.add(m.product_id);
+      });
+
       // Calculate stats
       const orderRevenuePeriod = periodOrders.reduce((sum, order) => sum + (order.total || 0), 0);
       const orderRevenueAll = orders.reduce((sum, order) => sum + (order.total || 0), 0);
@@ -413,6 +428,11 @@ const Index = () => {
       // whenever a discount is applied. Use order.total as the revenue base instead.
       const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
       periodOrderIdsRef.current = periodOrderIds;
+      // Distinct SKUs that actually sold (orders) inside the selected period
+      const periodSkuOrders = new Set<string>();
+      (orderItemsRes.data || []).forEach((it: any) => {
+        if (periodOrderIds.has(it.order_id)) periodSkuOrders.add(it.product_id);
+      });
       const orderCogsMap = new Map<string, number>();
       (orderItemsRes.data || []).forEach((it: any) => {
         if (!periodOrderIds.has(it.order_id)) return;
@@ -468,6 +488,9 @@ const Index = () => {
         totalSalons: salonsRes.data?.length || 0,
         activeSupplyStores: (supplyStoresRes.data || []).filter((s: any) => (s.status ?? "active") === "active").length,
         totalProducts: productsRes.data?.length || 0,
+        periodSkus: new Set([...periodSkuOrders, ...periodSkuSupply]).size,
+        periodSkusFromOrders: periodSkuOrders.size,
+        periodSkusFromSupply: periodSkuSupply.size,
         monthlyRevenue: orderRevenuePeriod + supplyStoreRevenue,
         monthlyProfit: orderProfitPeriod + supplyStoreProfit,
         websiteRevenue: websiteRevenuePeriod,
