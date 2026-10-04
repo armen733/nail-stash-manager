@@ -385,6 +385,7 @@ export type Database = {
           max_uses: number | null
           min_order_amount: number | null
           one_per_user: boolean
+          referrer_id: string | null
           single_account_only: boolean
           valid_from: string | null
           valid_until: string | null
@@ -400,6 +401,7 @@ export type Database = {
           max_uses?: number | null
           min_order_amount?: number | null
           one_per_user?: boolean
+          referrer_id?: string | null
           single_account_only?: boolean
           valid_from?: string | null
           valid_until?: string | null
@@ -415,11 +417,20 @@ export type Database = {
           max_uses?: number | null
           min_order_amount?: number | null
           one_per_user?: boolean
+          referrer_id?: string | null
           single_account_only?: boolean
           valid_from?: string | null
           valid_until?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       location_product_prices: {
         Row: {
