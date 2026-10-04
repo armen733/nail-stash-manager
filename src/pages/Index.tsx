@@ -696,7 +696,7 @@ const Index = () => {
         'hsl(180, 50%, 45%)',  // Teal
       ];
 
-      const categoryStats = (orderItemsRes.data || []).reduce((acc: Record<string, number>, item) => {
+      const categoryStats = (orderItemsRes.data || []).filter((it: any) => periodOrderIds.has(it.order_id)).reduce((acc: Record<string, number>, item) => {
         const category = item.products?.category || "Other";
         acc[category] = (acc[category] || 0) + (item.line_total || 0);
         return acc;
