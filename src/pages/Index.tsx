@@ -804,7 +804,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("product_id, quantity, line_total, products(id, name, category, image_url)")
+          .select("product_id, order_id, quantity, line_total, products(id, name, category, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -827,6 +827,7 @@ const Index = () => {
       
       (orderItemsRes.data || []).forEach((item: any) => {
         if (!item.products || item.products.category !== category) return;
+        if (!periodOrderIdsRef.current.has(item.order_id)) return;
         
         const productId = item.product_id;
         if (!productMap[productId]) {
