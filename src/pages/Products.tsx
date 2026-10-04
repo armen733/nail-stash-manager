@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, AlertTriangle, Crop as CropIcon } from "lucide-react";
+import { ArrowLeft, Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, AlertTriangle, Crop as CropIcon } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -1725,6 +1725,11 @@ const Products = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          {searchParams.get("from") === "dashboard" && (
+            <Button variant="outline" size="sm" className="mb-3" onClick={() => navigate("/")}>
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back to Dashboard
+            </Button>
+          )}
           <h1 className="text-3xl font-bold text-foreground">Products</h1>
           <p className="text-muted-foreground mt-1">Manage your product catalog</p>
         </div>
