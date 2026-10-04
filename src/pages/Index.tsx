@@ -1424,6 +1424,7 @@ const Index = () => {
               <Package className="h-5 w-5" />
               {selectedCategory} Products
             </SheetTitle>
+            <p className="text-xs text-muted-foreground">{periodLabel} only</p>
           </SheetHeader>
           <ScrollArea className="h-[calc(100vh-120px)] mt-4">
             {loadingProducts ? (
