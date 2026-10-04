@@ -67,6 +67,8 @@ const ReferrerProfile = () => {
   const [customers, setCustomers] = useState<ReferredCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [contactOpen, setContactOpen] = useState(false);
+  const [allCodes, setAllCodes] = useState<{ id: string; code: string; discount_percent: number; is_active: boolean | null; referrer_id: string | null }[]>([]);
+  const [codeToLink, setCodeToLink] = useState("");
   const [commissionFilter, setCommissionFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
@@ -77,7 +79,7 @@ const ReferrerProfile = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [refRes, commRes, custRes] = await Promise.all([
+      const [refRes, commRes, custRes, codesRes] = await Promise.all([
         supabase.from("referrers").select("*, profiles!linked_profile_id(full_name, email)").eq("id", id!).single(),
         supabase.from("referral_commissions")
           .select("*, profiles(full_name, email)")
@@ -87,6 +89,7 @@ const ReferrerProfile = () => {
           .select("*, profiles(full_name, email, phone)")
           .eq("referrer_id", id!)
           .order("referred_at", { ascending: false }),
+        supabase.from("discount_codes").select("id, code, discount_percent, is_active, referrer_id").order("code"),
       ]);
 
       if (refRes.error) throw refRes.error;
@@ -96,10 +99,23 @@ const ReferrerProfile = () => {
       setReferrer(refRes.data);
       setCommissions(commRes.data || []);
       setCustomers(custRes.data || []);
+      setAllCodes((codesRes.data as any) || []);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const setCodeReferrer = async (codeId: string, referrerId: string | null) => {
+    try {
+      const { error } = await supabase.from("discount_codes").update({ referrer_id: referrerId }).eq("id", codeId);
+      if (error) throw error;
+      toast({ title: "Success", description: referrerId ? "Code marked as this referrer's personal code" : "Code unlinked" });
+      setCodeToLink("");
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -328,6 +344,44 @@ const ReferrerProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Personal discount codes */}
+      <Card>
+        <CardHeader className="p-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Link2 className="h-5 w-5" /> Personal Discount Codes ({allCodes.filter((c) => c.referrer_id === id).length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-3">
+          {allCodes.filter((c) => c.referrer_id === id).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No personal codes marked yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {allCodes.filter((c) => c.referrer_id === id).map((c) => (
+                <div key={c.id} className="flex items-center justify-between gap-2 rounded-lg border p-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono font-bold">{c.code}</span>
+                    <span className="text-sm text-muted-foreground">{c.discount_percent}%</span>
+                    <Badge variant={c.is_active ? "default" : "secondary"}>{c.is_active ? "Active" : "Inactive"}</Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setCodeReferrer(c.id, null)}>Unlink</Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Select value={codeToLink} onValueChange={setCodeToLink}>
+              <SelectTrigger><SelectValue placeholder="Mark an existing code as personal..." /></SelectTrigger>
+              <SelectContent>
+                {allCodes.filter((c) => !c.referrer_id).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.code} ({c.discount_percent}%)</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button disabled={!codeToLink} onClick={() => setCodeReferrer(codeToLink, id!)}>Mark</Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Referred Customers */}
       <Card>

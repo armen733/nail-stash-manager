@@ -26,6 +26,7 @@ import {
   Profile,
   LoyaltySettings,
 } from "@/hooks/usePromotions";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
 import { PromotionsTabSkeleton, LoyaltySettingsSkeleton } from "@/components/skeletons/PromotionsSkeleton";
@@ -38,11 +39,13 @@ const TIER_DISCOUNTS: Record<string, number> = {
 };
 
 const Promotions = () => {
+  const navigate = useNavigate();
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [loyaltyTransactions, setLoyaltyTransactions] = useState<LoyaltyTransaction[]>([]);
   const [userTiers, setUserTiers] = useState<UserTier[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings | null>(null);
+  const [referrers, setReferrers] = useState<{ id: string; name: string; referral_code: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
@@ -85,6 +88,7 @@ const Promotions = () => {
     is_active: true,
     one_per_user: true,
     single_account_only: false,
+    referrer_id: "none",
   });
 
   useEffect(() => {
@@ -94,12 +98,13 @@ const Promotions = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [codesRes, transactionsRes, tiersRes, profilesRes, settingsRes] = await Promise.all([
+      const [codesRes, transactionsRes, tiersRes, profilesRes, settingsRes, referrersRes] = await Promise.all([
         supabase.from("discount_codes").select("*").order("created_at", { ascending: false }),
         supabase.from("loyalty_transactions").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("user_tiers").select("*").order("updated_at", { ascending: false }),
         supabase.from("profiles").select("id, email, full_name, loyalty_points"),
         supabase.from("loyalty_settings").select("*").limit(1).single(),
+        supabase.from("referrers").select("id, name, referral_code").order("name"),
       ]);
 
       if (codesRes.error) throw codesRes.error;
@@ -111,6 +116,7 @@ const Promotions = () => {
       setLoyaltyTransactions(transactionsRes.data || []);
       setUserTiers(tiersRes.data || []);
       setProfiles(profilesRes.data || []);
+      setReferrers((referrersRes.data as any) || []);
       
       if (settingsRes.data) {
         setLoyaltySettings(settingsRes.data);
@@ -138,6 +144,7 @@ const Promotions = () => {
       is_active: true,
       one_per_user: true,
       single_account_only: false,
+      referrer_id: "none",
     });
     setEditingCode(null);
   };
@@ -205,6 +212,7 @@ const Promotions = () => {
         is_active: formData.is_active,
         one_per_user: formData.one_per_user,
         single_account_only: formData.single_account_only,
+        referrer_id: formData.referrer_id === "none" ? null : formData.referrer_id,
       };
 
       if (editingCode) {
@@ -242,6 +250,7 @@ const Promotions = () => {
       is_active: code.is_active ?? true,
       one_per_user: (code as any).one_per_user ?? true,
       single_account_only: (code as any).single_account_only ?? false,
+      referrer_id: (code as any).referrer_id ?? "none",
     });
     setIsAddDialogOpen(true);
   };
@@ -573,6 +582,21 @@ const Promotions = () => {
                       onCheckedChange={(checked) => setFormData({ ...formData, single_account_only: checked })}
                     />
                   </div>
+                  <div className="space-y-2 rounded-lg border p-3">
+                    <Label>Referrer's personal code</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Mark this as a referrer's own code for personal use. It will show on their referrer profile.
+                    </p>
+                    <Select value={formData.referrer_id} onValueChange={(v) => setFormData({ ...formData, referrer_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Not a referrer code" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Not a referrer code</SelectItem>
+                        {referrers.map((ref) => (
+                          <SelectItem key={ref.id} value={ref.id}>{ref.name} ({ref.referral_code})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button onClick={handleSaveDiscountCode} className="w-full h-11 min-h-[44px]">
                     {editingCode ? "Update" : "Create"} Code
                   </Button>
@@ -622,6 +646,14 @@ const Promotions = () => {
                                         "customer"
                                       }`
                                     : "1 account only"}
+                                </Badge>
+                              )}
+                              {(code as any).referrer_id && (
+                                <Badge
+                                  className="text-[10px] cursor-pointer bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border-purple-500/30"
+                                  onClick={() => navigate(`/referrals/${(code as any).referrer_id}`)}
+                                >
+                                  Referrer: {referrers.find((x) => x.id === (code as any).referrer_id)?.name || "Unknown"}
                                 </Badge>
                               )}
                             </div>
