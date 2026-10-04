@@ -122,6 +122,7 @@ interface CategoryProduct {
   quantity: number;
   revenue: number;
   image_url?: string;
+  sku?: string;
 }
 
 interface DayOfWeekData {
@@ -202,9 +203,16 @@ const Index = () => {
   const [topProductsOpen, setTopProductsOpen] = useState(false);
   const [topSupplyStoresOpen, setTopSupplyStoresOpen] = useState(false);
   const [stockValueOpen, setStockValueOpen] = useState(false);
-  const [timePeriod, setTimePeriod] = useState<string>("month");
-  const [customStart, setCustomStart] = useState<string>("");
-  const [customEnd, setCustomEnd] = useState<string>("");
+  const dashboardReturn = useRef<{ timePeriod?: string; customStart?: string; customEnd?: string; category?: string | null } | null>((() => {
+    try {
+      const raw = sessionStorage.getItem("dashboardReturn");
+      if (raw) { sessionStorage.removeItem("dashboardReturn"); return JSON.parse(raw); }
+    } catch {}
+    return null;
+  })());
+  const [timePeriod, setTimePeriod] = useState<string>(dashboardReturn.current?.timePeriod || "month");
+  const [customStart, setCustomStart] = useState<string>(dashboardReturn.current?.customStart || "");
+  const [customEnd, setCustomEnd] = useState<string>(dashboardReturn.current?.customEnd || "");
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
   const [orderStatusData, setOrderStatusData] = useState<OrderStatusData[]>([]);
@@ -274,6 +282,22 @@ const Index = () => {
       </g>
     );
   };
+
+  const openProductFromDashboard = (product: { sku?: string; name?: string }, withCategory: boolean) => {
+    try {
+      sessionStorage.setItem("dashboardReturn", JSON.stringify({ timePeriod, customStart, customEnd, category: withCategory ? selectedCategory : null }));
+    } catch {}
+    navigate(`/products?search=${encodeURIComponent(product.sku || product.name || "")}&from=dashboard`);
+  };
+
+  useEffect(() => {
+    if (!loading && dashboardReturn.current?.category) {
+      const cat = dashboardReturn.current.category;
+      dashboardReturn.current = null;
+      handleCategoryClick(cat);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   useEffect(() => {
     if (timePeriod === "custom" && (!customStart || !customEnd)) return;
@@ -359,7 +383,7 @@ const Index = () => {
       });
       const productInfoMap = new Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>();
       (productPricingRes.data || []).forEach((p: any) => {
-        productInfoMap.set(p.id, { name: p.name || "Unknown", sku: p.sku || "", category: p.category || "Other", image_url: p.image_url || undefined, supplier_sku: p.supplier_sku || "" });
+        productInfoMap.set(p.id, { name: p.name || "Unknown", sku: p.sku || "", category: p.category || "Other", image_url: productImagesMap[p.id] || p.image_url || undefined, supplier_sku: p.supplier_sku || "" });
       });
       const productPricingMap = new Map<string, { wholesale: number; retail: number; cost: number }>();
       (productPricingRes.data || []).forEach((p: any) => {
@@ -609,7 +633,7 @@ const Index = () => {
         const productName = item.products?.name || "Unknown";
         const productSku = item.products?.sku || "";
         const productSupplierSku = item.products?.supplier_sku || "";
-        const productImage = item.products?.image_url || productImagesMap[productId];
+        const productImage = productImagesMap[productId] || item.products?.image_url;
         if (!acc[productId]) {
           acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, supplier_sku: productSupplierSku, image_url: productImage };
         }
@@ -622,7 +646,7 @@ const Index = () => {
         const info = productInfoMap.get(row.product_id);
         if (!info) return;
         if (!productStats[row.product_id]) {
-          productStats[row.product_id] = { id: row.product_id, quantity: 0, revenue: 0, name: info.name, sku: info.sku, supplier_sku: info.supplier_sku, image_url: info.image_url || productImagesMap[row.product_id] };
+          productStats[row.product_id] = { id: row.product_id, quantity: 0, revenue: 0, name: info.name, sku: info.sku, supplier_sku: info.supplier_sku, image_url: productImagesMap[row.product_id] || info.image_url };
         }
         productStats[row.product_id].quantity += row.quantity;
         productStats[row.product_id].revenue += row.revenue;
@@ -654,7 +678,7 @@ const Index = () => {
           price: p.price_usd,
           value: p.stock_on_hand * p.price_usd,
           // Use products.image_url first, fallback to product_images table
-          image_url: p.image_url || productImagesMap[p.id],
+          image_url: productImagesMap[p.id] || p.image_url,
         }))
         .sort((a, b) => b.value - a.value);
       
@@ -871,7 +895,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("product_id, order_id, quantity, line_total, products(id, name, category, image_url)")
+          .select("product_id, order_id, quantity, line_total, products(id, name, sku, category, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -904,7 +928,8 @@ const Index = () => {
             quantity: 0,
             revenue: 0,
             // Use products.image_url first, fallback to product_images table
-            image_url: item.products.image_url || productImagesMap[productId],
+            image_url: productImagesMap[productId] || item.products.image_url,
+            sku: item.products.sku || "",
           };
         }
         productMap[productId].quantity += item.quantity || 0;
@@ -920,7 +945,8 @@ const Index = () => {
             name: info.name,
             quantity: 0,
             revenue: 0,
-            image_url: info.image_url || productImagesMap[row.product_id],
+            image_url: productImagesMap[row.product_id] || info.image_url,
+            sku: info.sku || "",
           };
         }
         productMap[row.product_id].quantity += row.quantity;
@@ -1554,7 +1580,8 @@ const Index = () => {
                 {categoryProducts.map((product, index) => (
                   <div 
                     key={product.id} 
-                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => openProductFromDashboard({ sku: product.sku, name: product.name }, true)}
                   >
                     {product.image_url ? (
                       <img 
@@ -1569,6 +1596,9 @@ const Index = () => {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{product.name}</p>
+                      {product.sku && (
+                        <p className="text-xs text-muted-foreground/70 font-mono truncate">{product.sku}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {product.quantity} units sold
                       </p>
@@ -1974,7 +2004,7 @@ const Index = () => {
                   <div 
                     key={index} 
                     className="flex items-center justify-between gap-3 border-b pb-2 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 -mx-2 transition-colors"
-                    onClick={() => navigate(`/products?search=${encodeURIComponent(product.sku || product.product_name)}`)}
+                    onClick={() => openProductFromDashboard({ sku: product.sku, name: product.product_name }, false)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {product.image_url ? (
