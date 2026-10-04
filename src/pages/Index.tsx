@@ -291,9 +291,11 @@ const Index = () => {
   };
 
   useEffect(() => {
+    console.log("[dashboard-return] effect, loading:", loading, "return:", dashboardReturn.current);
     if (!loading && dashboardReturn.current?.category) {
       const cat = dashboardReturn.current.category;
       dashboardReturn.current = null;
+      console.log("[dashboard-return] restoring category:", cat);
       handleCategoryClick(cat);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
