@@ -217,6 +217,8 @@ const Index = () => {
   // Order ids inside the currently selected period, so the category drill-down
   // shows the same window the Sales by Category chart uses.
   const periodOrderIdsRef = useRef<Set<string>>(new Set());
+  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number }>>([]);
+  const productInfoRef = useRef<Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>>(new Map());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
