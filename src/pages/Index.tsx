@@ -551,14 +551,6 @@ const Index = () => {
       setTopSupplyStores(allSupplyStoresData.slice(0, 5));
 
       // Calculate top products
-      const periodOrderIds = new Set(
-        (ordersRes.data || [])
-          .filter((o: any) => {
-            const d = new Date(o.created_at);
-            return d >= new Date(periodStart) && (!periodEnd || d < new Date(periodEnd));
-          })
-          .map((o: any) => o.id)
-      );
       const productStats = (orderItemsRes.data || []).filter((it: any) => periodOrderIds.has(it.order_id)).reduce((acc: Record<string, { id: string; quantity: number; revenue: number; name: string; sku: string; supplier_sku?: string; image_url?: string }>, item) => {
         const productId = item.product_id;
         const productName = item.products?.name || "Unknown";
