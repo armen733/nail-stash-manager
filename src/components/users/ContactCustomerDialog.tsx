@@ -97,6 +97,34 @@ const TEMPLATES: TemplateDef[] = [
   },
 ];
 
+const REFERRER_TEMPLATES: TemplateDef[] = [
+  {
+    id: "referrer_inactive",
+    label: "Referrer not active yet",
+    subject: `We miss you at ${STORE_NAME} 🖤`,
+    body: (n) =>
+      `Hi ${n || "there"},\n\nWe see you registered as a ${STORE_NAME} referrer, but you're not active yet. That's totally okay if it's not for you right now!\n\nYou can still place an order and get 40% off by using code WELCOMETONERA.\n\nJust a heads up: if you stay inactive for a long time, you'll lose your personal discount code as well as the opportunity to earn with us.\n\nWe'd love to have you back.\n\nWith love,\nThe ${STORE_NAME} Team`,
+    smsBody: (n) =>
+      `Hi ${n || "there"}, we see you registered as a ${STORE_NAME} referrer but you're not active yet 🖤 No worries! You can still order and get 40% off with WELCOMETONERA. But if you stay inactive for a long time, you'll lose your personal discount code and the chance to earn with us.`,
+  },
+  {
+    id: "referrer_thanks",
+    label: "Thank you for referring",
+    subject: `Thank you for spreading the word 🖤`,
+    body: (n) =>
+      `Hi ${n || "there"},\n\nThank you for sharing ${STORE_NAME} with your friends and clients. Your support means everything to us.\n\nWith gratitude,\nThe ${STORE_NAME} Team`,
+    smsBody: (n) =>
+      `Hi ${n || "there"}, thank you for sharing ${STORE_NAME} with others 🖤 We truly appreciate you!`,
+  },
+  {
+    id: "custom",
+    label: "Custom message",
+    subject: "",
+    body: () => "",
+    smsBody: () => "",
+  },
+];
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -106,11 +134,13 @@ interface Props {
     email: string;
     phone: string | null;
   } | null;
+  audience?: "customer" | "referrer";
 }
 
-export function ContactCustomerDialog({ open, onOpenChange, customer }: Props) {
+export function ContactCustomerDialog({ open, onOpenChange, customer, audience = "customer" }: Props) {
+  const templates = audience === "referrer" ? REFERRER_TEMPLATES : TEMPLATES;
   const [channel, setChannel] = useState<Channel>("email");
-  const [templateId, setTemplateId] = useState<string>("miss_you");
+  const [templateId, setTemplateId] = useState<string>(audience === "referrer" ? "referrer_inactive" : "miss_you");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
 
@@ -120,7 +150,7 @@ export function ContactCustomerDialog({ open, onOpenChange, customer }: Props) {
 
   const applyTemplate = (id: string, ch: Channel = channel) => {
     setTemplateId(id);
-    const tpl = TEMPLATES.find((t) => t.id === id);
+    const tpl = templates.find((t) => t.id === id);
     if (!tpl) return;
     if (ch === "email") {
       setSubject(tpl.subject);
@@ -228,7 +258,7 @@ export function ContactCustomerDialog({ open, onOpenChange, customer }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TEMPLATES.map((t) => (
+                {templates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.label}
                   </SelectItem>

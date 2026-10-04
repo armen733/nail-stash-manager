@@ -14,8 +14,9 @@ import {
 import {
   ArrowLeft, Users, DollarSign, TrendingUp, CheckCircle, Clock,
   UserPlus, Copy, Download, Phone, Mail, Calendar, Share2, Instagram,
-  ExternalLink, Link2,
+  ExternalLink, Link2, MessageSquare,
 } from "lucide-react";
+import { ContactCustomerDialog } from "@/components/users/ContactCustomerDialog";
 import { downloadCSV } from "@/lib/csv-export";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 
@@ -65,6 +66,7 @@ const ReferrerProfile = () => {
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [customers, setCustomers] = useState<ReferredCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactOpen, setContactOpen] = useState(false);
   const [commissionFilter, setCommissionFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
 
@@ -226,6 +228,9 @@ const ReferrerProfile = () => {
             <Badge variant={referrer.status === "active" ? "default" : "secondary"}>
               {referrer.status}
             </Badge>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setContactOpen(true)}>
+              <MessageSquare className="h-3.5 w-3.5 mr-1" /> Contact
+            </Button>
             {referrer.linked_profile_id && (
               <Button
                 variant="outline"
@@ -266,6 +271,17 @@ const ReferrerProfile = () => {
           </div>
         </div>
       </div>
+
+      <ContactCustomerDialog
+        open={contactOpen}
+        onOpenChange={setContactOpen}
+        audience="referrer"
+        customer={{
+          full_name: referrer.name,
+          email: referrer.email || "",
+          phone: referrer.phone,
+        }}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
