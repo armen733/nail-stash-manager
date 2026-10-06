@@ -147,6 +147,24 @@ export async function createOrderFromSession(
         image_url: item.price?.product?.images?.[0] || null,
       }));
 
+  // Fill in real product names/SKUs from the catalog (checkout metadata may omit names)
+  try {
+    const ids = [...new Set(orderItemsInfo.map((it: any) => it.product_id).filter(Boolean))];
+    if (ids.length > 0) {
+      const { data: prods } = await supabase.from('products').select('id, name, sku').in('id', ids);
+      const byId: Record<string, any> = {};
+      for (const p of prods || []) byId[p.id] = p;
+      for (const it of orderItemsInfo as any[]) {
+        const p = byId[it.product_id];
+        if (!p) continue;
+        if (!it.product_name || it.product_name === 'Unknown Product') it.product_name = p.name;
+        if (!it.sku) it.sku = p.sku;
+      }
+    }
+  } catch (e) {
+    log('Product name lookup failed', { error: String(e) });
+  }
+
   const orderItemsToInsert = orderItemsInfo
     .filter((item: any) => item.product_id)
     .map((item: any) => ({
