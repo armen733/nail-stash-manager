@@ -118,7 +118,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    const to = parseAddress(order.customer_address || '')
+    let to = parseAddress(order.customer_address || '')
+    const o = body.address_to
+    if (o && typeof o === 'object' && o.street1 && o.zip) {
+      to = {
+        street1: String(o.street1).trim().slice(0, 200),
+        city: String(o.city || '').trim().slice(0, 100),
+        state: String(o.state || '').trim().toUpperCase().slice(0, 2),
+        zip: String(o.zip).trim().slice(0, 10),
+      }
+      if (action === 'rates') {
+        await admin.from('orders').update({
+          customer_address: `${to.street1}, ${to.city}, ${to.state} ${to.zip}`,
+        }).eq('id', orderId)
+      }
+    }
     if (!to.street1 || !to.zip) {
       return new Response(JSON.stringify({ error: 'missing_to_address' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

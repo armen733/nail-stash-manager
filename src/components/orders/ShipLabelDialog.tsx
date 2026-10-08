@@ -57,11 +57,28 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   const [loading, setLoading] = useState(false);
   const [buyingRateId, setBuyingRateId] = useState<string | null>(null);
   const [testMode, setTestMode] = useState(false);
+  const [toStreet, setToStreet] = useState("");
+  const [toCity, setToCity] = useState("");
+  const [toState, setToState] = useState("");
+  const [toZip, setToZip] = useState("");
 
   useEffect(() => {
     if (!order) return;
     setStep("form");
     setRates([]);
+    {
+      const parts = (order.customer_address || "").split(/[,\n]/).map((p) => p.trim()).filter(Boolean);
+      let street = parts[0] || "", city = "", st = "", zip = "";
+      for (const p of parts.slice(1)) {
+        const m = p.match(/^([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (m) { st = m[1].toUpperCase(); zip = m[2]; continue; }
+        if (/^\d{5}(-\d{4})?$/.test(p)) { zip = p; continue; }
+        if (/^[A-Za-z]{2}$/.test(p)) { if (!st && !/^us$/i.test(p)) st = p.toUpperCase(); continue; }
+        if (/^(usa|united states)$/i.test(p)) continue;
+        if (!city) city = p; else if (p !== city && !p.includes(city)) street += `, ${p}`;
+      }
+      setToStreet(street); setToCity(city); setToState(st); setToZip(zip);
+    }
     supabase
       .from("shipping_settings")
       .select("*")
@@ -105,6 +122,10 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       toast({ title: "Missing return address", description: "Fill in your ship-from address first.", variant: "destructive" });
       return;
     }
+    if (!toStreet || !toCity || !toState || !toZip) {
+      toast({ title: "Missing delivery address", description: "Fill in the customer's street, city, state and ZIP.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
       await saveSettings();
@@ -116,6 +137,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
           length: Number(length) || 9,
           width: Number(width) || 6,
           height: Number(height) || 1,
+          address_to: { street1: toStreet, city: toCity, state: toState, zip: toZip },
         },
       });
       if (error) throw new Error((data as any)?.error || error.message);
@@ -172,7 +194,15 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
               Shipping to: <span className="font-medium text-foreground">{order.customer_name}</span>
-              <br />{order.customer_address}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Ship to</Label>
+              <Input placeholder="Street address" value={toStreet} onChange={(e) => setToStreet(e.target.value)} />
+              <div className="grid grid-cols-3 gap-2">
+                <Input placeholder="City" value={toCity} onChange={(e) => setToCity(e.target.value)} />
+                <Input placeholder="State" value={toState} onChange={(e) => setToState(e.target.value.toUpperCase())} maxLength={2} />
+                <Input placeholder="ZIP" value={toZip} onChange={(e) => setToZip(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">Ship from (saved for next time)</Label>
