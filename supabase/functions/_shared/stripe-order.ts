@@ -84,7 +84,10 @@ export async function createOrderFromSession(
   let metadataItems: any[] = [];
   if (md.orderItems) {
     try {
-      metadataItems = JSON.parse(md.orderItems);
+      const parts = Number(md.orderItemsParts || 1);
+      let json = md.orderItems;
+      for (let i = 2; i <= parts; i++) json += md[`orderItems_${i}`] || '';
+      metadataItems = JSON.parse(json);
     } catch (e) {
       log('Failed to parse metadata items', { error: String(e) });
     }
