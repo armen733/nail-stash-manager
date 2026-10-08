@@ -338,6 +338,8 @@ ${discountAmount > 0 ? `• Discount${discountCode ? ` (${discountCode})` : ''}:
         customerName,
         orderId: order.id,
         orderItems: orderItemsInfo.map((item: any) => ({
+          product_id: item.product_id,
+          sku: item.sku,
           name: item.product_name,
           quantity: item.quantity,
           price: item.unit_price,

@@ -33,6 +33,8 @@ interface CartItem {
 }
 
 interface OrderItem {
+  product_id?: string;
+  sku?: string;
   name: string;
   quantity: number;
   unit_price: number;
@@ -49,7 +51,7 @@ interface EmailRequest {
   orderId?: string;
   orderDate?: string;
   items?: OrderItem[];
-  orderItems?: Array<{name: string; quantity: number; price: number; image_url?: string}>; // Alternative from customer app
+  orderItems?: Array<{product_id?: string; sku?: string; name: string; quantity: number; price: number; image_url?: string}>; // Alternative from customer app
   subtotal?: number;
   discount?: number;
   discountCode?: string;
@@ -734,6 +736,8 @@ const handler = async (req: Request): Promise<Response> => {
         if ((!data.items || data.items.length === 0) && data.orderItems && data.orderItems.length > 0) {
           console.log('Converting orderItems to items format...');
           data.items = data.orderItems.map(item => ({
+            product_id: item.product_id,
+            sku: item.sku,
             name: item.name,
             quantity: item.quantity,
             unit_price: item.price,
@@ -745,60 +749,22 @@ const handler = async (req: Request): Promise<Response> => {
         console.log('Order confirmation - items count:', data.items?.length || 0);
         console.log('Items data:', JSON.stringify(data.items, null, 2));
         
-        // Enrich items with product images from database if any are missing
-        if (data.items && data.items.length > 0) {
-          const itemsMissingImages = data.items.filter(item => !item.image_url);
-          
-          if (itemsMissingImages.length > 0) {
-            console.log('Fetching product images for items missing images...');
-            const productNames = itemsMissingImages.map(item => item.name);
-            console.log('Product names to look up:', productNames);
-            
-            // Fetch products with their gallery images
-            const { data: products, error: productsError } = await supabase
-              .from('products')
-              .select(`
-                name, 
-                image_url,
-                product_images (image_url, display_order)
-              `)
-              .in('name', productNames);
-            
-            if (productsError) {
-              console.error('Error fetching products:', productsError);
-            } else if (products) {
-              console.log('Found products from DB:', products.length);
-              
-              // Create a map of product name to image_url (prefer product_images, fallback to image_url)
-              const imageMap = new Map(products.map(p => {
-                // Get image from product_images table (first one by display_order)
-                const galleryImages = p.product_images as Array<{image_url: string, display_order: number}> || [];
-                const firstGalleryImage = galleryImages.length > 0 
-                  ? galleryImages.sort((a, b) => a.display_order - b.display_order)[0].image_url 
-                  : null;
-                // Use gallery image first, then fallback to product.image_url
-                return [p.name, firstGalleryImage || p.image_url];
-              }));
-              
-              // Enrich items with images
-              data.items = data.items.map(item => ({
-                ...item,
-                image_url: item.image_url || imageMap.get(item.name) || null
-              }));
-            }
-          }
-          console.log('Final items with images:', JSON.stringify(data.items, null, 2));
-        } else {
-          console.log('No items received in order confirmation!');
-        }
-        
-        // Use the saved order as the source of truth for totals and SKUs
+        // Use exact saved order products, not names shared by many drill-bit SKUs.
         try {
+          const productFields = 'id, name, sku, image_url, product_images(image_url, display_order)';
+          const productImage = (product: any): string | undefined => {
+            const gallery = Array.isArray(product?.product_images) ? product.product_images : [];
+            const first = [...gallery]
+              .filter((image: any) => typeof image.image_url === 'string' && image.image_url.trim())
+              .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))[0];
+            return first?.image_url || product?.image_url || undefined;
+          };
           let ord: any = null;
           if (data.orderId) {
             const isUuid = /^[0-9a-f-]{36}$/i.test(data.orderId);
-            const q = supabase.from('orders').select('id, subtotal, tax, shipping, total, discount_amount, discount_code, order_items(quantity, unit_price, line_total, products(name, sku))');
-            const { data: o } = isUuid ? await q.eq('id', data.orderId).maybeSingle() : await q.eq('stripe_session_id', data.orderId).maybeSingle();
+            const q = supabase.from('orders').select(`id, subtotal, tax, shipping, total, discount_amount, discount_code, order_items(product_id, quantity, unit_price, line_total, products(${productFields}))`);
+            const { data: o, error } = isUuid ? await q.eq('id', data.orderId).maybeSingle() : await q.eq('stripe_session_id', data.orderId).maybeSingle();
+            if (error) throw error;
             ord = o;
           }
           if (ord) {
@@ -807,20 +773,44 @@ const handler = async (req: Request): Promise<Response> => {
             (data as any).shipping = Number(ord.shipping) || 0;
             data.total = Number(ord.total) || data.total;
             if (Number(ord.discount_amount) > 0) { data.discount = Number(ord.discount_amount); data.discountCode = ord.discount_code || data.discountCode; }
+            if (ord.order_items?.length) {
+              data.items = ord.order_items.map((item: any) => {
+                const provided = data.items?.find(i => i.product_id === item.product_id);
+                return {
+                  product_id: item.product_id,
+                  name: item.products?.name || provided?.name || 'Unknown Product',
+                  sku: item.products?.sku || provided?.sku,
+                  quantity: item.quantity,
+                  unit_price: Number(item.unit_price),
+                  line_total: Number(item.line_total),
+                  image_url: productImage(item.products) || provided?.image_url,
+                };
+              });
+            }
           } else if (data.total != null && data.subtotal != null) {
             // Fallback: derive tax if missing
             const derived = Number((data.total - data.subtotal + (data.discount || 0)).toFixed(2));
             if (!data.tax && derived > 0) data.tax = derived;
           }
-          if (data.items?.length) {
-            const skuMap = new Map<string, string>();
-            (ord?.order_items || []).forEach((oi: any) => oi.products?.sku && skuMap.set(oi.products.name, oi.products.sku));
-            const missing = data.items.filter((i: any) => !i.sku && !skuMap.has(i.name)).map(i => i.name);
-            if (missing.length) {
-              const { data: ps } = await supabase.from('products').select('name, sku').in('name', missing);
-              (ps || []).forEach((p: any) => p.sku && skuMap.set(p.name, p.sku));
+          if (!ord?.order_items?.length && data.items?.length) {
+            // Legacy requests: ID first, SKU second; a name is safe only if unique.
+            const ids = data.items.map(i => i.product_id).filter(Boolean);
+            const skus = data.items.filter(i => !i.product_id).map(i => i.sku).filter(Boolean);
+            const names = data.items.filter(i => !i.product_id && !i.sku).map(i => i.name);
+            const lookups = await Promise.all([
+              ids.length ? supabase.from('products').select(productFields).in('id', ids) : Promise.resolve({ data: [] }),
+              skus.length ? supabase.from('products').select(productFields).in('sku', skus) : Promise.resolve({ data: [] }),
+              names.length ? supabase.from('products').select(productFields).in('name', names) : Promise.resolve({ data: [] }),
+            ]);
+            for (const result of lookups) {
+              if (result.error) throw result.error;
             }
-            data.items = data.items.map((i: any) => ({ ...i, sku: i.sku || skuMap.get(i.name) }));
+            const products = lookups.flatMap(result => result.data || []);
+            data.items = data.items.map(item => {
+              const matches = products.filter((p: any) => item.product_id ? p.id === item.product_id : item.sku ? p.sku === item.sku : p.name === item.name);
+              const product = matches.length === 1 ? matches[0] : null;
+              return { ...item, sku: item.sku || product?.sku, image_url: productImage(product) || item.image_url };
+            });
           }
         } catch (e) { console.error('Order lookup failed:', e); }
 
