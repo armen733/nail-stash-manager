@@ -2,3 +2,4 @@
 
 - Shipping labels are fetched through the authenticated `shippo-label` function instead of opening Shippo URLs directly, because browser privacy tools can block Shippo-hosted label links.
 - Shipping-label authorization uses `public.user_roles`; never authorize from browser state or the legacy profile role alone.
+- Confirmation emails resolve photos and SKUs from saved order-item product IDs, with identity-preserving legacy fallbacks, because product names are shared across variants.
