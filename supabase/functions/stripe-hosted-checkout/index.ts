@@ -51,6 +51,33 @@ serve(async (req: Request) => {
     }
     console.log(`[${requestId}] Items count: ${items.length}, Customer: ${customerEmail || 'guest'}`);
 
+    // Stock check: block checkout when a product is out of stock or the cart asks for more than is available.
+    const wanted = new Map<string, number>();
+    for (const it of items) {
+      const pid = it.id || it.product_id;
+      if (pid) wanted.set(pid, (wanted.get(pid) || 0) + Number(it.quantity || 0));
+    }
+    if (wanted.size) {
+      const { data: stockRows } = await supabase
+        .from("products")
+        .select("id, name, sku, stock_on_hand, stock_reserved")
+        .in("id", [...wanted.keys()]);
+      const problems = (stockRows || [])
+        .map((p: any) => ({ p, available: Math.max(0, Number(p.stock_on_hand ?? 0) - Number(p.stock_reserved ?? 0)), qty: wanted.get(p.id) || 0 }))
+        .filter((x) => x.qty > x.available)
+        .map((x) => ({ id: x.p.id, sku: x.p.sku, name: x.p.name, requested: x.qty, available: x.available }));
+      if (problems.length) {
+        const msg = problems.map((x) => x.available === 0
+          ? `${x.name} (${x.sku}) is out of stock`
+          : `Only ${x.available} left of ${x.name} (${x.sku})`).join("; ");
+        console.warn(`[${requestId}] Stock check failed: ${msg}`);
+        return new Response(JSON.stringify({ error: msg, code: "insufficient_stock", items: problems }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        });
+      }
+    }
+
     console.log(`[${requestId}] Step 5: Checking auth`);
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization");
