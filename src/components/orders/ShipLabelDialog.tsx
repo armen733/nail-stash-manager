@@ -122,6 +122,10 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
       toast({ title: "Missing return address", description: "Fill in your ship-from address first.", variant: "destructive" });
       return;
     }
+    if (!toStreet || !toCity || !toState || !toZip) {
+      toast({ title: "Missing delivery address", description: "Fill in the customer's street, city, state and ZIP.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
       await saveSettings();
@@ -133,6 +137,7 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
           length: Number(length) || 9,
           width: Number(width) || 6,
           height: Number(height) || 1,
+          address_to: { street1: toStreet, city: toCity, state: toState, zip: toZip },
         },
       });
       if (error) throw new Error((data as any)?.error || error.message);
@@ -189,7 +194,15 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
               Shipping to: <span className="font-medium text-foreground">{order.customer_name}</span>
-              <br />{order.customer_address}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Ship to</Label>
+              <Input placeholder="Street address" value={toStreet} onChange={(e) => setToStreet(e.target.value)} />
+              <div className="grid grid-cols-3 gap-2">
+                <Input placeholder="City" value={toCity} onChange={(e) => setToCity(e.target.value)} />
+                <Input placeholder="State" value={toState} onChange={(e) => setToState(e.target.value.toUpperCase())} maxLength={2} />
+                <Input placeholder="ZIP" value={toZip} onChange={(e) => setToZip(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">Ship from (saved for next time)</Label>
