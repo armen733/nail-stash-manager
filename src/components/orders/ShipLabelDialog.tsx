@@ -57,11 +57,28 @@ export const ShipLabelDialog = ({ order, onClose, onLabelCreated }: ShipLabelDia
   const [loading, setLoading] = useState(false);
   const [buyingRateId, setBuyingRateId] = useState<string | null>(null);
   const [testMode, setTestMode] = useState(false);
+  const [toStreet, setToStreet] = useState("");
+  const [toCity, setToCity] = useState("");
+  const [toState, setToState] = useState("");
+  const [toZip, setToZip] = useState("");
 
   useEffect(() => {
     if (!order) return;
     setStep("form");
     setRates([]);
+    {
+      const parts = (order.customer_address || "").split(/[,\n]/).map((p) => p.trim()).filter(Boolean);
+      let street = parts[0] || "", city = "", st = "", zip = "";
+      for (const p of parts.slice(1)) {
+        const m = p.match(/^([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+        if (m) { st = m[1].toUpperCase(); zip = m[2]; continue; }
+        if (/^\d{5}(-\d{4})?$/.test(p)) { zip = p; continue; }
+        if (/^[A-Za-z]{2}$/.test(p)) { if (!st && !/^us$/i.test(p)) st = p.toUpperCase(); continue; }
+        if (/^(usa|united states)$/i.test(p)) continue;
+        if (!city) city = p; else if (p !== city && !p.includes(city)) street += `, ${p}`;
+      }
+      setToStreet(street); setToCity(city); setToState(st); setToZip(zip);
+    }
     supabase
       .from("shipping_settings")
       .select("*")
