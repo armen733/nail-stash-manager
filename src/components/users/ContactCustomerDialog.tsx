@@ -64,7 +64,7 @@ const TEMPLATES: TemplateDef[] = [
   {
     id: "order_thanks",
     label: "Thanks for your order",
-    subject: `Thank you for your ${STORE_NAME} order �️`,
+    subject: `Thank you for your ${STORE_NAME} order 🖤`,
     body: (n) =>
       `Hi ${n || "there"},\n\nThank you for your order! We're so excited to receive and prepare it for you.\n\nWe'll take great care of everything and it will be on its way soon.\n\nWith love,\nThe ${STORE_NAME} Team`,
     smsBody: (n) =>
