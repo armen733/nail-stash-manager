@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { dimensionKeys, millimeterValue } from "./DrillBitDimensions";
 
 interface DynamicCategoryFieldsProps {
   category: string;
@@ -57,7 +58,9 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
   };
   
   const renderField = (field: CategoryFieldConfig) => {
-    const value = values[field.field_name] || "";
+    const isDimension = category.trim().toLowerCase() === "nail drill bits" &&
+      dimensionKeys.some(key => key === field.field_name);
+    const value = isDimension ? millimeterValue(values[field.field_name]) : values[field.field_name] || "";
     const isRequired = field.is_required;
     
     switch (field.field_type) {
@@ -134,6 +137,8 @@ export function DynamicCategoryFields({ category, values, onChange }: DynamicCat
             <Input
               id={field.field_name}
               type="number"
+              step={isDimension ? "any" : undefined}
+              min={isDimension ? 0 : undefined}
               value={value}
               onChange={(e) => handleFieldChange(field.field_name, e.target.value)}
               placeholder={field.placeholder || `Enter ${field.field_label.toLowerCase()}`}

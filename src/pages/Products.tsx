@@ -71,6 +71,7 @@ import { QuickOrderPanel } from "@/components/orders/QuickOrderPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
+import { DrillBitDimensions, dimensionKeys, millimeterValue } from "@/components/products/DrillBitDimensions";
 import { ExportDialog } from "@/components/products/ExportDialog";
 import { ImageCropDialog } from "@/components/products/ImageCropDialog";
 import { useProducts, PRODUCTS_QUERY_KEY, useUpdateProductStock } from "@/hooks/useProducts";
@@ -552,6 +553,9 @@ const Products = () => {
     // Convert category_attributes string values to proper types for DB
     const categoryAttrsForDb: Record<string, string | number | null> = {};
     Object.entries(formData.category_attributes).forEach(([key, value]) => {
+      if (formData.category.trim().toLowerCase() === "nail drill bits" && dimensionKeys.some(dimension => dimension === key)) {
+        value = millimeterValue(value);
+      }
       if (value === "") {
         categoryAttrsForDb[key] = null;
       } else if (!isNaN(Number(value))) {
@@ -3030,6 +3034,7 @@ const Products = () => {
                     {quickViewProduct.unit && <p><span className="font-medium">Unit:</span> {quickViewProduct.unit}</p>}
                     {quickViewProduct.supplier && <p><span className="font-medium">Supplier:</span> {quickViewProduct.supplier}</p>}
                   </div>
+                  <DrillBitDimensions product={quickViewProduct} />
                   <div className="pt-3 border-t space-y-2">
                     <p className="text-2xl font-bold">${quickViewProduct.price_usd}</p>
                     {quickViewProduct.salon_price_usd && (
@@ -3211,6 +3216,7 @@ const Products = () => {
                       {quickViewProduct.unit && <p><span className="font-medium">Unit:</span> {quickViewProduct.unit}</p>}
                       {quickViewProduct.supplier && <p><span className="font-medium">Supplier:</span> {quickViewProduct.supplier}</p>}
                     </div>
+                    <DrillBitDimensions product={quickViewProduct} />
                     <div className="pt-3 border-t space-y-2">
                       <p className="text-2xl font-bold">${quickViewProduct.price_usd}</p>
                       {quickViewProduct.salon_price_usd && (
