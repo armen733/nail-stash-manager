@@ -127,26 +127,24 @@ serve(async (req: Request) => {
       });
     }
 
-    // Prepare order items with product_id for stock reduction (compact format to fit 500 char limit)
+    // Order items for stock reduction. Stripe limits each metadata value to 500
+    // chars, so the JSON is split across orderItems, orderItems_2, orderItems_3...
+    // (product names are looked up from the catalog when the order is created).
     const orderItems = items.map((item: any) => ({
-      n: item.name?.substring(0, 30), // truncate name
       id: item.id,
       q: item.quantity,
       p: item.price,
     }));
-    
-    // Stringify and check if it fits in metadata (500 char limit)
-    let orderItemsJson = JSON.stringify(orderItems);
-    if (orderItemsJson.length > 490) {
-      // If still too long, only include essential data
-      const minimalItems = items.map((item: any) => ({
-        id: item.id,
-        q: item.quantity,
-        p: item.price,
-      }));
-      orderItemsJson = JSON.stringify(minimalItems);
+    const orderItemsFull = JSON.stringify(orderItems);
+    const CHUNK = 490;
+    const itemChunks: Record<string, string> = {};
+    const partCount = Math.max(1, Math.ceil(orderItemsFull.length / CHUNK));
+    for (let i = 0; i < partCount; i++) {
+      itemChunks[i === 0 ? "orderItems" : `orderItems_${i + 1}`] = orderItemsFull.slice(i * CHUNK, (i + 1) * CHUNK);
     }
-    console.log(`[${requestId}] Order items JSON length: ${orderItemsJson.length}`);
+    if (partCount > 1) itemChunks.orderItemsParts = String(partCount);
+    if (partCount > 40) throw new Error("Too many items in cart");
+    console.log(`[${requestId}] Order items JSON length: ${orderItemsFull.length}, parts: ${partCount}`);
 
     const origin = req.headers.get("origin") || "https://nail-boutique-shop.lovable.app";
     console.log(`[${requestId}] Origin: ${origin}`);
@@ -189,7 +187,7 @@ serve(async (req: Request) => {
       metadata: { 
         ...(metadata || {}), 
         userId: userId || "",
-        orderItems: orderItemsJson,
+        ...itemChunks,
         taxAmount: String(taxAmount ?? 0),
         shippingAmount: String(shippingAmount ?? 0),
         shippingZone: shippingZone || "",
