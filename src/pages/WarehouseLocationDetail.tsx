@@ -30,6 +30,7 @@ import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
 import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
 import { PartnerSalesTab } from "@/components/warehouse/PartnerSalesTab";
+import { PartnerAddProductDialog, PARTNER_CATEGORY } from "@/components/warehouse/PartnerAddProductDialog";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
@@ -159,6 +160,7 @@ export default function WarehouseLocationDetail() {
   const [statsPeriod, setStatsPeriod] = useState<string>("all");
 
   const [action, setAction] = useState<StockAction | null>(null);
+  const [partnerAddOpen, setPartnerAddOpen] = useState(false);
 
   const load = async () => {
     if (!id) return;
@@ -773,6 +775,21 @@ export default function WarehouseLocationDetail() {
       )}
 
       {/* Action buttons */}
+      {location.type === "partner" ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={() => setPartnerAddOpen(true)} className="h-auto py-2.5 flex-col gap-1">
+            <PackagePlus className="h-4 w-4" />
+            <span className="text-xs">Add new product</span>
+          </Button>
+          <Button onClick={() => setAction("receive")} variant="outline" className="h-auto py-2.5 flex-col gap-1">
+            <PackagePlus className="h-4 w-4" />
+            <span className="text-xs">Receive more stock</span>
+          </Button>
+          <p className="col-span-2 text-xs text-muted-foreground">
+            {location.name} supplies us. Products added here go to “{PARTNER_CATEGORY}” and appear on the website. Sales are split 40% us / 60% {location.name} — see Payouts.
+          </p>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Button onClick={() => setAction("receive")} className="h-auto py-2.5 flex-col gap-1">
           <PackagePlus className="h-4 w-4" />
@@ -805,6 +822,16 @@ export default function WarehouseLocationDetail() {
           <span className="text-xs">Adjust</span>
         </Button>
       </div>
+      )}
+      {location.type === "partner" && (
+        <PartnerAddProductDialog
+          open={partnerAddOpen}
+          onOpenChange={setPartnerAddOpen}
+          locationId={location.id}
+          partnerName={location.name}
+          onSaved={load}
+        />
+      )}
 
       {isSupplyStoreView && (
         <div className="space-y-1">
