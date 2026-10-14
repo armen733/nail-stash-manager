@@ -352,6 +352,9 @@ const Index = () => {
         periodStart = monday.toISOString();
       } else if (timePeriod === "month") {
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      } else if (timePeriod === "last60") {
+        // Rolling window: today plus the previous 59 days
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 59).toISOString();
       } else if (timePeriod === "custom") {
         const [sy, sm, sd] = customStart.split("-").map(Number);
         const [ey, em, ed] = customEnd.split("-").map(Number);
@@ -783,6 +786,9 @@ const Index = () => {
         trendStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
         // Days from 1st of month to today
         days = now.getDate();
+      } else if (timePeriod === "last60") {
+        trendStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 59);
+        days = 60;
       } else if (timePeriod === "week") {
         const dayOfWeek = now.getDay();
         const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -808,7 +814,7 @@ const Index = () => {
         const dayRevenue = dayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
         
         trendData.push({
-          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" || timePeriod === "last60" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
         });
       }
@@ -926,7 +932,7 @@ const Index = () => {
         const margin = dayRevenue > 0 ? (dayProfit / dayRevenue) * 100 : 0;
         
         profitTrend.push({
-          date: isSpecificMonth || isCustom || timePeriod === "month" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
+          date: isSpecificMonth || isCustom || timePeriod === "month" || timePeriod === "last60" ? formatLocalDate(date, { month: 'short', day: 'numeric' }) : formatLocalDate(date, { weekday: 'short' }),
           revenue: dayRevenue,
           cost: dayCost,
           profit: dayProfit,
@@ -1029,7 +1035,7 @@ const Index = () => {
     }
   };
 
-  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : timePeriod === "custom" ? (customStart && customEnd ? `${customStart} → ${customEnd}` : "Custom range") : (() => {
+  const periodLabel = timePeriod === "day" ? "Today's" : timePeriod === "week" ? "Weekly" : timePeriod === "month" ? "Monthly" : timePeriod === "last60" ? "Last 60 days" : timePeriod === "custom" ? (customStart && customEnd ? `${customStart} → ${customEnd}` : "Custom range") : (() => {
     const [y, m] = timePeriod.split("-").map(Number);
     return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   })();
@@ -1225,6 +1231,7 @@ const Index = () => {
               <SelectItem value="day">Today</SelectItem>
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="last60">Last 60 days</SelectItem>
               <SelectItem value="custom">Custom range…</SelectItem>
               {(() => {
                 const now = new Date();
