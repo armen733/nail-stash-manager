@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { profitCost, PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +89,7 @@ interface ProductPerformance {
 }
 
 const Analytics = () => {
+  const itemNetRevenueRef = useRef<Map<string, number>>(new Map());
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [categorySales, setCategorySales] = useState<CategorySales[]>([]);
   const [topProducts, setTopProducts] = useState<ProductPerformance[]>([]);
