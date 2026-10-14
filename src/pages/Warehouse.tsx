@@ -48,7 +48,7 @@ import { LogoUploader } from "@/components/LogoUploader";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { todayLocalStr, toLocalDateStr } from "@/lib/timezone";
 
-type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok";
+type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok" | "partner";
 
 interface StockLocation {
   id: string;
@@ -150,9 +150,16 @@ const TYPE_META: Record<
     color: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
     border: "border-l-pink-500",
   },
+  partner: {
+    label: "Partner",
+    plural: "Partners",
+    icon: Store,
+    color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    border: "border-l-emerald-500",
+  },
 };
 
-const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "tiktok", "driver", "consignment"];
+const TYPE_ORDER: LocationType[] = ["warehouse", "fba", "tiktok", "driver", "consignment", "partner"];
 
 function formatCompactUsd(n: number): string {
   const v = Math.round(n);
@@ -616,6 +623,7 @@ export default function Warehouse() {
       driver: [],
       consignment: [],
       tiktok: [],
+      partner: [],
     };
     filtered.forEach((l) => g[l.type].push(l));
     return g;
@@ -1051,6 +1059,7 @@ export default function Warehouse() {
                   <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Drivers</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
                 </SelectContent>
               </Select>
             </>
@@ -1149,6 +1158,7 @@ export default function Warehouse() {
                   <SelectItem value="tiktok">TikTok Shop</SelectItem>
                   <SelectItem value="driver">Driver Van</SelectItem>
                   <SelectItem value="consignment">Supply Store</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
