@@ -335,10 +335,10 @@ const Products = () => {
     return Array.from(new Set(suppliers)).sort();
   };
 
-  // Get all unique categories from existing products
+  // Get all unique categories from existing products plus configured categories
   const getUniqueCategories = () => {
     const categories = allProducts.map(p => p.category).filter(Boolean);
-    return Array.from(new Set(categories)).sort();
+    return Array.from(new Set([...categories, ...getCategories(categoryVariantTypes)])).sort();
   };
 
   // Get all unique variant types from category_variant_types table
