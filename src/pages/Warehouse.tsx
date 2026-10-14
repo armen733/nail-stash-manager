@@ -60,6 +60,7 @@ interface StockLocation {
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
+  logo_url: string | null;
 }
 
 interface LocationStats {
@@ -210,6 +211,7 @@ export default function Warehouse() {
     salon_id: string;
     supply_store_id: string;
     notes: string;
+    logo_url: string;
     is_active: boolean;
     supply_store_address: string;
     supply_store_city: string;
@@ -227,6 +229,7 @@ export default function Warehouse() {
     salon_id: "",
     supply_store_id: "",
     notes: "",
+    logo_url: "",
     is_active: true,
     supply_store_address: "",
     supply_store_city: "",
@@ -463,6 +466,7 @@ export default function Warehouse() {
       salon_id: "",
       supply_store_id: "",
       notes: "",
+      logo_url: "",
       is_active: true,
       supply_store_address: "",
       supply_store_city: "",
@@ -490,6 +494,7 @@ export default function Warehouse() {
       salon_id: loc.salon_id ?? "",
       supply_store_id: loc.supply_store_id ?? "",
       notes: loc.notes ?? "",
+      logo_url: loc.logo_url ?? "",
       is_active: loc.is_active,
       supply_store_address: linkedStore?.address ?? "",
       supply_store_city: linkedStore?.city ?? "",
@@ -574,6 +579,7 @@ export default function Warehouse() {
       salon_id: null,
       supply_store_id: form.type === "consignment" ? linkedSupplyStoreId : null,
       notes: form.notes.trim() || null,
+      logo_url: form.logo_url.trim() || null,
       is_active: editing?.is_default ? true : form.is_active,
     };
 
@@ -713,7 +719,16 @@ export default function Warehouse() {
         <CardHeader className="pb-2 p-3 sm:p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              {loc.type === "fba" ? (
+              {loc.logo_url ? (
+                <div className="h-7 w-7 rounded-md bg-white border flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  <img
+                    src={loc.logo_url}
+                    alt={loc.name}
+                    className="h-full w-full object-contain p-0.5"
+                    loading="lazy"
+                  />
+                </div>
+              ) : loc.type === "fba" ? (
                 <div className="px-1.5 py-1 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
                   <img src={amazonLogoFull} alt="Amazon" className="h-4 w-auto object-contain" loading="lazy" />
                 </div>
@@ -897,7 +912,14 @@ export default function Warehouse() {
                         key={loc.id}
                         className="flex items-center gap-1.5 px-1 py-1.5 rounded-md text-xs sm:text-sm"
                       >
-                        {loc.type === "fba" ? (
+                        {loc.logo_url ? (
+                          <img
+                            src={loc.logo_url}
+                            alt=""
+                            className="h-4 w-4 object-contain flex-shrink-0 rounded-sm bg-white p-px"
+                            loading="lazy"
+                          />
+                        ) : loc.type === "fba" ? (
                           <img src={amazonLogo} alt="" className="h-4 w-4 object-contain flex-shrink-0" loading="lazy" />
                         ) : loc.type === "consignment" && supplyLogoByLocationId[loc.id] ? (
                           <img src={supplyLogoByLocationId[loc.id] as string} alt="" className="h-4 w-4 object-contain flex-shrink-0 rounded-sm bg-white" loading="lazy" />
@@ -1181,6 +1203,15 @@ export default function Warehouse() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
+
+            {form.type !== "consignment" && (
+              <LogoUploader
+                value={form.logo_url}
+                onChange={(url) => setForm((f) => ({ ...f, logo_url: url }))}
+                folder="locations"
+                label="Location logo"
+              />
+            )}
 
             {form.type === "driver" && (
               <div className="space-y-2">

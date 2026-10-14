@@ -4,3 +4,4 @@
 - Shipping-label authorization uses `public.user_roles`; never authorize from browser state or the legacy profile role alone.
 - Confirmation emails resolve photos and SKUs from saved order-item product IDs, with identity-preserving legacy fallbacks, because product names are shared across variants.
 - Drill-bit dimensions use category_attributes with the existing diameter key and optional head_length/total_length keys; normalize legacy mm suffixes and decimal commas to preserve measurements when editing.
+- Warehouse location logos live in `stock_locations.logo_url` (uploaded to the public `brand-assets` bucket) and render ahead of the type-specific fallback icons; when a new `location_type` value is added, update every location-type union and icon map so no screen renders an undefined icon.

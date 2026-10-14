@@ -69,7 +69,7 @@ type DeliveryGroup = {
   }>;
 };
 
-type LocationType = "warehouse" | "fba" | "consignment" | "driver";
+type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok" | "partner";
 
 interface StockLocation {
   id: string;
@@ -79,6 +79,7 @@ interface StockLocation {
   is_default: boolean;
   notes: string | null;
   supply_store_id: string | null;
+  logo_url: string | null;
 }
 
 interface StockRow {
@@ -103,11 +104,13 @@ interface StockRow {
   };
 }
 
-const TYPE_ICON = {
+const TYPE_ICON: Record<LocationType, typeof Warehouse> = {
   warehouse: Warehouse,
   fba: Package,
   driver: Truck,
   consignment: Store,
+  tiktok: Store,
+  partner: Store,
 };
 
 export default function WarehouseLocationDetail() {
@@ -621,7 +624,16 @@ export default function WarehouseLocationDetail() {
       </div>
 
       <div className="flex items-start gap-3">
-        {location.type === "fba" ? (
+        {location.logo_url ? (
+          <div className="h-12 w-12 rounded-md border bg-white flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img
+              src={location.logo_url}
+              alt={location.name}
+              className="h-full w-full object-contain p-1"
+              loading="lazy"
+            />
+          </div>
+        ) : location.type === "fba" ? (
           <div className="px-2 py-1.5 rounded-md bg-white border flex-shrink-0 flex items-center justify-center">
             <img src={amazonLogoFull} alt="Amazon" className="h-7 w-auto object-contain" loading="lazy" />
           </div>
