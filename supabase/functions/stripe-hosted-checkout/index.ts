@@ -39,7 +39,7 @@ serve(async (req: Request) => {
     );
 
     console.log(`[${requestId}] Step 4: Parsing request body`);
-    const { items, customerEmail, customerName, customerPhone, metadata, taxAmount, shippingAmount, shippingZone, discountAmount, discountCode, discountPercent } = await req.json();
+    let { items, customerEmail, customerName, customerPhone, metadata, taxAmount, shippingAmount, shippingZone, discountAmount, discountCode, discountPercent } = await req.json();
     console.log(`[${requestId}] Tax: ${taxAmount}, Shipping: ${shippingAmount}, Zone: ${shippingZone}, Discount: ${discountAmount ?? 0} (${discountCode || 'none'}), Phone: ${customerPhone || 'none'}`);
 
     if (!items?.length) {
@@ -75,6 +75,36 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 409,
         });
+      }
+    }
+
+    // Undiscountable categories: partner products are never discounted, so any
+    // promo code only applies to the other items in the cart. Tax is recomputed
+    // on the corrected (smaller) discount.
+    const NO_DISCOUNT_CATEGORIES = ["NÉRA x OhLaLa"];
+    if (Number(discountAmount ?? 0) > 0 && wanted.size) {
+      const { data: catRows } = await supabase
+        .from("products")
+        .select("id, category")
+        .in("id", [...wanted.keys()]);
+      const blocked = new Set((catRows || []).filter((r: any) => NO_DISCOUNT_CATEGORIES.includes(r.category)).map((r: any) => r.id));
+      if (blocked.size) {
+        let fullSubtotal = 0;
+        let eligibleSubtotal = 0;
+        for (const it of items) {
+          const line = Number(it.price || 0) * Number(it.quantity || 0);
+          fullSubtotal += line;
+          if (!blocked.has(it.id || it.product_id)) eligibleSubtotal += line;
+        }
+        const requested = Number(discountAmount);
+        const pct = Number(discountPercent) > 0 ? Number(discountPercent) : (fullSubtotal > 0 ? (requested / fullSubtotal) * 100 : 0);
+        const allowed = Math.min(requested, Math.round(eligibleSubtotal * pct) / 100);
+        if (allowed < requested - 0.005) {
+          console.log(`[${requestId}] Undiscountable items in cart: discount ${requested} -> ${allowed}`);
+          discountAmount = allowed;
+          if (allowed <= 0) { discountCode = ""; discountPercent = 0; }
+          taxAmount = Math.round((fullSubtotal - allowed) * 0.095 * 100) / 100;
+        }
       }
     }
 
