@@ -29,6 +29,7 @@ import { ExportMenu } from "@/components/warehouse/ExportMenu";
 import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
 import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
+import { PartnerSalesTab } from "@/components/warehouse/PartnerSalesTab";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
@@ -925,13 +926,16 @@ export default function WarehouseLocationDetail() {
 
       <Tabs defaultValue="stock" className="w-full">
         <TabsList
-          className={`grid w-full ${isSupplyStoreView ? "grid-cols-4" : "grid-cols-3"}`}
+          className={`grid w-full ${isSupplyStoreView || location.type === "partner" ? "grid-cols-4" : "grid-cols-3"}`}
         >
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
           {isSupplyStoreView && (
             <TabsTrigger value="earnings">Earnings</TabsTrigger>
+          )}
+          {location.type === "partner" && (
+            <TabsTrigger value="payouts">Payouts</TabsTrigger>
           )}
         </TabsList>
 
@@ -1076,6 +1080,11 @@ export default function WarehouseLocationDetail() {
               storeMarkupPercent={storeDefaults?.markup ?? 0}
               period={statsPeriod}
             />
+          </TabsContent>
+        )}
+        {location.type === "partner" && (
+          <TabsContent value="payouts" className="mt-3">
+            <PartnerSalesTab locationId={location.id} partnerName={location.name} />
           </TabsContent>
         )}
       </Tabs>

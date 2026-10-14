@@ -768,6 +768,56 @@ export type Database = {
           },
         ]
       }
+      partner_payouts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          location_id: string
+          notes: string | null
+          our_share: number
+          paid_at: string
+          partner_share: number
+          period_end: string
+          period_start: string
+          total_sales: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id: string
+          notes?: string | null
+          our_share?: number
+          paid_at?: string
+          partner_share?: number
+          period_end: string
+          period_start: string
+          total_sales?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location_id?: string
+          notes?: string | null
+          our_share?: number
+          paid_at?: string
+          partner_share?: number
+          period_end?: string
+          period_start?: string
+          total_sales?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_payouts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
