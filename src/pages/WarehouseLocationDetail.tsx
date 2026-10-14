@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { StockActionDialog, type StockAction } from "@/components/warehouse/StockActionDialog";
 import { ExportMenu } from "@/components/warehouse/ExportMenu";
+import { PartnerExportMenu } from "@/components/warehouse/PartnerExportMenu";
 import { LocationPricingTab } from "@/components/warehouse/LocationPricingTab";
 import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
@@ -619,10 +620,16 @@ export default function WarehouseLocationDetail() {
               <Printer className="h-4 w-4 mr-1.5" /> Print deliveries
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
-            <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Pricing sheet
-          </Button>
-          <ExportMenu locationId={location?.id} scopeName={location?.name} />
+          {location?.type === "partner" ? (
+            <PartnerExportMenu locationId={location.id} partnerName={location.name} />
+          ) : (
+            <>
+              <Button size="sm" variant="outline" onClick={() => setPricingSheetOpen(true)}>
+                <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Pricing sheet
+              </Button>
+              <ExportMenu locationId={location?.id} scopeName={location?.name} />
+            </>
+          )}
         </div>
       </div>
 
