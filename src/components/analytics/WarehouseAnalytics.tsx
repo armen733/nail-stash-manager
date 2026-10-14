@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Warehouse, Trophy, TrendingUp, TrendingDown, Boxes, DollarSign } from "lucide-react";
 import { format, eachDayOfInterval, differenceInDays, subDays } from "date-fns";
+import { profitCost } from "@/lib/partner-cost";
 import { WarehousePnLTable } from "./WarehousePnLTable";
 
 interface Props {
@@ -93,7 +94,7 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
           .gte("created_at", prevStart.toISOString())
           .lte("created_at", prevEnd.toISOString()),
         supabase.from("product_stock").select("location_id, product_id, quantity").gt("quantity", 0),
-        supabase.from("products").select("id, cost_usd, price_usd, reorder_level"),
+        supabase.from("products").select("id, category, cost_usd, price_usd, reorder_level"),
       ]);
 
       const locs = (locRes.data ?? []) as LocRow[];
@@ -103,7 +104,7 @@ export function WarehouseAnalytics({ periodStart, periodEnd }: Props) {
       // Build product cost map up-front for COGS calc
       const costMap = new Map<string, number>();
       ((productsRes.data ?? []) as any[]).forEach((p) => {
-        costMap.set(p.id, Number(p.cost_usd ?? 0));
+        costMap.set(p.id, profitCost(p));
       });
 
       // Sales aggregation (revenue + COGS for margin)
