@@ -1580,6 +1580,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          logo_url: string | null
           name: string
           notes: string | null
           salon_id: string | null
@@ -1593,6 +1594,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          logo_url?: string | null
           name: string
           notes?: string | null
           salon_id?: string | null
@@ -1606,6 +1608,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          logo_url?: string | null
           name?: string
           notes?: string | null
           salon_id?: string | null
