@@ -60,6 +60,7 @@ interface StockLocation {
   is_active: boolean;
   is_default: boolean;
   notes: string | null;
+  logo_url: string | null;
 }
 
 interface LocationStats {
