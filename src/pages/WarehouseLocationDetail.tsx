@@ -69,7 +69,7 @@ type DeliveryGroup = {
   }>;
 };
 
-type LocationType = "warehouse" | "fba" | "consignment" | "driver";
+type LocationType = "warehouse" | "fba" | "consignment" | "driver" | "tiktok" | "partner";
 
 interface StockLocation {
   id: string;
@@ -79,6 +79,7 @@ interface StockLocation {
   is_default: boolean;
   notes: string | null;
   supply_store_id: string | null;
+  logo_url: string | null;
 }
 
 interface StockRow {
@@ -103,11 +104,13 @@ interface StockRow {
   };
 }
 
-const TYPE_ICON = {
+const TYPE_ICON: Record<LocationType, typeof Warehouse> = {
   warehouse: Warehouse,
   fba: Package,
   driver: Truck,
   consignment: Store,
+  tiktok: Store,
+  partner: Store,
 };
 
 export default function WarehouseLocationDetail() {
