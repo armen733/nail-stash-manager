@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { profitCost } from "@/lib/partner-cost";
+import { profitCost, PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,6 +230,8 @@ const Index = () => {
   // Order ids inside the currently selected period, so the category drill-down
   // shows the same window the Sales by Category chart uses.
   const periodOrderIdsRef = useRef<Set<string>>(new Set());
+  // order_items.id -> revenue after the order discount is spread across its items (line_total is stored pre-discount)
+  const itemNetRevenueRef = useRef<Map<string, number>>(new Map());
   const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number }>>([]);
   const productInfoRef = useRef<Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>>(new Map());
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -365,10 +367,10 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("id, total, tax, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
+        supabase.from("orders").select("id, total, tax, discount_amount, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
         supabase.from("salons").select("id"),
         supabase.from("products").select("id"),
-        supabase.from("order_items").select("order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
+        supabase.from("order_items").select("id, order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
         supabase.from("products").select("id, name, sku, stock_on_hand, price_usd, reorder_level, image_url"),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
         supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
@@ -505,6 +507,35 @@ const Index = () => {
       // whenever a discount is applied. Use order.total as the revenue base instead.
       const periodOrderIds = new Set(periodOrders.map((o: any) => o.id));
       periodOrderIdsRef.current = periodOrderIds;
+
+      // Spread each order's discount across its items so category/product revenue is what customers really paid.
+      // Undiscountable partner-category items take no discount (unless the order has nothing else to discount).
+      const itemNetRevenue = new Map<string, number>();
+      {
+        const itemsByOrder = new Map<string, any[]>();
+        (orderItemsRes.data || []).forEach((it: any) => {
+          if (!periodOrderIds.has(it.order_id)) return;
+          const arr = itemsByOrder.get(it.order_id) ?? [];
+          arr.push(it);
+          itemsByOrder.set(it.order_id, arr);
+        });
+        periodOrders.forEach((o: any) => {
+          const items = itemsByOrder.get(o.id) ?? [];
+          const discount = Math.max(0, Number(o.discount_amount ?? 0));
+          let base = items
+            .filter((it) => it.products?.category !== PARTNER_CATEGORY_NAME)
+            .reduce((sum, it) => sum + Number(it.line_total ?? 0), 0);
+          const useAll = base <= 0;
+          if (useAll) base = items.reduce((sum, it) => sum + Number(it.line_total ?? 0), 0);
+          items.forEach((it) => {
+            const gross = Number(it.line_total ?? 0);
+            const eligible = useAll || it.products?.category !== PARTNER_CATEGORY_NAME;
+            const share = discount > 0 && base > 0 && eligible ? Math.min(discount, base) * (gross / base) : 0;
+            itemNetRevenue.set(it.id, gross - share);
+          });
+        });
+      }
+      itemNetRevenueRef.current = itemNetRevenue;
       // Distinct SKUs that actually sold (orders) inside the selected period
       const periodSkuOrders = new Set<string>();
       (orderItemsRes.data || []).forEach((it: any) => {
@@ -668,7 +699,7 @@ const Index = () => {
           acc[productId] = { id: productId, quantity: 0, revenue: 0, name: productName, sku: productSku, supplier_sku: productSupplierSku, image_url: productImage };
         }
         acc[productId].quantity += item.quantity || 0;
-        acc[productId].revenue += item.line_total || 0;
+        acc[productId].revenue += itemNetRevenue.get(item.id) ?? (item.line_total || 0);
         return acc;
       }, {});
 
@@ -817,7 +848,7 @@ const Index = () => {
 
       const categoryStats = (orderItemsRes.data || []).filter((it: any) => periodOrderIds.has(it.order_id)).reduce((acc: Record<string, number>, item) => {
         const category = item.products?.category || "Other";
-        acc[category] = (acc[category] || 0) + (item.line_total || 0);
+        acc[category] = (acc[category] || 0) + (itemNetRevenue.get(item.id) ?? (item.line_total || 0));
         return acc;
       }, {});
 
@@ -925,7 +956,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("product_id, order_id, quantity, line_total, products(id, name, sku, category, image_url)")
+          .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -963,7 +994,7 @@ const Index = () => {
           };
         }
         productMap[productId].quantity += item.quantity || 0;
-        productMap[productId].revenue += item.line_total || 0;
+        productMap[productId].revenue += itemNetRevenueRef.current.get(item.id) ?? (item.line_total || 0);
       });
       
       periodSupplySalesRef.current.forEach((row) => {
