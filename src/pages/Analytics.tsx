@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { profitCost } from "@/lib/partner-cost";
+import { profitCost, PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -258,10 +258,10 @@ const Analytics = () => {
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select(`
-          id, created_at, total, tax, profile_id, customer_email, customer_name, status, salon_id,
+          id, created_at, total, tax, discount_amount, profile_id, customer_email, customer_name, status, salon_id,
           salons (name),
           order_items (
-            quantity, unit_price, line_total,
+            id, quantity, unit_price, line_total,
             products (id, name, category, price_usd, cost_usd, wholesale_price_usd, stock_on_hand, sku, supplier_sku)
           )
         `)
@@ -420,6 +420,27 @@ const Analytics = () => {
       const customerMap: Record<string, CustomerInsight> = {};
       const salonProfitMap: Record<string, number> = {};
 
+      // line_total is stored before the order discount; spread the discount across items so
+      // category/product revenue and profit reflect what customers actually paid.
+      // Undiscountable partner items take no discount (unless nothing else is in the order).
+      const itemNet = new Map<string, number>();
+      orders?.forEach((order: any) => {
+        const items: any[] = order.order_items || [];
+        const discount = Math.max(0, Number(order.discount_amount ?? 0));
+        let base = items
+          .filter((it) => it.products?.category !== PARTNER_CATEGORY_NAME)
+          .reduce((sum, it) => sum + Number(it.line_total ?? 0), 0);
+        const useAll = base <= 0;
+        if (useAll) base = items.reduce((sum, it) => sum + Number(it.line_total ?? 0), 0);
+        items.forEach((it) => {
+          const gross = Number(it.line_total ?? 0);
+          const eligible = useAll || it.products?.category !== PARTNER_CATEGORY_NAME;
+          const share = discount > 0 && base > 0 && eligible ? Math.min(discount, base) * (gross / base) : 0;
+          itemNet.set(it.id, gross - share);
+        });
+      });
+      itemNetRevenueRef.current = itemNet;
+
       orders?.forEach((order) => {
         // Customer insights — group by profile, then email, then salon, then per-order
         // (Walk-ins without any identifier should NOT be merged into one "Unknown" customer.)
@@ -460,7 +481,8 @@ const Analytics = () => {
           if (!categoryMap[category]) {
             categoryMap[category] = { category, revenue: 0, quantity: 0 };
           }
-          categoryMap[category].revenue += item.line_total;
+          const netLine = itemNet.get(item.id) ?? Number(item.line_total ?? 0);
+          categoryMap[category].revenue += netLine;
           categoryMap[category].quantity += item.quantity;
 
           // Product performance — keyed by SKU so each variant is its own row
@@ -478,12 +500,12 @@ const Analytics = () => {
               supplier_sku: product.supplier_sku || ""
             };
           }
-          productMap[productSku].revenue += item.line_total;
+          productMap[productSku].revenue += netLine;
           productMap[productSku].quantity += item.quantity;
 
           // Use cost_usd if available, fallback to wholesale_price_usd
           const cost = profitCost(product) || product.wholesale_price_usd || 0;
-          const profit = (item.unit_price - cost) * item.quantity;
+          const profit = netLine - cost * item.quantity;
           productMap[productSku].profit += profit;
 
           // Track profit per salon
@@ -579,6 +601,7 @@ const Analytics = () => {
       const { data: orderItems, error } = await supabase
         .from("order_items")
         .select(`
+          id,
           product_id, 
           quantity, 
           line_total, 
@@ -600,6 +623,8 @@ const Analytics = () => {
       
       (orderItems || []).forEach((item: any) => {
         if (!item.products || item.products.category !== category) return;
+        // Only items from orders in the selected period (same set as the chart)
+        if (!itemNetRevenueRef.current.has(item.id)) return;
         
         const productId = item.product_id;
         if (!productMap[productId]) {
@@ -630,7 +655,7 @@ const Analytics = () => {
           };
         }
         productMap[productId].quantity += item.quantity || 0;
-        productMap[productId].revenue += item.line_total || 0;
+        productMap[productId].revenue += itemNetRevenueRef.current.get(item.id) ?? (item.line_total || 0);
       });
       
       const products = Object.values(productMap)
