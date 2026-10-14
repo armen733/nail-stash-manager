@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { profitCost } from "@/lib/partner-cost";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -364,7 +365,7 @@ const Analytics = () => {
           .select("product_id, quantity, unit_cost, to_location_id, movement_type, created_at")
           .gte("created_at", periodStart.toISOString())
           .lte("created_at", periodEnd.toISOString()),
-        supabase.from("products").select("id, wholesale_price_usd, price_usd, cost_usd"),
+        supabase.from("products").select("id, category, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
         supabase.from("profiles").select("id, created_at"),
       ]);
@@ -390,7 +391,7 @@ const Analytics = () => {
       const priceMap = new Map<string, { wholesale: number; cost: number }>();
       (pricingRes.data || []).forEach((p: any) => priceMap.set(p.id, {
         wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
-        cost: Number(p.cost_usd ?? 0),
+        cost: profitCost(p),
       }));
       const ovMap = new Map<string, number>();
       (overridesRes.data || []).forEach((o: any) => {
@@ -481,7 +482,7 @@ const Analytics = () => {
           productMap[productSku].quantity += item.quantity;
 
           // Use cost_usd if available, fallback to wholesale_price_usd
-          const cost = product.cost_usd || product.wholesale_price_usd || 0;
+          const cost = profitCost(product) || product.wholesale_price_usd || 0;
           const profit = (item.unit_price - cost) * item.quantity;
           productMap[productSku].profit += profit;
 
@@ -497,7 +498,7 @@ const Analytics = () => {
       orders?.forEach((order: any) => {
         const netRevenue = Number(order.total ?? 0) - Number(order.tax ?? 0);
         const cogs = (order.order_items || []).reduce(
-          (s: number, it: any) => s + Number(it.products?.cost_usd ?? 0) * Number(it.quantity ?? 0),
+          (s: number, it: any) => s + profitCost(it.products ?? {}) * Number(it.quantity ?? 0),
           0,
         );
         orderProfitTotal += netRevenue - cogs;

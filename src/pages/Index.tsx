@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { profitCost } from "@/lib/partner-cost";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -419,7 +420,7 @@ const Index = () => {
         productPricingMap.set(p.id, {
           wholesale: Number(p.wholesale_price_usd ?? p.price_usd ?? 0),
           retail: Number(p.price_usd ?? 0),
-          cost: Number(p.cost_usd ?? 0),
+          cost: profitCost(p),
         });
       });
       const overrideMap = new Map<string, number>(); // `${storeId}:${productId}` -> override discount %
