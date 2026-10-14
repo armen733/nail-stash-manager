@@ -79,6 +79,7 @@ import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { useQueryClient } from "@tanstack/react-query";
 import { useCategoryVariantTypes, getCategories, getVariantTypesForCategory } from "@/hooks/useCategoryVariantTypes";
 import { useDebounce } from "@/hooks/useDebounce";
+import { PARTNER_CATEGORY } from "@/components/warehouse/PartnerAddProductDialog";
 import { useAbandonedCart } from "@/hooks/useAbandonedCart";
 import { logAudit } from "@/lib/audit-log";
 
@@ -632,9 +633,10 @@ const Products = () => {
         price_usd: parseFloat(formData.price_usd),
         salon_price_usd: formData.salon_price_usd ? parseFloat(formData.salon_price_usd) : null,
         wholesale_price_usd: formData.wholesale_price_usd ? parseFloat(formData.wholesale_price_usd) : null,
-        cost_usd: formData.cost_usd ? parseFloat(formData.cost_usd) : null,
+        cost_usd: formData.category === PARTNER_CATEGORY ? 0 : formData.cost_usd ? parseFloat(formData.cost_usd) : null,
         image_url: null, // Deprecated, using product_images table now
-        stock_on_hand: parseInt(formData.stock_on_hand) || 0,
+        // Partner stock is received into the partner location below, never the main warehouse.
+        stock_on_hand: !editingProduct && formData.category === PARTNER_CATEGORY ? 0 : parseInt(formData.stock_on_hand) || 0,
         stock_reserved: parseInt(formData.stock_reserved) || 0,
         reorder_level: parseInt(formData.reorder_level) || 10,
         supplier: formData.supplier || null,
@@ -766,6 +768,38 @@ const Products = () => {
         
         // Upload images for new product
         await uploadImages(productId);
+
+        // Partner products: stock arrives free from the partner location, not the main warehouse.
+        if (formData.category === PARTNER_CATEGORY) {
+          const { data: partnerLoc } = await supabase
+            .from("stock_locations")
+            .select("id, name")
+            .eq("type", "partner")
+            .eq("is_active", true)
+            .order("created_at")
+            .limit(1)
+            .maybeSingle();
+          const receivedQty = Math.max(0, parseInt(formData.stock_on_hand) || 0);
+          if (partnerLoc) {
+            if (receivedQty > 0) {
+              const { data: u } = await supabase.auth.getUser();
+              const { error: mErr } = await supabase.from("stock_movements").insert({
+                product_id: productId,
+                movement_type: "receive",
+                quantity: receivedQty,
+                to_location_id: partnerLoc.id,
+                unit_cost: 0,
+                reason: `Received from ${partnerLoc.name} (free partner stock)`,
+                created_by: u.user?.id ?? null,
+              });
+              if (mErr) throw mErr;
+            } else {
+              await supabase
+                .from("product_stock")
+                .upsert({ product_id: productId, location_id: partnerLoc.id, quantity: 0 }, { onConflict: "product_id,location_id" });
+            }
+          }
+        }
 
         await logAudit({
           action: "create",
@@ -2048,6 +2082,21 @@ const Products = () => {
                       required
                     />
                   </div>
+                  {formData.category === PARTNER_CATEGORY ? (
+                    <div className="space-y-2">
+                      <Label>Cost (USD)</Label>
+                      <Input value="$0.00 — free partner stock" readOnly disabled />
+                      {(() => {
+                        const sp = parseFloat(formData.price_usd) || 0;
+                        return (
+                          <p className="text-xs text-muted-foreground">
+                            Our clean profit (40%): <span className="font-medium text-foreground">${(sp * 0.4).toFixed(2)}</span>
+                            {" · "}OhLaLa (60%): <span className="font-medium text-foreground">${(sp * 0.6).toFixed(2)}</span> per unit
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  ) : (
                   <div className="space-y-2">
                     <Label htmlFor="cost_usd">Cost (USD)</Label>
                     <Input
@@ -2060,6 +2109,7 @@ const Products = () => {
                     />
                     <p className="text-xs text-muted-foreground">Internal only - not shown to customers</p>
                   </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -2090,7 +2140,7 @@ const Products = () => {
                 <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Inventory</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="stock_on_hand">Stock on Hand</Label>
+                    <Label htmlFor="stock_on_hand">{formData.category === PARTNER_CATEGORY && !editingProduct ? "Quantity received from OhLaLa" : "Stock on Hand"}</Label>
                     <Input
                       id="stock_on_hand"
                       type="number"
