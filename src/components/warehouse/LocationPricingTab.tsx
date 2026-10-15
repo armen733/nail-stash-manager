@@ -44,12 +44,18 @@ export function LocationPricingTab({ locationId, partnerName }: Props) {
       locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
 
     const [prodRes, stockRes, storeRes, overridesRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
-        .eq("category", PARTNER_CATEGORY_NAME)
-        .order("name")
-        .limit(5000),
+      isPartner
+        ? supabase
+            .from("products")
+            .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+            .eq("category", PARTNER_CATEGORY_NAME)
+            .order("name")
+            .limit(5000)
+        : supabase
+            .from("products")
+            .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+            .order("name")
+            .limit(5000),
       supabase
         .from("product_stock")
         .select("product_id, quantity")
