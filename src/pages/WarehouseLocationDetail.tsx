@@ -1157,7 +1157,10 @@ export default function WarehouseLocationDetail() {
         </TabsContent>
 
         <TabsContent value="pricing" className="mt-3">
-          <LocationPricingTab locationId={location.id} />
+          <LocationPricingTab
+            locationId={location.id}
+            partnerName={location.type === "partner" ? location.name : undefined}
+          />
         </TabsContent>
 
         {isSupplyStoreView && (
