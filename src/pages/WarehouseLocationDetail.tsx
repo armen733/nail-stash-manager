@@ -281,7 +281,26 @@ export default function WarehouseLocationDetail() {
         suggested_resell_unit_price: suggestedResell,
       };
     });
-    setRows(stockRows as StockRow[]);
+    let finalRows: any[] = stockRows;
+    if (loc?.type === "partner") {
+      // Partner stock is sold from any location (website sales deduct Main Warehouse),
+      // so show each partner product's real total stock instead of the location row.
+      const { data: pp } = await supabase
+        .from("products")
+        .select("id, name, sku, category, price_usd, wholesale_price_usd, cost_usd, reorder_level, image_url, stock_on_hand, stock_reserved, product_images(image_url, display_order)")
+        .eq("category", "NÉRA x OhLaLa")
+        .order("name");
+      finalRows = ((pp ?? []) as any[]).map((p) => ({
+        product_id: p.id,
+        quantity: Number(p.stock_on_hand ?? 0),
+        reserved: Number(p.stock_reserved ?? 0),
+        product: p,
+        override_price: null,
+        effective_unit_price: Number(p.price_usd ?? 0),
+        suggested_resell_unit_price: Number(p.price_usd ?? 0),
+      }));
+    }
+    setRows(finalRows as StockRow[]);
     setOtherLocations(
       ((allLocRes.data ?? []) as any[]).filter((l) => l.id !== id).map((l) => ({
         id: l.id,
