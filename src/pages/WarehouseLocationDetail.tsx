@@ -964,14 +964,14 @@ export default function WarehouseLocationDetail() {
           {location.type === "partner" ? (
             <>
               <Card><CardContent className="pt-4 pb-3">
-                <div className="text-[10px] text-muted-foreground uppercase">Our possible money</div>
+                <div className="text-[10px] text-muted-foreground uppercase">NÉRA possible money</div>
                 <div className="text-xl font-bold text-emerald-500">{formatMoney(totalRetail * (1 - PARTNER_PAYOUT_SHARE))}</div>
-                <div className="text-[10px] text-muted-foreground">our 40% if all stock sells</div>
+                <div className="text-[10px] text-muted-foreground">NÉRA's 40% if all stock sells</div>
               </CardContent></Card>
               <Card><CardContent className="pt-4 pb-3">
                 <div className="text-[10px] text-muted-foreground uppercase">{location.name}'s possible money</div>
                 <div className="text-xl font-bold">{formatMoney(totalRetail * PARTNER_PAYOUT_SHARE)}</div>
-                <div className="text-[10px] text-muted-foreground">their 60% if all stock sells</div>
+                <div className="text-[10px] text-muted-foreground">{location.name}'s 60% if all stock sells</div>
               </CardContent></Card>
             </>
           ) : !isSupplyStoreView && (
@@ -1112,14 +1112,14 @@ export default function WarehouseLocationDetail() {
                             const theirUnit = effectivePrice * PARTNER_PAYOUT_SHARE;
                             return (
                               <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-muted-foreground">We get</span>
+                                <span className="text-muted-foreground">NÉRA gets</span>
                                 <span className="text-emerald-500 font-medium">${ourUnit.toFixed(2)}</span>
                                 <span className="text-muted-foreground">· {location.name} gets</span>
                                 <span className="font-medium">${theirUnit.toFixed(2)}</span>
                                 <span className="text-muted-foreground">each</span>
                                 {r.quantity > 0 && (
                                   <span className="text-muted-foreground">
-                                    · in stock ours{" "}
+                                    · in stock NÉRA{" "}
                                     <span className="text-foreground font-medium">
                                       ${(ourUnit * r.quantity).toFixed(2)}
                                     </span>
