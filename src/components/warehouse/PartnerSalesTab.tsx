@@ -165,7 +165,7 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
               <div className="font-semibold">{money(totals.sales)}</div>
             </div>
             <div className="rounded-md bg-muted p-2">
-              <div className="text-xs text-muted-foreground">Ours (40%)</div>
+              <div className="text-xs text-muted-foreground">NÉRA (40%)</div>
               <div className="font-semibold">{money(totals.ours)}</div>
             </div>
             <div className="rounded-md bg-primary/10 p-2">
