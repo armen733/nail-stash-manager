@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { PARTNER_CATEGORY_NAME, PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
 
 interface Props {
   locationId: string;
+  /** Set when the location is a partner that supplies free stock (e.g. OhLaLa). */
+  partnerName?: string;
 }
 
 interface Row {
@@ -22,7 +25,8 @@ interface Row {
   stockHere: number;
 }
 
-export function LocationPricingTab({ locationId }: Props) {
+export function LocationPricingTab({ locationId, partnerName }: Props) {
+  const isPartner = !!partnerName;
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
