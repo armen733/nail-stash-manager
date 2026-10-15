@@ -1107,6 +1107,27 @@ export default function WarehouseLocationDetail() {
                               </div>
                             );
                           })()}
+                          {location.type === "partner" && (() => {
+                            const ourUnit = effectivePrice * (1 - PARTNER_PAYOUT_SHARE);
+                            const theirUnit = effectivePrice * PARTNER_PAYOUT_SHARE;
+                            return (
+                              <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-muted-foreground">We get</span>
+                                <span className="text-emerald-500 font-medium">${ourUnit.toFixed(2)}</span>
+                                <span className="text-muted-foreground">· {location.name} gets</span>
+                                <span className="font-medium">${theirUnit.toFixed(2)}</span>
+                                <span className="text-muted-foreground">each</span>
+                                {r.quantity > 0 && (
+                                  <span className="text-muted-foreground">
+                                    · in stock ours{" "}
+                                    <span className="text-foreground font-medium">
+                                      ${(ourUnit * r.quantity).toFixed(2)}
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className={`font-semibold text-sm ${low ? "text-destructive" : ""}`}>
