@@ -68,6 +68,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LazyOrdersMap } from "@/components/lazy";
 import { ProductBrowser } from "@/components/orders/ProductBrowser";
+import { PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { OrderHistoryDialog } from "@/components/orders/OrderHistoryDialog";
 import { ReturnDialog } from "@/components/orders/ReturnDialog";
@@ -432,6 +433,15 @@ const Orders = () => {
     return orderItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
   };
 
+  // NÉRA x OhLaLa products are undiscountable: discounts only apply to everything else.
+  const calculateDiscountableTotal = () => {
+    return orderItems.reduce((sum, item) => {
+      const p = products.find((pp) => pp.id === item.product_id);
+      if (p?.category === PARTNER_CATEGORY_NAME) return sum;
+      return sum + item.quantity * item.unit_price;
+    }, 0);
+  };
+
   const getStockWarnings = () => {
     return orderItems
       .map((item, index) => {
@@ -658,9 +668,10 @@ const Orders = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const subtotal = calculateTotal();
       const discountInput = parseFloat(formData.discount) || 0;
+      const discountableSubtotal = calculateDiscountableTotal();
       const discountAmount = Math.min(
-        subtotal,
-        Math.max(0, formData.discountType === "percent" ? subtotal * (discountInput / 100) : discountInput)
+        discountableSubtotal,
+        Math.max(0, formData.discountType === "percent" ? discountableSubtotal * (discountInput / 100) : discountInput)
       );
       const discountedSubtotal = Math.max(0, subtotal - discountAmount);
       const tax = calculateTax(discountedSubtotal);
@@ -1784,7 +1795,8 @@ Thank you!`;
               {orderItems.length > 0 && (() => {
                 const sub = calculateTotal();
                 const dInput = parseFloat(formData.discount) || 0;
-                const dAmt = Math.min(sub, Math.max(0, formData.discountType === "percent" ? sub * (dInput / 100) : dInput));
+                const discountable = calculateDiscountableTotal();
+                const dAmt = Math.min(discountable, Math.max(0, formData.discountType === "percent" ? discountable * (dInput / 100) : dInput));
                 const discounted = Math.max(0, sub - dAmt);
                 const taxAmt = calculateTax(discounted);
                 return (
@@ -1793,6 +1805,9 @@ Thank you!`;
                       {orderItems.length} product(s)
                     </div>
                     <div className="text-right">
+                      {dInput > 0 && discountable < sub && (
+                        <div className="text-xs text-muted-foreground">NÉRA x OhLaLa items are not discounted</div>
+                      )}
                       {dAmt > 0 && (
                         <div className="text-xs text-emerald-500">
                           Discount{formData.discountType === "percent" ? ` (${dInput}%)` : ""}: −${dAmt.toFixed(2)}

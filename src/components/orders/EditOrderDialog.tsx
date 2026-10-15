@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface ProductLite {
   price_usd: number;
   stock_on_hand: number | null;
   image_url?: string | null;
+  category?: string | null;
   product_images?: { image_url: string }[];
 }
 
@@ -172,11 +174,21 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
     () => items.reduce((s, it) => s + it.quantity * it.unit_price, 0),
     [items]
   );
+  // NÉRA x OhLaLa products are undiscountable: discounts only apply to everything else.
+  const discountableSubtotal = useMemo(
+    () =>
+      items.reduce((s, it) => {
+        const p = products.find((pp) => pp.id === it.product_id);
+        if (p?.category === PARTNER_CATEGORY_NAME) return s;
+        return s + it.quantity * it.unit_price;
+      }, 0),
+    [items, products]
+  );
   const discountAmount = useMemo(() => {
     const v = parseFloat(discountInput) || 0;
-    const raw = discountType === "percent" ? subtotal * (v / 100) : v;
-    return Math.min(subtotal, Math.max(0, raw));
-  }, [discountInput, discountType, subtotal]);
+    const raw = discountType === "percent" ? discountableSubtotal * (v / 100) : v;
+    return Math.min(discountableSubtotal, Math.max(0, raw));
+  }, [discountInput, discountType, discountableSubtotal]);
   const loyaltyDiscount = useMemo(() => {
     if (!loyalty || !pointsRedeemed) return 0;
     const blocks = Math.floor(pointsRedeemed / loyalty.minRedeem);
@@ -757,6 +769,9 @@ export function EditOrderDialog({ order, open, onOpenChange, products, salons, o
                     </button>
                   </div>
                 </div>
+                {discountableSubtotal < subtotal && (
+                  <p className="text-xs text-muted-foreground mt-1">NÉRA x OhLaLa items are not discounted</p>
+                )}
                 {discountType === "percent" && discountAmount > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">= ${discountAmount.toFixed(2)} off</p>
                 )}
