@@ -54,7 +54,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           on_hand: r.quantity,
           units_sold: s.qty,
           total_sales: r2(s.total).toFixed(2),
-          our_share_40: r2(s.total * OUR_SHARE).toFixed(2),
+          nera_share_40: r2(s.total * OUR_SHARE).toFixed(2),
           [`${partnerName}_share_60`]: r2(s.total - s.total * OUR_SHARE).toFixed(2),
         };
       });
@@ -117,8 +117,8 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
       }).join("");
       const head = `<th></th><th>Product</th><th>SKU</th><th>Type</th><th class="n">Price</th><th class="n">In stock</th><th class="n">Stock value</th>${
         withSales
-          ? `<th class="n">Sold</th><th class="n">Sales</th><th class="n">Ours ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th>`
-          : `<th class="n">Ours ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th>`
+          ? `<th class="n">Sold</th><th class="n">Sales</th><th class="n">NÉRA ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th>`
+          : `<th class="n">NÉRA ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th>`
       }`;
       const foot = `<td></td><td colspan="4"><b>Total</b></td><td class="n"><b>${tUnits}</b></td><td class="n"><b>${money(tValue)}</b></td>${
         withSales
@@ -127,11 +127,11 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
       }`;
       const row = (label: string, total: number, strong = false) =>
         `<tr${strong ? ' class="big"' : ""}><td>${label}</td><td class="n">${money(total)}</td><td class="n">${money(total * OUR_SHARE)}</td><td class="n">${money(total * THEIR_SHARE)}</td></tr>`;
-      const summary = `<table class="sum"><thead><tr><th></th><th class="n">Total</th><th class="n">Ours ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th></tr></thead><tbody>${
+      const summary = `<table class="sum"><thead><tr><th></th><th class="n">Total</th><th class="n">NÉRA ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th></tr></thead><tbody>${
         withSales ? row(`Already sold (${tSold} units)`, tSales) : ""
       }${row(`Stock left to sell (${tUnits} units)`, tValue)}${
         row(withSales ? "Overall possible (sold + stock left)" : "Possible if all stock sells at full price", tSales + tValue, true)
-      }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; Our possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.</p>`;
+      }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; NÉRA possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.</p>`;
       const contact = `<div class="contact"><b>${esc(company.company_name || "NÉRA Beauty")}</b><br>${esc(email)}${phones ? `<br>${esc(phones).replace(/,\s*/g, "<br>")}` : ""}</div>`;
       w.document.write(`<!doctype html><html><head><title>${esc(partnerName)} stock</title><style>@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);
       w.document.close();
@@ -164,7 +164,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           qty: r.quantity,
           unit_price: Number(r.unit_price).toFixed(2),
           total: Number(r.line_total).toFixed(2),
-          our_share_40: r2(Number(r.line_total) * OUR_SHARE).toFixed(2),
+          nera_share_40: r2(Number(r.line_total) * OUR_SHARE).toFixed(2),
           [`${partnerName}_share_60`]: r2(Number(r.line_total) * (1 - OUR_SHARE)).toFixed(2),
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
