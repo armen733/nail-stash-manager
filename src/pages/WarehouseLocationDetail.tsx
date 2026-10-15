@@ -32,6 +32,7 @@ import { LocationHistoryTab } from "@/components/warehouse/LocationHistoryTab";
 import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancialsTab";
 import { PartnerSalesTab } from "@/components/warehouse/PartnerSalesTab";
 import { PartnerAddProductDialog, PARTNER_CATEGORY } from "@/components/warehouse/PartnerAddProductDialog";
+import { PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
@@ -960,7 +961,20 @@ export default function WarehouseLocationDetail() {
             <div className="text-[10px] text-muted-foreground uppercase">SKUs</div>
             <div className="text-xl font-bold">{rows.length}</div>
           </CardContent></Card>
-          {!isSupplyStoreView && (
+          {location.type === "partner" ? (
+            <>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">Our possible money</div>
+                <div className="text-xl font-bold text-emerald-500">{formatMoney(totalRetail * (1 - PARTNER_PAYOUT_SHARE))}</div>
+                <div className="text-[10px] text-muted-foreground">our 40% if all stock sells</div>
+              </CardContent></Card>
+              <Card><CardContent className="pt-4 pb-3">
+                <div className="text-[10px] text-muted-foreground uppercase">{location.name}'s possible money</div>
+                <div className="text-xl font-bold">{formatMoney(totalRetail * PARTNER_PAYOUT_SHARE)}</div>
+                <div className="text-[10px] text-muted-foreground">their 60% if all stock sells</div>
+              </CardContent></Card>
+            </>
+          ) : !isSupplyStoreView && (
             <>
               <Card><CardContent className="pt-4 pb-3">
                 <div className="text-[10px] text-muted-foreground uppercase">Cost value</div>
@@ -1090,6 +1104,27 @@ export default function WarehouseLocationDetail() {
                                     ${totalProfit.toFixed(2)}
                                   </span>
                                 </span>
+                              </div>
+                            );
+                          })()}
+                          {location.type === "partner" && (() => {
+                            const ourUnit = effectivePrice * (1 - PARTNER_PAYOUT_SHARE);
+                            const theirUnit = effectivePrice * PARTNER_PAYOUT_SHARE;
+                            return (
+                              <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-muted-foreground">We get</span>
+                                <span className="text-emerald-500 font-medium">${ourUnit.toFixed(2)}</span>
+                                <span className="text-muted-foreground">· {location.name} gets</span>
+                                <span className="font-medium">${theirUnit.toFixed(2)}</span>
+                                <span className="text-muted-foreground">each</span>
+                                {r.quantity > 0 && (
+                                  <span className="text-muted-foreground">
+                                    · in stock ours{" "}
+                                    <span className="text-foreground font-medium">
+                                      ${(ourUnit * r.quantity).toFixed(2)}
+                                    </span>
+                                  </span>
+                                )}
                               </div>
                             );
                           })()}
