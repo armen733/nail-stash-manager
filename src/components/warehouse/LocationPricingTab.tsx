@@ -47,6 +47,7 @@ export function LocationPricingTab({ locationId, partnerName }: Props) {
       supabase
         .from("products")
         .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+        .eq("category", PARTNER_CATEGORY_NAME)
         .order("name")
         .limit(5000),
       supabase
