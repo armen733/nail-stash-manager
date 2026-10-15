@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { PARTNER_CATEGORY_NAME, PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
 
 interface Props {
   locationId: string;
+  /** Set when the location is a partner that supplies free stock (e.g. OhLaLa). */
+  partnerName?: string;
 }
 
 interface Row {
@@ -22,7 +25,8 @@ interface Row {
   stockHere: number;
 }
 
-export function LocationPricingTab({ locationId }: Props) {
+export function LocationPricingTab({ locationId, partnerName }: Props) {
+  const isPartner = !!partnerName;
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -40,11 +44,18 @@ export function LocationPricingTab({ locationId }: Props) {
       locRow?.type === "consignment" ? locRow?.supply_store_id ?? null : null;
 
     const [prodRes, stockRes, storeRes, overridesRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
-        .order("name")
-        .limit(5000),
+      isPartner
+        ? supabase
+            .from("products")
+            .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+            .eq("category", PARTNER_CATEGORY_NAME)
+            .order("name")
+            .limit(5000)
+        : supabase
+            .from("products")
+            .select("id, name, sku, cost_usd, price_usd, wholesale_price_usd")
+            .order("name")
+            .limit(5000),
       supabase
         .from("product_stock")
         .select("product_id, quantity")
@@ -186,6 +197,10 @@ export function LocationPricingTab({ locationId }: Props) {
           {visible.map((r) => {
             const hasSale = r.ourSalePrice > 0;
             const sellPrice = hasSale ? r.ourSalePrice : 0;
+            const neraPerUnit = isPartner ? r.defaultPrice * (1 - PARTNER_PAYOUT_SHARE) : 0;
+            const partnerPerUnit = isPartner ? r.defaultPrice * PARTNER_PAYOUT_SHARE : 0;
+            const ourSharePct = Math.round((1 - PARTNER_PAYOUT_SHARE) * 100);
+            const theirSharePct = Math.round(PARTNER_PAYOUT_SHARE * 100);
             const profitPerUnit = hasSale && r.cost > 0 ? sellPrice - r.cost : null;
             const profitPct =
               profitPerUnit !== null && r.cost > 0 ? (profitPerUnit / r.cost) * 100 : null;
@@ -211,26 +226,72 @@ export function LocationPricingTab({ locationId }: Props) {
                 {/* Price grid: read-only */}
                 <div className="grid grid-cols-3 gap-1.5 text-[11px]">
                   <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                    <div className="text-muted-foreground leading-none">Our cost</div>
+                    <div className="text-muted-foreground leading-none">
+                      {isPartner ? "Selling price" : "Our cost"}
+                    </div>
                     <div className="mt-1 font-semibold text-foreground">
-                      {r.cost > 0 ? `$${r.cost.toFixed(2)}` : "—"}
+                      {isPartner
+                        ? r.defaultPrice > 0
+                          ? `$${r.defaultPrice.toFixed(2)}`
+                          : "—"
+                        : r.cost > 0
+                          ? `$${r.cost.toFixed(2)}`
+                          : "—"}
                     </div>
                   </div>
-                  <div className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1.5">
-                    <div className="text-primary/80 leading-none">Store pays us</div>
-                    <div className="mt-1 font-semibold text-primary">
-                      {hasSale ? `$${sellPrice.toFixed(2)}` : "—"}
-                    </div>
-                  </div>
-                  <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
-                    <div className="text-muted-foreground leading-none">Suggested resell</div>
-                    <div className="mt-1 font-semibold text-foreground">
-                      {r.suggestedResell > 0 ? `$${r.suggestedResell.toFixed(2)}` : "—"}
-                    </div>
-                  </div>
+                  {isPartner ? (
+                    <>
+                      <div className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1.5">
+                        <div className="text-primary/80 leading-none">NÉRA gets {ourSharePct}%</div>
+                        <div className="mt-1 font-semibold text-primary">
+                          {neraPerUnit > 0 ? `$${neraPerUnit.toFixed(2)}` : "—"}
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                        <div className="text-muted-foreground leading-none">
+                          {partnerName} gets {theirSharePct}%
+                        </div>
+                        <div className="mt-1 font-semibold text-foreground">
+                          {partnerPerUnit > 0 ? `$${partnerPerUnit.toFixed(2)}` : "—"}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-md border border-primary/40 bg-primary/5 px-2 py-1.5">
+                        <div className="text-primary/80 leading-none">Store pays us</div>
+                        <div className="mt-1 font-semibold text-primary">
+                          {hasSale ? `$${sellPrice.toFixed(2)}` : "—"}
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                        <div className="text-muted-foreground leading-none">Suggested resell</div>
+                        <div className="mt-1 font-semibold text-foreground">
+                          {r.suggestedResell > 0 ? `$${r.suggestedResell.toFixed(2)}` : "—"}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {profitPerUnit !== null && (
+                {isPartner && r.stockHere > 0 && (
+                  <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px]">
+                    <div className="text-muted-foreground">
+                      In stock — NÉRA money:{" "}
+                      <span className="font-medium text-emerald-600">
+                        ${(neraPerUnit * r.stockHere).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      {partnerName} money:{" "}
+                      <span className="font-medium">
+                        ${(partnerPerUnit * r.stockHere).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {!isPartner && profitPerUnit !== null && (
                   <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px]">
                     <div className="text-muted-foreground">
                       We earn:{" "}
