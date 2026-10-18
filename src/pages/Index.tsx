@@ -1664,11 +1664,16 @@ const Index = () => {
                   <span>{categoryProducts.length} products</span>
                   <div className="text-right">
                     <p>Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}</p>
-                    {selectedCategory === PARTNER_CATEGORY_NAME && (
-                      <p className="text-primary font-semibold">
-                        NÉRA clean profit (40%): ${(categoryProducts.reduce((sum, p) => sum + p.revenue, 0) * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
-                      </p>
-                    )}
+                    {(() => {
+                      const totalProfit = categoryProducts.reduce((sum, p) => sum + (cleanProfitFor(p, selectedCategory) ?? 0), 0);
+                      const hasProfit = selectedCategory === PARTNER_CATEGORY_NAME || categoryProducts.some((p) => cleanProfitFor(p, selectedCategory) !== null);
+                      if (!hasProfit) return null;
+                      return (
+                        <p className="text-primary font-semibold">
+                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA clean profit (40%):" : "Clean profit:"} ${totalProfit.toFixed(2)}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
                 {categoryProducts.map((product, index) => (
@@ -1699,9 +1704,9 @@ const Index = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
-                      {selectedCategory === PARTNER_CATEGORY_NAME && (
+                      {cleanProfitFor(product, selectedCategory) !== null && (
                         <p className="text-xs text-primary mt-1">
-                          NÉRA profit: ${(product.revenue * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
+                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA profit" : "Clean profit"}: ${cleanProfitFor(product, selectedCategory)!.toFixed(2)}
                         </p>
                       )}
                       <Badge variant="secondary" className="text-xs">
