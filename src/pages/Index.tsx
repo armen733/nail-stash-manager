@@ -122,9 +122,21 @@ interface CategoryProduct {
   name: string;
   quantity: number;
   revenue: number;
+  costUsd?: number;
   image_url?: string;
   sku?: string;
 }
+
+// Clean profit for a category drill-down product: partner-category items earn 40% of
+// the (never-discounted) price; everything else earns what was actually paid minus COGS.
+const cleanProfitFor = (
+  p: { revenue: number; quantity: number; costUsd?: number },
+  category?: string | null,
+): number | null => {
+  if (category === PARTNER_CATEGORY_NAME) return p.revenue * (1 - PARTNER_PAYOUT_SHARE);
+  if (p.costUsd === undefined) return null;
+  return p.revenue - p.costUsd * p.quantity;
+};
 
 interface DayOfWeekData {
   day: string;
@@ -232,7 +244,7 @@ const Index = () => {
   const periodOrderIdsRef = useRef<Set<string>>(new Set());
   // order_items.id -> revenue after the order discount is spread across its items (line_total is stored pre-discount)
   const itemNetRevenueRef = useRef<Map<string, number>>(new Map());
-  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number }>>([]);
+  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number; unit_cost?: number }>>([]);
   const productInfoRef = useRef<Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>>(new Map());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
@@ -454,6 +466,7 @@ const Index = () => {
           revenue: sellPrice * m.quantity,
           cost: unitCost * m.quantity,
           units: m.quantity,
+          unitCost,
         };
       };
 
@@ -477,13 +490,13 @@ const Index = () => {
       });
 
       // Supply-store shipments inside the period, counted as sales (product-level)
-      const periodSupplySales: Array<{ product_id: string; quantity: number; revenue: number }> = [];
+      const periodSupplySales: Array<{ product_id: string; quantity: number; revenue: number; unit_cost?: number }> = [];
       allSupplyMovements.forEach((m: any) => {
         const d = new Date(m.created_at);
         if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
         const v = computeSupplyMovementValue(m);
         if (!v) return;
-        periodSupplySales.push({ product_id: m.product_id, quantity: v.units, revenue: v.revenue });
+        periodSupplySales.push({ product_id: m.product_id, quantity: v.units, revenue: v.revenue, unit_cost: v.units > 0 ? v.cost / v.units : 0 });
       });
       periodSupplySalesRef.current = periodSupplySales;
       productInfoRef.current = productInfoMap;
@@ -962,7 +975,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, image_url)")
+          .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, cost_usd, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -994,10 +1007,14 @@ const Index = () => {
             name: item.products.name,
             quantity: 0,
             revenue: 0,
+            costUsd: item.products.cost_usd == null ? undefined : Number(item.products.cost_usd),
             // Use products.image_url first, fallback to product_images table
             image_url: productImagesMap[productId] || item.products.image_url,
             sku: item.products.sku || "",
           };
+        }
+        if (productMap[productId].costUsd === undefined && item.products.cost_usd != null) {
+          productMap[productId].costUsd = Number(item.products.cost_usd);
         }
         productMap[productId].quantity += item.quantity || 0;
         productMap[productId].revenue += itemNetRevenueRef.current.get(item.id) ?? (item.line_total || 0);
@@ -1012,9 +1029,13 @@ const Index = () => {
             name: info.name,
             quantity: 0,
             revenue: 0,
+            costUsd: row.unit_cost != null ? row.unit_cost : undefined,
             image_url: productImagesMap[row.product_id] || info.image_url,
             sku: info.sku || "",
           };
+        }
+        if (productMap[row.product_id].costUsd === undefined && row.unit_cost != null) {
+          productMap[row.product_id].costUsd = row.unit_cost;
         }
         productMap[row.product_id].quantity += row.quantity;
         productMap[row.product_id].revenue += row.revenue;
@@ -1643,11 +1664,16 @@ const Index = () => {
                   <span>{categoryProducts.length} products</span>
                   <div className="text-right">
                     <p>Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}</p>
-                    {selectedCategory === PARTNER_CATEGORY_NAME && (
-                      <p className="text-primary font-semibold">
-                        NÉRA clean profit (40%): ${(categoryProducts.reduce((sum, p) => sum + p.revenue, 0) * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
-                      </p>
-                    )}
+                    {(() => {
+                      const totalProfit = categoryProducts.reduce((sum, p) => sum + (cleanProfitFor(p, selectedCategory) ?? 0), 0);
+                      const hasProfit = selectedCategory === PARTNER_CATEGORY_NAME || categoryProducts.some((p) => cleanProfitFor(p, selectedCategory) !== null);
+                      if (!hasProfit) return null;
+                      return (
+                        <p className="text-primary font-semibold">
+                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA clean profit (40%):" : "Clean profit:"} ${totalProfit.toFixed(2)}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
                 {categoryProducts.map((product, index) => (
@@ -1678,9 +1704,9 @@ const Index = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
-                      {selectedCategory === PARTNER_CATEGORY_NAME && (
+                      {cleanProfitFor(product, selectedCategory) !== null && (
                         <p className="text-xs text-primary mt-1">
-                          NÉRA profit: ${(product.revenue * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
+                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA profit" : "Clean profit"}: ${cleanProfitFor(product, selectedCategory)!.toFixed(2)}
                         </p>
                       )}
                       <Badge variant="secondary" className="text-xs">
