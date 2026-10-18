@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
 import { downloadCSV } from "@/lib/csv-export";
 import { OUR_SHARE, PARTNER_CATEGORY } from "@/components/warehouse/PartnerSalesTab";
+import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -32,7 +33,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           .from("order_items")
           .select("product_id, quantity, line_total, products!inner(category), orders!inner(status)")
           .eq("products.category", PARTNER_CATEGORY)
-          .neq("orders.status", "Draft"),
+          .in("orders.status", [...PARTNER_SALE_STATUSES]),
       ]);
       if (stockRes.error) throw stockRes.error;
       if (soldRes.error) throw soldRes.error;
@@ -84,11 +85,12 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
               .from("order_items")
               .select("product_id, quantity, line_total, products!inner(category), orders!inner(status)")
               .eq("products.category", PARTNER_CATEGORY)
-              .neq("orders.status", "Draft")
+              .in("orders.status", [...PARTNER_SALE_STATUSES])
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("company_settings").select("company_name, logo_url, contact_phone, contact_email").maybeSingle(),
       ]);
       if (pRes.error) throw pRes.error;
+      if (sRes.error) throw sRes.error;
       const company: any = cRes.data ?? {};
       const logo = company.logo_url || new URL(neraBeautyLogo, window.location.origin).href;
       const email = company.contact_email || "info@nerabeautyus.com";
@@ -99,7 +101,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
         c.qty += s.quantity; c.total += Number(s.line_total ?? 0);
         sold.set(s.product_id, c);
       });
-      const esc = (t: any) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+      const esc = (t: any) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] ?? c));
       const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       const THEIR_SHARE = 1 - OUR_SHARE;
       const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -133,7 +135,8 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
         row(withSales ? "Overall possible (sold + stock left)" : "Possible if all stock sells at full price", tSales + tValue, true)
       }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; NÉRA possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.</p>`;
       const contact = `<div class="contact"><b>${esc(company.company_name || "NÉRA Beauty")}</b><br>${esc(email)}${phones ? `<br>${esc(phones).replace(/,\s*/g, "<br>")}` : ""}</div>`;
-      w.document.write(`<!doctype html><html><head><title>${esc(partnerName)} stock</title><style>@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}<script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+      const returnUrl = new URL(`/warehouse/${locationId}`, window.location.origin).href;
+      w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" onclick="window.print()">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div><script>document.getElementById("back-to-partner").onclick=function(event){if(window.opener&&!window.opener.closed){event.preventDefault();window.opener.focus();window.close();setTimeout(()=>window.location.replace(this.href),150)}};window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);
       w.document.close();
     } catch (e: any) {
       w.close();
@@ -152,7 +155,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           "quantity, unit_price, line_total, products!inner(name, sku, category), orders!inner(order_date, status, invoice_number, customer_name)"
         )
         .eq("products.category", PARTNER_CATEGORY)
-        .neq("orders.status", "Draft");
+        .in("orders.status", [...PARTNER_SALE_STATUSES]);
       if (error) throw error;
       const rows = (data ?? [])
         .map((r: any) => ({

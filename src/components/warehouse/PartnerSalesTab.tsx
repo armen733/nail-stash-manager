@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { FileDown, CheckCircle2, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
 
 export const PARTNER_CATEGORY = "NÉRA x OhLaLa";
 export const OUR_SHARE = 0.4;
@@ -64,7 +65,7 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
         "id, quantity, unit_price, line_total, products!inner(name, sku, category), orders!inner(order_date, status, invoice_number, customer_name)"
       )
       .eq("products.category", PARTNER_CATEGORY)
-      .neq("orders.status", "Draft")
+      .in("orders.status", [...PARTNER_SALE_STATUSES])
       .gte("orders.order_date", start)
       .lte("orders.order_date", end);
     setLoading(false);
