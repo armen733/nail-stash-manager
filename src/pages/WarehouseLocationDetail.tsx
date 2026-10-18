@@ -197,6 +197,17 @@ export default function WarehouseLocationDetail() {
     const loc = (locRes.data ?? null) as StockLocation | null;
     setLocation(loc);
 
+    if (loc?.type === "partner") {
+      const { data: soldItems } = await supabase
+        .from("order_items")
+        .select("line_total, products!inner(category), orders!inner(status)")
+        .eq("products.category", PARTNER_CATEGORY)
+        .in("orders.status", [...PARTNER_SALE_STATUSES]);
+      setPartnerEarned(
+        (soldItems ?? []).reduce((sum, r: any) => sum + Number(r.line_total ?? 0), 0),
+      );
+    }
+
     let storeDiscount = 0;
     let storeMarkup = 0;
     const productDiscountOverrides = new Map<string, number>();
