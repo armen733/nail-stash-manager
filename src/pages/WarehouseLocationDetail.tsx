@@ -202,12 +202,17 @@ export default function WarehouseLocationDetail() {
     if (loc?.type === "partner") {
       const { data: soldItems } = await supabase
         .from("order_items")
-        .select("line_total, products!inner(category), orders!inner(status)")
+        .select("product_id, quantity, line_total, products!inner(category), orders!inner(status)")
         .eq("products.category", PARTNER_CATEGORY)
         .in("orders.status", [...PARTNER_SALE_STATUSES]);
       setPartnerEarned(
         (soldItems ?? []).reduce((sum, r: any) => sum + Number(r.line_total ?? 0), 0),
       );
+      const soldMap = new Map<string, number>();
+      (soldItems ?? []).forEach((r: any) => {
+        soldMap.set(r.product_id, (soldMap.get(r.product_id) ?? 0) + Number(r.quantity ?? 0));
+      });
+      setPartnerSold(soldMap);
     }
 
     let storeDiscount = 0;
