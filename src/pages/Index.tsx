@@ -122,9 +122,21 @@ interface CategoryProduct {
   name: string;
   quantity: number;
   revenue: number;
+  costUsd?: number;
   image_url?: string;
   sku?: string;
 }
+
+// Clean profit for a category drill-down product: partner-category items earn 40% of
+// the (never-discounted) price; everything else earns what was actually paid minus COGS.
+const cleanProfitFor = (
+  p: { revenue: number; quantity: number; costUsd?: number },
+  category?: string | null,
+): number | null => {
+  if (category === PARTNER_CATEGORY_NAME) return p.revenue * (1 - PARTNER_PAYOUT_SHARE);
+  if (p.costUsd === undefined) return null;
+  return p.revenue - p.costUsd * p.quantity;
+};
 
 interface DayOfWeekData {
   day: string;
@@ -232,7 +244,7 @@ const Index = () => {
   const periodOrderIdsRef = useRef<Set<string>>(new Set());
   // order_items.id -> revenue after the order discount is spread across its items (line_total is stored pre-discount)
   const itemNetRevenueRef = useRef<Map<string, number>>(new Map());
-  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number }>>([]);
+  const periodSupplySalesRef = useRef<Array<{ product_id: string; quantity: number; revenue: number; unit_cost?: number }>>([]);
   const productInfoRef = useRef<Map<string, { name: string; sku: string; category: string; image_url?: string; supplier_sku?: string }>>(new Map());
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [orderItemsData, setOrderItemsData] = useState<any[]>([]);
