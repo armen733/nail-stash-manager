@@ -6,3 +6,4 @@
 - Drill-bit dimensions use category_attributes with the existing diameter key and optional head_length/total_length keys; normalize legacy mm suffixes and decimal commas to preserve measurements when editing.
 - Warehouse location logos live in `stock_locations.logo_url` (uploaded to the public `brand-assets` bucket) and render ahead of the type-specific fallback icons; when a new `location_type` value is added, update every location-type union and icon map so no screen renders an undefined icon.
 - Undiscountable product categories (currently the partner category "NÉRA x OhLaLa") are enforced server-side in `stripe-hosted-checkout`: the promo discount is limited to the other cart items and tax is recomputed, because partner payouts are calculated on full price.
+- Partner sales reports share the inventory analytics status set, including saved manual Draft orders, because those orders already reduce stock on creation.
