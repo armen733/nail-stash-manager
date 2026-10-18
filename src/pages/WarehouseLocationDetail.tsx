@@ -166,6 +166,8 @@ export default function WarehouseLocationDetail() {
   const [partnerAddOpen, setPartnerAddOpen] = useState(false);
   // Lifetime sales of partner-category products across every channel (40/60 split basis).
   const [partnerEarned, setPartnerEarned] = useState(0);
+  // Units sold per partner product (all channels), used to sort best sellers first.
+  const [partnerSold, setPartnerSold] = useState<Map<string, number>>(new Map());
   const [neraCardMode, setNeraCardMode] = useState<"earned" | "possible">("earned");
   const [partnerCardMode, setPartnerCardMode] = useState<"earned" | "possible">("earned");
 
