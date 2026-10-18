@@ -325,8 +325,8 @@ export default function WarehouseLocationDetail() {
       }));
       // Best sellers first: sort by units sold (all channels), then by name.
       finalRows.sort((a, b) => {
-        const sa = partnerSold.get(a.product_id) ?? 0;
-        const sb = partnerSold.get(b.product_id) ?? 0;
+        const sa = partnerSoldMap.get(a.product_id) ?? 0;
+        const sb = partnerSoldMap.get(b.product_id) ?? 0;
         if (sb !== sa) return sb - sa;
         return String(a.product.name ?? "").localeCompare(String(b.product.name ?? ""));
       });
