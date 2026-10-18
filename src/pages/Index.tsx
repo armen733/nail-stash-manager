@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { profitCost, PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
+import { profitCost, PARTNER_CATEGORY_NAME, PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -1639,11 +1639,16 @@ const Index = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm text-muted-foreground pb-2 border-b">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground pb-2 border-b">
                   <span>{categoryProducts.length} products</span>
-                  <span>
-                    Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}
-                  </span>
+                  <div className="text-right">
+                    <p>Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}</p>
+                    {selectedCategory === PARTNER_CATEGORY_NAME && (
+                      <p className="text-primary font-semibold">
+                        NÉRA clean profit (40%): ${(categoryProducts.reduce((sum, p) => sum + p.revenue, 0) * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {categoryProducts.map((product, index) => (
                   <div 
@@ -1671,8 +1676,13 @@ const Index = () => {
                         {product.quantity} units sold
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
+                      {selectedCategory === PARTNER_CATEGORY_NAME && (
+                        <p className="text-xs text-primary mt-1">
+                          NÉRA profit: ${(product.revenue * (1 - PARTNER_PAYOUT_SHARE)).toFixed(2)}
+                        </p>
+                      )}
                       <Badge variant="secondary" className="text-xs">
                         #{index + 1}
                       </Badge>
