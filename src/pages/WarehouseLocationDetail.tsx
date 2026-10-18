@@ -323,6 +323,13 @@ export default function WarehouseLocationDetail() {
         effective_unit_price: Number(p.price_usd ?? 0),
         suggested_resell_unit_price: Number(p.price_usd ?? 0),
       }));
+      // Best sellers first: sort by units sold (all channels), then by name.
+      finalRows.sort((a, b) => {
+        const sa = partnerSold.get(a.product_id) ?? 0;
+        const sb = partnerSold.get(b.product_id) ?? 0;
+        if (sb !== sa) return sb - sa;
+        return String(a.product.name ?? "").localeCompare(String(b.product.name ?? ""));
+      });
     }
     setRows(finalRows as StockRow[]);
     setOtherLocations(
