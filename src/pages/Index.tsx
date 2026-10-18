@@ -466,6 +466,7 @@ const Index = () => {
           revenue: sellPrice * m.quantity,
           cost: unitCost * m.quantity,
           units: m.quantity,
+          unitCost,
         };
       };
 
@@ -489,13 +490,13 @@ const Index = () => {
       });
 
       // Supply-store shipments inside the period, counted as sales (product-level)
-      const periodSupplySales: Array<{ product_id: string; quantity: number; revenue: number }> = [];
+      const periodSupplySales: Array<{ product_id: string; quantity: number; revenue: number; unit_cost?: number }> = [];
       allSupplyMovements.forEach((m: any) => {
         const d = new Date(m.created_at);
         if (d < new Date(periodStart) || (periodEnd && d >= new Date(periodEnd))) return;
         const v = computeSupplyMovementValue(m);
         if (!v) return;
-        periodSupplySales.push({ product_id: m.product_id, quantity: v.units, revenue: v.revenue });
+        periodSupplySales.push({ product_id: m.product_id, quantity: v.units, revenue: v.revenue, unit_cost: v.units > 0 ? v.cost / v.units : 0 });
       });
       periodSupplySalesRef.current = periodSupplySales;
       productInfoRef.current = productInfoMap;
