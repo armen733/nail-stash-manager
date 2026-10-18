@@ -1170,6 +1170,7 @@ export default function WarehouseLocationDetail() {
                           {location.type === "partner" && (() => {
                             const ourUnit = effectivePrice * (1 - PARTNER_PAYOUT_SHARE);
                             const theirUnit = effectivePrice * PARTNER_PAYOUT_SHARE;
+                            const sold = partnerSold.get(r.product_id) ?? 0;
                             return (
                               <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
                                 <span className="text-muted-foreground">NÉRA gets</span>
@@ -1177,6 +1178,14 @@ export default function WarehouseLocationDetail() {
                                 <span className="text-muted-foreground">· {location.name} gets</span>
                                 <span className="font-medium">${theirUnit.toFixed(2)}</span>
                                 <span className="text-muted-foreground">each</span>
+                                <span className="text-muted-foreground">
+                                  · Sold{" "}
+                                  <span className="text-foreground font-medium">{sold}</span>
+                                </span>
+                                <span className="text-muted-foreground">
+                                  · In stock{" "}
+                                  <span className="text-foreground font-medium">{r.quantity}</span>
+                                </span>
                                 {r.quantity > 0 && (
                                   <span className="text-muted-foreground">
                                     · in stock NÉRA{" "}
