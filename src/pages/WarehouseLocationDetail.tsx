@@ -166,6 +166,8 @@ export default function WarehouseLocationDetail() {
   const [partnerAddOpen, setPartnerAddOpen] = useState(false);
   // Lifetime sales of partner-category products across every channel (40/60 split basis).
   const [partnerEarned, setPartnerEarned] = useState(0);
+  // Units sold per partner product (all channels), used to sort best sellers first.
+  const [partnerSold, setPartnerSold] = useState<Map<string, number>>(new Map());
   const [neraCardMode, setNeraCardMode] = useState<"earned" | "possible">("earned");
   const [partnerCardMode, setPartnerCardMode] = useState<"earned" | "possible">("earned");
 
@@ -197,15 +199,20 @@ export default function WarehouseLocationDetail() {
     const loc = (locRes.data ?? null) as StockLocation | null;
     setLocation(loc);
 
+    let partnerSoldMap = new Map<string, number>();
     if (loc?.type === "partner") {
       const { data: soldItems } = await supabase
         .from("order_items")
-        .select("line_total, products!inner(category), orders!inner(status)")
+        .select("product_id, quantity, line_total, products!inner(category), orders!inner(status)")
         .eq("products.category", PARTNER_CATEGORY)
         .in("orders.status", [...PARTNER_SALE_STATUSES]);
       setPartnerEarned(
         (soldItems ?? []).reduce((sum, r: any) => sum + Number(r.line_total ?? 0), 0),
       );
+      (soldItems ?? []).forEach((r: any) => {
+        partnerSoldMap.set(r.product_id, (partnerSoldMap.get(r.product_id) ?? 0) + Number(r.quantity ?? 0));
+      });
+      setPartnerSold(partnerSoldMap);
     }
 
     let storeDiscount = 0;
@@ -316,6 +323,13 @@ export default function WarehouseLocationDetail() {
         effective_unit_price: Number(p.price_usd ?? 0),
         suggested_resell_unit_price: Number(p.price_usd ?? 0),
       }));
+      // Best sellers first: sort by units sold (all channels), then by name.
+      finalRows.sort((a, b) => {
+        const sa = partnerSoldMap.get(a.product_id) ?? 0;
+        const sb = partnerSoldMap.get(b.product_id) ?? 0;
+        if (sb !== sa) return sb - sa;
+        return String(a.product.name ?? "").localeCompare(String(b.product.name ?? ""));
+      });
     }
     setRows(finalRows as StockRow[]);
     setOtherLocations(
@@ -1156,6 +1170,7 @@ export default function WarehouseLocationDetail() {
                           {location.type === "partner" && (() => {
                             const ourUnit = effectivePrice * (1 - PARTNER_PAYOUT_SHARE);
                             const theirUnit = effectivePrice * PARTNER_PAYOUT_SHARE;
+                            const sold = partnerSold.get(r.product_id) ?? 0;
                             return (
                               <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
                                 <span className="text-muted-foreground">NÉRA gets</span>
@@ -1163,6 +1178,14 @@ export default function WarehouseLocationDetail() {
                                 <span className="text-muted-foreground">· {location.name} gets</span>
                                 <span className="font-medium">${theirUnit.toFixed(2)}</span>
                                 <span className="text-muted-foreground">each</span>
+                                <span className="text-muted-foreground">
+                                  · Sold{" "}
+                                  <span className="text-foreground font-medium">{sold}</span>
+                                </span>
+                                <span className="text-muted-foreground">
+                                  · In stock{" "}
+                                  <span className="text-foreground font-medium">{r.quantity}</span>
+                                </span>
                                 {r.quantity > 0 && (
                                   <span className="text-muted-foreground">
                                     · in stock NÉRA{" "}
