@@ -9,3 +9,7 @@
 # OhLaLa no-discount rule
 - [x] Block promo discounts on the OhLaLa category at payment.
 - [ ] Customer app note (hide/ignore discount on these items) — waits on user pasting it.
+# OhLaLa print report
+- [ ] Diagnose and correct missing sales in partner reports.
+- [ ] Add a mobile-safe return action to the print window, hidden on paper.
+- [ ] Verify the report and return action with saved orders.
