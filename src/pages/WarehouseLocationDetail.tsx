@@ -33,6 +33,7 @@ import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancials
 import { PartnerSalesTab } from "@/components/warehouse/PartnerSalesTab";
 import { PartnerAddProductDialog, PARTNER_CATEGORY } from "@/components/warehouse/PartnerAddProductDialog";
 import { PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
+import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
@@ -163,6 +164,10 @@ export default function WarehouseLocationDetail() {
 
   const [action, setAction] = useState<StockAction | null>(null);
   const [partnerAddOpen, setPartnerAddOpen] = useState(false);
+  // Lifetime sales of partner-category products across every channel (40/60 split basis).
+  const [partnerEarned, setPartnerEarned] = useState(0);
+  const [neraCardMode, setNeraCardMode] = useState<"earned" | "possible">("earned");
+  const [partnerCardMode, setPartnerCardMode] = useState<"earned" | "possible">("earned");
 
   const load = async () => {
     if (!id) return;
@@ -191,6 +196,17 @@ export default function WarehouseLocationDetail() {
     if (locRes.error) toast.error(locRes.error.message);
     const loc = (locRes.data ?? null) as StockLocation | null;
     setLocation(loc);
+
+    if (loc?.type === "partner") {
+      const { data: soldItems } = await supabase
+        .from("order_items")
+        .select("line_total, products!inner(category), orders!inner(status)")
+        .eq("products.category", PARTNER_CATEGORY)
+        .in("orders.status", [...PARTNER_SALE_STATUSES]);
+      setPartnerEarned(
+        (soldItems ?? []).reduce((sum, r: any) => sum + Number(r.line_total ?? 0), 0),
+      );
+    }
 
     let storeDiscount = 0;
     let storeMarkup = 0;
@@ -963,16 +979,46 @@ export default function WarehouseLocationDetail() {
           </CardContent></Card>
           {location.type === "partner" ? (
             <>
-              <Card><CardContent className="pt-4 pb-3">
-                <div className="text-[10px] text-muted-foreground uppercase">NÉRA possible money</div>
-                <div className="text-xl font-bold text-emerald-500">{formatMoney(totalRetail * (1 - PARTNER_PAYOUT_SHARE))}</div>
-                <div className="text-[10px] text-muted-foreground">NÉRA's 40% if all stock sells</div>
-              </CardContent></Card>
-              <Card><CardContent className="pt-4 pb-3">
-                <div className="text-[10px] text-muted-foreground uppercase">{location.name}'s possible money</div>
-                <div className="text-xl font-bold">{formatMoney(totalRetail * PARTNER_PAYOUT_SHARE)}</div>
-                <div className="text-[10px] text-muted-foreground">{location.name}'s 60% if all stock sells</div>
-              </CardContent></Card>
+              <Card
+                className="cursor-pointer transition-colors hover:bg-muted/40"
+                onClick={() => setNeraCardMode((m) => (m === "earned" ? "possible" : "earned"))}
+              >
+                <CardContent className="pt-4 pb-3">
+                  {neraCardMode === "earned" ? (
+                    <>
+                      <div className="text-[10px] text-muted-foreground uppercase">NÉRA earned money</div>
+                      <div className="text-xl font-bold text-emerald-500">{formatMoney(partnerEarned * (1 - PARTNER_PAYOUT_SHARE))}</div>
+                      <div className="text-[10px] text-muted-foreground">NÉRA's 40% of sales so far · tap for possible</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[10px] text-muted-foreground uppercase">NÉRA possible money</div>
+                      <div className="text-xl font-bold text-emerald-500">{formatMoney(totalRetail * (1 - PARTNER_PAYOUT_SHARE))}</div>
+                      <div className="text-[10px] text-muted-foreground">NÉRA's 40% if all stock sells · tap for earned</div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+              <Card
+                className="cursor-pointer transition-colors hover:bg-muted/40"
+                onClick={() => setPartnerCardMode((m) => (m === "earned" ? "possible" : "earned"))}
+              >
+                <CardContent className="pt-4 pb-3">
+                  {partnerCardMode === "earned" ? (
+                    <>
+                      <div className="text-[10px] text-muted-foreground uppercase">{location.name} earned money</div>
+                      <div className="text-xl font-bold">{formatMoney(partnerEarned * PARTNER_PAYOUT_SHARE)}</div>
+                      <div className="text-[10px] text-muted-foreground">{location.name}'s 60% of sales so far · tap for possible</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[10px] text-muted-foreground uppercase">{location.name}'s possible money</div>
+                      <div className="text-xl font-bold">{formatMoney(totalRetail * PARTNER_PAYOUT_SHARE)}</div>
+                      <div className="text-[10px] text-muted-foreground">{location.name}'s 60% if all stock sells · tap for earned</div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </>
           ) : !isSupplyStoreView && (
             <>
