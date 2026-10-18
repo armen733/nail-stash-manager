@@ -975,7 +975,7 @@ const Index = () => {
       const [orderItemsRes, productImagesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, image_url)")
+          .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, cost_usd, image_url)")
           .eq("products.category", category),
         supabase
           .from("product_images")
@@ -1007,10 +1007,14 @@ const Index = () => {
             name: item.products.name,
             quantity: 0,
             revenue: 0,
+            costUsd: item.products.cost_usd == null ? undefined : Number(item.products.cost_usd),
             // Use products.image_url first, fallback to product_images table
             image_url: productImagesMap[productId] || item.products.image_url,
             sku: item.products.sku || "",
           };
+        }
+        if (productMap[productId].costUsd === undefined && item.products.cost_usd != null) {
+          productMap[productId].costUsd = Number(item.products.cost_usd);
         }
         productMap[productId].quantity += item.quantity || 0;
         productMap[productId].revenue += itemNetRevenueRef.current.get(item.id) ?? (item.line_total || 0);
@@ -1025,9 +1029,13 @@ const Index = () => {
             name: info.name,
             quantity: 0,
             revenue: 0,
+            costUsd: row.unit_cost != null ? row.unit_cost : undefined,
             image_url: productImagesMap[row.product_id] || info.image_url,
             sku: info.sku || "",
           };
+        }
+        if (productMap[row.product_id].costUsd === undefined && row.unit_cost != null) {
+          productMap[row.product_id].costUsd = row.unit_cost;
         }
         productMap[row.product_id].quantity += row.quantity;
         productMap[row.product_id].revenue += row.revenue;
