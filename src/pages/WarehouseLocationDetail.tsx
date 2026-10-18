@@ -33,6 +33,7 @@ import { LocationFinancialsTab } from "@/components/warehouse/LocationFinancials
 import { PartnerSalesTab } from "@/components/warehouse/PartnerSalesTab";
 import { PartnerAddProductDialog, PARTNER_CATEGORY } from "@/components/warehouse/PartnerAddProductDialog";
 import { PARTNER_PAYOUT_SHARE } from "@/lib/partner-cost";
+import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
 import { PricingSheetExportDialog } from "@/components/supply-stores/PricingSheetExportDialog";
 import { openPrintableCatalog, type CompanyBrand } from "@/lib/wholesale-catalog-print";
 import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
@@ -163,6 +164,10 @@ export default function WarehouseLocationDetail() {
 
   const [action, setAction] = useState<StockAction | null>(null);
   const [partnerAddOpen, setPartnerAddOpen] = useState(false);
+  // Lifetime sales of partner-category products across every channel (40/60 split basis).
+  const [partnerEarned, setPartnerEarned] = useState(0);
+  const [neraCardMode, setNeraCardMode] = useState<"earned" | "possible">("earned");
+  const [partnerCardMode, setPartnerCardMode] = useState<"earned" | "possible">("earned");
 
   const load = async () => {
     if (!id) return;
