@@ -199,6 +199,7 @@ export default function WarehouseLocationDetail() {
     const loc = (locRes.data ?? null) as StockLocation | null;
     setLocation(loc);
 
+    let partnerSoldMap = new Map<string, number>();
     if (loc?.type === "partner") {
       const { data: soldItems } = await supabase
         .from("order_items")
@@ -208,11 +209,10 @@ export default function WarehouseLocationDetail() {
       setPartnerEarned(
         (soldItems ?? []).reduce((sum, r: any) => sum + Number(r.line_total ?? 0), 0),
       );
-      const soldMap = new Map<string, number>();
       (soldItems ?? []).forEach((r: any) => {
-        soldMap.set(r.product_id, (soldMap.get(r.product_id) ?? 0) + Number(r.quantity ?? 0));
+        partnerSoldMap.set(r.product_id, (partnerSoldMap.get(r.product_id) ?? 0) + Number(r.quantity ?? 0));
       });
-      setPartnerSold(soldMap);
+      setPartnerSold(partnerSoldMap);
     }
 
     let storeDiscount = 0;
