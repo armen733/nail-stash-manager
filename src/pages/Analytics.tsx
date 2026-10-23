@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { profitCost, PARTNER_CATEGORY_NAME } from "@/lib/partner-cost";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -256,7 +257,7 @@ const Analytics = () => {
       const { periodStart, periodEnd, previousStart, previousEnd } = getPeriodDates();
 
       // Fetch current period orders
-      const { data: orders, error: ordersError } = await supabase
+      const { data: orders, error: ordersError } = await fetchAllRows((from, to) => supabase
         .from("orders")
         .select(`
           id, created_at, total, tax, discount_amount, profile_id, customer_email, customer_name, status, salon_id,
@@ -268,7 +269,9 @@ const Analytics = () => {
         `)
         .gte("created_at", periodStart.toISOString())
         .lte("created_at", periodEnd.toISOString())
-        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"]);
+        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"])
+        .order("id")
+        .range(from, to));
 
       if (ordersError) throw ordersError;
 
@@ -281,12 +284,14 @@ const Analytics = () => {
       setPeriodExpensesTotal((expensesData || []).reduce((s, e: any) => s + Number(e.amount || 0), 0));
 
       // Fetch previous period for comparison (with created_at for daily breakdown)
-      const { data: previousOrders } = await supabase
+      const { data: previousOrders } = await fetchAllRows((from, to) => supabase
         .from("orders")
         .select("id, total, profile_id, customer_email, created_at")
         .gte("created_at", previousStart.toISOString())
         .lte("created_at", previousEnd.toISOString())
-        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"]);
+        .in("status", ["Draft", "Confirmed", "Shipped", "Delivered", "Paid"])
+        .order("id")
+        .range(from, to));
 
       // Calculate previous period stats
       const prevRevenue = previousOrders?.reduce((sum, o) => sum + (o.total || 0), 0) || 0;
@@ -362,10 +367,12 @@ const Analytics = () => {
         supabase.from("salons").select("id, is_active"),
         supabase.from("supply_stores").select("id, default_discount_percent, status"),
         supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
-        supabase.from("stock_movements")
+        fetchAllRows((from, to) => supabase.from("stock_movements")
           .select("product_id, quantity, unit_cost, to_location_id, movement_type, created_at")
           .gte("created_at", periodStart.toISOString())
-          .lte("created_at", periodEnd.toISOString()),
+          .lte("created_at", periodEnd.toISOString())
+          .order("id")
+          .range(from, to)),
         supabase.from("products").select("id, category, wholesale_price_usd, price_usd, cost_usd"),
         supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
         supabase.from("profiles").select("id, created_at"),
@@ -599,7 +606,7 @@ const Analytics = () => {
     
     try {
       // Fetch order items with product details including parent product and product_images for fallback
-      const { data: orderItems, error } = await supabase
+      const { data: orderItems, error } = await fetchAllRows((from, to) => supabase
         .from("order_items")
         .select(`
           id,
@@ -616,7 +623,9 @@ const Analytics = () => {
             product_images(image_url, display_order)
           )
         `)
-        .eq("products.category", category);
+        .eq("products.category", category)
+        .order("id")
+        .range(from, to));
       
       if (error) throw error;
       
