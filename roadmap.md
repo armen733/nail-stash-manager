@@ -15,5 +15,6 @@
 - [x] Verify the report and return action with saved orders.
 
 # Complete Dashboard statistics
-- [ ] Remove row-limit truncation from Dashboard statistics and related category drill-downs.
-- [ ] Test pagination and compare the OhLaLa breakdown with saved sales.
+- [x] Remove row-limit truncation from Dashboard statistics and related category drill-downs.
+- [x] Test pagination and compare the OhLaLa totals with saved sales: 14 units, 8 products, $247.50 in October.
+- [ ] Verify the Dashboard breakdown signed in as a manager — the requesting user's account redirects to Orders; waiting for the intended manager account.
