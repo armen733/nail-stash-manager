@@ -4,6 +4,7 @@ import { profitCost, PARTNER_CATEGORY_NAME, PARTNER_PAYOUT_SHARE } from "@/lib/p
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Users, Package, DollarSign, AlertTriangle, Download, X, ChevronRight, ChevronDown, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -382,18 +383,18 @@ const Index = () => {
 
       // Fetch all stats in parallel
       const [ordersRes, salonsRes, productsRes, orderItemsRes, stockRes, productImagesRes, supplyStoresRes, supplyStoreLocsRes, supplyMovementsRes, productPricingRes, supplyOverridesRes, profilesRes] = await Promise.all([
-        supabase.from("orders").select("id, total, tax, discount_amount, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)"),
-        supabase.from("salons").select("id"),
-        supabase.from("products").select("id"),
-        supabase.from("order_items").select("id, order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)"),
-        supabase.from("products").select("id, name, sku, stock_on_hand, price_usd, reorder_level, image_url"),
+        fetchAllRows((from, to) => supabase.from("orders").select("id, total, tax, discount_amount, created_at, salon_id, status, created_by, customer_name, customer_email, profile_id, salons(name)").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("salons").select("id").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("products").select("id").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("order_items").select("id, order_id, product_id, quantity, line_total, products(name, sku, category, image_url, supplier_sku)").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("products").select("id, name, sku, stock_on_hand, price_usd, reorder_level, image_url").order("id").range(from, to)),
         supabase.from("product_images").select("product_id, image_url, display_order").order("display_order"),
-        supabase.from("supply_stores").select("id, name, default_discount_percent, status"),
-        supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null),
-        supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason"),
-        supabase.from("products").select("id, name, sku, category, image_url, supplier_sku, wholesale_price_usd, price_usd, cost_usd"),
-        supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override"),
-        supabase.from("profiles").select("id, created_at, role"),
+        fetchAllRows((from, to) => supabase.from("supply_stores").select("id, name, default_discount_percent, status").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("stock_locations").select("id, supply_store_id").not("supply_store_id", "is", null).order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("stock_movements").select("product_id, quantity, unit_cost, to_location_id, from_location_id, created_at, movement_type, reason").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("products").select("id, name, sku, category, image_url, supplier_sku, wholesale_price_usd, price_usd, cost_usd").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("supply_store_products").select("supply_store_id, product_id, discount_percent_override").order("id").range(from, to)),
+        fetchAllRows((from, to) => supabase.from("profiles").select("id, created_at, role").order("id").range(from, to)),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
@@ -973,10 +974,12 @@ const Index = () => {
     try {
       // Fetch products for this category with their sales data
       const [orderItemsRes, productImagesRes] = await Promise.all([
-        supabase
+        fetchAllRows((from, to) => supabase
           .from("order_items")
           .select("id, product_id, order_id, quantity, line_total, products(id, name, sku, category, cost_usd, image_url)")
-          .eq("products.category", category),
+          .eq("products.category", category)
+          .order("id")
+          .range(from, to)),
         supabase
           .from("product_images")
           .select("product_id, image_url, display_order")
