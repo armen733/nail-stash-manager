@@ -13,3 +13,7 @@
 - [x] Diagnose and correct missing sales in partner reports.
 - [x] Add a mobile-safe return action to the print window, hidden on paper.
 - [x] Verify the report and return action with saved orders.
+
+# Complete Dashboard statistics
+- [ ] Remove row-limit truncation from Dashboard statistics and related category drill-downs.
+- [ ] Test pagination and compare the OhLaLa breakdown with saved sales.
