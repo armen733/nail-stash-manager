@@ -1643,15 +1643,15 @@ const Index = () => {
 
       {/* Category Drill-Down Sheet */}
       <Sheet open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-        <SheetContent className="w-full sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent className="flex w-full min-w-0 flex-col sm:max-w-lg">
+          <SheetHeader className="shrink-0 pr-10">
+            <SheetTitle className="flex items-center gap-2 break-words">
               <Package className="h-5 w-5" />
               {selectedCategory} Products
             </SheetTitle>
             <p className="text-xs text-muted-foreground">{periodLabel} only</p>
           </SheetHeader>
-          <ScrollArea className="h-[calc(100vh-120px)] mt-4">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
             {loadingProducts ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1665,7 +1665,7 @@ const Index = () => {
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground pb-2 border-b">
                   <span>{categoryProducts.length} products</span>
-                  <div className="text-right">
+                  <div className="min-w-0 break-words sm:text-right">
                     <p>Total: ${categoryProducts.reduce((sum, p) => sum + p.revenue, 0).toFixed(2)}</p>
                     {(() => {
                       const totalProfit = categoryProducts.reduce((sum, p) => sum + (cleanProfitFor(p, selectedCategory) ?? 0), 0);
@@ -1682,7 +1682,7 @@ const Index = () => {
                 {categoryProducts.map((product, index) => (
                   <div 
                     key={product.id} 
-                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer sm:grid-cols-[3rem_minmax(0,1fr)_auto]"
                     onClick={() => openProductFromDashboard({ sku: product.sku, name: product.name }, true)}
                   >
                     {product.image_url ? (
@@ -1705,11 +1705,11 @@ const Index = () => {
                         {product.quantity} units sold
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="col-start-2 min-w-0 sm:col-auto sm:text-right">
                       <p className="text-sm font-semibold">${product.revenue.toFixed(2)}</p>
                       {cleanProfitFor(product, selectedCategory) !== null && (
-                        <p className="text-xs text-primary mt-1">
-                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA profit" : "Clean profit"}: ${cleanProfitFor(product, selectedCategory)!.toFixed(2)}
+                        <p className="text-xs text-primary mt-1 break-words">
+                          {selectedCategory === PARTNER_CATEGORY_NAME ? "NÉRA profit" : "Clean profit"}: ${cleanProfitFor(product, selectedCategory)?.toFixed(2)}
                         </p>
                       )}
                       <Badge variant="secondary" className="text-xs">
@@ -1720,7 +1720,7 @@ const Index = () => {
                 ))}
               </div>
             )}
-          </ScrollArea>
+          </div>
         </SheetContent>
       </Sheet>
 
