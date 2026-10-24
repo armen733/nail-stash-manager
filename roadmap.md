@@ -28,5 +28,5 @@
 - [x] Verify both report options invoke printing and Back closes the report, using saved products in an isolated signed-in report; native iPhone print dialog remains unverified.
 
 # OhLaLa document privacy
-- [ ] Replace browser-page printing with a generated PDF so browser footers cannot expose the app address.
-- [ ] Verify both PDF reports contain no app URLs and retain product information and totals.
+- [x] Replace browser-page printing with a generated PDF so browser footers cannot expose the app address.
+- [x] Verify both PDF reports contain no app URLs and retain product information and totals; native iPhone printing remains unverified.

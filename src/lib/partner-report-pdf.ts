@@ -30,6 +30,7 @@ export function createPartnerReportPdf(report: PartnerReport) {
       margin: 14,
       styles: { fontSize: 8, cellPadding: 2, minCellHeight: index === 0 ? 12 : 7 },
       theme: "plain",
+      columnStyles: index === 0 ? { 0: { cellWidth: 14 } } : {},
       rowPageBreak: "avoid",
       headStyles: { fontStyle: "bold" },
       footStyles: { fontStyle: "bold" },
@@ -76,7 +77,11 @@ export async function partnerReportPdfFromDocument(document: Document) {
   photoPdf.setFontSize(9); photoPdf.text(text("h1 + p"), 14, 41);
   photoPdf.text(text(".contact"), 283, 13, { align: "right" });
   const logo = report.querySelector<HTMLImageElement>(".top img");
-  if (logo?.dataset.pdfImage) photoPdf.addImage(logo.dataset.pdfImage, "PNG", 14, 8, 45, 45 * logo.naturalHeight / (logo.naturalWidth || 1));
+  if (logo?.dataset.pdfImage) {
+    const ratio = logo.naturalWidth / (logo.naturalHeight || 1);
+    const height = Math.min(19, 45 / (ratio || 1));
+    photoPdf.addImage(logo.dataset.pdfImage, "PNG", 14, 8, height * ratio, height);
+  }
   let y = 47;
   const productImages = Array.from(report.querySelectorAll<HTMLTableRowElement>("table:first-of-type tbody tr"))
     .map((row) => row.querySelector<HTMLImageElement>("img")?.dataset.pdfImage);
@@ -85,6 +90,7 @@ export async function partnerReportPdfFromDocument(document: Document) {
       startY: y, head: table.head, body: table.body, foot: table.foot,
       showFoot: "lastPage", margin: 14, theme: "plain", rowPageBreak: "avoid",
       styles: { fontSize: 8, cellPadding: 2, minCellHeight: index === 0 ? 12 : 7 },
+      columnStyles: index === 0 ? { 0: { cellWidth: 14 } } : {},
       headStyles: { fontStyle: "bold" }, footStyles: { fontStyle: "bold" },
       didDrawCell: (data) => {
         const image = productImages[data.row.index];
