@@ -21,4 +21,4 @@
 
 # Category breakdown phone layout
 - [x] Keep category totals and per-product sales/profit inside the phone screen without changing data or photos.
-- [ ] Verify narrow and wide layouts.
+- [x] Verify isolated layout at 320px, 390px, and desktop widths with no clipped amounts; live manager-screen check remains blocked by the current account's access above.
