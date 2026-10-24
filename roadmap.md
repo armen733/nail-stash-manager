@@ -18,3 +18,7 @@
 - [x] Remove row-limit truncation from Dashboard statistics and related category drill-downs.
 - [x] Test pagination and compare the OhLaLa totals with saved sales: 14 units, 8 products, $247.50 in October.
 - [ ] Verify the Dashboard breakdown signed in as a manager — the requesting user's account redirects to Orders; waiting for the intended manager account.
+
+# Category breakdown phone layout
+- [x] Keep category totals and per-product sales/profit inside the phone screen without changing data or photos.
+- [x] Verify isolated layout at 320px, 390px, and desktop widths with no clipped amounts; live manager-screen check remains blocked by the current account's access above.
