@@ -22,3 +22,7 @@
 # Category breakdown phone layout
 - [x] Keep category totals and per-product sales/profit inside the phone screen without changing data or photos.
 - [x] Verify isolated layout at 320px, 390px, and desktop widths with no clipped amounts; live manager-screen check remains blocked by the current account's access above.
+
+# OhLaLa report Print button
+- [x] Replace inline report handlers with directly attached Print and Back actions.
+- [x] Verify both report options invoke printing and Back closes the report, using saved products in an isolated signed-in report; native iPhone print dialog remains unverified.

@@ -7,4 +7,5 @@
 - Warehouse location logos live in `stock_locations.logo_url` (uploaded to the public `brand-assets` bucket) and render ahead of the type-specific fallback icons; when a new `location_type` value is added, update every location-type union and icon map so no screen renders an undefined icon.
 - Undiscountable product categories (currently the partner category "NÉRA x OhLaLa") are enforced server-side in `stripe-hosted-checkout`: the promo discount is limited to the other cart items and tax is recomputed, because partner payouts are calculated on full price.
 - Partner sales reports share the inventory analytics status set, including saved manual Draft orders, because those orders already reduce stock on creation.
+- Partner report windows bind Print and Back listeners from the opening app rather than inline scripts, because inherited content security policies can block inline handlers; phone printing stays directly tied to the user's tap.
 - Dashboard statistics and category drill-down sale queries use stable ID-ordered pagination through fetchAllRows, because the Data API caps each response at 1,000 rows and silently omits later sales otherwise.
