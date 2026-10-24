@@ -13,6 +13,7 @@ import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
 import { downloadCSV } from "@/lib/csv-export";
 import { OUR_SHARE, PARTNER_CATEGORY } from "@/components/warehouse/PartnerSalesTab";
 import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
+import { partnerReportPdfFromDocument } from "@/lib/partner-report-pdf";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -139,10 +140,16 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
       w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" id="print-partner-report">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div></body></html>`);
       // Bind from the app: inherited CSP can reject inline scripts/onclick in a
       // document-written window, leaving the visible Print button inert.
+      let pdfUrl: string | undefined;
+      const printButton = w.document.getElementById("print-partner-report") as HTMLButtonElement | null;
+      if (printButton) { printButton.disabled = true; printButton.textContent = "Preparing PDF…"; }
       const printReport = () => {
         if (w.closed) return;
+        if (!pdfUrl) return;
         w.focus();
-        w.print();
+        // Printing HTML on iOS can add the opener's private URL despite @page.
+        // A real PDF has no browser-page headers or admin link annotations.
+        w.location.replace(pdfUrl);
       };
       w.document.getElementById("print-partner-report")?.addEventListener("click", printReport);
       w.document.getElementById("back-to-partner")?.addEventListener("click", (event) => {
@@ -152,13 +159,12 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           w.close();
         }
       });
-      w.addEventListener("load", () => {
-        // On phones, let the visible button retain the user's tap activation.
-        if (!window.matchMedia("(pointer: coarse)").matches) {
-          w.setTimeout(printReport, 400);
-        }
-      }, { once: true });
       w.document.close();
+      const pdf = await partnerReportPdfFromDocument(w.document);
+      pdfUrl = URL.createObjectURL(pdf.output("blob"));
+      if (printButton) { printButton.disabled = false; printButton.textContent = "Print / PDF"; }
+      // Phones open the PDF from the user's tap, then use the native PDF print action.
+      if (!window.matchMedia("(pointer: coarse)").matches) printReport();
     } catch (e: any) {
       w.close();
       toast.error(e?.message ?? "Print failed");
