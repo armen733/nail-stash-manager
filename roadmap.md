@@ -25,4 +25,4 @@
 
 # OhLaLa report Print button
 - [x] Replace inline report handlers with directly attached Print and Back actions.
-- [ ] Verify both report options respond to Print and preserve Back navigation.
+- [x] Verify both report options invoke printing and Back closes the report, using saved products in an isolated signed-in report; native iPhone print dialog remains unverified.
