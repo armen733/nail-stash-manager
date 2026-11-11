@@ -36,6 +36,13 @@
       "when": 1794429132060,
       "tag": "0004_partner_payouts_manager_access",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794429271679,
+      "tag": "0005_partner_payouts_owner_only",
+      "breakpoints": true
     }
   ]
 }
