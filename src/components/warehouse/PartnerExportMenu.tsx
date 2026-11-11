@@ -13,6 +13,7 @@ import neraBeautyLogo from "@/assets/nera-beauty-logo.png";
 import { downloadCSV } from "@/lib/csv-export";
 import { OUR_SHARE, PARTNER_CATEGORY } from "@/components/warehouse/PartnerSalesTab";
 import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
+import { getLastPartnerPayout } from "@/lib/partner-payout-cutoff";
 import { partnerReportPdfFromDocument } from "@/lib/partner-report-pdf";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -75,6 +76,13 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
     if (!w) { toast.error("Allow pop-ups to print"); return; }
     setBusy(true);
     try {
+      const lastPayout = withSales ? await getLastPartnerPayout(locationId) : null;
+      let salesQ: any = supabase
+        .from("order_items")
+        .select("product_id, quantity, line_total, products!inner(category), orders!inner(status, created_at)")
+        .eq("products.category", PARTNER_CATEGORY)
+        .in("orders.status", [...PARTNER_SALE_STATUSES]);
+      if (lastPayout) salesQ = salesQ.gt("orders.created_at", lastPayout.paid_at);
       const [pRes, sRes, cRes] = await Promise.all([
         supabase
           .from("products")
@@ -82,11 +90,7 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           .eq("category", PARTNER_CATEGORY)
           .order("name"),
         withSales
-          ? supabase
-              .from("order_items")
-              .select("product_id, quantity, line_total, products!inner(category), orders!inner(status)")
-              .eq("products.category", PARTNER_CATEGORY)
-              .in("orders.status", [...PARTNER_SALE_STATUSES])
+          ? salesQ
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("company_settings").select("company_name, logo_url, contact_phone, contact_email").maybeSingle(),
       ]);
@@ -131,13 +135,13 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
       const row = (label: string, total: number, strong = false) =>
         `<tr${strong ? ' class="big"' : ""}><td>${label}</td><td class="n">${money(total)}</td><td class="n">${money(total * OUR_SHARE)}</td><td class="n">${money(total * THEIR_SHARE)}</td></tr>`;
       const summary = `<table class="sum"><thead><tr><th></th><th class="n">Total</th><th class="n">NÉRA ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th></tr></thead><tbody>${
-        withSales ? row(`Already sold (${tSold} units)`, tSales) : ""
+        withSales ? row(`${lastPayout ? "Sold since last payment" : "Already sold"} (${tSold} units)`, tSales) : ""
       }${row(`Stock left to sell (${tUnits} units)`, tValue)}${
         row(withSales ? "Overall possible (sold + stock left)" : "Possible if all stock sells at full price", tSales + tValue, true)
       }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; NÉRA possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.</p>`;
       const contact = `<div class="contact"><b>${esc(company.company_name || "NÉRA Beauty")}</b><br>${esc(email)}${phones ? `<br>${esc(phones).replace(/,\s*/g, "<br>")}` : ""}</div>`;
       const returnUrl = new URL(`/warehouse/${locationId}`, window.location.origin).href;
-      w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" id="print-partner-report">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div></body></html>`);
+      w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" id="print-partner-report">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}${lastPayout ? ` · Sales since last payment on ${new Date(lastPayout.paid_at).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}` : ""}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div></body></html>`);
       // Bind from the app: inherited CSP can reject inline scripts/onclick in a
       // document-written window, leaving the visible Print button inert.
       let pdfUrl: string | undefined;

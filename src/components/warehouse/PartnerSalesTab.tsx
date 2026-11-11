@@ -9,6 +9,7 @@ import { FileDown, CheckCircle2, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
+import { getLastPartnerPayout } from "@/lib/partner-payout-cutoff";
 
 export const PARTNER_CATEGORY = "NÉRA x OhLaLa";
 export const OUR_SHARE = 0.4;
@@ -47,6 +48,46 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [owed, setOwed] = useState<{ sales: number; qty: number; since: string | null }>({ sales: 0, qty: 0, since: null });
+
+  const loadOwed = async () => {
+    const last = await getLastPartnerPayout(locationId);
+    let q: any = supabase
+      .from("order_items")
+      .select("quantity, unit_price, line_total, products!inner(category), orders!inner(status, created_at)")
+      .eq("products.category", PARTNER_CATEGORY)
+      .in("orders.status", [...PARTNER_SALE_STATUSES]);
+    if (last) q = q.gt("orders.created_at", last.paid_at);
+    const { data } = await q;
+    const rows = (data ?? []) as any[];
+    setOwed({
+      sales: rows.reduce((s, r) => s + Number(r.line_total ?? r.unit_price * r.quantity), 0),
+      qty: rows.reduce((s, r) => s + r.quantity, 0),
+      since: last?.paid_at ?? null,
+    });
+  };
+
+  const settleOwed = async () => {
+    const ours = Math.round(owed.sales * OUR_SHARE * 100) / 100;
+    const theirs = Math.round((owed.sales - ours) * 100) / 100;
+    if (!confirm(`Mark ${money(theirs)} paid to ${partnerName}? The next Stock & sales sheet will start from now.`)) return;
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase.from("partner_payouts").insert({
+      location_id: locationId,
+      period_start: owed.since ? new Date(owed.since).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }) : "2000-01-01",
+      period_end: today(),
+      total_sales: owed.sales,
+      our_share: ours,
+      partner_share: theirs,
+      paid_at: new Date().toISOString(),
+      created_by: u.user?.id ?? null,
+    });
+    if (error) return toast.error("Could not save payout");
+    toast.success(`Payout of ${money(theirs)} recorded — balance cleared`);
+    loadPayouts();
+    loadOwed();
+  };
 
   const loadPayouts = async () => {
     const { data } = await supabase
@@ -90,6 +131,7 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
 
   useEffect(() => {
     loadPayouts();
+    loadOwed();
   }, [locationId]);
   useEffect(() => {
     if (start && end) loadSales();
@@ -124,30 +166,31 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
     doc.save(`${partnerName}-report-${start}-to-${end}.pdf`);
   };
 
-  const markPaid = async () => {
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("partner_payouts").insert({
-      location_id: locationId,
-      period_start: start,
-      period_end: end,
-      total_sales: totals.sales,
-      our_share: totals.ours,
-      partner_share: totals.theirs,
-      created_by: u.user?.id ?? null,
-    });
-    if (error) return toast.error("Could not save payout");
-    toast.success(`Payout of ${money(totals.theirs)} recorded`);
-    loadPayouts();
-  };
-
   const removePayout = async (id: string) => {
     if (!confirm("Remove this payout record?")) return;
     await supabase.from("partner_payouts").delete().eq("id", id);
     loadPayouts();
+    loadOwed();
   };
 
   return (
     <div className="space-y-3">
+      <Card className="border-primary/40">
+        <CardContent className="p-4 space-y-3">
+          <div>
+            <div className="text-xs text-muted-foreground">
+              Owed to {partnerName} now {owed.since ? `· sales since last payment ${new Date(owed.since).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles" })}` : "· all sales so far"}
+            </div>
+            <div className="text-2xl font-semibold text-primary">{money(Math.round((owed.sales - Math.round(owed.sales * OUR_SHARE * 100) / 100) * 100) / 100)}</div>
+            <div className="text-xs text-muted-foreground">
+              {owed.qty} units sold · {money(owed.sales)} sales · NÉRA {money(Math.round(owed.sales * OUR_SHARE * 100) / 100)}
+            </div>
+          </div>
+          <Button size="sm" onClick={settleOwed} disabled={owed.sales <= 0}>
+            <CheckCircle2 className="h-4 w-4 mr-1" /> Mark paid &amp; clear balance
+          </Button>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -177,9 +220,6 @@ export function PartnerSalesTab({ locationId, partnerName }: { locationId: strin
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={downloadPdf} disabled={!lines.length}>
               <FileDown className="h-4 w-4 mr-1" /> Download PDF report
-            </Button>
-            <Button size="sm" onClick={markPaid} disabled={!lines.length}>
-              <CheckCircle2 className="h-4 w-4 mr-1" /> Mark {money(totals.theirs)} paid
             </Button>
           </div>
         </CardContent>
