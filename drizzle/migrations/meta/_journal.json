@@ -29,6 +29,13 @@
       "when": 1792096836022,
       "tag": "0003_remove_duplicate_stock_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794429132060,
+      "tag": "0004_partner_payouts_manager_access",
+      "breakpoints": true
     }
   ]
 }
