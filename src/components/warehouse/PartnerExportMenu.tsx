@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +17,23 @@ import { OUR_SHARE, PARTNER_CATEGORY } from "@/components/warehouse/PartnerSales
 import { PARTNER_SALE_STATUSES } from "@/lib/partner-sales";
 import { getLastPartnerPayout } from "@/lib/partner-payout-cutoff";
 import { partnerReportPdfFromDocument } from "@/lib/partner-report-pdf";
+import {
+  PAID_TAG_HTML,
+  paidBannerHtml,
+  paidNoteHtml,
+  type PartnerPaidInfo,
+} from "@/lib/partner-paid";
 
-type SalesPeriod = { after?: string; until?: string; label: string };
+type SalesPeriod = {
+  after?: string;
+  until?: string;
+  label: string;
+  paid?: boolean;
+  paidOn?: string;
+  paidAmount?: number;
+  totalSales?: number;
+  ourShare?: number;
+};
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", year: "numeric" });
 const moneyShort = (n: number) => `$${n.toFixed(2)}`;
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -81,13 +97,22 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
     setPickerOpen(true);
     const { data } = await supabase
       .from("partner_payouts")
-      .select("paid_at, partner_share")
+      .select("paid_at, partner_share, total_sales, our_share")
       .eq("location_id", locationId)
       .order("paid_at", { ascending: true });
     const list: SalesPeriod[] = [];
     let prev: string | undefined;
     (data ?? []).forEach((p: any, i: number) => {
-      list.push({ after: prev, until: p.paid_at, label: `Payment #${i + 1} — paid ${fmtDate(p.paid_at)} (${moneyShort(Number(p.partner_share))})` });
+      list.push({
+        after: prev,
+        until: p.paid_at,
+        label: `Payment #${i + 1} — paid ${fmtDate(p.paid_at)} (${moneyShort(Number(p.partner_share))})`,
+        paid: true,
+        paidOn: p.paid_at,
+        paidAmount: Number(p.partner_share),
+        totalSales: Number(p.total_sales),
+        ourShare: Number(p.our_share),
+      });
       prev = p.paid_at;
     });
     list.reverse();
@@ -160,16 +185,39 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
           ? `<td class="n"><b>${tSold}</b></td><td class="n"><b>${money(tSales)}</b></td><td class="n"><b>${money(tSales * OUR_SHARE)}</b></td><td class="n"><b>${money(tSales * THEIR_SHARE)}</b></td>`
           : `<td class="n"><b>${money(tValue * OUR_SHARE)}</b></td><td class="n"><b>${money(tValue * THEIR_SHARE)}</b></td>`
       }`;
+      // A period covered by a recorded payout is stamped PAID everywhere on the sheet.
+      const paid: PartnerPaidInfo | null =
+        period?.paid && period.paidOn
+          ? {
+              partnerName,
+              paidAmount: period.paidAmount ?? tSales * THEIR_SHARE,
+              paidOn: period.paidOn,
+              unitsSold: tSold,
+              totalSales: period.totalSales ?? tSales,
+              ourShare: period.ourShare ?? tSales * OUR_SHARE,
+              ourPct: OUR_SHARE,
+              theirPct: THEIR_SHARE,
+            }
+          : null;
       const row = (label: string, total: number, strong = false) =>
         `<tr${strong ? ' class="big"' : ""}><td>${label}</td><td class="n">${money(total)}</td><td class="n">${money(total * OUR_SHARE)}</td><td class="n">${money(total * THEIR_SHARE)}</td></tr>`;
+      const soldLabel = `${lastPayout || period?.after || period?.until ? "Sold in this period" : "Already sold"} (${tSold} units)`;
+      const soldRow = !withSales
+        ? ""
+        : paid
+          ? `<tr><td>${soldLabel} ${PAID_TAG_HTML}</td><td class="n">${money(paid.totalSales)}</td><td class="n">${money(paid.ourShare)}</td><td class="n"><b>${money(paid.paidAmount)}</b> ${PAID_TAG_HTML}</td></tr>`
+          : row(soldLabel, tSales);
       const summary = `<table class="sum"><thead><tr><th></th><th class="n">Total</th><th class="n">NÉRA ${pct(OUR_SHARE)}</th><th class="n">${esc(partnerName)} ${pct(THEIR_SHARE)}</th></tr></thead><tbody>${
-        withSales ? row(`${lastPayout || period?.after || period?.until ? "Sold in this period" : "Already sold"} (${tSold} units)`, tSales) : ""
+        soldRow
       }${row(`Stock left to sell (${tUnits} units)`, tValue)}${
         row(withSales ? "Overall possible (sold + stock left)" : "Possible if all stock sells at full price", tSales + tValue, true)
-      }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; NÉRA possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.</p>`;
+      }</tbody></table><p class="note">${esc(partnerName)} possible earnings: <b>${money((tSales + tValue) * THEIR_SHARE)}</b> &nbsp;·&nbsp; NÉRA possible profit: <b>${money((tSales + tValue) * OUR_SHARE)}</b>. Based on full selling price, before tax and shipping.${
+        paid ? paidNoteHtml(paid) : ""
+      }</p>`;
       const contact = `<div class="contact"><b>${esc(company.company_name || "NÉRA Beauty")}</b><br>${esc(email)}${phones ? `<br>${esc(phones).replace(/,\s*/g, "<br>")}` : ""}</div>`;
       const returnUrl = new URL(`/warehouse/${locationId}`, window.location.origin).href;
-      w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" id="print-partner-report">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}${period ? ` · Sales: ${esc(period.label)}${period.until ? " · stock shown as of today" : ""}` : ""}${lastPayout ? ` · Sales since last payment on ${new Date(lastPayout.paid_at).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}` : ""}</p><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div></body></html>`);
+      const paidBanner = paid ? paidBannerHtml(paid) : "";
+      w.document.write(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(partnerName)} stock</title><style>:root{--report-ink:#111;--report-paper:#fff;--report-border:#ddd}.print-actions{display:flex;gap:12px;align-items:center;margin-bottom:20px}.print-actions a,.print-actions button{font:600 14px system-ui,sans-serif;color:var(--report-ink);background:var(--report-paper);border:1px solid var(--report-border);border-radius:6px;padding:12px 16px;text-decoration:none;cursor:pointer;min-height:44px;box-sizing:border-box}.report{overflow-x:auto}@media print{.print-actions{display:none!important}.report{overflow:visible}html,body{margin:0!important}}@media screen and (max-width:600px){body{padding:16px!important}.report>table{min-width:760px}}@page{margin:0}body{font-family:system-ui,sans-serif;padding:14mm;font-size:11px;color:#111}.top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px}.top img{width:150px;height:auto;margin:-20px 0;border-radius:0;object-fit:contain}.contact{text-align:right;line-height:1.5}h1{font-size:18px;margin:0}p{color:#666;margin:2px 0 12px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:middle}th{background:#f4f4f4}.n{text-align:right}td img{width:34px;height:34px;object-fit:cover;border-radius:4px}tfoot td{border-top:2px solid #111}tr{page-break-inside:avoid}.sum{width:auto;min-width:60%;margin:18px 0 6px auto;page-break-inside:avoid}.sum .big td{border-top:2px solid #111;font-weight:700;font-size:12px}.note{color:#111;font-size:12px;text-align:right}.paid{display:flex;gap:12px;align-items:center;border:2px solid #166534;background:#eef7f0;border-radius:8px;padding:10px 14px;margin:0 0 12px;color:#14532d;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paid .tick{font:700 13px system-ui,sans-serif;letter-spacing:.08em;border:2px solid #166534;border-radius:6px;padding:6px 10px;white-space:nowrap}.paid b{font-size:13px}.paidtag{display:inline-block;font:700 10px system-ui,sans-serif;letter-spacing:.06em;color:#14532d;border:1px solid #166534;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><nav class="print-actions" aria-label="Print actions"><a href="${esc(returnUrl)}" id="back-to-partner">&#8592; Back to ${esc(partnerName)}</a><button type="button" id="print-partner-report">Print</button></nav><div class="report"><div class="top"><img src="${esc(logo)}">${contact}</div><h1>NÉRA x ${esc(partnerName)} — ${withSales ? "Stock & sales" : "Stock overview"}</h1><p>${new Date().toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}${period ? ` · Sales: ${esc(period.label)}${period.until ? " · stock shown as of today" : ""}` : ""}${lastPayout ? ` · Sales since last payment on ${new Date(lastPayout.paid_at).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}` : ""}</p>${paidBanner}<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody><tfoot><tr>${foot}</tr></tfoot></table>${summary}</div></body></html>`);
       // Bind from the app: inherited CSP can reject inline scripts/onclick in a
       // document-written window, leaving the visible Print button inert.
       let pdfUrl: string | undefined;
@@ -248,7 +296,10 @@ export function PartnerExportMenu({ locationId, partnerName }: { locationId: str
         <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
           {periods.map((p, i) => (
             <Button key={i} variant={i === 0 ? "default" : "outline"} className="justify-start h-auto py-3 whitespace-normal text-left" onClick={() => printSheet(true, p)}>
-              {p.label}
+              <span className="flex flex-wrap items-center gap-2">
+                {p.label}
+                {p.paid && <Badge variant="secondary" className="text-[10px] px-2 py-0">PAID</Badge>}
+              </span>
             </Button>
           ))}
         </div>

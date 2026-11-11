@@ -7,7 +7,27 @@ export type PartnerReport = {
   date: string;
   contact: string;
   note: string;
+  paid?: string;
   tables: ReportTable[];
+};
+
+// A settled period is stamped on the PDF itself, not only on the screen page.
+const drawPaid = (pdf: jsPDF, paid: string, y: number) => {
+  const lines = paid.split("\n").flatMap((line) => pdf.splitTextToSize(line, 248) as string[]);
+  const height = 9 + lines.length * 5;
+  pdf.setFillColor(238, 247, 240);
+  pdf.setDrawColor(22, 101, 52);
+  pdf.setLineWidth(0.6);
+  pdf.rect(14, y, 269, height, "FD");
+  pdf.setTextColor(20, 83, 45);
+  pdf.setFontSize(9);
+  lines.forEach((line, i) => {
+    pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
+    pdf.text(line, 18, y + 8 + i * 5);
+  });
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(0);
+  return y + height;
 };
 
 // Only report text enters the PDF: no page address, anchors or browser footers.
@@ -20,6 +40,7 @@ export function createPartnerReportPdf(report: PartnerReport) {
   pdf.text(report.date, 14, 41);
   pdf.text(report.contact, 283, 13, { align: "right" });
   let y = 47;
+  if (report.paid) y = drawPaid(pdf, report.paid, y) + 8;
   report.tables.forEach((table, index) => {
     autoTable(pdf, {
       startY: y,
@@ -53,7 +74,8 @@ export async function partnerReportPdfFromDocument(document: Document) {
       .map((row) => Array.from(row.cells).map((cell) => cell.innerText));
     return { head: rows("thead tr"), body: rows("tbody tr"), foot: rows("tfoot tr") };
   });
-  const pdf = createPartnerReportPdf({ title: text("h1"), date: text("h1 + p"), contact: text(".contact"), note: text(".note"), tables });
+  const paid = text(".paid");
+  const pdf = createPartnerReportPdf({ title: text("h1"), date: text("h1 + p"), contact: text(".contact"), note: text(".note"), paid, tables });
   // Embed copies of the existing report photos, never their source URLs.
   const images = Array.from(report.querySelectorAll<HTMLImageElement>("img"));
   await Promise.all(images.map(async (image) => {
@@ -83,6 +105,7 @@ export async function partnerReportPdfFromDocument(document: Document) {
     photoPdf.addImage(logo.dataset.pdfImage, "PNG", 14, 8, height * ratio, height);
   }
   let y = 47;
+  if (paid) y = drawPaid(photoPdf, paid, y) + 8;
   const productImages = Array.from(report.querySelectorAll<HTMLTableRowElement>("table:first-of-type tbody tr"))
     .map((row) => row.querySelector<HTMLImageElement>("img")?.dataset.pdfImage);
   tables.forEach((table, index) => {
