@@ -9,3 +9,5 @@
 - Partner sales reports share the inventory analytics status set, including saved manual Draft orders, because those orders already reduce stock on creation.
 - Partner report windows bind Print and Back listeners from the opening app and open generated, image-embedded PDFs for printing; inherited CSP blocks inline handlers and iOS HTML printing can expose the opener URL despite zero page margins.
 - Dashboard statistics and category drill-down sale queries use stable ID-ordered pagination through fetchAllRows, because the Data API caps each response at 1,000 rows and silently omits later sales otherwise.
+
+- Manager-only data is gated by `public.is_manager()` (Owner in `user_roles`); customer-app users get only own-row policies, because customer accounts share this backend and some carry the legacy Sales Rep role.

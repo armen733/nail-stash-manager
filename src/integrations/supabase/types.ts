@@ -2017,6 +2017,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_manager: { Args: never; Returns: boolean }
       redeem_discount_code: {
         Args: {
           p_code: string

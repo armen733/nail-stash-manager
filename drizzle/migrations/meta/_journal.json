@@ -43,6 +43,13 @@
       "when": 1794429271679,
       "tag": "0005_partner_payouts_owner_only",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794855502412,
+      "tag": "0006_restrict_manager_tables_to_owner",
+      "breakpoints": true
     }
   ]
 }
