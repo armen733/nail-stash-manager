@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       .select('role')
       .eq('user_id', userData.user.id)
       .in('role', ['Owner', 'Sales Rep'])
+      .limit(1)
       .maybeSingle()
     if (!staffRole) {
       return new Response(JSON.stringify({ error: 'Not authorized' }), {
