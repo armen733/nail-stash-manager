@@ -64,6 +64,13 @@
       "when": 1795670749074,
       "tag": "0008_expose_active_bulk_sale_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795671468309,
+      "tag": "0009_tighten_selected_access_rules",
+      "breakpoints": true
     }
   ]
 }
