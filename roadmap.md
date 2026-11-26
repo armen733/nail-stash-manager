@@ -1,3 +1,8 @@
+# Bulk product discounts
+- [ ] Add automatic percentage discounts for all products or selected categories, excluding NÉRA x OhLaLa.
+- [ ] Save original prices and restore them safely when a sale ends.
+- [ ] Verify the manager flow without changing live product prices.
+
 # Drill-bit measurements
 - [x] Update field labels and add optional length fields.
 - [x] Save numeric millimeter values and display product dimensions.
