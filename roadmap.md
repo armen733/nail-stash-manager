@@ -1,7 +1,7 @@
 # Bulk product discounts
-- [ ] Add automatic percentage discounts for all products or selected categories, excluding NÉRA x OhLaLa.
-- [ ] Save original prices and restore them safely when a sale ends.
-- [ ] Verify the manager flow without changing live product prices.
+- [x] Add automatic percentage discounts for all products or selected categories, excluding NÉRA x OhLaLa.
+- [x] Save original prices and restore them safely when a sale ends.
+- [x] Verify category selection, price previews, sale history, and phone layout without changing live product prices; applying/ending a real sale remains untested.
 
 # Drill-bit measurements
 - [x] Update field labels and add optional length fields.

@@ -50,6 +50,13 @@
       "when": 1794855502412,
       "tag": "0006_restrict_manager_tables_to_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795670369038,
+      "tag": "0007_add_bulk_product_discount_sales",
+      "breakpoints": true
     }
   ]
 }

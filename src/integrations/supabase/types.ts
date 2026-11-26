@@ -130,6 +130,89 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_product_sale_items: {
+        Row: {
+          created_at: string
+          id: string
+          original_price: number
+          product_id: string
+          sale_id: string
+          sale_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_price: number
+          product_id: string
+          sale_id: string
+          sale_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_price?: number
+          product_id?: string
+          sale_id?: string
+          sale_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_product_sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_product_sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_product_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_product_sales: {
+        Row: {
+          categories: string[] | null
+          created_at: string
+          created_by: string | null
+          discount_percent: number
+          ended_at: string | null
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          categories?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          discount_percent: number
+          ended_at?: string | null
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          categories?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          discount_percent?: number
+          ended_at?: string | null
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_product_sales_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_expenses: {
         Row: {
           amount: number
@@ -2017,6 +2100,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_bulk_product_discount: {
+        Args: {
+          p_categories?: string[]
+          p_discount_percent: number
+          p_name: string
+        }
+        Returns: {
+          product_count: number
+          sale_id: string
+        }[]
+      }
+      end_bulk_product_discount: {
+        Args: { p_sale_id: string }
+        Returns: number
+      }
       is_manager: { Args: never; Returns: boolean }
       redeem_discount_code: {
         Args: {

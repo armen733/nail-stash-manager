@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, AlertTriangle, Crop as CropIcon } from "lucide-react";
+import { ArrowLeft, Package, Search, Plus, Pencil, Trash2, Upload, X, ShoppingCart, Minus, Download, Filter, Copy, Trash, Eye, Share2, MoreVertical, CheckCircle2, LayoutGrid, Grid3X3, List, FileUp, Boxes, FileText, TrendingUp, AlertTriangle, Crop as CropIcon, BadgePercent } from "lucide-react";
 import { downloadCSV } from "@/lib/csv-export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -69,6 +69,7 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { CartPanel } from "@/components/products/CartPanel";
 import { QuickOrderPanel } from "@/components/orders/QuickOrderPanel";
 import { BulkStockDialog } from "@/components/products/BulkStockDialog";
+import { BulkDiscountDialog } from "@/components/products/BulkDiscountDialog";
 import { ImportDialog } from "@/components/products/ImportDialog";
 import { DynamicCategoryFields } from "@/components/products/DynamicCategoryFields";
 import { DrillBitDimensions, dimensionKeys, millimeterValue } from "@/components/products/DrillBitDimensions";
@@ -199,6 +200,7 @@ const Products = () => {
   const [showSupplierSku, setShowSupplierSku] = useState(false);
   const skuOf = (p: any) => (showSupplierSku ? (p?.supplier_sku || p?.sku) : p?.sku);
   const [isBulkStockOpen, setIsBulkStockOpen] = useState(false);
+  const [isBulkDiscountOpen, setIsBulkDiscountOpen] = useState(false);
   const [bulkStockValue, setBulkStockValue] = useState("");
   const [bulkStockAction, setBulkStockAction] = useState<"set" | "add" | "subtract">("set");
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -2633,6 +2635,13 @@ const Products = () => {
                 {showSupplierSku ? "Supplier" : "Internal"}
               </button>
               
+              <Button onClick={() => setIsBulkDiscountOpen(true)} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden" title="Bulk automatic discounts">
+                <BadgePercent className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => setIsBulkDiscountOpen(true)} variant="outline" size="default" className="min-h-[44px] flex-shrink-0 hidden sm:flex">
+                <BadgePercent className="mr-2 h-4 w-4" />
+                Bulk discount
+              </Button>
               <Button onClick={() => csvInputRef.current?.click()} variant="outline" size="icon" className="min-h-[44px] min-w-[44px] flex-shrink-0 sm:hidden">
                 <FileUp className="h-4 w-4" />
               </Button>
@@ -3467,6 +3476,14 @@ const Products = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <BulkDiscountDialog
+        open={isBulkDiscountOpen}
+        onOpenChange={setIsBulkDiscountOpen}
+        products={allProducts}
+        categories={getUniqueCategories()}
+        onPricesChanged={refreshProducts}
+      />
 
       {/* CSV Import Dialog */}
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
