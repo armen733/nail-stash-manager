@@ -2115,6 +2115,16 @@ export type Database = {
         Args: { p_sale_id: string }
         Returns: number
       }
+      get_active_bulk_product_discounts: {
+        Args: never
+        Returns: {
+          discount_percent: number
+          original_price: number
+          product_id: string
+          sale_name: string
+          sale_price: number
+        }[]
+      }
       is_manager: { Args: never; Returns: boolean }
       redeem_discount_code: {
         Args: {

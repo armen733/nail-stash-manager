@@ -11,4 +11,4 @@
 - Dashboard statistics and category drill-down sale queries use stable ID-ordered pagination through fetchAllRows, because the Data API caps each response at 1,000 rows and silently omits later sales otherwise.
 
 - Manager-only data is gated by `public.is_manager()` (Owner in `user_roles`); customer-app users get only own-row policies, because customer accounts share this backend and some carry the legacy Sales Rep role.
-- Automatic bulk sales update `products.price_usd` through the Owner-checked bulk-discount functions and save original prices in the bulk-sale tables, because the separate customer app reads product prices directly and ended sales must not overwrite later manual edits.
+- Automatic bulk sales update `products.price_usd` through the Owner-checked bulk-discount functions and save original prices in the bulk-sale tables, because the separate customer app reads product prices directly and ended sales must not overwrite later manual edits. Storefronts read active comparisons through `get_active_bulk_product_discounts`, which hides ended sales and manually changed prices without exposing manager history.

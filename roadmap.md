@@ -2,6 +2,7 @@
 - [x] Add automatic percentage discounts for all products or selected categories, excluding NÉRA x OhLaLa.
 - [x] Save original prices and restore them safely when a sale ends.
 - [x] Verify category selection, price previews, sale history, and phone layout without changing live product prices; applying/ending a real sale remains untested.
+- [x] Share active sale names and original/discounted prices with the customer app and document its crossed-out-price display; verified anonymously with no live sale, while the separate customer app's UI remains unchanged.
 
 # Drill-bit measurements
 - [x] Update field labels and add optional length fields.

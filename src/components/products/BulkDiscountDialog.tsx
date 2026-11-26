@@ -191,7 +191,7 @@ export function BulkDiscountDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="bulk-sale-name">Sale name (optional)</Label>
+              <Label htmlFor="bulk-sale-name">Sale name / reason (optional)</Label>
               <Input
                 id="bulk-sale-name"
                 value={name}
@@ -199,6 +199,7 @@ export function BulkDiscountDialog({
                 placeholder="e.g. Black Friday"
                 className="min-h-[44px]"
               />
+              <p className="text-xs text-muted-foreground">The customer app can show this above the crossed-out original price.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="bulk-sale-percent">Discount percentage</Label>

@@ -57,6 +57,13 @@
       "when": 1795670369038,
       "tag": "0007_add_bulk_product_discount_sales",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795670749074,
+      "tag": "0008_expose_active_bulk_sale_prices",
+      "breakpoints": true
     }
   ]
 }
