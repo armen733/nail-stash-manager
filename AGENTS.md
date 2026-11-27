@@ -12,3 +12,4 @@
 
 - Manager-only data is gated by `public.is_manager()` (Owner in `user_roles`); customer-app users get only own-row policies, because customer accounts share this backend and some carry the legacy Sales Rep role.
 - Automatic bulk sales update `products.price_usd` through the Owner-checked bulk-discount functions and save original prices in the bulk-sale tables, because the separate customer app reads product prices directly and ended sales must not overwrite later manual edits. Storefronts read active comparisons through `get_active_bulk_product_discounts`, which hides ended sales and manually changed prices without exposing manager history.
+- The public `meta-product-feed` function uses the anonymous catalog role and an explicit product-field allowlist, with stable pagination and SKU IDs matching the customer checkout, so Meta can fetch catalog CSV without accessing private manager or customer records.

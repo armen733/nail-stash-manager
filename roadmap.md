@@ -1,3 +1,7 @@
+# Instagram product feed
+- [x] Deploy the customer app's public catalog feed with signed-out access.
+- [x] Test feed rules (9 passing tests) and verify the live CSV contains 247 unique products, prices, and availability without private fields; anonymous GET/HEAD return 200 and POST returns 405.
+
 # Bulk product discounts
 - [x] Add automatic percentage discounts for all products or selected categories, excluding NÉRA x OhLaLa.
 - [x] Save original prices and restore them safely when a sale ends.
